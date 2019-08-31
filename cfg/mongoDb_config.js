@@ -1,31 +1,14 @@
+//se nao existir db chamado db exchange, o mongo ira criar um quando algo for inserido
+//esse codigo deve ser executado no mongo SHELL
+
 use dbExcahnge
 
-db.createCollection("users", {
-    validator: {
-       $jsonSchema: {
-          bsonType: "object",
-          required: [ "email", "password", "major", "address" ],
-          properties: {
-             email: {
-                bsonType: "string",
-                description: "must be a string and is required"
-             },
-             password: {
-                bsonType: "object",
-                required: [ "hash", "salt"],
-                properties: {
-                   hash: {
-                      bsonType: "string",
-                      description: "must be a string if the field exists"
-                   },
-                   salt: {
-                      bsonType: "string",
-                      "description": "must be a string and is required"
-                   }
-                }
-             }
-          }
-       }
-    }
- })
- db.users.createIndex({ "email": 1 }, { unique: true })
+db.createUser({
+	user: "exchange",
+	pwd: "password",
+	roles: [{ 
+      role: "readWrite", 
+      db: "dbExchange" 
+   }],
+	authenticationRestrictions: [{ clientSource: ["127.0.0.1"] }]
+})
