@@ -1,0 +1,10 @@
+.register-form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.register-form h1 {
+    text-align: center;
+    color: whitesmoke;
+}
