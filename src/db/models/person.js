@@ -9,13 +9,13 @@ module.exports = mongoose.model('Person', {
 		required: true,
 	},
 	credentials: {
-		password_hash: {
-			type: String,
-			required: false
-		},
 		salt: {
 			type: String,
-			required: false
+			required: true
+		},
+		password_hash: {
+			type: String,
+			required: true
 		}
 	}
 })

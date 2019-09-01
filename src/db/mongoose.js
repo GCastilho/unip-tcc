@@ -1,9 +1,9 @@
 const mongoose = require('mongoose')
 
 /**
- * @description Database name: dbExchange
+ * @description Conecta ao database 'exchange' do mongodb no localhost
  */
-mongoose.connect('mongodb://127.0.0.1:27017/dbExchange', {
+mongoose.connect('mongodb://127.0.0.1:27017/exchange', {
 	user: 'exchange',
 	pass: 'password',
 	useNewUrlParser: true,
@@ -19,6 +19,3 @@ db.on('error', console.error.bind(console, 'Database connection error:'))
  * todas nesse arquivo e o acesso aos métodos do mongoose
  */
 module.exports = mongoose
-
-
-//eu nao desisti de matar o mongoose, mas se eu o fizer, vou manter a mesma sintaxe
