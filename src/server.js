@@ -1,6 +1,9 @@
 const express = require('express')
 const path = require('path')
 
+/**@description Conecta ao mongodb */
+const mongoose = require('./db/mongoose')
+
 const app = express()
 const port = process.env.PORT || 3001
 
@@ -12,6 +15,9 @@ app.use(express.static(reactPath))
 
 /**@description Handler de todos os requests para /cadastro */
 app.use('/cadastro', require('./cadastro'))
+
+/**@description Handler de todos os requests para /login */
+app.use('/login', require('./login'))
 
 app.get('*', (req, res) => {
 	res.sendFile(path.join(__dirname, '..', 'client', 'build', 'index.html'))
