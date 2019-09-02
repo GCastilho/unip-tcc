@@ -1,6 +1,9 @@
 const express = require('express')
 const path = require('path')
 
+/**@description Conecta ao mongodb */
+const mongoose = require('./db/mongoose')
+
 const app = express()
 const port = process.env.PORT || 3000
 

@@ -14,8 +14,8 @@
 db = db.getSiblingDB('exchange')
 
 db.createUser({
-	user: "exchange",
-	pwd: "password",
+	user: "exchange_server",
+	pwd: "uLCwAJH49ZRzCNW3",
 	roles: [{ 
 		role: "readWrite",
 		db: "exchange"
