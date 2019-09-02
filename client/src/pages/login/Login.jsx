@@ -23,14 +23,14 @@ export default class Login extends Component {
                 <form className="login-form" onSubmit={Login.handleSubmit}>
                     <h1>Login</h1>
 
-                    <InputField label='Usuário' type='text' required='true'/>
-                    <InputField label='Senha' type='password' required='true'/>
+                    <InputField label='Usuário' name='email' type='email' required='true'/>
+                    <InputField label='Senha' name='password' type='password' required='true'/>
 
                     <div className="forgot-button-container">
                         <TextButton href='/login' label='esqueceu a senha?'/>
                     </div>
 
-                    <RoundButton label='Login'/>
+                    <RoundButton label='Login' method='post' type='submit'/>
                 </form>
             </div>
         )

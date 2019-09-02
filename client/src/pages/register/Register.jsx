@@ -11,10 +11,10 @@ export default class Register extends Component {
                 <form className="register-form" method="POST">
                     <h1>Cadastro</h1>
 
-                    <InputField label='E-mail' type='text' required='true'/>
-                    <InputField label='Senha' type='password' required='true'/>
+                    <InputField label='E-mail' name='email' type='email' required='true'/>
+                    <InputField label='Senha' name='password' type='password' required='true'/>
 
-                    <RoundButton label='Cadastrar' type='submit'/>
+                    <RoundButton label='Cadastrar' method='post' type='submit'/>
                 </form>
             </div>
         )
