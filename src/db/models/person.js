@@ -1,3 +1,9 @@
+/**
+ * src/db/models/person.js
+ * 
+ * @description Model da collection de usuários (people)
+ */
+
 const mongoose = require('mongoose')
 
 module.exports = mongoose.model('Person', {

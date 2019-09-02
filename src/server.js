@@ -16,6 +16,9 @@ app.use(express.static(publicDirectoryPath))
 /**@description Handler de todos os requests para /cadastro */
 app.use('/cadastro', require('./cadastro'))
 
+/**@description Handler de todos os requests para /login */
+app.use('/login', require('./login'))
+
 app.use('/', (req, res) => {
 	res.send('Express send Hello World!')
 })
