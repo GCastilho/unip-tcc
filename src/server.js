@@ -7,12 +7,6 @@ const mongoose = require('./db/mongoose')
 const app = express()
 const port = process.env.PORT || 3000
 
-/**@description Define paths for express configs */
-const publicDirectoryPath = path.join(__dirname, '../public')
-
-/**@description Setup static directory to serve */
-app.use(express.static(publicDirectoryPath))
-
 /**@description Handler de todos os requests para /cadastro */
 app.use('/cadastro', require('./cadastro'))
 

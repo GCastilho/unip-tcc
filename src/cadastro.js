@@ -39,7 +39,6 @@ Router.post('/', function(req, res) {
 	 * logo após o cadastro
 	 */
 	.then(person => {
-		console.log(person)
 		res.send(person)
 	}).catch(err => {
 		console.log(err)
