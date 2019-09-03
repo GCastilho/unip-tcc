@@ -7,24 +7,14 @@ import TextButton from "../../components/TextButton/TextButton";
 
 
 export default class Login extends Component {
-    constructor(props) {
-        super(props);
-        Login.handleSubmit = Login.handleSubmit.bind(this);
-    }
-
-    static handleSubmit(event) {
-        event.preventDefault();
-    }
-
-
     render() {
         return (
             <div>
-                <form className="login-form" onSubmit={Login.handleSubmit}>
+                <form className="login-form" method="POST">
                     <h1>Login</h1>
 
-                    <InputField label='Usuário' name='email' type='email' required='true'/>
-                    <InputField label='Senha' name='password' type='password' required='true'/>
+                    <InputField label='Usuário' name='email' type='email'/>
+                    <InputField label='Senha' name='password' type='password'/>
 
                     <div className="forgot-button-container">
                         <TextButton href='/login' label='esqueceu a senha?'/>
