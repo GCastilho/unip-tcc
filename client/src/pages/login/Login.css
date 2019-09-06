@@ -1,0 +1,16 @@
+.login-form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.login-form h1 {
+    text-align: center;
+    color: whitesmoke;
+}
+
+.forgot-button-container {
+    text-align: right;
+    padding-top: 8px;
+    padding-bottom: 31px;
+}

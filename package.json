@@ -5,8 +5,10 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon --inspect src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "concurrently --kill-others-on-fail \"npm run dev-server\" \"npm run dev-client\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev-server": "nodemon --inspect src/server.js",
+    "dev-client": "cd client && npm start"
   },
   "author": "",
   "license": "ISC",
@@ -18,6 +20,7 @@
     "randomstring": "^1.1.5"
   },
   "devDependencies": {
+    "concurrently": "^4.1.2",
     "nodemon": "^1.19.1"
   }
 }

@@ -21,10 +21,19 @@ Router.post('/', function(req, res) {
 	const password = req.body.password
 
 	const salt = randomstring.generate({ length: 32 })
-	const password_hash = sha512.create()
-		.update(salt)
-		.update(password)
-		.hex()
+	let password_hash
+	try {
+		/**
+		 * @description Uma entrada malformada (como password ser null)
+		 * irá causar erro na hora de fazer o hash
+		 */
+		password_hash = sha512.create()
+			.update(salt)
+			.update(password)
+			.hex()
+	} catch(err) {
+		return res.status(400).send({error: 'Bad Request'})
+	}
 
 	new Person({
 		email,
