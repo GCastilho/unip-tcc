@@ -5,7 +5,7 @@ import './InputField.css';
 export default props => (
     <div>
         <div className="input-container">
-            <input className="input-user" name={props.name} type={props.type} required/>
+            <input className="input-user" name={props.name} onChange={props.onChange} type={props.type} required/>
             <label className="label-input">{props.label}</label>
         </div>
     </div>
