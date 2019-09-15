@@ -1,4 +1,5 @@
-import React, {Component} from 'react'
+import React from 'react';
+import axios from 'axios';
 
 import './Login.css';
 import InputField from "../../components/InputField/InputField";
@@ -6,21 +7,53 @@ import RoundButton from "../../components/RoundButton/RoundButton";
 import TextButton from "../../components/TextButton/TextButton";
 
 
-export default class Login extends Component {
+export default class Login extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            email: '',
+            password: '',
+            error: false
+        };
+        this.handleChange = this.handleChange.bind(this);
+        this.handleSubmit = this.handleSubmit.bind(this);
+    };
+
+    handleChange = (e) => {
+        this.setState({
+            [e.target.name]: e.target.value
+        });
+    };
+
+    handleSubmit = (e) => {
+        e.preventDefault();
+
+        axios.post('/login', {
+            email: this.state.email,
+            password: this.state.password
+        }).then(res => {
+            window.location.href = res.request.responseURL;
+        }).catch(error => {
+            this.setState({error: true});
+            console.log(error.response)
+        })
+    };
+
     render() {
         return (
             <div>
-                <form className="login-form" method="POST">
+                <form className="login-form">
                     <h1>Login</h1>
 
-                    <InputField label='Usuário' name='email' type='email'/>
-                    <InputField label='Senha' name='password' type='password'/>
+                    {this.state.error ? <span className='login-error'>Senha ou usuario incorrentos!</span> : null}
+                    <InputField label='Usuário' name='email' onChange={this.handleChange} type='email'/>
+                    <InputField label='Senha' name='password' onChange={this.handleChange} type='password'/>
 
                     <div className="forgot-button-container">
                         <TextButton href='/login' label='esqueceu a senha?'/>
                     </div>
 
-                    <RoundButton label='Login' method='post' type='submit'/>
+                    <RoundButton label='Login' onClick={this.handleSubmit} type='submit'/>
                 </form>
             </div>
         )

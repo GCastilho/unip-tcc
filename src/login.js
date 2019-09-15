@@ -16,7 +16,7 @@ const Cookie = require('./db/models/cookie')
  * @description Ativa o middleware para dar parse no body enviado pelo form
  * da página de login
  */
-Router.use(bodyParser.urlencoded({ extended: true }))
+Router.use(bodyParser.json({ extended: true }))
 
 Router.post('/', function(req, res) {
 	Person.findOne({
