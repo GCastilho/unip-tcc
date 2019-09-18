@@ -37,7 +37,7 @@ Router.post('/', function(req, res) {
 
 	new Person({
 		email,
-		credentials: {o r
+		credentials: {
 			salt,
 			password_hash
 		}

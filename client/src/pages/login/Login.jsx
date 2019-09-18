@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React from 'react';
 import axios from 'axios';
 
 import './Login.css';
@@ -7,7 +7,7 @@ import RoundButton from "../../components/RoundButton/RoundButton";
 import TextButton from "../../components/TextButton/TextButton";
 
 
-export default class Login extends Component {
+export default class Login extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -28,15 +28,13 @@ export default class Login extends Component {
     handleSubmit = (e) => {
         e.preventDefault();
 
-        const login = {
+        axios.post('/login', {
             email: this.state.email,
             password: this.state.password
-        };
-
-        axios.post('/login', {login}).then(res => {
-            console.log('ok')
+        }).then(res => {
+                window.location.href = res.request.responseURL;
         }).catch(error => {
-            this.setState({error: true})
+            this.setState({error: true});
             console.log(error)
         })
     };
