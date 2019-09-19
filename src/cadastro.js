@@ -14,7 +14,7 @@ const Person = require('./db/models/person')
  * @description Ativa o middleware de parse no body enviado pelo form
  * da página de cadastro
  */
-Router.use(bodyParser.urlencoded({ extended: true }))
+Router.use(bodyParser.json({ extended: true }))
 
 Router.post('/', function(req, res) {
 	const email = req.body.email

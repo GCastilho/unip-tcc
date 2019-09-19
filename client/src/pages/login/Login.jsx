@@ -32,7 +32,7 @@ export default class Login extends React.Component {
             email: this.state.email,
             password: this.state.password
         }).then(res => {
-                window.location.href = res.request.responseURL;
+            window.location.href = res.request.responseURL;
         }).catch(error => {
             this.setState({error: true});
             console.log(error)
