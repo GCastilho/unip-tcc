@@ -1,6 +1,9 @@
 const express = require('express')
 const path = require('path')
 
+/**@description Intancia o módulo de controle das APIs internas */
+const InternalApi = require('./api/internal')
+
 /**@description Conecta ao mongodb */
 const mongoose = require('./db/mongoose')
 
