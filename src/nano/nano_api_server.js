@@ -10,8 +10,7 @@ var nanoRcp = require("./rcp.js")
 
 app.get('/', function (req, res) {
     //TODO: transformar essa funcao em algo que realmente trata o request e o response
-    nanoRcp.createAccount();
-    res.send('Hello World');
+    nanoRcp.createAccount(req, res);
 })
 
 var server = app.listen(50000, function () {

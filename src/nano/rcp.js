@@ -72,15 +72,19 @@ module.exports = {
       }
     )
 },*/
-createAccount : function(){
+createAccount : function(request,response){
   client.call(
     createAccount= {
       "action": "account_create",
       "wallet":"F80357B81E856EF1BA68EE35974BAFEFDACEFB3DA4B5A06F904DE211C916D85E"
     },function (err, res) {
     // Did it all work ?
-    if (err) { console.log(err); }
-    else { console.log(res); }
+    if (err) { 
+      response = "error"
+      console.log(err); }
+    else {
+      response.send(res.account)
+    }
   })
 }}
 
