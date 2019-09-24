@@ -3,9 +3,10 @@
  */
 
 module.exports = {
+	name: 'bitcoin',
 	port: 1235,
 
-	hello: function() {
-		return 'Hello from bitcoin!'
+	hello: function hello(params) {
+		return `Esse hello vem da ${this.name}`
 	}
 }

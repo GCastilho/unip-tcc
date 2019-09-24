@@ -1,7 +1,7 @@
-/**
+/*
  * src/cadastro.js
  * 
- * @description Handler da página de cadastro de usuários
+ * Handler da página de cadastro de usuários
  */
 
 const Router = require('express').Router()

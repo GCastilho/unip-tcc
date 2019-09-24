@@ -1,7 +1,7 @@
-/**
+/*
  * dashboard/login/index.js
  * 
- * @description Handler da página de autenticação de usuários
+ * Handler da página de autenticação de usuários
  */
 
 const Router = require('express').Router()

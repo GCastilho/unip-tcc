@@ -1,8 +1,8 @@
-/**
+/*
  * src/api/internal/listener.js
  * 
- * @description Esse módulo ouve por requests HTTP vindo dos entrypoints de
- * comunicação com as blockchains e faz o redirecionamento adequado
+ * Esse módulo ouve por requests HTTP vindo dos entrypoints de comunicação
+ * com as blockchains e faz o redirecionamento adequado
  */
 
 const port = 8085
@@ -11,7 +11,7 @@ const bodyParser = require('body-parser')
 
 app.use(bodyParser.json({extended: true}))
 
-module.exports = function initCurrencyApi(api) {
+module.exports = function listenerModule(api) {
 	app.get('/:command/:currency', function(req, res) {
 		const { command, currency } = req.params
 		if (typeof api.currencies[currency] === 'undefined')

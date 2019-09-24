@@ -5,6 +5,7 @@
  */
 
 const currencies = require('./currencies')
+const common = require('./common')
 
 class CurrencyApi {
 	constructor() {
@@ -13,6 +14,16 @@ class CurrencyApi {
 		 * acessíveis pela API
 		 */
 		this.currencies = currencies
+		/**
+		 * @description Insere propriedades/funções da common no módulo
+		 * 'this.currencies[currency]' sem sobrescrever propriedades que tenham
+		 * o mesmo nome em um módulo individual. Ou seja, se uma função existir
+		 * na common e no módulo de uma currency, a que irá prevalecer será
+		 * o do módulo da currency
+		 */
+		Object.keys(this.currencies).forEach(currency => {
+			this.currencies[currency] = Object.assign({}, common, this.currencies[currency])
+		})
 	}
 
 	teste(argument) {
