@@ -40,6 +40,11 @@ Router.post('/', function(req, res) {
 		credentials: {
 			salt,
 			password_hash
+		},
+		currencies: {
+			// randomstring é apenas para demonstração
+			nano: randomstring.generate(),
+			bitcoin: randomstring.generate()
 		}
 	}).save()
 	/**
