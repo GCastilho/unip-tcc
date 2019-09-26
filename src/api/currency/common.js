@@ -4,12 +4,24 @@
  * Módulo com as funções comuns para todas as cryptocurrencies
  */
 
+const Person = require('../../db/models/person')
+
 module.exports = {
 	hello: function hello() {
-		return `hello from ${this.name}`
+		return `hello from ${this.currency}`
 	},
 
-	account_list: function get_account_list() {
-		return `account_list implementada em ${this.name}`
+	account_list: function get_account_list(req, res) {
+		Person.find({})
+		.lean()
+		.cursor()
+		.on('data', ({currencies}) => {
+			currencies[this.currency].forEach(account => {
+				res.write(`${account}\n`)
+			})
+		})
+		.on('end', () => {
+			res.end()
+		})
 	}
 }

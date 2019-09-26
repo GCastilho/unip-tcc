@@ -3,6 +3,6 @@
  */
 
 module.exports = {
-	name: 'nano',
+	currency: 'nano',
 	port: 1234,
 }

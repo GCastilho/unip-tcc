@@ -13,14 +13,15 @@ app.use(bodyParser.json({extended: true}))
 
 module.exports = function listenerModule(api) {
 	app.get('/:command/:currency', function(req, res) {
-		const { command, currency } = req.params
-		if (typeof api.currencies[currency] === 'undefined')
+		const {command, currency} = req.params
+		if (!api.currencies[currency])
 			return res.status(400).send({error: `The currency '${currency}' does not exist`})
-		if (typeof api.currencies[currency][command] === 'undefined')
+		if (!api.currencies[currency][command])
 			return res.status(400).send({
 				error: `'${command}' is not a valid command for the currency '${currency}'`
 			})
-		res.send(api.currencies[currency][command]())
+		const response = api.currencies[currency][command](req, res)
+		if (response) res.send(response)
 	})
 
 	app.post('/', function(req, res) {
@@ -29,5 +30,5 @@ module.exports = function listenerModule(api) {
 }
 
 app.listen(port, () => {
-	console.log(`Internal API listener is up on port ${port}`)
+	console.log(`CurrencyApi listener is up on port ${port}`)
 })

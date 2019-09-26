@@ -32,7 +32,7 @@ Router.post('/', function(req, res) {
 			.update(password)
 			.hex()
 	} catch(err) {
-		return res.status(400).send({error: 'Bad Request'})
+		return res.status(400).send({error: 'bad request'})
 	}
 
 	new Person({
