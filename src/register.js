@@ -1,5 +1,5 @@
 /**
- * src/cadastro.js
+ * src/register.js
  * 
  * @description Handler da página de cadastro de usuários
  */

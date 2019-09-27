@@ -37,7 +37,7 @@ export default class Register extends Component {
         } else if (this.state.password.search(/[A-Z]/) === -1) {
             this.setState({errorMsg: 'A senha deve conter pelo menos uma letra maiucula'});
         }*/ else {
-            axios.post('/cadastro', {email: this.state.email, password: this.state.password})
+            axios.post('/register', {email: this.state.email, password: this.state.password})
             .then(res => {
                 console.log(res);
                 if (res.data.code === 11000) {
