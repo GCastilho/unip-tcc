@@ -2,14 +2,16 @@ import React from 'react';
 import {BrowserRouter} from 'react-router-dom';
 import ReactDOM from 'react-dom';
 import './index.css';
-import Header from './components/Header/Header';
-import Routes from './routes';
+const Header = React.lazy(() => import('./components/Header/Header'));
+const Routes = React.lazy(() => import('./routes'));
 
 ReactDOM.render(
     <BrowserRouter>
-        <Header/>
-        <div className='container'>
-            <Routes/>
-        </div>
+        <React.Suspense fallback={<div>Loading...</div>}>
+            <Header/>
+            <div className='container'>
+                <Routes/>
+            </div>
+        </React.Suspense>
     </BrowserRouter>
     , document.getElementById('root'));
