@@ -30,13 +30,7 @@ export default class Register extends Component {
         if (this.state.email.search(
             /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/) === -1) {
             this.setState({errorMsg: 'E-mail inválido'});
-        }/* else if (this.state.password.search(/[0-9]/) === -1) {
-            this.setState({errorMsg: 'A senha deve conter pelo menos um Número '});
-        } else if (this.state.password.search(/[a-z]/) === -1) {
-            this.setState({errorMsg: 'A senha deve conter pelo menos uma letra minuscula'});
-        } else if (this.state.password.search(/[A-Z]/) === -1) {
-            this.setState({errorMsg: 'A senha deve conter pelo menos uma letra maiucula'});
-        }*/ else {
+        } else {
             axios.post('/register', {email: this.state.email, password: this.state.password})
             .then(res => {
                 console.log(res);
@@ -67,8 +61,9 @@ export default class Register extends Component {
                         <RoundButton label='Cadastrar' onClick={this.handleSubmit} type='submit'/>
                     </form> :
                     <div className='confirmWindow'>
-                        <h1>Quase lá</h1>
-                        <p>O email <b>{this.state.email}</b> esta correto ?</p>
+                        <h1>Confirme o email</h1>
+                        <p>Enviamos um email de confirmação de cadastro para <b>{this.state.email}</b>,
+                            para ativar sua conta por favor siga as instruções informadas no email</p>
                         <div>
                             <RoundButton label='Confirmar e-mail'/> {/*função ainda precissa ser implementado*/}
                         </div>

@@ -35,7 +35,7 @@ export default class Login extends React.Component {
             window.location.href = res.request.responseURL;
         }).catch(error => {
             this.setState({error: true});
-            console.log(error)
+            console.log(error.response)
         })
     };
 

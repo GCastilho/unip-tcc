@@ -21,8 +21,8 @@
     top: 50%;
     padding: 5px 0;
     text-align: center;
-    border: 1px solid crimson;
+    border: 1px solid #ff0000;
     border-radius: 5px;
-    background-color: palevioletred;
-    color: crimson;
+    background-color: #fff0f0;
+    color: #ff0000;
 }
