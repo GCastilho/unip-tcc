@@ -12,6 +12,10 @@ code {
     monospace;
 }
 
+.loading {
+  padding-top: 50vh;
+}
+
 .container {
   display: flex;
   justify-content: center;
