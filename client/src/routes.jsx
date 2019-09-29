@@ -1,14 +1,15 @@
 import React from 'react';
-import {BrowserRouter, Route, Switch} from 'react-router-dom'
+import ReactLoading from 'react-loading';
+import {Route, Switch} from 'react-router-dom'
 
-import Login from "./pages/login/Login";
-import Register from "./pages/register/Register";
+const Login = React.lazy(() => import('./pages/login/Login'));
+const Register = React.lazy(() => import('./pages/register/Register'));
 
 export default () => (
-    <BrowserRouter>
+    <React.Suspense fallback={<ReactLoading className='loading' type='spinningBubbles' color='#fff'/>}>
         <Switch>
-            <Route path='/login' component={Login}/>
-            <Route path='/cadastro' component={Register}/>
+            <Route path='/login'><Login/></Route>
+            <Route path='/register'><Register/></Route>
         </Switch>
-    </BrowserRouter>
+    </React.Suspense>
 )

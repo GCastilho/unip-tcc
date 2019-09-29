@@ -1,12 +1,13 @@
 import React from 'react';
+import {Link} from 'react-router-dom';
 import './Header.css';
 
 export default props => (
     <header>
-        <a href="/" className="button">Home</a>
+        <Link to="/" className="button">Home</Link>
         <div className="header-right">
-            <a href="/login" className="button">Login</a>
-            <a href="/cadastro" className="button">Cadastro</a>
+            <Link to="/login" className="button">Login</Link>
+            <Link to="/register" className="button">Cadastro</Link>
         </div>
     </header>
 );

@@ -17,7 +17,7 @@ const reactPath = path.join(__dirname, '../public')
 app.use(express.static(reactPath))
 
 /**@description Handler de todos os requests para /cadastro */
-app.use('/cadastro', require('./cadastro'))
+app.use('/register', require('./register'))
 
 /**@description Handler de todos os requests para /login */
 app.use('/login', require('./login'))
