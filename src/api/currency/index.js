@@ -25,10 +25,6 @@ class CurrencyApi {
 			this.currencies[currency] = Object.assign({}, common, this.currencies[currency])
 		})
 	}
-
-	teste(argument) {
-		console.log(argument)
-	}
 }
 
 module.exports = singleton = new CurrencyApi()

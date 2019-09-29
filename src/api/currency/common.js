@@ -7,10 +7,6 @@
 const Person = require('../../db/models/person')
 
 module.exports = {
-	hello: function hello() {
-		return `hello from ${this.currency}`
-	},
-
 	account_list: function get_account_list(req, res) {
 		Person.find({})
 		.lean()
