@@ -22,7 +22,7 @@ class CurrencyApi {
 		 * o do módulo da currency
 		 */
 		Object.keys(this.currencies).forEach(currency => {
-			this.currencies[currency] = Object.assign({}, common, this.currencies[currency])
+			this.currencies[currency] = {...common, ...this.currencies[currency]}
 		})
 	}
 }

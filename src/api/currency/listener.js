@@ -12,7 +12,7 @@ const bodyParser = require('body-parser')
 app.use(bodyParser.json({extended: true}))
 
 module.exports = function listenerModule(api) {
-	app.get('/:command/:currency', function(req, res) {
+	app.get('/:command/:currency', function listener_get(req, res) {
 		const {command, currency} = req.params
 		if (!api.currencies[currency])
 			return res.status(400).send({error: `The currency '${currency}' does not exist`})
@@ -24,8 +24,16 @@ module.exports = function listenerModule(api) {
 		if (response) res.send(response)
 	})
 
-	app.post('/', function(req, res) {
+	app.get('*', (req, res) => {
+		res.status(400).send({error: 'bad request'})
+	})
+
+	app.post('/', function listener_post(req, res) {
 		res.send('listener acessado por POST\n')
+	})
+
+	app.post('*', (req, res) => {
+		res.status(400).send({error: 'bad request'})
 	})
 }
 
