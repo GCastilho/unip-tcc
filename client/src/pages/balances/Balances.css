@@ -1,0 +1,23 @@
+.register-form {
+    max-width: 255px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.register-form h1 {
+    text-align: center;
+    color: whitesmoke;
+}
+
+.confirmWindow {
+    display: flex;
+    flex-direction: column;
+    color: white;
+}
+
+.confirmWindow div {
+    align-self: center;
+    padding-top: 30px;
+    width: 255px;
+}
