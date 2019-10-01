@@ -14,6 +14,7 @@ const Main = React.lazy(() => import('./pages/main/Main'));
 const Login = React.lazy(() => import('./pages/login/Login'));
 const Register = React.lazy(() => import('./pages/register/Register'));
 const NotFound = React.lazy(() => import('./pages/notFound/NotFound'));
+const Balances = React.lazy(() => import('./pages/balances/Balances'));
 
 export default (props) => (
     <React.Suspense fallback={<ReactLoading className='loading' type='spinningBubbles' color='#fff'/>}>
