@@ -1,14 +1,17 @@
 const express = require('express')
 const path = require('path')
 
+/**@description Intancia o módulo de controle das APIs internas */
+const InternalApi = require('./api/currency')
+
 /**@description Conecta ao mongodb */
 const mongoose = require('./db/mongoose')
 
 const app = express()
 const port = process.env.PORT || 3001
 
-/**@description Define paths for express configs */
-const reactPath = path.join(__dirname, '../client/build')
+/**@description Path for react production build */
+const reactPath = path.join(__dirname, '../public')
 
 /**@description Setup static directory to serve */
 app.use(express.static(reactPath))
@@ -20,7 +23,7 @@ app.use('/register', require('./register'))
 app.use('/login', require('./login'))
 
 app.get('*', (req, res) => {
-	res.sendFile(path.join(__dirname, '..', 'client', 'build', 'index.html'))
+	res.sendFile(path.join(reactPath, 'index.html'))
 })
 
 app.listen(port, () => {

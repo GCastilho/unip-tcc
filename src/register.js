@@ -1,7 +1,7 @@
 /**
  * src/register.js
  * 
- * @description Handler da página de cadastro de usuários
+ * Handler da página de cadastro de usuários
  */
 
 const Router = require('express').Router()
@@ -32,7 +32,7 @@ Router.post('/', function(req, res) {
 			.update(password)
 			.hex()
 	} catch(err) {
-		return res.status(400).send({error: 'Bad Request'})
+		return res.status(400).send({error: 'bad request'})
 	}
 
 	new Person({
@@ -40,6 +40,11 @@ Router.post('/', function(req, res) {
 		credentials: {
 			salt,
 			password_hash
+		},
+		currencies: {
+			// randomstring é apenas para demonstração
+			nano: randomstring.generate(),
+			bitcoin: randomstring.generate()
 		}
 	}).save()
 	/**

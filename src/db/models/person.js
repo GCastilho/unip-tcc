@@ -5,6 +5,7 @@
  */
 
 const mongoose = require('mongoose')
+const currencieSchema = require('./currencies')
 
 module.exports = mongoose.model('Person', {
 	email: {
@@ -23,5 +24,6 @@ module.exports = mongoose.model('Person', {
 			type: String,
 			required: true
 		}
-	}
+	},
+	currencies: currencieSchema
 })
