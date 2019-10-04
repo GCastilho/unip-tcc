@@ -5,6 +5,7 @@ import './Login.css';
 import InputField from "../../components/InputField/InputField";
 import RoundButton from "../../components/RoundButton/RoundButton";
 import TextButton from "../../components/TextButton/TextButton";
+import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
 
 
 export default class Login extends React.Component {
@@ -45,7 +46,7 @@ export default class Login extends React.Component {
                 <form className="login-form">
                     <h1>Login</h1>
 
-                    {this.state.error ? <span className='login-error'>Senha ou usuario incorrentos!</span> : null}
+                    {this.state.error ? <ErrorMessage message='Senha ou usuario incorrentos!'/> : null}
                     <InputField label='Usuário' name='email' onChange={this.handleChange} type='email'/>
                     <InputField label='Senha' name='password' onChange={this.handleChange} type='password'/>
 

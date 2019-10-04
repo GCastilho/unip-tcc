@@ -7,13 +7,13 @@
 
 .register-form h1 {
     text-align: center;
-    color: whitesmoke;
+    color: var(--main-text-color-dark);
 }
 
 .confirmWindow {
     display: flex;
     flex-direction: column;
-    color: white;
+    color: var(--main-text-color-dark);
 }
 
 .confirmWindow div {

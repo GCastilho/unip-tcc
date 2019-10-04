@@ -7,22 +7,11 @@
 
 .login-form h1 {
     text-align: center;
-    color: whitesmoke;
+    color: var(--main-text-color-dark);
 }
 
 .forgot-button-container {
     text-align: right;
     padding-top: 8px;
     padding-bottom: 31px;
-}
-
-.login-error {
-    height: auto;
-    top: 50%;
-    padding: 5px 0;
-    text-align: center;
-    border: 1px solid #ff0000;
-    border-radius: 5px;
-    background-color: #fff0f0;
-    color: #ff0000;
 }

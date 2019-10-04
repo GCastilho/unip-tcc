@@ -1,0 +1,10 @@
+.login-error {
+    height: auto;
+    top: 50%;
+    padding: 5px 0;
+    text-align: center;
+    border: 1px solid var(--error-color-text);
+    border-radius: 5px;
+    background-color: var(--error-color-background);
+    color: var(--error-color-text);
+}

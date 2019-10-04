@@ -4,6 +4,7 @@ import axios from 'axios';
 import './Register.css';
 import InputField from "../../components/InputField/InputField";
 import RoundButton from "../../components/RoundButton/RoundButton";
+import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
 
 export default class Register extends Component {
     constructor(props) {
@@ -54,7 +55,7 @@ export default class Register extends Component {
                     <form className="register-form">
                         <h1>Cadastro</h1>
 
-                        {this.state.errorMsg !== '' ? <span className='login-error'>{this.state.errorMsg}</span> : null}
+                        {this.state.errorMsg !== '' ? <ErrorMessage message={this.state.errorMsg}/> : null}
                         <InputField label='E-mail' name='email' onChange={this.handleChange} type='email'/>
                         <InputField label='Senha' name='password' onChange={this.handleChange} type='password'/>
 
