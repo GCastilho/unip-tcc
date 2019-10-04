@@ -9,8 +9,8 @@ const bodyParser = require('body-parser')
 const sha512 = require('js-sha512')
 const randomstring = require("randomstring")
 
-const Person = require('./db/models/person')
-const Cookie = require('./db/models/cookie')
+const Person = require('../db/models/person')
+const Cookie = require('../db/models/cookie')
 
 /**
  * @description Ativa o middleware para dar parse no body enviado pelo form

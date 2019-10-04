@@ -8,7 +8,8 @@ const Router = require('express').Router()
 const sha512 = require('js-sha512')
 const bodyParser = require('body-parser')
 const randomstring = require('randomstring')
-const Person = require('./db/models/person')
+
+const Person = require('../db/models/person')
 
 /**
  * @description Ativa o middleware de parse no body enviado pelo form

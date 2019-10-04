@@ -1,30 +1,19 @@
 const express = require('express')
 const path = require('path')
-
-/**@description Intancia o módulo de controle das APIs internas */
-const InternalApi = require('./api/currency')
-
-/**@description Conecta ao mongodb */
-const mongoose = require('./db/mongoose')
-
 const app = express()
 const port = process.env.PORT || 3001
 
-/**@description Path for react production build */
-const reactPath = path.join(__dirname, '../public')
+/** Connect to mongodb */
+require('./db/mongoose')
 
-/**@description Setup static directory to serve */
-app.use(express.static(reactPath))
+/** Load CurrencyApi module */
+require('./currencyApi')
 
-/**@description Handler de todos os requests para /cadastro */
-app.use('/register', require('./register'))
+/** Setup path for react production build and static files */
+app.use(express.static(path.join(__dirname, '../public')))
 
-/**@description Handler de todos os requests para /login */
-app.use('/login', require('./login'))
-
-app.get('*', (req, res) => {
-	res.sendFile(path.join(reactPath, 'index.html'))
-})
+/** Setup router to handle all requests to subdirectories */
+app.use(require('./router'))
 
 app.listen(port, () => {
 	console.log(`Server is up on port ${port}`)
