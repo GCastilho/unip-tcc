@@ -4,10 +4,10 @@
   "description": "Cryptocurrency exchange webserver",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node src/index.js",
     "dev": "concurrently --kill-others-on-fail \"npm run dev-server\" \"npm run dev-client\"",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev-server": "nodemon --inspect src/server.js",
+    "dev-server": "env-cmd -f ./cfg/dev.env nodemon --inspect src/index.js",
     "dev-client": "cd client && npm start"
   },
   "author": "",
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "concurrently": "^4.1.2",
+    "env-cmd": "^10.0.1",
     "nodemon": "^1.19.3"
   }
 }
