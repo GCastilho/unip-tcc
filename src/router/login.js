@@ -1,5 +1,5 @@
 /*
- * dashboard/login/index.js
+ * src/router/login.js
  * 
  * Handler da página de autenticação de usuários
  */
@@ -75,7 +75,7 @@ Router.post('/', function(req, res) {
 			 * @todo Redirecionar o usuário para uma página com
 			 * a mensagem de erro
 			 */
-			res.status(401).send({error: 'Not authorized'})
+			res.status(401).send({ error: 'Not authorized' })
 		} else {
 			/**
 			 * @description Esse else pode ser chamado em situações onde não foi
@@ -83,7 +83,7 @@ Router.post('/', function(req, res) {
 			 * 
 			 * @todo Fazer um error handling melhor
 			 */
-			res.status(500).send({error: 'Internal server error'})
+			res.status(500).send({ error: 'Internal server error' })
 		}
 	})
 })

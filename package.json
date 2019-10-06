@@ -6,9 +6,12 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "concurrently --kill-others-on-fail \"npm run dev-server\" \"npm run dev-client\"",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "env-cmd -f ./cfg/test.env jest --watchAll --runInBand",
     "dev-server": "env-cmd -f ./cfg/dev.env nodemon --inspect src/index.js",
     "dev-client": "cd client && npm start"
+  },
+  "jest": {
+    "testEnvironment": "node"
   },
   "author": "",
   "license": "ISC",
@@ -22,6 +25,8 @@
   "devDependencies": {
     "concurrently": "^4.1.2",
     "env-cmd": "^10.0.1",
-    "nodemon": "^1.19.3"
+    "jest": "^24.8.0",
+    "nodemon": "^1.19.3",
+    "supertest": "^4.0.2"
   }
 }
