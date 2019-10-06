@@ -2,8 +2,7 @@
  * src/routers.index.js
  */
 
-const Router = new require('express').Router()
-// const Router = require('express').Router
+const Router = require('express').Router()
 
 /**@description Handler de todos os requests para /register */
 Router.use('/register', require('./register'))
