@@ -8,7 +8,7 @@ import Routes from './routes';
 ReactDOM.render(
     <BrowserRouter>
         <Header/>
-        <div className='container'>
+        <div className='home-container'>
             <Routes/>
         </div>
     </BrowserRouter>

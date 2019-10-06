@@ -50,7 +50,7 @@ export default class Register extends Component {
 
     render() {
         return (
-            <div>
+            <div className='login-sing-in-container'>
                 {this.state.emailConfirm === false ?
                     <form className="register-form">
                         <h1>Cadastro</h1>
@@ -64,7 +64,7 @@ export default class Register extends Component {
                     <div className='confirmWindow'>
                         <h1>Confirme o email</h1>
                         <p>Enviamos um email de confirmação de cadastro para <b>{this.state.email}</b>,
-                            para ativar sua conta por favor siga as instruções informadas no email</p>
+                        <br/>para ativar sua conta por favor siga as instruções informadas no email</p>
                         <div>
                             <RoundButton label='Confirmar e-mail'/> {/*função ainda precissa ser implementado*/}
                         </div>

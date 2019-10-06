@@ -13,11 +13,20 @@
 .confirmWindow {
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    flex-flow: column wrap;
+    align-items: center;
+    margin: 0 30px;
     color: var(--main-text-color-dark);
+}
+
+.confirmWindow h1 {
+    margin-bottom: 50px;
 }
 
 .confirmWindow div {
     align-self: center;
     padding-top: 30px;
+    margin-top: 43px;
     width: 255px;
 }
