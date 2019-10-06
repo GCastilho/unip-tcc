@@ -19,6 +19,9 @@ const Cookie = require('../db/models/cookie')
 Router.use(bodyParser.json({ extended: true }))
 
 Router.post('/', function(req, res) {
+	if (!req.body.email || !req.body.password)
+		return res.status(400).send({ error: 'Bad request' })
+
 	Person.findOne({
 		email: req.body.email
 	}).then((person) => {
@@ -63,7 +66,7 @@ Router.post('/', function(req, res) {
 		 * home com o cookie de autenticação
 		 * @todo cookie ter tempo de expiração
 		 */
-		res.cookie('SessionID', cookie.sessionID, { httpOnly:true })
+		res.cookie('sessionID', cookie.sessionID, { httpOnly:true })
 		res.redirect(303, '/')
 	}).catch((err) => {
 		if (err === 'UserNotFound' || err === 'InvalidCredentials') {

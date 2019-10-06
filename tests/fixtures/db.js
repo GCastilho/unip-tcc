@@ -6,18 +6,12 @@ async function cleanDatabase() {
 	await Cookie.deleteMany()
 }
 
-const users = [
-	{
-		email: 'user1@example.com',
-		password: 'userOneP@ss'
-	},
-	{
-		email: 'user2@example.com',
-		password: 'sOmEp@$$'
-	}
-]
+const user = {
+	email: 'user1@example.com',
+	password: 'userOneP@ss'
+}
 
 module.exports = {
 	cleanDatabase,
-	users
+	user
 }
