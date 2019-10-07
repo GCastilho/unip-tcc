@@ -2,8 +2,19 @@ header {
     background-color: black;
     width: 100%;
     position: fixed;
-    z-index: 1000;
+    z-index: 100;
 }
+
+.nav-bar {
+    display: flex;
+    flex-direction: row;
+}
+
+.toggle-button-container {
+    align-self: center;
+    margin: 0 1rem;
+}
+
 .button {
     color: white;
     margin: 0;
@@ -14,10 +25,21 @@ header {
     display: inline-block;
     font-size: 16px;
 }
+
 .button:hover {
     border-bottom-color: white;
     transition: all 0.2s;
 }
-.header-right {
-    float: right;
+
+.separator-button {
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .header-left {display: none}
+    .header-right {display: none}
+}
+
+@media (min-width: 769px) {
+    .toggle-button-container {display: none}
 }
