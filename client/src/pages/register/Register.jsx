@@ -27,7 +27,6 @@ export default class Register extends Component {
 
     handleSubmit = (e) => {
         e.preventDefault();
-
         if (this.state.email.search(
             /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/) === -1) {
             this.setState({errorMsg: 'E-mail inválido'});
