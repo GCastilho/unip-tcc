@@ -1,10 +1,9 @@
 const request = require('supertest')
 const cookieparser = require('cookieparser')
-const { user } = require('../fixtures/db')
 const app = require('../../src/server')
 const Cookie = require('../../src/db/models/cookie')
 
-module.exports = function login_test() {
+module.exports = function login_test(user) {
 	describe('User login (/login)', () => {
 		test('Should fail if sending empty object', async () => {
 			await request(app).post('/login').send({}).expect(400)

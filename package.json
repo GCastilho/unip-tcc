@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "concurrently --kill-others-on-fail \"npm run dev-server\" \"npm run dev-client\"",
-    "test": "env-cmd -f ./cfg/test.env jest --watchAll --runInBand",
+    "test": "env-cmd -f ./cfg/test.env jest --runInBand",
+    "testdaemon": "env-cmd -f ./cfg/test.env jest --watchAll",
     "dev-server": "env-cmd -f ./cfg/dev.env nodemon --inspect src/index.js",
     "dev-client": "cd client && npm start"
   },

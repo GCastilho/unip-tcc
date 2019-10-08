@@ -2,9 +2,8 @@ const request = require('supertest')
 const app = require('../../src/server')
 const Person = require('../../src/db/models/person')
 const currencies = require('../../src/currencyApi/currencies')
-const { user } = require('../fixtures/db')
 
-module.exports = function register_test() {
+module.exports = function register_test(user) {
 	describe('User signUp (/register)', () => {
 		test('Should fail if sending empty object', async () => {
 			await request(app).post('/register').send({}).expect(400)
