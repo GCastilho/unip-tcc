@@ -1,5 +1,11 @@
-.balances-tr{
 
+.balances-tr{
+    background-color: #00000030;
+    color: #808080;
+}
+.balances-tr:hover{
+    background-color: #3a3a3aa0;
+    color: #808080;
 }
 .balances-td{
     

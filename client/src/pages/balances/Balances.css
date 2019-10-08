@@ -1,23 +1,10 @@
-.register-form {
-    max-width: 255px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
+.balances-th{
+    background-color: black;
+    color: #808080;
+}  
+.balances-low{
 
-.register-form h1 {
-    text-align: center;
-    color: whitesmoke;
 }
+.balances-high{
 
-.confirmWindow {
-    display: flex;
-    flex-direction: column;
-    color: white;
-}
-
-.confirmWindow div {
-    align-self: center;
-    padding-top: 30px;
-    width: 255px;
 }

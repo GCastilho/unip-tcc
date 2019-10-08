@@ -132,14 +132,14 @@ export default class Balances extends Component {
             <table id='balancesList'>
                 <tbody>
                     <tr>
-                        <th>Coin</th>
-                        <th>Name</th>
-                        <th>Balance</th>
+                        <th className="balances-th">Coin</th>
+                        <th className="balances-th">Name</th>
+                        <th colSpan='2' className="balances-th">Balance</th>
                     </tr>
                     {this.state.balances.map(bal => (<BalancesTableItem key={bal.name} code={bal.code} name={bal.name} value={bal.value}
                         depositOnClick={() => (this.depositBalance(bal))} withdrawOnClick={() => (this.withdrawBalance(bal))} />))}
                 </tbody>
-            </table>
+            </table >
         )
     }
 
