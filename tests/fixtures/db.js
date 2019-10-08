@@ -1,19 +1,8 @@
 const request = require('supertest')
+const db = require('mongoose')
 const app = require('../../src/server')
 const Person = require('../../src/db/models/person')
 const Cookie = require('../../src/db/models/cookie')
-
-async function cleanDatabase() {
-	await Person.deleteMany()
-	await Cookie.deleteMany()
-}
-
-async function setupUsers() {
-	cleanDatabase()
-	for (let user of users) {
-		await request(app).post('/register').send(user).expect(201)
-	}
-}
 
 const users = [{
 	email: 'user1@example.com',
@@ -32,8 +21,22 @@ const users = [{
 	password: 'userFiveP@ss'
 }]
 
+async function setupUsers() {
+	for (let user of users) {
+		await request(app).post('/register').send(user).expect(201)
+	}
+}
+
+beforeAll(async () => {
+	await Person.deleteMany()
+	await Cookie.deleteMany()
+})
+
+afterAll(async () => {
+	await db.disconnect()
+})
+
 module.exports = {
-	cleanDatabase,
 	users,
 	setupUsers
 }
