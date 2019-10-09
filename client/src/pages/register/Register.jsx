@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React from 'react';
 import axios from 'axios';
 
 import './Register.css';
@@ -6,7 +6,7 @@ import InputField from "../../components/InputField/InputField";
 import RoundButton from "../../components/RoundButton/RoundButton";
 import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
 
-export default class Register extends Component {
+export default class Register extends React.Component {
     constructor(props) {
         super(props);
         this.state = {

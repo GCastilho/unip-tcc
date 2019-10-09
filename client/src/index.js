@@ -1,6 +1,17 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import {BrowserRouter} from 'react-router-dom';
 
-import App from "./App";
+import './index.css';
 
-ReactDOM.render(<App/> , document.getElementById('root'));
+import Header from './components/Header/Header';
+import Routes from './routes';
+
+ReactDOM.render(
+    <BrowserRouter>
+        <Header/>
+        <div className='home-container'>
+            <Routes/>
+        </div>
+    </BrowserRouter>
+    , document.getElementById('root'));
