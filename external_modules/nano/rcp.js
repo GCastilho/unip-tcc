@@ -47,16 +47,6 @@ nanoToRaw= {
   "amount": "9999999999999"
 }
 
-
-
-/*client.call(walletInfo
-,
-  function (err, res) {
-    // Did it all work ?
-    if (err) { console.log(err); }
-    else { console.log(res); }
-  }
-);*/
 module.exports = {
 /*function sendNano(sender,receiver,ammmount){
   client.call({
@@ -73,11 +63,7 @@ module.exports = {
     )
 },*/
 createAccount : function(request,response){
-  client.call(
-    createAccount= {
-      "action": "account_create",
-      "wallet":"F80357B81E856EF1BA68EE35974BAFEFDACEFB3DA4B5A06F904DE211C916D85E"
-    },function (err, res) {
+  client.call(createAccount,function (err, res) {
     // Did it all work ?
     if (err) { 
       response = "error"
@@ -87,5 +73,3 @@ createAccount : function(request,response){
     }
   })
 }}
-
-//docker run --restart=unless-stopped -d -p 54000:54000/udp -p 54000:54000 -p [::1]:55000:55000 -v C:\Users\Gabriel\Desktop\teste\beta2:/root --name nanoBetaV2011 nanocurrency/nano-beta:V20.0DB11
