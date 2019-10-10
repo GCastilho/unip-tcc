@@ -1,36 +1,38 @@
-const bodyParser = require("body-parser")
-const nanoRcp = require("./rcp")
 const axios = require("axios")
-const express = require("express")
-const app = express()
-const db = require("./db_handler")
+const Account = require('./db/models/account')
+const server = require('./server')
+const main_server_ip = process.env.MAIN_SERVER_IP || 'localhost:8085'
+
+/** Conecta ao mongodb */
+const db = require("./db/mongoose")
+
+/** Inicia o NANO Web Socket */
 require("./nanoWebSocket")
 
-//deleta a collection do mongo db que armazena as contas
-db.accountModel.collection.drop(function(err, result){
-//falta um handle em caso de erro, mas acredito que nesse ponto so da erro se: ou a conexao com o banco de dados nao estiver estabelecida
-//ou se ja nao existir uma collection de account
+db.connection.on('connected', async () => {
+	/** Limpa a collection accounts */
+	await Account.deleteMany()
+
+	/** Solicita ao servidor principal a lista do contas NANO dos usuarios */
+	axios.get(`http://${main_server_ip}/account_list/nano`, {
+		responseType: 'stream'
+	}).then(({ data }) => {
+		data.on('data', (chunk) => {
+			/** Cada chunk é uma NANO account */
+			new Account ({ account: chunk.toString() }).save()
+		})
+
+		data.on('end', (chunk) => {
+			console.log('All NANO accounts imported successfuly!')
+			server.listen()
+		})
+	}).catch(err => {
+		console.error(err)
+		exit()
+	})
 })
 
-//solicita o servidor principal pela lista do contas NANO dos usuarios
-axios.get('http://localhost:8085/account_list/nano', {
-	responseType: 'stream'
-}).then(({ data }) => {
-	data.on('data', (chunk) => {
-		//cada conta(que esta contida dentro de uma chunk) é imediatamente apos recebida, armazenada na collection do mongoDB
-		new db.accountModel({ account: chunk.toString()}).save()
-	})
-	data.on('end', (chunk) => {
-		console.log('ACABOU!!!!')
-	})
-}).catch((err) => {
-	console.log(err)
-})
-
-const server = app.listen(50000, function () {   
-   console.log("NANO api server listening at http://"+server.address().address+":"+server.address().port+"")
-})
-//um get que solicita uma conta nova para o rcp da nano numa carteira local padrao
-app.get('/newAccount', function (req, res) {
-    nanoRcp.createAccount(req, res)
-})
+function exit() {
+	db.connection.close()
+	process.exit(1)
+}
