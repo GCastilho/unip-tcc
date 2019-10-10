@@ -9,14 +9,15 @@ const db = require("./db/mongoose")
 /** Inicia o NANO Web Socket */
 require("./nanoWebSocket")
 
-db.connection.on('connected', async () => {
+/** Setup database */
+db.connection.on('connected', () => {
 	/** Limpa a collection accounts */
-	await Account.deleteMany()
-
-	/** Solicita ao servidor principal a lista do contas NANO dos usuarios */
-	axios.get(`http://${main_server_ip}/account_list/nano`, {
-		responseType: 'stream'
-	}).then(({ data }) => {
+	Account.deleteMany().then(() =>
+		/** Solicita ao servidor principal a lista de contas NANO dos usuarios */
+		axios.get(`http://${main_server_ip}/account_list/nano`, {
+			responseType: 'stream'
+		})
+	).then(({ data }) => {
 		data.on('data', (chunk) => {
 			/** Cada chunk é uma NANO account */
 			new Account ({ account: chunk.toString() }).save()
@@ -28,11 +29,7 @@ db.connection.on('connected', async () => {
 		})
 	}).catch(err => {
 		console.error(err)
-		exit()
+		db.connection.close()
+		process.exit(1)
 	})
 })
-
-function exit() {
-	db.connection.close()
-	process.exit(1)
-}
