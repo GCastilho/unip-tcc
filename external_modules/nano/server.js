@@ -4,7 +4,9 @@ const nanoRcp = require("./rcp")
 
 //um get que solicita uma conta nova para o rcp da nano numa carteira local padrao
 app.get('/createAccount', function (req, res) {
-	nanoRcp.createAccount(req, res)
+	nanoRcp.createAccount().then((account) =>{
+		res.send(account)
+	})
 })
 
 function listen() {
