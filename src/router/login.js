@@ -1,5 +1,5 @@
 /*
- * dashboard/login/index.js
+ * src/router/login.js
  * 
  * Handler da página de autenticação de usuários
  */
@@ -9,8 +9,8 @@ const bodyParser = require('body-parser')
 const sha512 = require('js-sha512')
 const randomstring = require("randomstring")
 
-const Person = require('./db/models/person')
-const Cookie = require('./db/models/cookie')
+const Person = require('../db/models/person')
+const Cookie = require('../db/models/cookie')
 
 /**
  * @description Ativa o middleware para dar parse no body enviado pelo form
@@ -19,6 +19,9 @@ const Cookie = require('./db/models/cookie')
 Router.use(bodyParser.json({ extended: true }))
 
 Router.post('/', function(req, res) {
+	if (!req.body.email || !req.body.password)
+		return res.status(400).send({ error: 'Bad request' })
+
 	Person.findOne({
 		email: req.body.email
 	}).then((person) => {
@@ -63,7 +66,7 @@ Router.post('/', function(req, res) {
 		 * home com o cookie de autenticação
 		 * @todo cookie ter tempo de expiração
 		 */
-		res.cookie('SessionID', cookie.sessionID, { httpOnly:true })
+		res.cookie('sessionID', cookie.sessionID, { httpOnly:true })
 		res.redirect(303, '/')
 	}).catch((err) => {
 		if (err === 'UserNotFound' || err === 'InvalidCredentials') {
@@ -75,7 +78,7 @@ Router.post('/', function(req, res) {
 			 * @todo Redirecionar o usuário para uma página com
 			 * a mensagem de erro
 			 */
-			res.status(401).send({error: 'Not authorized'})
+			res.status(401).send({ error: 'Not authorized' })
 		} else {
 			/**
 			 * @description Esse else pode ser chamado em situações onde não foi
@@ -83,7 +86,7 @@ Router.post('/', function(req, res) {
 			 * 
 			 * @todo Fazer um error handling melhor
 			 */
-			res.status(500).send({error: 'Internal server error'})
+			res.status(500).send({ error: 'Internal server error' })
 		}
 	})
 })

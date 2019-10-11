@@ -1,5 +1,5 @@
 /**
- * src/register.js
+ * src/router/register.js
  * 
  * Handler da página de cadastro de usuários
  */
@@ -8,7 +8,8 @@ const Router = require('express').Router()
 const sha512 = require('js-sha512')
 const bodyParser = require('body-parser')
 const randomstring = require('randomstring')
-const Person = require('./db/models/person')
+
+const Person = require('../db/models/person')
 
 /**
  * @description Ativa o middleware de parse no body enviado pelo form
@@ -19,21 +20,14 @@ Router.use(bodyParser.json({ extended: true }))
 Router.post('/', function(req, res) {
 	const email = req.body.email
 	const password = req.body.password
+	if (!email || !password)
+		return res.status(400).send({ error: 'Bad request' })
 
 	const salt = randomstring.generate({ length: 32 })
-	let password_hash
-	try {
-		/**
-		 * @description Uma entrada malformada (como password ser null)
-		 * irá causar erro na hora de fazer o hash
-		 */
-		password_hash = sha512.create()
-			.update(salt)
-			.update(password)
-			.hex()
-	} catch(err) {
-		return res.status(400).send({error: 'bad request'})
-	}
+	const password_hash = sha512.create()
+		.update(salt)
+		.update(password)
+		.hex()
 
 	new Person({
 		email,
@@ -53,10 +47,12 @@ Router.post('/', function(req, res) {
 	 * logo após o cadastro
 	 */
 	.then(person => {
-		res.send(person)
+		res.status(201).send(person)
 	}).catch(err => {
-		console.log(err)
-		res.send(err)
+		if (err.code === 11000)
+			res.status(409).send()
+		else
+			res.status(500).send(err)
 	})
 })
 

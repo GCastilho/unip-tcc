@@ -33,15 +33,13 @@ export default class Register extends React.Component {
         } else {
             axios.post('/register', {email: this.state.email, password: this.state.password})
             .then(res => {
-                console.log(res);
-                if (res.data.code === 11000) {
+                this.setState({email: res.data.email, emailConfirm: true, errorMsg: ''});
+            }).catch(err => {
+                if (err.response.status === 409) {
                     this.setState({errorMsg: 'Já existe um usuário cadastrado com o e-mail informado'});
                 } else {
-                    this.setState({email: res.data.email, emailConfirm: true, errorMsg: ''})
+                    this.setState({errorMsg: err.response.statusText});
                 }
-            }).catch(error => {
-                console.log(error);
-                this.setState({errorMsg: 'Não foi possivel fazer o cadastro no momento'})
             })
         }
     };
