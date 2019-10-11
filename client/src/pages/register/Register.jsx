@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React from 'react';
 import axios from 'axios';
 
 import './Register.css';
@@ -6,7 +6,7 @@ import InputField from "../../components/InputField/InputField";
 import RoundButton from "../../components/RoundButton/RoundButton";
 import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
 
-export default class Register extends Component {
+export default class Register extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -27,7 +27,6 @@ export default class Register extends Component {
 
     handleSubmit = (e) => {
         e.preventDefault();
-
         if (this.state.email.search(
             /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/) === -1) {
             this.setState({errorMsg: 'E-mail inválido'});
