@@ -4,5 +4,5 @@
 
 module.exports = {
 	currency: 'nano',
-	port: 1234,
+	port: 8090,
 }

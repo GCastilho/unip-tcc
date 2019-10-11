@@ -5,7 +5,7 @@ const ReconnectingWebSocket = require('reconnecting-websocket')
  * Create a reconnecting WebSocket. In this example, we wait a maximum of
  * 2 seconds before retrying
  */
-const ws = new ReconnectingWebSocket(('ws://[::1]:57000'), [], {
+const ws = new ReconnectingWebSocket('ws://[::1]:57000', [], {
 	WebSocket: WS,
 	connectionTimeout: 10000,
 	maxRetries: 100000,

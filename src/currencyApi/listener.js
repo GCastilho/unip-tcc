@@ -20,6 +20,10 @@ module.exports = function listenerModule(api) {
 			return res.status(400).send({
 				error: `'${command}' is not a valid command for the currency '${currency}'`
 			})
+		if (command.startsWith('_'))
+			return res.status(401).send({
+				error: `Command ${command} cannot be acessed from here`
+			})
 		const response = api.currencies[currency][command](req, res)
 		if (response) res.send(response)
 	})

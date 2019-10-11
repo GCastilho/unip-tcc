@@ -10,20 +10,23 @@ const options = {
 }
 const client = new rpc.Client(options)
 
-createAccount = {
+const account_create = {
 	"action": "account_create",
 	"wallet":"F80357B81E856EF1BA68EE35974BAFEFDACEFB3DA4B5A06F904DE211C916D85E"
 }
 
-module.exports ={
-	createAccount : function(){ 
-		return new Promise(function(resolve, reject) {
-		client.call(createAccount,function (err, res) {
-			if(err) {
-				reject(err)
-			} else{
+function createAccount() {
+	return new Promise(function(resolve, reject) {
+		client.call(account_create,function (err, res) {
+			if (!err && !res.error) {
 				resolve(res.account)
+			} else {
+				reject(err)
 			}
-		})
-	})}
+		}
+	)})
+}
+
+module.exports = {
+	createAccount
 }

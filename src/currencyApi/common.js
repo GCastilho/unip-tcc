@@ -4,6 +4,7 @@
  * Módulo com as funções comuns para todas as cryptocurrencies
  */
 
+const axios = require('axios')
 const Person = require('../db/models/person')
 
 module.exports = {
@@ -18,6 +19,14 @@ module.exports = {
 		})
 		.on('end', () => {
 			res.end()
+		})
+	},
+	create_account: function create_account(req, res) {
+		axios.get(`http://192.168.0.101:${this.port}/new_account`)
+		.then(({ data }) => {
+			res.send(data)
+		}).catch(err => {
+			res.status(500).send(err)
 		})
 	}
 }
