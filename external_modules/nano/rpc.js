@@ -12,7 +12,7 @@ const client = new rpc.Client(options)
 
 const account_create = {
 	"action": "account_create",
-	"wallet":"F80357B81E856EF1BA68EE35974BAFEFDACEFB3DA4B5A06F904DE211C916D85E"
+	"wallet":"CA765148AB7D6200DA9F51C4AA5B33BA8CC0C2749F6097A641EBD9B78456417A"
 }
 
 function createAccount() {

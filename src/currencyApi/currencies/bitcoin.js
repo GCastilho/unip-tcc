@@ -3,6 +3,6 @@
  */
 
 module.exports = {
-	currency: 'bitcoin',
+	name: 'bitcoin',
 	port: 1235,
 }

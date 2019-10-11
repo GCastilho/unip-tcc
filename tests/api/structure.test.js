@@ -17,7 +17,7 @@ describe('Currency API', () => {
 					 * Compara se a propriedade 'currency' da currency tem o mesmo
 					 * nome do módulo da currency
 					 */
-					expect(currency).toBe(currencies[currency].currency)
+					expect(currency).toBe(currencies[currency].name)
 	
 					expect(currencyApi.currencies[currency].port)
 						.toEqual(expect.any(Number))

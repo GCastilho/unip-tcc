@@ -13,7 +13,7 @@ module.exports = {
 		.lean()
 		.cursor()
 		.on('data', ({currencies}) => {
-			currencies[this.currency].forEach(account => {
+			currencies[this.name].forEach(account => {
 				res.write(`${account}\n`)
 			})
 		})
