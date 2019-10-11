@@ -1,13 +1,14 @@
 const mongoose = require('mongoose')
 
 /**
- * @description Conecta ao database 'exchange' do mongodb no localhost
+ * Conecta ao database usando as variáveis de ambiente informadas
  */
-mongoose.connect('mongodb://127.0.0.1:27017/exchange', {
-	user: 'exchange_server',
-	pass: 'uLCwAJH49ZRzCNW3',
+mongoose.connect(process.env.MONGODB_URL, {
+	user: process.env.MONGODB_USER,
+	pass: process.env.MONGODB_PASS,
 	useNewUrlParser: true,
-	useCreateIndex: true
+	useCreateIndex: true,
+	useUnifiedTopology: true
 })
 const db = mongoose.connection
 
@@ -17,7 +18,7 @@ db.on('error', (err) => {
 })
 
 /**
- * @description ao exportar o mongoose, mantém-se as configurações
+ * Ao exportar o mongoose, mantém-se as configurações
  * todas nesse arquivo e o acesso aos métodos do mongoose
  */
 module.exports = mongoose

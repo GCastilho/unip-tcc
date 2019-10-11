@@ -4,7 +4,7 @@
  * Módulo com as funções comuns para todas as cryptocurrencies
  */
 
-const Person = require('../../db/models/person')
+const Person = require('../db/models/person')
 
 module.exports = {
 	account_list: function get_account_list(req, res) {
