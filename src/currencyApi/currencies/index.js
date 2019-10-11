@@ -11,9 +11,12 @@ const normalizedPath = require("path").join(__dirname)
 const currencies = {}
 
 require('fs').readdirSync(normalizedPath)
-.forEach(filename =>
-	filename !== 'index.js' &&
-	(currencies[filename.replace('.js', '')] = require(`./${filename}`))
-)
+.forEach(filename => {
+	if (filename !== 'index.js') {
+		const currency_name = filename.replace('.js', '')
+		currencies[currency_name] = require(`./${filename}`)
+		currencies[currency_name].name = filename.replace('.js', '')
+	}
+})
 
 module.exports = currencies

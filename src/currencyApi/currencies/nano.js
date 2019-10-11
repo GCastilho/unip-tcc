@@ -3,6 +3,5 @@
  */
 
 module.exports = {
-	name: 'nano',
 	port: 8090,
 }
