@@ -10,20 +10,22 @@ const common = require('./common')
 class CurrencyApi {
 	constructor() {
 		/**
-		 * @description Faz com que os módulos de cryptocurrencies sejam
-		 * acessíveis pela API
+		 * Faz com que os módulos de cryptocurrencies sejam acessíveis pela
+		 * API. A operação usa o spread para evitar que modificações em
+		 * this.currencies afetem o módulo currencies, pois isso afetaria o
+		 * cache do require, ou seja, mudaria o módulo globalmente
 		 */
-		this.currencies = currencies
+		this.currencies = {...{}, ...currencies}
 		/**
-		 * @description Insere propriedades/funções da common no módulo
+		 * Insere propriedades/funções da common no módulo
 		 * 'this.currencies[currency]' sem sobrescrever propriedades que tenham
 		 * o mesmo nome em um módulo individual. Ou seja, se uma função existir
 		 * na common e no módulo de uma currency, a que irá prevalecer será
 		 * o do módulo da currency
 		 */
-		Object.keys(this.currencies).forEach(currency => {
-			this.currencies[currency] = {...common, ...this.currencies[currency]}
-		})
+		for (let currency in currencies) {
+			this.currencies[currency] = {...common, ...currencies[currency]}
+		}
 	}
 }
 

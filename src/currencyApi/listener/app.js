@@ -13,10 +13,12 @@ app.use(bodyParser.json({ extended: true }))
 
 module.exports = function listener_app(api) {
 	app.get('/:command/:currency', function listener_get(req, res) {
-		const {command, currency} = req.params
+		const { command, currency } = req.params
 		if (!api[currency])
-			return res.status(400).send({ error: `The currency '${currency}' does not exist` })
-		if (!api[currency][command])
+			return res.status(400).send({
+				error: `The currency '${currency}' does not exist`
+			})
+		if (typeof api[currency][command] != 'function')
 			return res.status(400).send({
 				error: `'${command}' is not a valid command for the currency '${currency}'`
 			})

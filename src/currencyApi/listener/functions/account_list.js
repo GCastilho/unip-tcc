@@ -11,7 +11,7 @@ module.exports = function get_account_list(req, res) {
 	Person.find()
 	.lean()
 	.cursor()
-	.on('data', ({currencies}) => {
+	.on('data', ({ currencies }) => {
 		currencies[this.name].forEach(account => {
 			res.write(`${account}\n`)
 		})
