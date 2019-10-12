@@ -7,12 +7,12 @@
 const axios = require('axios')
 
 module.exports = {
-	create_account: function create_account(req, res) {
-		axios.get(`http://${this.ip}:${this.port}/new_account`)
+	create_account: function create_account() {
+		return axios.get(`http://${this.ip}:${this.port}/new_account`)
 		.then(({ data }) => {
-			res.send(data)
+			return data
 		}).catch(err => {
-			res.status(500).send({ error: 'Internal server error' })
+			throw new Error(`Fail do to retrieve ${this.name} account`)
 		})
 	}
 }

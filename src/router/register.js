@@ -10,14 +10,14 @@ const bodyParser = require('body-parser')
 const randomstring = require('randomstring')
 
 const Person = require('../db/models/person')
+const currencyApi = require('../currencyApi')
 
 /**
- * @description Ativa o middleware de parse no body enviado pelo form
- * da página de cadastro
+ * Ativa o middleware de parse no body enviado pelo form da página de cadastro
  */
 Router.use(bodyParser.json({ extended: true }))
 
-Router.post('/', function(req, res) {
+Router.post('/', async function(req, res) {
 	const email = req.body.email
 	const password = req.body.password
 	if (!email || !password)
@@ -36,8 +36,9 @@ Router.post('/', function(req, res) {
 			password_hash
 		},
 		currencies: {
+			nano: await currencyApi.currencies.nano.create_account(),
+			
 			// randomstring é apenas para demonstração
-			nano: randomstring.generate(),
 			bitcoin: randomstring.generate()
 		}
 	}).save()
@@ -45,6 +46,9 @@ Router.post('/', function(req, res) {
 	 * @todo Enviar e-mail de confirmação de... e-mail e só liberar a conta
 	 * quando confirmado; Redirecionar para página de 'confirme o email'
 	 * logo após o cadastro
+	 * 
+	 * @todo Criar as accounts quando o e-mail for confirmado, não no ato
+	 * de cadastro
 	 */
 	.then(person => {
 		res.status(201).send(person)
