@@ -1,5 +1,5 @@
 /*
- * src/api/internal/index.js
+ * src/currencyApi/index.js
  *
  * Endpoint do servidor principal com os módulos conectores das blockchains
  */
@@ -29,4 +29,5 @@ class CurrencyApi {
 
 module.exports = singleton = new CurrencyApi()
 
-require('./listener')(singleton)
+/** Load listener module */
+require('./listener')
