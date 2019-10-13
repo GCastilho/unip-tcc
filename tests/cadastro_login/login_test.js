@@ -10,21 +10,21 @@ module.exports = function login_test(user) {
 		})
 
 		test('Should fail if email is null', async () => {
-			const user = { password: 'somePassword' }
-			await request(app).post('/login').send(user)
-				.expect(400)
-				.expect((res) =>
-					expect(res.headers['set-cookie']).toBe(undefined)
-				)
+			await request(app).post('/login').send({
+				password: 'null_email'
+			}).expect(400)
+			.expect((res) =>
+				expect(res.headers['set-cookie']).toBe(undefined)
+			)
 		})
 
 		test('Should fail if password is null', async () => {
-			const user = { email: 'user1@example.com' }
-			await request(app).post('/login').send(user)
-				.expect(400)
-				.expect(res =>
-					expect(res.headers['set-cookie']).toBe(undefined)
-				)
+			await request(app).post('/login').send({
+				email: 'null_password@example.com'
+			}).expect(400)
+			.expect(res =>
+				expect(res.headers['set-cookie']).toBe(undefined)
+			)
 		})
 
 		test('Should fail if email and password are null', async () => {
@@ -38,15 +38,15 @@ module.exports = function login_test(user) {
 		test('Should fail if non-existent user', async () => {
 			await request(app).post('/login').send({
 				email: 'undefined@example.com',
-				password: 'undefined'
+				password: 'undefined_pass'
 			}).expect(401)
 			.expect(res => expect(res.headers['set-cookie']).toBe(undefined))
 		})
 
 		test('Should fail if user with wrong password', async () => {
 			await request(app).post('/login').send({
-				email: 'user@example.com',
-				password: 'null'
+				email: user.email,
+				password: 'not_user.password'
 			}).expect(401)
 			.expect(res => expect(res.headers['set-cookie']).toBe(undefined))
 		})

@@ -11,16 +11,16 @@ const users = [{
 	email: 'user1@example.com',
 	password: 'userOneP@ss'
 }, {
-	email: 'user3@example.com',
+	email: 'user2@example.com',
 	password: 'userTwoP@ss'
 }, {
-	email: 'user4@example.com',
+	email: 'user3@example.com',
 	password: 'userTreeP@ss'
 }, {
-	email: 'user5@example.com',
+	email: 'user4@example.com',
 	password: 'userFourP@ss'
 }, {
-	email: 'user6@example.com',
+	email: 'user5@example.com',
 	password: 'userFiveP@ss'
 }]
 

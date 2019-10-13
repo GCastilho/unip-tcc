@@ -3,7 +3,7 @@ const registerTest = require('./register_test')
 const loginTest = require('./login_test')
 
 const user = {
-	email: 'user@example.com',
+	email: 'cadastro_login@example.com',
 	password: 'userP@ss'
 }
 

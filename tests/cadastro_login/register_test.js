@@ -9,20 +9,22 @@ module.exports = function register_test(user) {
 			await request(app).post('/register').send({}).expect(400)
 		})
 
+		/** Esse teste pode, teoricamente, falhar por race condition */
 		test('Should fail if email is null', async () => {
-			const user = { password: 'somePassword' }
 			const usersBefore = await Person.estimatedDocumentCount()
-			await request(app).post('/register').send(user).expect(400)
+			await request(app).post('/register').send({
+				password: 'null_email'
+			}).expect(400)
 			const usersAfter = await Person.estimatedDocumentCount()
 			expect(usersBefore).toEqual(usersAfter)
 		})
 
 		test('Should fail if password is null', async () => {
-			const user = { email: 'user3@example.com' }
-			await request(app).post('/register').send(user).expect(400)
+			const _user = { email: 'user_null_pass@example.com' }
+			await request(app).post('/register').send(_user).expect(400)
 
 			// Assert user was NOT created
-			expect(await Person.findOne({email: user.email})).toBeNull()
+			expect(await Person.findOne({email: _user.email})).toBeNull()
 		})
 
 		test('Should fail if email and password are null', async () => {
@@ -52,7 +54,7 @@ module.exports = function register_test(user) {
 			expect(await Person.find({email: user.email})).toHaveLength(1)
 		})
 
-		describe('Should have at least ONE account of each currency', () => {
+		describe('The user should have at least ONE account of each currency', () => {
 			for(let currency in currencies) {
 				test(currency, async () => {
 					const person = await Person.findOne({email: user.email})

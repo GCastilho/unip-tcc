@@ -28,8 +28,10 @@ describe('Currency API', () => {
 					expect(currencyApi.currencies[currency].ip)
 						.toMatch(/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/)
 
-					expect(currencyApi.currencies[currency].port)
-						.toEqual(expect.any(Number))
+					const port = currencyApi.currencies[currency].port
+					expect(port).toEqual(expect.any(Number))
+					expect(port).toBeGreaterThan(1000)
+					expect(port).toBeLessThanOrEqual(65535)
 				})
 			}
 		})
