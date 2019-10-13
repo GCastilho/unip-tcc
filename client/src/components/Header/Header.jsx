@@ -1,5 +1,6 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
+import {useCookies} from 'react-cookie';
 
 import './Header.css';
 
@@ -7,12 +8,19 @@ import DrawerToggleButton from "../SideDrawer/DrawerToggleButton";
 import SideDrawer from "../SideDrawer/SideDrawer";
 import Backdrop from "../Backdrop/Backdrop";
 
-export default props => {
+export default () => {
 
     const [sideDrawerOpen, setSideDrawerOpen] = React.useState(false);
+    const [cookies,,removeCookie] = useCookies(['sessionID']);
+    const [userState, setUserState] = React.useState(cookies.sessionID);
 
     const drawerToggleHandle = () => {
         setSideDrawerOpen(!sideDrawerOpen);
+    };
+
+    const logOutHandle = () => {
+        removeCookie('sessionID');
+        setUserState(null);
     };
 
     return (
@@ -27,8 +35,13 @@ export default props => {
                 </div>
                 <div className='separator-button'/>
                 <div className="header-right">
-                    <Link to="/login" className="button">Login</Link>
-                    <Link to="/register" className="button">Cadastro</Link>
+                    {!userState ?
+                        <>
+                            <Link to="/login" className="button">Login</Link>
+                            < Link to = "/register" className="button">Cadastro</Link>
+                        </> :
+                        <button className="button" onClick={logOutHandle}>Log out</button>
+                    }
                 </div>
             </nav>
             <SideDrawer show={sideDrawerOpen}/>
