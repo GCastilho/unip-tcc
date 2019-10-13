@@ -4,6 +4,9 @@ const app = require('../../src/server')
 const Person = require('../../src/db/models/person')
 const Cookie = require('../../src/db/models/cookie')
 
+/** Carrega o mock da currencyApi */
+require('../__mocks__/currencyApi')
+
 const users = [{
 	email: 'user1@example.com',
 	password: 'userOneP@ss'
