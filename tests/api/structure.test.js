@@ -10,17 +10,28 @@ describe('Currency API', () => {
 	})
 
 	describe('Individual currencies', () => {
-		describe('Should have a correct name and a port property', () => {
+		describe('Should have a correct name property', () => {
 			for (let currency in currencyApi.currencies) {
 				test(`${currency}`, () => {
 					/**
-					 * Compara se a propriedade 'currency' da currency tem o mesmo
+					 * Compara se a propriedade 'name' da currency tem o mesmo
 					 * nome do módulo da currency
 					 */
-					expect(currency).toBe(currencies[currency].currency)
-	
-					expect(currencyApi.currencies[currency].port)
-						.toEqual(expect.any(Number))
+					expect(currency).toBe(currencies[currency].name)
+				})
+			}
+		})
+
+		describe('Should have a valid IP and PORT property', () => {
+			for (let currency in currencyApi.currencies) {
+				test(`${currency}`, () => {
+					expect(currencyApi.currencies[currency].ip)
+						.toMatch(/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/)
+
+					const port = currencyApi.currencies[currency].port
+					expect(port).toEqual(expect.any(Number))
+					expect(port).toBeGreaterThan(1000)
+					expect(port).toBeLessThanOrEqual(65535)
 				})
 			}
 		})

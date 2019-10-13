@@ -1,7 +1,7 @@
 const request = require('supertest')
 const currencyApi = require('../../../src/currencyApi')
 const Person = require('../../../src/db/models/person')
-const app = require('../../../src/currencyApi/listener')(currencyApi)
+const app = require('../../../src/currencyApi/listener')
 const { setupUsers } = require('../../fixtures/db')
 
 beforeAll(setupUsers)

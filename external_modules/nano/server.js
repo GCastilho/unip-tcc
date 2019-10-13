@@ -1,11 +1,14 @@
-const port = process.env.PORT || 50000
+const port = process.env.PORT || 8090
 const app = require("express")()
-const nanoRcp = require("./rcp")
+const nanoRcp = require("./rpc")
 
 //um get que solicita uma conta nova para o rcp da nano numa carteira local padrao
-app.get('/createAccount', function (req, res) {
-	nanoRcp.createAccount().then((account) =>{
+app.get('/new_account', function (req, res) {
+	nanoRcp.createAccount()
+	.then(account =>{
 		res.send(account)
+	}).catch(err => {
+		res.status(500).send(err)
 	})
 })
 

@@ -4,20 +4,15 @@
  * Módulo com as funções comuns para todas as cryptocurrencies
  */
 
-const Person = require('../db/models/person')
+const axios = require('axios')
 
 module.exports = {
-	account_list: function get_account_list(req, res) {
-		Person.find({})
-		.lean()
-		.cursor()
-		.on('data', ({currencies}) => {
-			currencies[this.currency].forEach(account => {
-				res.write(`${account}\n`)
-			})
-		})
-		.on('end', () => {
-			res.end()
+	create_account: function create_account() {
+		return axios.get(`http://${this.ip}:${this.port}/new_account`)
+		.then(({ data }) => {
+			return data
+		}).catch(err => {
+			throw new Error(`Fail do to retrieve ${this.name} account`)
 		})
 	}
 }
