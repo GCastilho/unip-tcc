@@ -66,7 +66,7 @@ Router.post('/', function(req, res) {
 		 * home com o cookie de autenticação
 		 * @todo cookie ter tempo de expiração
 		 */
-		res.cookie('sessionID', cookie.sessionID, { httpOnly:false })
+		res.cookie('sessionID', cookie.sessionID)
 		res.redirect(303, '/')
 	}).catch((err) => {
 		if (err === 'UserNotFound' || err === 'InvalidCredentials') {

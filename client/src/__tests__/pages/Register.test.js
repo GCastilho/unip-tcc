@@ -1,3 +1,7 @@
+/*
+ * client/src/__tests__/pages/Register.test.js
+ */
+
 import React from 'react';
 import { shallow, mount } from 'enzyme';
 

@@ -1,5 +1,9 @@
+/*
+ * client/src/__tests__/pages/Login.test.js
+ */
+
 import React from 'react';
-import {mount, shallow} from 'enzyme';
+import { mount, shallow } from 'enzyme';
 
 import Login from '../../pages/login/Login';
 import InputField from '../../components/InputField/InputField';

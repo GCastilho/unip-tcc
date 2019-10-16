@@ -1,5 +1,9 @@
+/*
+ * client/src/__tests__/pages/NotFound.test.js
+ */
+
 import React from 'react';
-import {mount} from 'enzyme';
+import { mount } from 'enzyme';
 
 import NotFound from '../../pages/notFound/NotFound';
 

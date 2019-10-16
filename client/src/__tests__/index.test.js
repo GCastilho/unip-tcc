@@ -1,5 +1,9 @@
+/*
+ * client/src/__tests__/index.test.js
+ */
+
 import React from 'react';
-import {BrowserRouter} from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import { mount } from 'enzyme';
 
 import Header from '../components/Header/Header';
