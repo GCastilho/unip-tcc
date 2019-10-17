@@ -12,13 +12,21 @@ import DrawerToggleButton from "../SideDrawer/DrawerToggleButton";
 import SideDrawer from "../SideDrawer/SideDrawer";
 import Backdrop from "../Backdrop/Backdrop";
 
-export default () => {
+export default (props) => {
 
     //Variaveis de estado usando React hooks, mesmo efeito que a variavel this.state
     const [sideDrawerOpen, setSideDrawerOpen] = React.useState(false);
     const [cookies,,removeCookie] = useCookies(['sessionID']);
-    const [userState, setUserState] = React.useState(cookies.sessionID !== undefined);
+    const [userLogin, setUserLogin] = React.useState(cookies.sessionID !== undefined);
     const [redirect, setRedirect] = React.useState(false);
+
+    //A função useEffect é chamada toda vez que um estado é atualizado
+    React.useEffect(() => {
+        //Atualiza o estado do login sempre que o cookie for atualizado
+        if(props.haveCookie) {
+            setUserLogin(true)
+        }
+    },[props.haveCookie]);
 
     //função para abrir o menu lateral 'usado somente no modo mobile'
     const drawerToggleHandle = () => {
@@ -29,7 +37,10 @@ export default () => {
     const logOutHandle = () => {
         removeCookie('sessionID');
         setRedirect(true);
-        setUserState(null);
+        /* Muda o estado da classe pai para false
+        * para evitar a criação de um loop de erros no useEffect*/
+        props.checkCookie(false);
+        setUserLogin(false);
     };
 
     //Faz o redirect ao apertar o botão logout
@@ -62,7 +73,7 @@ export default () => {
                 <div className='separator-button'/>
                 <div className="header-right">
                     {/* Faz o check se há ou não um cookie, se tiver um cookie ele mostrara o botão de logout*/}
-                    {userState ?
+                    {userLogin ?
                         <button className="button" onClick={logOutHandle}>Log out</button>
                         :
                         <>
