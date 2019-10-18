@@ -35,13 +35,16 @@ Router.post('/', async function(req, res) {
 			salt,
 			password_hash
 		},
-		currencies: {
-			nano: await currencyApi.currencies.nano.create_account(),
+		// currencies: {
+		// 	nano: await currencyApi.currencies.nano.create_account(),
 			
-			// randomstring é apenas para demonstração
-			bitcoin: randomstring.generate()
-		}
+		// 	// randomstring é apenas para demonstração
+		// 	bitcoin: randomstring.generate()
+		// }
 	}).save()
+	.then(person => {
+		currencyApi.create_accounts(person._id)
+	})
 	/**
 	 * @todo Enviar e-mail de confirmação de... e-mail e só liberar a conta
 	 * quando confirmado; Redirecionar para página de 'confirme o email'
@@ -50,8 +53,8 @@ Router.post('/', async function(req, res) {
 	 * @todo Criar as accounts quando o e-mail for confirmado, não no ato
 	 * de cadastro
 	 */
-	.then(person => {
-		res.status(201).send(person)
+	.then(() => {
+		res.status(201).send()
 	}).catch(err => {
 		if (err.code === 11000)
 			res.status(409).send()

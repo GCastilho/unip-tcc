@@ -12,9 +12,11 @@ module.exports = function get_account_list(req, res) {
 	.lean()
 	.cursor()
 	.on('data', ({ currencies }) => {
-		currencies[this.name].forEach(account => {
-			res.write(`${account}\n`)
-		})
+		if (currencies) {
+			currencies[this.name].forEach(account => {
+				res.write(`${account}\n`)
+			})
+		}
 	})
 	.on('end', () => {
 		res.end()

@@ -34,7 +34,8 @@ ws.onopen = () => {
 }
 
 ws.onerror = function(event) {
-	if (event.error.code === 'ECONNREFUSED') {
+	if (event.error.code === 'ECONNREFUSED' ||
+		event.error.code === 'ECONNRESET') {
 		/** Faz com que a mensagem de erro de conexão apareça apenas uma vez */
 		if (!connErr) {
 			connErr = true
