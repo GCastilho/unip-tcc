@@ -6,6 +6,9 @@ const transaction = mongoose.model('transaction', {
         trim: true,
         unique: true,
         required: true
+    },
+    info: {
+        type: Object
     }
 })
 
