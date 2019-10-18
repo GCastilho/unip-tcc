@@ -3,6 +3,7 @@ const app = require("express")()
 const bitcoinRcp = require("./rpc")
 var bodyParser = require('body-parser')
 app.use(bodyParser.urlencoded({ extended: true }))
+const Transaction = require('./db/models/transaction')
 
 //um get que solicita uma conta nova para o rcp da nano numa carteira local padrao
 app.get('/new_account', function (req, res) {
@@ -14,8 +15,17 @@ app.get('/new_account', function (req, res) {
 		})
 })
 app.post('/transaction', function (req) {
-	//@TODO follow the transaction id, store the data it in the database,send data do main server
-	console.log(req.body.tx)
+	//@TODO reformat transaction data,send data do main server
+	const txid = req.body.tx
+	bitcoinRcp.transactionInfo(txid)
+		.then(transaction => {
+			new Transaction ({
+				tx: txid,
+				info: transaction
+			}).save()
+		}).catch(err => {
+			res.status(500).send(err)
+		})
   })
 
 function listen() {

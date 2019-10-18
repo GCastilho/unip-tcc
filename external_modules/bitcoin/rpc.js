@@ -10,7 +10,11 @@ const wallet = new Client({
 function createAccount() {
 	return 	wallet.getNewAddress()
 }
+function transactionInfo(txid) {
+	return 	wallet.getTransaction(txid)
+}
 
 module.exports = {
-	createAccount
+	createAccount,
+	transactionInfo
 }
