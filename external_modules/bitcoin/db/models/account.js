@@ -1,7 +1,7 @@
 const mongoose = require('../mongoose')
 
-const transaction = mongoose.model('transaction', {
-	tx: {
+const account = mongoose.model('account-bitcoin', {
+	account: {
 		type: String,
 		trim: true,
 		unique: true,
@@ -9,4 +9,4 @@ const transaction = mongoose.model('transaction', {
 	}
 })
 
-module.exports = transaction
+module.exports = account
