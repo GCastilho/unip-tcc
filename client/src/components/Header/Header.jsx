@@ -84,8 +84,14 @@ export default (props) => {
                 </div>
             </nav>
 
-            {/* Carrega o menu lateral */}
-            <SideDrawer show={sideDrawerOpen}/>
+            {/* Carrega o menu lateral, passando as funções do header */}
+            <SideDrawer
+                show={sideDrawerOpen}
+                handleButton={drawerToggleHandle}
+                LogoutRedirect={LogoutRedirect}
+                logOutHandle={logOutHandle}
+                userLogin={userLogin}
+            />
             {sideDrawerOpen ? <Backdrop handle={drawerToggleHandle}/> : null}
         </header>
     )
