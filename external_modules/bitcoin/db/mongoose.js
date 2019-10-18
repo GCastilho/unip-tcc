@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const mongodb_url = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/exchange-nano'
+const mongodb_url = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/exchange-bitcoin'
 
 mongoose.connect(mongodb_url, {
 	user: process.env.MONGODB_USER,

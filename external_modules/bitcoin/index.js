@@ -1,13 +1,10 @@
 const axios = require("axios")
 const Account = require('./db/models/account')
 const server = require('./server')
-const main_server_ip = process.env.MAIN_SERVER_IP || 'localhost:8085'
+const main_server_ip = process.env.main_server_ip || 'localhost:8085'
 
 /** Conecta ao mongodb */
 const db = require("./db/mongoose")
-
-/** Inicia o NANO Web Socket */
-require("./nanoWebSocket")
 
 /** Setup database */
 db.connection.on('connected', () => {
@@ -16,10 +13,10 @@ db.connection.on('connected', () => {
 		process.stdout.write('Connecting to main server... ')
 		return connectToMainServer()
 	}).then(() => {
-		process.stdout.write('Connected!\nRequesting ALL BITCOIN accounts... ')
+		process.stdout.write('Connected!\nRequesting ALL bitcoin accounts... ')
 
 		/** Solicita ao servidor principal a lista de contas NANO dos usuarios */
-		return axios.get(`http://${main_server_ip}/account_list/bitcoin`, {
+		return axios.get(`http://${main_server_ip}/account_list/nano`, {
 			responseType: 'stream'
 		})
 	}).then(({ data }) => {
@@ -31,13 +28,9 @@ db.connection.on('connected', () => {
 		})
 
 		data.on('end', (chunk) => {
-			console.log('All NANO accounts received and imported successfuly!')
+			console.log('All BITCOIN accounts received and imported successfuly!')
 			server.listen()
 		})
-	}).catch(err => {
-		console.error(err)
-		db.connection.close()
-		process.exit(1)
 	})
 })
 
@@ -46,15 +39,15 @@ function connectToMainServer() {
 	return new Promise((resolve, reject) => {
 		(function ping() {
 			axios.get(`http://${main_server_ip}/ping/nano`)
-				.then(({ data }) => {
-					if (data === 'pong')
-						resolve()
-					else
-						reject(`Unrecognized response: ${data}`)
-				}).catch(err => {
-					/** Aguarda 10 segundos e tenta novamente */
-					setTimeout(ping, 10000)
-				})
+			.then(({ data }) => {
+				if (data === 'pong')
+					resolve()
+				else
+					reject(`Unrecognized response: ${data}`)
+			}).catch(err => {
+				/** Aguarda 10 segundos e tenta novamente */
+				setTimeout(ping, 10000)
+			})
 		})()
 	})
 }
