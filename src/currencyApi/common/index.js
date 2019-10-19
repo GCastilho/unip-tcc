@@ -8,14 +8,42 @@
  * Este módulo contém as funções comuns para todas as cryptocurrencies
  */
 
+const _ = require('lodash')
 const normalizedPath = require("path").join(__dirname)
 
-const functions = {}
+const methods = {}
 
 require('fs').readdirSync(normalizedPath)
 .forEach(filename =>
 	filename !== 'index.js' &&
-	(functions[filename.replace('.js', '')] = require(`./${filename}`))
+	(methods[filename.replace('.js', '')] = require(`./${filename}`))
 )
 
-module.exports = functions
+module.exports = class {
+	constructor(currencyProps) {
+		if (!currencyProps)
+			throw new TypeError(`Incorrect initialization of 'common'`)
+
+		/** Insere os métodos exportados pelos módulos individuais */
+		for (let method in methods) {
+			typeof methods[method] === 'object' ?
+				this[method] = _.cloneDeep(methods[method]) :
+				this[method] = methods[method]
+			
+			/** Da bind nas funções dos métodos */
+			for (let prop in this._module) {
+				if (typeof this[method][prop] === 'function') {
+					this[method][prop] = this[method][prop].bind(this)
+				}
+			}
+		}
+
+		/**
+		 * Insere as propriedades individuais na classe, sobrepondo
+		 * se há conflito
+		 */
+		for (let prop in currencyProps) {
+			this[prop] = currencyProps[prop]
+		}
+	}
+}

@@ -4,25 +4,21 @@
  * Módulo privado que permite a conexão com o módulo externo, expõe uma função
  * get() e uma função post()
  * 
- * Esse módulo precisa ser inicializado com uma referência
- * a 'currencyApi.currency.<currency>'
+ * Esse módulo supõe que o 'this' é o currencyModule
  */
 
 const axios = require('axios')
-
-/** Referência a 'currencyApi.currency.<currency>' */
-let parent = undefined
 
 async function get(command) {
 	if (!command)
 		throw new TypeError(`'command' is required`)
 
 	try {
-		const { data } = await axios.get(`http://${parent.ip}:${parent.port}/${command}`)
+		const { data } = await axios.get(`http://${this.ip}:${this.port}/${command}`)
 		return data
 	} catch(err) {
-		// Iniciar o loop de (checar a) conexão
-		throw new Error(`${parent.name} server is offline`)
+		this._connection.emit('error', this.name)
+		throw new Error(`${this.name} server is offline`)
 	}
 	
 }
@@ -32,28 +28,15 @@ async function post(command, body) {
 		throw new TypeError(`'command' is required`)
 
 	try {
-		const { data } = await axios.post(`http://${parent.ip}:${parent.port}/${command}`, body)
+		const { data } = await axios.post(`http://${this.ip}:${this.port}/${command}`, body)
 		return data
 	} catch(err) {
-		// Iniciar o loop de (checar a) conexão
-		throw new Error(`${parent.name} server is offline`)
+		this._connection.emit('error', this.name)
+		throw new Error(`${this.name} server is offline`)
 	}
 }
 
-const _module = function constructor(that) {
-	if (typeof that != 'object')
-		throw new TypeError(`Incorrect initialization of '_module' sub-module`)
-
-	parent = that
-}
-
-const methods = {
+module.exports = {
 	get,
 	post
 }
-
-for (let method in methods) {
-	_module[method] = methods[method]
-}
-
-module.exports = _module

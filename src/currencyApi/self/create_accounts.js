@@ -1,11 +1,11 @@
 const Checklist = require('../../db/models/checklist')
 
-module.exports = function create_accounts(userId, accounts) {
-	return new Promise((resolve, reject) => {
-		if (!userId) throw new TypeError('userId needs to be informed')
+module.exports = function create_accounts(userId, currencies) {
+	if (!userId) throw new TypeError('userId needs to be informed')
 	
-		// Significa que é para criar de todas as accounts
-		if (!accounts) {
+	return new Promise((resolve, reject) => {
+		// Significa que é para criar de todas as currencies
+		if (!currencies) {
 			new Checklist({
 				userId,
 	
