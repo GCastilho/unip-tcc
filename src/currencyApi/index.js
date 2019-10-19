@@ -27,6 +27,9 @@ class CurrencyApi {
 		 */
 		for (let currency in currencies) {
 			this.currencies[currency] = {...common, ...currencies[currency]}
+
+			/** Inicializa o '_module' de cada currency */
+			this.currencies[currency]._module(this.currencies[currency])
 		}
 
 		/** Insere os métodos da currencyApi, acessíveis por 'this.<method>' */
