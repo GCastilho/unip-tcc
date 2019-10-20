@@ -9,6 +9,10 @@
 
 const axios = require('axios')
 
+/**
+ * Ponte para comunicação com o módulo externo usando GET
+ * @param {String} command O Sub-endereço que será acessado
+ */
 async function get(command) {
 	if (!command)
 		throw new TypeError(`'command' is required`)
@@ -18,11 +22,17 @@ async function get(command) {
 		return data
 	} catch(err) {
 		this._connection.emit('error', this.name)
-		throw new Error(`${this.name} server is offline`)
+		err.info = `Error connecting to ${this.name} module`
+		throw new Error(err)
 	}
 	
 }
 
+/**
+ * Ponte para comunicação com o módulo externo usando POST
+ * @param {String} command O Sub-endereço que será acessado
+ * @param {*} body O que será enviado ao módulo externo no request
+ */
 async function post(command, body) {
 	if (!command)
 		throw new TypeError(`'command' is required`)
@@ -32,7 +42,8 @@ async function post(command, body) {
 		return data
 	} catch(err) {
 		this._connection.emit('error', this.name)
-		throw new Error(`${this.name} server is offline`)
+		err.info = `Error connecting to ${this.name} module`
+		throw new Error(err)
 	}
 }
 

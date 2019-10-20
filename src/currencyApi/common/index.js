@@ -31,7 +31,7 @@ module.exports = class {
 				this[method] = methods[method]
 			
 			/** Da bind nas funções dos métodos */
-			for (let prop in this._module) {
+			for (let prop in this[method]) {
 				if (typeof this[method][prop] === 'function') {
 					this[method][prop] = this[method][prop].bind(this)
 				}
@@ -45,5 +45,18 @@ module.exports = class {
 		for (let prop in currencyProps) {
 			this[prop] = currencyProps[prop]
 		}
+
+		/**
+		 * Indica se o módulo externo está online ou não
+		 * 
+		 * Essa variável NÃO deve ser modificada diretamente,
+		 * somente pelo '_connection'
+		 * 
+		 * @type {Boolean}
+		 */
+		this.isOnline = undefined
+
+		/** Inicia a conexão com o módulo externo */
+		this._connection.connect()
 	}
 }

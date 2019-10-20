@@ -38,6 +38,3 @@ module.exports = singleton = new CurrencyApi()
 
 /** Load listener module */
 require('./listener')
-
-singleton.currencies.nano._isOnline()
-singleton.currencies.nano._module.get('ping')
