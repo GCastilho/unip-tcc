@@ -47,6 +47,21 @@ module.exports = class {
 		}
 
 		/**
+		 * Dá bind em funções bindThis e depois as deleta. Funções 'bindThis'
+		 * servem apenas para dar bind em suas funções e módulos internos, elas
+		 * não são funções reais acessíveis da API e foram projetadas, para
+		 * poder lidar com eventos de dentro de um módulo da currencyModule.
+		 * A função é deletada para evitar poluição e para evitar que ela seja
+		 * executada novamente
+		 */
+		for (let method in this) {
+			if (this[method].name === 'bindThis') {
+				this[method].bind(this)()
+				delete this[method]
+			}
+		}
+
+		/**
 		 * Indica se o módulo externo está online ou não
 		 * 
 		 * Essa variável NÃO deve ser modificada diretamente,

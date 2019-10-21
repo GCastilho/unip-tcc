@@ -91,7 +91,8 @@ function bindEventListeners() {
 	 */
 	this._connection.on('incomming', function incommingParser(currency) {
 		if (this.name === currency) {
-			this._connection.emit('connected-internal', this.name)
+			// Um incomming não necessariamente significa que o módulo está aceitando requests
+			// this._connection.emit('connected-internal', this.name)
 		}
 	})
 }

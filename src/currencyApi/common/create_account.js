@@ -1,8 +1,71 @@
-module.exports = function create_account() {
-	return this._module.get('new_account')
-	.then(({ data }) => {
-		return data
-	}).catch(err => {
-		throw new Error(`Fail do to retrieve ${this.name} account`)
+const events = require('../self/_events')
+const Checklist = require('../../db/models/checklist')
+const Person = require('../../db/models/person')
+
+function bindEventListeners() {
+	/**
+	 * Controla as instâncias do create_account_loop
+	 */
+	let looping = false
+
+	events.on('create-account', (currencies) => {
+		if (currencies.includes(this.name)) {
+			create_account_loop.bind(this)()
+			
+			console.log('evento create-account da', this.name)
+		}
 	})
+
+	this._connection.on('connected', (currency) => {
+		if (this.name === currency) {
+			create_account_loop.bind(this)()
+		}
+	})
+
+	this._connection.on('disconnected', (currency) => {
+		if (this.name === currency) {
+			looping = false
+		}
+	})
+
+	async function create_account_loop() {
+		if (!looping && this.isOnline) {
+			looping = true
+			let checklist
+			try {
+				checklist = await Checklist.find().cursor();
+			} catch(err) {
+				looping = false
+				console.error(err)
+			}
+			(async function loop() {
+				try {
+					while (todo_item = await checklist.next()) {
+						const { userId, create_accounts } = todo_item
+						if (create_accounts[this.name] === 'requested') {
+							const account = await this._module.get('new_account')
+	
+							const person = await Person.findById(userId)
+							person.currencies[this.name].push(account)
+							await person.save()
+	
+							todo_item.create_accounts[this.name] = 'completed'
+							todo_item.save()
+						}
+					}
+					looping = false
+					// Emitir um evento que terminou (currency, command)
+					// Executar função que verifica se pode limpar o db
+				} catch(err) {
+					looping = false
+					console.error(err)
+				}
+			}).bind(this)()
+			
+		}
+	}
+}
+
+module.exports = function bindThis() {
+	bindEventListeners.bind(this)()
 }

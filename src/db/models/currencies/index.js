@@ -17,7 +17,8 @@ const Schema = require('mongoose').Schema
 
 const currencySchema = {
 	type: [String],
-	unique: true,
+	// sparse: true,
+	// unique: true,
 	trim: true
 }
 

@@ -22,8 +22,8 @@ async function get(command) {
 		return data
 	} catch(err) {
 		this._connection.emit('error', this.name)
-		err.info = `Error connecting to ${this.name} module`
-		throw new Error(err)
+		err.currency = this.name
+		throw err
 	}
 	
 }
@@ -42,8 +42,8 @@ async function post(command, body) {
 		return data
 	} catch(err) {
 		this._connection.emit('error', this.name)
-		err.info = `Error connecting to ${this.name} module`
-		throw new Error(err)
+		err.currency = this.name
+		throw err
 	}
 }
 
