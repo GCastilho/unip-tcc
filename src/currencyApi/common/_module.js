@@ -8,6 +8,7 @@
  */
 
 const axios = require('axios')
+const _events = require('../self/_events')
 
 /**
  * Ponte para comunicação com o módulo externo usando GET
@@ -21,7 +22,7 @@ async function get(command) {
 		const { data } = await axios.get(`http://${this.ip}:${this.port}/${command}`)
 		return data
 	} catch(err) {
-		this._connection.emit('error', this.name)
+		_events.emit('error', this.name)
 		err.currency = this.name
 		throw err
 	}
@@ -41,7 +42,7 @@ async function post(command, body) {
 		const { data } = await axios.post(`http://${this.ip}:${this.port}/${command}`, body)
 		return data
 	} catch(err) {
-		this._connection.emit('error', this.name)
+		_events.emit('error', this.name)
 		err.currency = this.name
 		throw err
 	}

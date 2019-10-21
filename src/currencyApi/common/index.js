@@ -1,11 +1,20 @@
 /*
- * src/currencyApi/common/index.js
+ * src/currencyApi/currencyModule/index.js
  * 
- * Esse módulo exporta um objeto com todos os módulos dessa pasta, os módulos
- * são acessíveis em uma propriedade com o nome do módulo. Ex.: this.modulo irá
- * retornar o retorno de um require('modulo.js') contido nessa pasta
+ * Classe da currencyModule. Essa é a classe base dos módulos das currencies,
+ * recebendo um objeto com os métodos individuais na inicialização
+ * As propriedades do método passado para o contrutor serão inseridas
+ * diretamente na currencyModule, sobrepondo os métodos desta se houver conflito
  * 
- * Este módulo contém as funções comuns para todas as cryptocurrencies
+ * Cada método/propriedade dessa classe pode ser escrita diretamente na classe
+ * ou colocada no exports de um dos outros módulos desta pasta, que serão lidos
+ * no momento que esse arquivo for executado (não na instanciação da classe). Os
+ * módulos lidos serão inseridos na instanciação como um método com o mesmo
+ * nome do arquivo em que ele estava (sem o .js). Ex.: o método this.modulo será
+ * o retorno de um require('modulo.js') contido nessa pasta
+ * 
+ * Por serem métodos dessa classe, todas as *funções* filhas tem o 'this' na
+ * classe, podendo acessar qualquer método da mesma
  */
 
 const _ = require('lodash')
@@ -21,7 +30,7 @@ require('fs').readdirSync(normalizedPath)
 
 module.exports = class {
 	constructor(currencyProps) {
-		if (!currencyProps)
+		if (!currencyProps || typeof currencyProps != 'object')
 			throw new TypeError(`Incorrect initialization of 'common'`)
 
 		/** Insere os métodos exportados pelos módulos individuais */
@@ -47,16 +56,17 @@ module.exports = class {
 		}
 
 		/**
-		 * Dá bind em funções bindThis e depois as deleta. Funções 'bindThis'
-		 * servem apenas para dar bind em suas funções e módulos internos, elas
-		 * não são funções reais acessíveis da API e foram projetadas, para
-		 * poder lidar com eventos de dentro de um módulo da currencyModule.
-		 * A função é deletada para evitar poluição e para evitar que ela seja
-		 * executada novamente
+		 * Funções 'init' servem para iniciar módulos ou executar ações quando
+		 * a currencyModule é iniciada; elas não são funções reais acessíveis do
+		 * módulo, mas sim funções inicializadoras, tendo sido projetadas com o
+		 * intuito de poder inicializar event listeners de dentro do módulo
+		 * de uma currency
+		 * A função é deletada para evitar poluição e que ela seja executada
+		 * novamente
 		 */
 		for (let method in this) {
-			if (this[method].name === 'bindThis') {
-				this[method].bind(this)()
+			if (this[method].name === 'init') {
+				this[method]()
 				delete this[method]
 			}
 		}
@@ -64,14 +74,11 @@ module.exports = class {
 		/**
 		 * Indica se o módulo externo está online ou não
 		 * 
-		 * Essa variável NÃO deve ser modificada diretamente,
+		 * Essa variável NÃO deve ser modificada diretamente, mas
 		 * somente pelo '_connection'
 		 * 
 		 * @type {Boolean}
 		 */
 		this.isOnline = undefined
-
-		/** Inicia a conexão com o módulo externo */
-		this._connection.connect()
 	}
 }

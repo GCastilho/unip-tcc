@@ -8,7 +8,7 @@
 const port = process.env.CURRENCY_API_PORT || 8085
 const app = require('express')()
 const bodyParser = require('body-parser')
-const currencyApi = require('../index')
+const _events = require('../self/_events')
 
 app.use(bodyParser.json({ extended: true }))
 
@@ -23,11 +23,11 @@ module.exports = function listener_app(api) {
 			return res.status(400).send({
 				error: `'${command}' is not a valid command for the currency '${currency}'`
 			})
-		currencyApi.currencies[currency]._connection.emit('incomming', currency)
+		_events.emit('incomming', currency)
 		const response = api[currency][command](req, res)
 		if (response) res.send(response)
 	})
-	
+
 	app.get('*', (req, res) => {
 		res.status(400).send({ error: 'bad request' })
 	})

@@ -1,34 +1,34 @@
-const events = require('../self/_events')
+const _events = require('../self/_events')
 const Checklist = require('../../db/models/checklist')
 const Person = require('../../db/models/person')
 
-function bindEventListeners() {
+module.exports = function init() {
 	/**
 	 * Controla as instâncias do create_account_loop
 	 */
 	let looping = false
 
-	events.on('create-account', (currencies) => {
+	_events.on('createAccount', (currencies) => {
 		if (currencies.includes(this.name)) {
-			create_account_loop.bind(this)()
+			create_account_loop()
 			
 			console.log('evento create-account da', this.name)
 		}
 	})
 
-	this._connection.on('connected', (currency) => {
+	_events.on('connected', (currency) => {
 		if (this.name === currency) {
-			create_account_loop.bind(this)()
+			create_account_loop()
 		}
 	})
 
-	this._connection.on('disconnected', (currency) => {
+	_events.on('disconnected', (currency) => {
 		if (this.name === currency) {
 			looping = false
 		}
 	})
 
-	async function create_account_loop() {
+	const create_account_loop = async () => {
 		if (!looping && this.isOnline) {
 			looping = true
 			let checklist
@@ -50,7 +50,7 @@ function bindEventListeners() {
 							await person.save()
 	
 							todo_item.create_accounts[this.name] = 'completed'
-							todo_item.save()
+							await todo_item.save()
 						}
 					}
 					looping = false
@@ -61,11 +61,6 @@ function bindEventListeners() {
 					console.error(err)
 				}
 			}).bind(this)()
-			
 		}
 	}
-}
-
-module.exports = function bindThis() {
-	bindEventListeners.bind(this)()
 }

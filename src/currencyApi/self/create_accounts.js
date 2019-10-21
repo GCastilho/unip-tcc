@@ -1,6 +1,6 @@
 const Checklist = require('../../db/models/checklist')
 const allCurrencies = Object.keys(require('../currencies'))
-const events = require('./_events')
+const _events = require('./_events')
 
 /**
  * Cria as accounts (requisitadas) para o usuário com o userId informado. Essa
@@ -36,7 +36,7 @@ module.exports = async function create_accounts(userId, currencies) {
 	console.log('salvo na checklist:', person) //remove
 
 	/** Emite um evento informando que accounts devem ser criadas */
-	events.emit('create-account', currencies)
+	_events.emit('createAccount', currencies)
 	
 	return person
 }
