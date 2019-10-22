@@ -3,8 +3,8 @@
  * 
  * Classe da currencyModule. Essa é a classe base dos módulos das currencies,
  * recebendo um objeto com os métodos individuais na inicialização
- * As propriedades do método passado para o contrutor serão inseridas
- * diretamente na currencyModule, sobrepondo os métodos desta se houver conflito
+ * As propriedades do objeto passado ao contrutor serão inseridas diretamente
+ * na currencyModule, sobrepondo os métodos desta se houver conflito
  * 
  * Cada método/propriedade dessa classe pode ser escrita diretamente na classe
  * ou colocada no exports de um dos outros módulos desta pasta, que serão lidos
@@ -17,7 +17,6 @@
  * classe, podendo acessar qualquer método da mesma
  */
 
-const _ = require('lodash')
 const normalizedPath = require("path").join(__dirname)
 
 const methods = {}
@@ -30,41 +29,43 @@ require('fs').readdirSync(normalizedPath)
 
 module.exports = class {
 	constructor(currencyProps) {
-		if (!currencyProps || typeof currencyProps != 'object')
+		if (typeof currencyProps != 'object')
 			throw new TypeError(`Incorrect initialization of 'common'`)
 
-		/** Insere os métodos exportados pelos módulos individuais */
+		/** Insere os módulos desta pasta como métodos da classe */
 		for (let method in methods) {
-			typeof methods[method] === 'object' ?
-				this[method] = _.cloneDeep(methods[method]) :
-				this[method] = methods[method]
-			
-			/** Da bind nas funções dos métodos */
-			for (let prop in this[method]) {
-				if (typeof this[method][prop] === 'function') {
-					this[method][prop] = this[method][prop].bind(this)
-				}
-			}
+			this[method] = methods[method]
 		}
 
 		/**
-		 * Insere as propriedades individuais na classe, sobrepondo
-		 * se há conflito
+		 * Insere as propriedades/métodos passados no constructor como métodos
+		 * da classe, sobrepondo se há conflito
 		 */
 		for (let prop in currencyProps) {
 			this[prop] = currencyProps[prop]
 		}
 
 		/**
-		 * Funções 'init' servem para iniciar módulos ou executar ações quando
-		 * a currencyModule é iniciada; elas não são funções reais acessíveis do
-		 * módulo, mas sim funções inicializadoras, tendo sido projetadas com o
-		 * intuito de poder inicializar event listeners de dentro do módulo
-		 * de uma currency
-		 * A função é deletada para evitar poluição e que ela seja executada
-		 * novamente
+		 * Instancia o EventListener interno para _essa_ instância da classe
+		 */
+		this._events = new this._events
+
+		/**
+		 * Funções 'constructor' são funções que devem ser executadas para
+		 * inicializar módulos ou executar ações antes de retornar algo que deva
+		 * ser acessível da currencyModule (como uma função), então ela é
+		 * executada e substituída por ser valor de retorno
+		 * 
+		 * Funções 'init' servem para iniciar módulos ou executar ações mas seu
+		 * valor de retorno não é necessário ou útil na currencyModule (por
+		 * exemplo, inicializar event listeners). Como ela não retorna nada
+		 * útil, a função é deletada para reduzir a poluição
 		 */
 		for (let method in this) {
+			if (this[method].name === 'constructor') {
+				this[method] = this[method]()
+			}
+
 			if (this[method].name === 'init') {
 				this[method]()
 				delete this[method]
@@ -74,8 +75,8 @@ module.exports = class {
 		/**
 		 * Indica se o módulo externo está online ou não
 		 * 
-		 * Essa variável NÃO deve ser modificada diretamente, mas
-		 * somente pelo '_connection'
+		 * Essa variável só deve ser modificada pelo '_connection', devendo ser
+		 * readOnly para todos os outros métodos
 		 * 
 		 * @type {Boolean}
 		 */

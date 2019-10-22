@@ -1,34 +1,21 @@
-const _events = require('../self/_events')
 const Checklist = require('../../db/models/checklist')
 const Person = require('../../db/models/person')
 
-module.exports = function init() {
+function constructor() {
 	/**
 	 * Controla as instâncias do create_account_loop
 	 */
 	let looping = false
 
-	_events.on('createAccount', (currencies) => {
-		if (currencies.includes(this.name)) {
-			create_account_loop()
-			
-			console.log('evento create-account da', this.name)
-		}
+	this._events.on('connected', () => {
+		create_account_loop()
 	})
 
-	_events.on('connected', (currency) => {
-		if (this.name === currency) {
-			create_account_loop()
-		}
+	this._events.on('disconnected', () => {
+		looping = false
 	})
 
-	_events.on('disconnected', (currency) => {
-		if (this.name === currency) {
-			looping = false
-		}
-	})
-
-	const create_account_loop = async () => {
+	return create_account_loop = async () => {
 		if (!looping && this.isOnline) {
 			looping = true
 			let checklist
@@ -37,6 +24,7 @@ module.exports = function init() {
 			} catch(err) {
 				looping = false
 				console.error(err)
+				return
 			}
 			(async function loop() {
 				try {
@@ -52,6 +40,7 @@ module.exports = function init() {
 							todo_item.create_accounts[this.name] = 'completed'
 							await todo_item.save()
 						}
+						if (!looping) break
 					}
 					looping = false
 					// Emitir um evento que terminou (currency, command)
@@ -64,3 +53,5 @@ module.exports = function init() {
 		}
 	}
 }
+
+module.exports = constructor

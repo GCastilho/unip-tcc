@@ -5,8 +5,6 @@
  * módulo externo de cada currency
  */
 
-const _events = require('../self/_events')
-
 module.exports = async function init() {
 	/**
 	 * Garante apenas uma instância da connection_checker_loop() em execução
@@ -18,10 +16,11 @@ module.exports = async function init() {
 	/**
 	 * Evita disparar um 'connected' quando já está conectado
 	 */
-	_events.on('_connected', connectedParser = (currency) => {
-		if (this.name === currency && !this.isOnline) {
+	this._events.on('_connected', connectedParser = () => {
+		if (!this.isOnline) {
 			this.isOnline = true
-			_events.emit('connected', this.name)
+			this._events.emit('connected')
+
 			console.log(`connected to the ${this.name} node`) //remove
 		}
 	})
@@ -29,11 +28,12 @@ module.exports = async function init() {
 	/**
 	 * Evita disparar um 'disconnected' quando já está desconectado
 	 */
-	_events.on('_disconnected', connectedParser = (currency) => {
-		if (this.name === currency && this.isOnline) {
+	this._events.on('_disconnected', connectedParser = () => {
+		if (this.isOnline) {
 			this.isOnline = false
-			_events.emit('disconnected', this.name)
+			this._events.emit('disconnected')
 			connection_checker_loop()
+			
 			console.log(currency, 'disconnected') //remove
 		}
 	})
@@ -41,28 +41,19 @@ module.exports = async function init() {
 	/**
 	 * Disparado quando há um erro de conexão com o módulo externo
 	 */
-	_events.on('error', errorParser = async (currency) => {
-		if (this.name === currency && this.isOnline) {
+	this._events.on('error', errorParser = async () => {
+		if (this.isOnline) {
 			try {
 				if ((res = await this._module.get('ping')) != 'pong')
 					throw new TypeError(`Unrecognized ${this.name} module response: ${res}`)
-				_events.emit('_connected', this.name)
+				this._events.emit('_connected')
 			} catch(err) {
 				if (err instanceof TypeError)
 					console.error(err.message)
 				else
 					console.error(`Error comunicating with ${this.name} module`)
-				_events.emit('_disconnected', this.name)
+				this._events.emit('_disconnected')
 			}
-		}
-	})
-
-	/**
-	 * Disparado para indicar que o módulo externo enviou um request
-	 */
-	_events.on('incomming', incommingParser = (currency) => {
-		if (this.name === currency) {
-			// connection_checker_loop()
 		}
 	})
 
@@ -77,7 +68,7 @@ module.exports = async function init() {
 				try {
 					if ((res = await this._module.get('ping')) != 'pong')
 						throw new TypeError(`Unrecognized ${this.name} module response: ${res}`)
-					_events.emit('_connected', this.name)
+					this._events.emit('_connected')
 					looping = false
 				} catch(err) {
 					if (err instanceof TypeError)
@@ -95,7 +86,7 @@ module.exports = async function init() {
 	try {
 		if (await this._module.get('ping') != 'pong')
 			throw new TypeError(`Unrecognized ${this.name} module response`)
-		_events.emit('_connected', this.name)
+		this._events.emit('_connected')
 	} catch(err) {
 		this.isOnline = false
 		connection_checker_loop()
