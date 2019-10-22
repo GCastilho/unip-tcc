@@ -47,8 +47,12 @@ export default class Login extends React.Component {
             password: this.state.password
         }).then(res => {
             //Se o post foi bem sucedido ele fara o redirect
-            this.props.checkCookie(true);
-            this.setState({redirect: true});
+            if (this.cookies.getAll().sessionID !== undefined) {
+                this.props.checkCookie(true);
+                this.setState({redirect: true});
+            } else {
+                this.setState({errorMsg: 'Não foi possivel fazer o login'});
+            }
         }).catch(error => {
             if (error.response.status === 401) {
                 this.setState({errorMsg: 'Usuario ou senha incorretos!'});
