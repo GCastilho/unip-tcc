@@ -2,9 +2,11 @@
  * client/src/__tests__/pages/Login.test.js
  */
 
+/* Modulos externos */
 import React from 'react';
 import { mount, shallow } from 'enzyme';
 
+/* Componentes */
 import Login from '../../pages/login/Login';
 import InputField from '../../components/InputField/InputField';
 import RoundButton from '../../components/RoundButton/RoundButton';

@@ -1,12 +1,13 @@
 /*
  * client/src/components/InputField/InputField.jsx
+ *
+ * Input com label flutuante
  */
 
 import React from 'react';
 
 import './InputField.css';
 
-//Input com label flutuante
 export default props => (
     <div>
         <div className="input-container">

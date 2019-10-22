@@ -2,13 +2,16 @@
  * client/src/pages/login/Login.jsx
  */
 
+/* Modulos externos */
 import React from 'react';
 import { Redirect } from 'react-router-dom';
 import { Cookies } from 'react-cookie';
 import axios from 'axios';
 
+/* Assets */
 import './Login.css';
 
+/* Componentes */
 import InputField from "../../components/InputField/InputField";
 import RoundButton from "../../components/RoundButton/RoundButton";
 import TextButton from "../../components/TextButton/TextButton";
@@ -24,7 +27,7 @@ export default class Login extends React.Component {
             errorMsg: ''
         };
 
-        //garanti o contexto quando estiver chamando a função com o this
+        /* garante o contexto quando estiver chamando a função com o this */
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.LoginRedirect = this.LoginRedirect.bind(this);
@@ -32,21 +35,21 @@ export default class Login extends React.Component {
 
     cookies = new Cookies();
 
-    //função para o email e senha do input
+    /* função para o email e senha do input */
     handleChange = (e) => {
         this.setState({
             [e.target.name]: e.target.value
         });
     };
 
-    //função de envio
+    /* função de envio */
     handleSubmit = (e) => {
         e.preventDefault();
         axios.post('/login', {
             email: this.state.email,
             password: this.state.password
         }).then(res => {
-            //Se o post foi bem sucedido ele fara o redirect
+            /* Se o post foi bem sucedido e houver um cookie, ele fara o redirect */
             if (this.cookies.getAll().sessionID !== undefined) {
                 this.props.checkCookie(true);
                 this.setState({redirect: true});
@@ -63,7 +66,7 @@ export default class Login extends React.Component {
         })
     };
 
-    //faz o redirect para a home se vc já estiver logado
+    /* faz o redirect para a home se vc já estiver logado */
     LoginRedirect = () => {
         if (this.state.redirect) {
             return (<Redirect to='/'/>)

@@ -2,9 +2,11 @@
  * client/src/__tests__/pages/Register.test.js
  */
 
+/* Modulos externos */
 import React from 'react';
 import { shallow, mount } from 'enzyme';
 
+/* Componentes */
 import Register from '../../pages/register/Register';
 import InputField from '../../components/InputField/InputField';
 import RoundButton from '../../components/RoundButton/RoundButton';

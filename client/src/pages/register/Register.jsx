@@ -2,13 +2,16 @@
  * client/src/pages/register/Register.jsx
  */
 
+/* Modulos externos */
 import React from 'react';
 import { Redirect } from 'react-router-dom';
 import { Cookies } from 'react-cookie';
 import axios from 'axios';
 
+/* Assets */
 import './Register.css';
 
+/* Componentes */
 import InputField from "../../components/InputField/InputField";
 import RoundButton from "../../components/RoundButton/RoundButton";
 import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
@@ -24,7 +27,7 @@ export default class Register extends React.Component {
             errorMsg: ''
         };
 
-        //garanti o contexto quando estiver chamando a função com o this
+        /* garante o contexto quando estiver chamando a função com o this */
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.SignupRedirect = this.SignupRedirect.bind(this);
@@ -32,18 +35,18 @@ export default class Register extends React.Component {
 
     cookies = new Cookies();
 
-    //função para o email e senha do input
+    /* função para o email e senha do input */
     handleChange = (e) => {
         this.setState({
             [e.target.name]: e.target.value
         });
     };
 
-    //função de envio
+    /* função de envio */
     handleSubmit = (e) => {
         e.preventDefault();
 
-        //Checa se o email é um email valido ou não
+        /* Checa se o email é um email valido ou não */
         if (this.state.email.search(
             /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/) === -1) {
             this.setState({errorMsg: 'E-mail inválido'});
@@ -62,7 +65,7 @@ export default class Register extends React.Component {
         }
     };
 
-    //faz o redirect para a home se vc já estiver logado
+    /* faz o redirect para a home se vc já estiver logado */
     SignupRedirect = () => {
         if (this.state.redirect) {
             return (<Redirect to='/'/>)
@@ -81,7 +84,7 @@ export default class Register extends React.Component {
                     <form className="register-form">
                         <h1>Cadastro</h1>
 
-                        {/* Mensagem de erro só é ativada quando a variavel errorMsg é atualizada com algum dado*/}
+                        {/* Mensagem de erro só é ativada quando a variavel errorMsg é atualizada com algum dado */}
                         {this.state.errorMsg !== '' ? <ErrorMessage message={this.state.errorMsg}/> : null}
 
                         <InputField label='E-mail' name='email' onChange={this.handleChange} type='email'/>
@@ -90,7 +93,7 @@ export default class Register extends React.Component {
                         <RoundButton label='Cadastrar' onClick={this.handleSubmit} type='submit'/>
                     </form> :
 
-                    //Tela ativada quando o cadastro é bem sucedido
+                    /* Tela ativada quando o cadastro é bem sucedido */
                     <div className='confirmWindow'>
                         <h1>Confirme o email</h1>
                         <p>Enviamos um email de confirmação de cadastro para <b>{this.state.email}</b>,

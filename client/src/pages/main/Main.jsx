@@ -1,13 +1,16 @@
 /*
  * client/src/pages/main/Main.jsx
+ *
+ * Por enquanto pagina só gera um html estatico
  */
 
+/* Modulos externos */
 import React from 'react';
 
+/* Assets */
 import './Main.css';
 import imgTest from '../../assets/img/imagemTeste.jpg';
 
-//Por enquanto pagina só gera um html estatico
 export default () => (
     <div className='main-container'>
         <section className='a'>

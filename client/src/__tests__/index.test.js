@@ -2,10 +2,12 @@
  * client/src/__tests__/index.test.js
  */
 
+/* Modulos externos */
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { mount } from 'enzyme';
 
+/* Componentes */
 import Header from '../components/Header/Header';
 import Routes from '../routes';
 

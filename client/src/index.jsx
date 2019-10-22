@@ -2,20 +2,23 @@
  * client/src/index.jsx
  */
 
+/* Modulos externos */
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter } from 'react-router-dom';
 import { Cookies } from "react-cookie";
 
+/* Assets */
 import './index.css';
 
+/* Componentes */
 import Header from './components/Header/Header';
 import Routes from './routes';
 
 class App extends React.Component {
     constructor(props) {
         super(props);
-        //cria uma variavel para o cookie para que todos os filhos tenham acesso
+        /*cria uma variavel para o cookie para que todos os filhos tenham acesso */
         this.state = {
             haveCookie: this.cookies.getAll().sessionID !== undefined,
         };
@@ -24,7 +27,7 @@ class App extends React.Component {
 
     cookies = new Cookies();
 
-    //função para alterar a variavel haveCookie
+    /*função para alterar a variavel haveCookie */
     checkCookie = (cookie) => {
         this.setState({haveCookie: cookie});
     };
