@@ -1,11 +1,20 @@
+/*
+ * client/src/pages/login/Login.jsx
+ */
+
 import React from 'react';
+import { Redirect } from 'react-router-dom';
+import { Cookies } from 'react-cookie';
 import axios from 'axios';
 
+// Assets
 import './Login.css';
+
+// Componentes
 import InputField from "../../components/InputField/InputField";
 import RoundButton from "../../components/RoundButton/RoundButton";
 import TextButton from "../../components/TextButton/TextButton";
-
+import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
 
 export default class Login extends React.Component {
     constructor(props) {
@@ -13,39 +22,70 @@ export default class Login extends React.Component {
         this.state = {
             email: '',
             password: '',
-            error: false
+            redirect: this.cookies.getAll().sessionID !== undefined,
+            errorMsg: ''
         };
+
+        /** Garante o contexto quando estiver chamando a função com o this */
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.LoginRedirect = this.LoginRedirect.bind(this);
     };
 
+    cookies = new Cookies();
+
+    /** Função para o email e senha do input */
     handleChange = (e) => {
         this.setState({
             [e.target.name]: e.target.value
         });
     };
 
+    /** Função de envio */
     handleSubmit = (e) => {
         e.preventDefault();
-
         axios.post('/login', {
             email: this.state.email,
             password: this.state.password
         }).then(res => {
-            window.location.href = res.request.responseURL;
+            /** Se o post foi bem sucedido e houver um cookie, ele fara o redirect */
+            if (this.cookies.getAll().sessionID !== undefined) {
+                this.props.checkCookie(true);
+                this.setState({redirect: true});
+            } else {
+                this.setState({errorMsg: 'Não foi possivel fazer o login'});
+            }
         }).catch(error => {
-            this.setState({error: true});
+            if (error.response.status === 401) {
+                this.setState({errorMsg: 'Usuario ou senha incorretos!'});
+            } else {
+                this.setState({errorMsg: 'Não foi possivel fazer o login'});
+            }
             console.log(error.response)
         })
     };
 
+    /** Faz o redirect para a home se vc já estiver logado */
+    LoginRedirect = () => {
+        if (this.state.redirect) {
+            return (<Redirect to='/'/>)
+        } else {
+            return null
+        }
+    };
+
     render() {
         return (
-            <div>
-                <form className="login-form">
+            <div className='login-sing-in-container'>
+
+                <this.LoginRedirect/>
+
+                <form className='login-form'>
                     <h1>Login</h1>
 
-                    {this.state.error ? <span className='login-error'>Senha ou usuario incorrentos!</span> : null}
+                    {/* Mensagem de erro só é ativada quando a variavel errorMsg é atualizada com algum dado*/}
+                    {this.state.errorMsg !== '' ? <ErrorMessage message={this.state.errorMsg}/> : null}
+
                     <InputField label='Usuário' name='email' onChange={this.handleChange} type='email'/>
                     <InputField label='Senha' name='password' onChange={this.handleChange} type='password'/>
 

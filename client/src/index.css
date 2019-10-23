@@ -1,10 +1,20 @@
+:root {
+  --main-color-white: whitesmoke;
+  --main-color-dark: #282c34;
+  --main-text-color-white: black;
+  --main-text-color-dark: whitesmoke;
+  --error-color-background: #fff0f0;
+  --error-color-text: #ff0000;
+}
+
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    background-color: var(--main-color-dark);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 code {
@@ -16,14 +26,17 @@ code {
   padding-top: 40vh;
 }
 
-.container {
+.home-container {
+  padding-top: 53px;
   display: flex;
   justify-content: center;
+  width: 100%;
+  height: auto;
 }
 
 #root {
   min-height: 100vh;
-  background-color: #282c34;
+  background-color: var(--main-color-dark);
 }
 
 .App-header {
@@ -37,3 +50,24 @@ code {
   color: white;
   padding-bottom: 10px;
 }
+
+.login-sing-in-container {
+    background-color: #3d4446;
+    border: 1px solid #4e5557;
+    height: 500px;
+    min-width: 500px;
+    display: flex;
+    flex-flow: row wrap;
+    top: 50%;
+    margin: 50px;
+    border-radius: 25px;
+    justify-content: center;
+}
+
+@media screen and (max-width: 768px) {
+    .login-sing-in-container {
+        min-width: 350px;
+        width: auto;
+    }
+}
+

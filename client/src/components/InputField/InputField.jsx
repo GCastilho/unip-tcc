@@ -1,3 +1,9 @@
+/*
+ * client/src/components/InputField/InputField.jsx
+ *
+ * Input com label flutuante
+ */
+
 import React from 'react';
 
 import './InputField.css';

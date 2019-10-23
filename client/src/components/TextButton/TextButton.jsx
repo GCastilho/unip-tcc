@@ -1,3 +1,9 @@
+/*
+ * client/src/components/TextButton/TextButton.jsx
+ *
+ * link em texto
+ */
+
 import React from 'react';
 
 import './TextButton.css';

@@ -1,3 +1,9 @@
+/*
+ * client/src/components/RoundButton/RoundButton.jsx
+ *
+ * Botão com borda arredondada
+ */
+
 import React from 'react';
 
 import './RoundButton.css';
