@@ -5,8 +5,14 @@
  */
 
 import React from 'react';
+import socketIOClient from "socket.io-client";
+
 
 import './NotFound.css';
+
+const socket = socketIOClient({ endpoint: "http://localhost:3000", response: false });
+socket.on("connected", data => { console.log(data) });
+
 
 export default () => (
     <div>
