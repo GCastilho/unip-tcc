@@ -2,7 +2,6 @@
  * client/src/__tests__/pages/Login.test.js
  */
 
-/* Modulos externos */
 import React from 'react';
 import { mount, shallow } from 'enzyme';
 

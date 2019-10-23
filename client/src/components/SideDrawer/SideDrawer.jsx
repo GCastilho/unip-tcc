@@ -10,9 +10,9 @@ import './SideDrawer.css';
 export default props => {
     let showDrawer;
 
-    /*
-    * Handle do botão logout, ele chama a função de logout e depois fecha o menu lateral
-    */
+    /**
+     * Handle do botão logout, ele chama a função de logout e depois fecha o menu lateral
+     */
     function handleClick() {
         props.logOutHandle();
         props.handleButton();

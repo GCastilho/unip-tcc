@@ -2,7 +2,6 @@
  * client/src/__tests__/pages/NotFound.test.js
  */
 
-/* Modulos externos */
 import React from 'react';
 import { mount } from 'enzyme';
 

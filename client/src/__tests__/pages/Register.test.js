@@ -2,7 +2,6 @@
  * client/src/__tests__/pages/Register.test.js
  */
 
-/* Modulos externos */
 import React from 'react';
 import { shallow, mount } from 'enzyme';
 

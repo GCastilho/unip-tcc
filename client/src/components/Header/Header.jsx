@@ -2,15 +2,14 @@
  * client/src/components/Header/Header.jsx
  */
 
-/* Modulos externos */
 import React from 'react';
 import { Link, Redirect } from 'react-router-dom';
 import { useCookies } from 'react-cookie';
 
-/* Assets */
+// Assets
 import './Header.css';
 
-/* Componentes */
+// Componentes
 import DrawerToggleButton from "../SideDrawer/DrawerToggleButton";
 import SideDrawer from "../SideDrawer/SideDrawer";
 import Backdrop from "../Backdrop/Backdrop";
@@ -18,27 +17,27 @@ import Backdrop from "../Backdrop/Backdrop";
 export default (props) => {
 
     /*
-    * Variaveis de estado usando React hooks, mesmo efeito que a variavel this.state
-    */
+     * Variaveis de estado usando React hooks, mesmo efeito que a variavel this.state
+     */
     const [sideDrawerOpen, setSideDrawerOpen] = React.useState(false);
     const [cookies,,removeCookie] = useCookies(['sessionID']);
     const [userLogin, setUserLogin] = React.useState(cookies.sessionID !== undefined);
     const [redirect, setRedirect] = React.useState(false);
 
-    /* A função useEffect é chamada toda vez que um estado é atualizado */
+    /** A função useEffect é chamada toda vez que um estado é atualizado */
     React.useEffect(() => {
-        /* Atualiza o estado do login sempre que o cookie for atualizado */
+        /** Atualiza o estado do login sempre que o cookie for atualizado */
         if(props.haveCookie) {
             setUserLogin(true)
         }
     },[props.haveCookie]);
 
-    /* função para abrir o menu lateral 'usado somente no modo mobile' */
+    /** Função para abrir o menu lateral 'usado somente no modo mobile' */
     const drawerToggleHandle = () => {
         setSideDrawerOpen(!sideDrawerOpen);
     };
 
-    /* Handle do botão logout, ao aperta-lo ele apaga o cookie, ativa o botão de login e ativa o redirect */
+    /** Handle do botão logout, ao aperta-lo ele apaga o cookie, ativa o botão de login e ativa o redirect */
     const logOutHandle = () => {
         removeCookie('sessionID');
         setRedirect(true);
@@ -48,7 +47,7 @@ export default (props) => {
         setUserLogin(false);
     };
 
-    /* Faz o redirect ao apertar o botão logout */
+    /** Faz o redirect ao apertar o botão logout */
     const LogoutRedirect = () => {
         if (redirect) {
             setRedirect(false);
