@@ -55,17 +55,24 @@ module.exports = class {
 		 * inicializar módulos ou executar ações antes de retornar algo que deva
 		 * ser acessível da currencyModule (como uma função), então ela é
 		 * executada e substituída por ser valor de retorno
-		 * 
-		 * Funções 'init' servem para iniciar módulos ou executar ações mas seu
-		 * valor de retorno não é necessário ou útil na currencyModule (por
-		 * exemplo, inicializar event listeners). Como ela não retorna nada
-		 * útil, a função é deletada para reduzir a poluição
 		 */
 		for (let method in this) {
 			if (this[method].name === 'constructor') {
 				this[method] = this[method]()
 			}
+		}
 
+		/**
+		 * Funções 'init' servem para iniciar módulos ou executar ações mas seu
+		 * valor de retorno não é necessário ou útil na currencyModule (por
+		 * exemplo, inicializar event listeners). Como ela não retorna nada
+		 * útil, a função é deletada para reduzir a poluição
+		 * 
+		 * Nota: Todas as funções 'constructor' devem ter sido executadas antes
+		 * das funções init para garantir que todos os métodos da currencyModule
+		 * tenham sido inicializados e estejam acessíveis
+		 */
+		for (let method in this) {
 			if (this[method].name === 'init') {
 				this[method]()
 				delete this[method]

@@ -12,12 +12,14 @@ module.exports = mongoose.model('Checklist', {
 	},
 	create_accounts: {
 		bitcoin: {
-			type: Boolean,
-			type: String
+			status: String,
+			accounts_before: Number,
+			accounts_after: Number,
 		},
 		nano: {
-			type: Boolean,
-			type: String
+			status: String,
+			accounts_before: Number,
+			accounts_after: Number,
 		}
 	}
 })

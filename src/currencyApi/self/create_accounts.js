@@ -21,7 +21,8 @@ module.exports = async function create_accounts(userId, currencies) {
 	 */
 	const create_accounts = {}
 	for (let currency of currencies) {
-		create_accounts[currency] = 'requested'
+		create_accounts[currency] = {}
+		create_accounts[currency].status = 'requested'
 	}
 
 	/**
