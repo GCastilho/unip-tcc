@@ -38,3 +38,5 @@ module.exports = singleton = new CurrencyApi()
 
 /** Load listener module */
 require('./listener')
+
+console.log(singleton)

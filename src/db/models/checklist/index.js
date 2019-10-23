@@ -10,16 +10,18 @@ module.exports = mongoose.model('Checklist', {
 		required: true,
 		unique: true
 	},
-	create_accounts: {
-		bitcoin: {
-			status: String,
-			accounts_before: Number,
-			accounts_after: Number,
-		},
-		nano: {
-			status: String,
-			accounts_before: Number,
-			accounts_after: Number,
+	commands: {
+		create_accounts: {
+			bitcoin: {
+				status: String,
+				accounts_before: Number,
+				accounts_after: Number,
+			},
+			nano: {
+				status: String,
+				accounts_before: Number,
+				accounts_after: Number,
+			}
 		}
 	}
 })

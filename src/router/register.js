@@ -39,7 +39,6 @@ Router.post('/', async function(req, res) {
 	}).save()
 	.then(person => {
 		currencyApi.create_accounts(person._id)
-		return person
 	})
 	/**
 	 * @todo Enviar e-mail de confirmação de... e-mail e só liberar a conta
@@ -48,8 +47,8 @@ Router.post('/', async function(req, res) {
 	 * @todo Criar as accounts quando o e-mail for confirmado, não no ato
 	 * de cadastro
 	 */
-	.then(person => {
-		res.status(201).send(person)
+	.then(() => {
+		res.status(201).send()
 	}).catch(err => {
 		console.log(err)
 		if (err.code === 11000)

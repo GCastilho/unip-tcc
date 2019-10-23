@@ -30,13 +30,11 @@ module.exports = async function create_accounts(userId, currencies) {
 	 */
 	const person = await new Checklist({
 		userId,
-		create_accounts
+		commands: { create_accounts }
 	}).save()
 
 	/**
 	 * Chama create_account de cada currency que precisa ser criada uma account
 	 */
 	currencies.forEach(currency => this.currencies[currency].create_account())
-	
-	return person //remove
 }

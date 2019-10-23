@@ -21,7 +21,7 @@ module.exports = async function init() {
 			this.isOnline = true
 			this._events.emit('connected')
 
-			console.log(`connected to the ${this.name} node`) //remove
+			console.log(`Connected to the '${this.name}' node`) //remove
 		}
 	})
 	
@@ -34,7 +34,7 @@ module.exports = async function init() {
 			this._events.emit('disconnected')
 			connection_checker_loop()
 			
-			console.log(currency, 'disconnected') //remove
+			console.log(`Disconnected from the '${this.name}' node`) //remove
 		}
 	})
 
