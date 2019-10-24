@@ -1,17 +1,18 @@
 /**
  * src/websocket/socket.js
+ * 
+ * handler do socket
  */
 
 module.exports = function (io) {
-    //let io = require('socket.io').listen(require('http').createServer(app));
-
     io.on('connection', function (socket) {
-        socket.emit("connected", { status: 1 });
-        console.log("Connected client")
 
-        //TODO criar loader de rotas
-        socket.on('api', function (data) {
-        });
+        // Load Socket routes (pode ser chamado só apos verificação de autenticação)
+        require('./api-loader')(socket);
+
+        //emitir sucesso na connexão somente quando as rotas forem criadas
+        socket.emit("connected", { status: "online" });
+        console.log("Novo Cliente Conectado")
     });
 
 }
