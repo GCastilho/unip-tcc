@@ -16,6 +16,7 @@ module.exports = function (socket) {
     if (!socket.rotas) {
         socket.rotas = new Map();
     }
+    socket.enableLog = true; //abilita o log de carregamento das rotas no console
 
     /**
      * Carrega toda a lista de diretorios da pasta /api

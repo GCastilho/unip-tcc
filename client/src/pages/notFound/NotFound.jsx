@@ -45,6 +45,16 @@ socket.on("api", data => { console.log(data) });
 setTimeout(() => { // criando o call 500ms depois do carregamento da pagina
     console.log("call" + "api/v1.0/test/ping");
     socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } })
+    /**
+     * Rota de request da lista de balances
+     * 
+     * Ex Retorno:
+     * {route: "api/v1.0/balances/list", status:"success", data:[
+     *      { code: "ETH", name: "Etherium", value: "0.00000000" }
+     * ]}
+     */
+    console.log("call" + "api/v1.0/balances/list");
+    socket.emit("api", { route: "api/v1.0/balances/list", data: {} })
 }, 500);
 
 export default () => (

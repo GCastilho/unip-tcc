@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const subpath = "test/";
+const subpath = "balances/";
 
 module.exports = function (socket, upRota) {
 
