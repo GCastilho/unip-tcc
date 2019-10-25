@@ -26,7 +26,24 @@ function createAccount() {
 		}
 	)})
 }
+function blockInfo(block) {
+	return new Promise(function (resolve, reject) {
+		client.call({
+			"action": "block_info",
+			"json_block": "true",
+			"hash": block
+		}, function (err, res) {
+			if (!err && !res.error) {
+				resolve(res.account)
+			} else {
+				reject(err)
+			}
+		}
+		)
+	})
+}
 
 module.exports = {
-	createAccount
+	createAccount,
+	blockInfo
 }

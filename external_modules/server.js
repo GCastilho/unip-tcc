@@ -11,6 +11,24 @@ app.get('/new_account', function (req, res) {
 		res.status(500).send(err)
 	})
 })
+app.post('/transaction', function (req,res) {
+	//@TODO reformat transaction data,send data do main server
+	const txid = req.body.tx
+	bitcoinRcp.transactionInfo(txid)
+		.then(transaction => {
+			if(!transaction.generated){
+				new Transaction ({
+					tx: txid,
+					info: transaction
+				}).save().catch(err => {
+					console.log("erro")
+				})
+			}
+		}).catch(err => {
+			console.log
+		})
+		res.send('ok')
+})
 
 function listen() {
 	app.listen(port, () => {

@@ -1,10 +1,12 @@
-const axios = require("axios")
-const Account = require('./db/models/account')
-const server = require('./server')
+const Currency = process.env.CURRENCY
 const main_server_ip = process.env.main_server_ip || 'localhost:8085'
+const axios = require("axios")
+const Account = require(`../${Currency}/db/models/account`)
+const server = require(`./server`)
+
 
 /** Conecta ao mongodb */
-const db = require("./db/mongoose")
+const db = require(`../${Currency}/db/mongoose`)
 
 /** Setup database */
 db.connection.on('connected', () => {
@@ -13,12 +15,13 @@ db.connection.on('connected', () => {
 		process.stdout.write('Connecting to main server... ')
 		return connectToMainServer()
 	}).then(() => {
-		process.stdout.write('Connected!\nRequesting ALL bitcoin accounts... ')
+		process.stdout.write(`Connected!\nRequesting ${Currency} accounts...`)
 
 		/** Solicita ao servidor principal a lista de contas NANO dos usuarios */
-		return axios.get(`http://${main_server_ip}/account_list/nano`, {
+		return axios.get(`http://${main_server_ip}/account_list/${Currency}`, {
 			responseType: 'stream'
 		})
+		
 	}).then(({ data }) => {
 		console.log('Success\nReceiving account stream and importing accounts into private database')
 
@@ -26,9 +29,8 @@ db.connection.on('connected', () => {
 			/** Cada chunk é uma NANO account */
 			new Account({ account: chunk.toString() }).save()
 		})
-
 		data.on('end', (chunk) => {
-			console.log('All BITCOIN accounts received and imported successfuly!')
+			console.log(`All ${Currency} accounts received and imported successfuly!`)
 			server.listen()
 		})
 	})
@@ -38,7 +40,7 @@ db.connection.on('connected', () => {
 function connectToMainServer() {
 	return new Promise((resolve, reject) => {
 		(function ping() {
-			axios.get(`http://${main_server_ip}/ping/nano`)
+			axios.get(`http://${main_server_ip}/ping/${Currency}`)
 			.then(({ data }) => {
 				if (data === 'pong')
 					resolve()

@@ -1,5 +1,6 @@
 const WS = require('ws')
 const ReconnectingWebSocket = require('reconnecting-websocket')
+const axios = require("axios")
 
 /**
  * Create a reconnecting WebSocket. In this example, we wait a maximum of
@@ -28,8 +29,16 @@ ws.onopen = () => {
 	ws.send(JSON.stringify(confirmation_subscription))
 }
 
-ws.onerror = function(event) {
-	console.error("WebSocket error observed:", event)
+ws.onerror = function (event) {
+	if (event.error.code === 'ECONNREFUSED' ||
+		event.error.code === 'ECONNRESET') {
+		/** Faz com que a mensagem de erro de conexão apareça apenas uma vez */
+		//if (!connErr) {
+			//connErr = true
+			console.log('Error connecting to nano websocket')
+		} else {
+		console.error('WebSocket error observed:', event)
+	}
 }
 
 /**
@@ -40,6 +49,5 @@ ws.onerror = function(event) {
 ws.onmessage = msg => {
 	console.log(msg.data)
 	data_json = JSON.parse(msg.data)
-	
-	console.log ('Confirmed', data_json.message.hash)
+	axios.post('localhost:50000/transaction', data_json.message.hash)
 }
