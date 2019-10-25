@@ -4,11 +4,10 @@
  * User Balances Page
  */
 import React, { Component } from 'react';
-import axios from 'axios';
+// import axios from 'axios';
 
 import './Balances.css';
 import BalancesTableItem from "../../components/BalancesTableItem/BalancesTableItem";
-
 
 
 let simu = [
@@ -18,14 +17,14 @@ let simu = [
 ];
 
 export default class Balances extends Component {
-    constructor() {
-        super();
-
+    constructor(props) {
+        super(props);
         this.state = {
             /**
              * @description Balances on the page (Just to save for posterior use)
              */
-            balances: []
+            balances: simu,
+            valued: 0,
         };
     }
 
@@ -42,7 +41,7 @@ export default class Balances extends Component {
                 this.setState(newState);
             }
         });
-    }
+    };
 
     /**
      * @description append new data or replace existing one
@@ -56,8 +55,8 @@ export default class Balances extends Component {
             }
         }
         this.setState(newState);
-        console.log(newState);
-    }
+    };
+
     /**
      * @description method called from client to make an deposit
      * @param {JSON} item recieve the item for the respective balance ex. {code,name,balance}
@@ -86,33 +85,26 @@ export default class Balances extends Component {
         this.appendBalance(nitem);
     }
 
-    /**
-     * @description method called after all the rendering is done
-     */
-    componentDidMount() {
-        this.loadBalances();
-    }
-
     render() {
         return (
-            <table id='balancesList'>
-                <tbody>
-                    <tr>
-                        <th className="balances-th">Coin</th>
-                        <th className="balances-th">Name</th>
-                        <th colSpan='2' className="balances-th">Balance</th>
-                    </tr>
-                    {this.state.balances.map(bal => (
-                        <tr>
-                            <td>{bal.code}</td>
-                            <td>{bal.name}</td>
-                            <td>{bal.value}</td>
-                            <td className="balances-td"><div type='button' onClick={() => (this.depositBalance(bal))}>Deposit</div></td>
-                            <td className="balances-td"><div type='button' onClick={() => (this.withdrawBalance(bal))}>Withdraw</div></td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table >
+            <div className='table-container' role='table'>
+                <div className='row-group header'>
+                    <div className='table-row'>Coin</div>
+                    <div className='table-row'>Name</div>
+                    <div className='table-row'>Balance</div>
+                    <div className='table-row'>Actions</div>
+                </div>
+                {this.state.balances.map((bal) => (
+                    <BalancesTableItem
+                        key={bal.code}
+                        name={bal.name}
+                        code={bal.code}
+                        value={bal.value}
+                        depositOnClick={() => this.depositBalance(bal)}
+                        withdrawOnClick={() => this.withdrawBalance(bal)}
+                    />
+                ))}
+            </div>
         )
     }
 }

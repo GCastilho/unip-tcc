@@ -1,10 +1,109 @@
-.balances-th{
-    background-color: black;
-    color: #808080;
-}  
-.balances-low{
-
+:root {
+    --color-header: #1976D2;
+    --border-color-header: #1565C0;
+    --color-row: white;
+    --color-row-second: #f4f2f1;
+    --color-row-houve: #ececec;
+    --border-color-row: #d9d9d9;
+    --text-color-header: white;
+    --deposit-button-color-hover: #57b846;
+    --deposit-button-color-active: #316331;
+    --withdraw-button-color-hover: red;
+    --withdraw-button-color-active: #c60000;
 }
-.balances-high{
 
+.table-container div {
+    box-sizing: border-box;
+}
+
+.table-container {
+    display: block;
+    background-color: var(--color-row);
+    margin: 2em auto;
+    width: 90%;
+    max-width: 900px;
+}
+
+.row-group {
+    display: flex;
+    flex-flow: row wrap;
+    border-left: solid 1px var(--border-color-row);
+    transition: 0.5s;
+}
+
+.row-group:first-of-type {
+    border-top: solid 1px var(--border-color-header);
+    border-left: solid 1px var(--border-color-header);
+}
+
+.row-group:first-of-type .table-row {
+    background: var(--color-header);
+    color: var(--text-color-header);
+    border-color: var(--border-color-header);
+}
+
+.row-group.row:nth-child(odd) .table-row {
+    background: var(--color-row-second);
+}
+
+.row-group:hover {
+    background: var(--color-row-houve);
+    transition: 500ms;
+}
+
+.table-row {
+    width: calc(100% / 4);
+    text-align: center;
+    padding: 0.5em 0.5em;
+    border-right: solid 1px var(--border-color-row);
+    border-bottom: solid 1px var(--border-color-row);
+}
+
+.table-row button {
+    background-color: transparent;
+    border: 0;
+    text-decoration: none;
+    outline: none;
+    line-height: 1.2;
+    text-transform: uppercase;
+    transition: all 0.4s;
+    -webkit-transition: all 0.4s;
+    -o-transition: all 0.4s;
+    -moz-transition: all 0.4s;
+}
+
+.table-row .deposit-button:hover {
+    color: var(--deposit-button-color-hover);
+    cursor: pointer;
+}
+
+.table-row .deposit-button:active {
+    color: var(--deposit-button-color-active);
+}
+
+.table-row .withdraw-button:hover {
+    color: var(--withdraw-button-color-hover);
+    cursor: pointer;
+}
+
+.table-row .withdraw-button:active {
+    color: var(--withdraw-button-color-active);
+}
+
+@media all and (max-width: 767px) {
+    .row-group .table-row {
+        border-bottom: 0;
+    }
+
+    .row-group .table-row:last-of-type {
+        border-bottom: solid 1px var(--border-color-row);
+    }
+
+    .header .table-row {
+        border-bottom: solid 1px;
+    }
+
+    .table-row {
+        width: 100%;
+    }
 }
