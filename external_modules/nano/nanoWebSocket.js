@@ -1,5 +1,6 @@
 const WS = require('ws')
 const ReconnectingWebSocket = require('reconnecting-websocket')
+const axios = require("axios")
 
 /** Keep track if there was a conn error to prevent error span */
 let connErr = false
@@ -54,6 +55,5 @@ ws.onerror = function(event) {
 ws.onmessage = msg => {
 	console.log(msg.data)
 	data_json = JSON.parse(msg.data)
-	
-	console.log ('Confirmed', data_json.message.hash)
+	axios.post('localhost:50000/transaction', data_json.message.hash)
 }

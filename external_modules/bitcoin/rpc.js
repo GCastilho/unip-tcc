@@ -1,4 +1,5 @@
 const Client = require('bitcoin-core')
+const Transaction = require('./db/models/transaction')
 
 const wallet = new Client({
 	network: 'regtest',
@@ -16,5 +17,6 @@ function transactionInfo(txid) {
 
 module.exports = {
 	createAccount,
-	transactionInfo
+	transactionInfo,
+	updateTransactionRecords
 }
