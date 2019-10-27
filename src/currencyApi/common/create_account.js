@@ -98,7 +98,6 @@ module.exports = function constructor() {
 		looping = false
 	}
 
-	// return create_account = async () => {
 	return async function create_account() {
 		if (looping || !this.isOnline) return
 		looping = true

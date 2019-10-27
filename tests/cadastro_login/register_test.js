@@ -54,13 +54,13 @@ module.exports = function register_test(user) {
 			expect(await Person.find({email: user.email})).toHaveLength(1)
 		})
 
-		describe('The user should have at least ONE account of each currency', () => {
-			for(let currency in currencies) {
-				test(currency, async () => {
-					const person = await Person.findOne({email: user.email})
-					expect(person.currencies[currency].length).toBeGreaterThanOrEqual(1)
-				})
-			}
-		})
+		// describe('The user should have at least ONE account of each currency', () => {
+		// 	for(let currency in currencies) {
+		// 		test(currency, async () => {
+		// 			const person = await Person.findOne({email: user.email})
+		// 			expect(person.currencies[currency].length).toBeGreaterThanOrEqual(1)
+		// 		})
+		// 	}
+		// })
 	})
 }

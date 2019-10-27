@@ -7,6 +7,6 @@
 
 const EventEmitter = require('events')
 
-class CurrencyApiEventEmitter extends EventEmitter {}
+class CurrencyApiInternalEventEmitter extends EventEmitter {}
 
-module.exports = new CurrencyApiEventEmitter()
+module.exports = new CurrencyApiInternalEventEmitter()

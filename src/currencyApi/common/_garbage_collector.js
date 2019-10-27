@@ -29,7 +29,7 @@ module.exports = function constructor() {
 	/**
 	 * Limpa os comandos vazios da item.commands[command] da checklist
 	 */
-	return async function commandCollector (command) {
+	return async function commandCollector(command) {
 		if (!command)
 			throw new TypeError(`'command' needs to be informed`)
 		if (collecting[command]) return

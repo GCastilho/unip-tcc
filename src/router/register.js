@@ -50,7 +50,6 @@ Router.post('/', async function(req, res) {
 	.then(() => {
 		res.status(201).send()
 	}).catch(err => {
-		console.log(err)
 		if (err.code === 11000)
 			res.status(409).send()
 		else

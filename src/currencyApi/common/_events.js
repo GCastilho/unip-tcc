@@ -9,6 +9,6 @@
 
 const EventEmitter = require('events')
 
-class CurrencyModuleEventEmitter extends EventEmitter {}
+class CurrencyModuleInternalEventEmitter extends EventEmitter {}
 
-module.exports = CurrencyModuleEventEmitter
+module.exports = CurrencyModuleInternalEventEmitter

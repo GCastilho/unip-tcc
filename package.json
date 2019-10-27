@@ -21,16 +21,16 @@
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
     "js-sha512": "^0.8.0",
-    "mongoose": "^5.7.3",
+    "mongoose": "^5.7.6",
     "nano-address-validator": "^3.0.0",
     "randomstring": "^1.1.5"
   },
   "devDependencies": {
-    "concurrently": "^4.1.2",
+    "concurrently": "^5.0.0",
     "cookieparser": "^0.1.0",
     "env-cmd": "^10.0.1",
     "jest": "^24.8.0",
-    "nodemon": "^1.19.3",
+    "nodemon": "^1.19.4",
     "supertest": "^4.0.2"
   }
 }
