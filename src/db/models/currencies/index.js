@@ -12,7 +12,7 @@
  * armazenado é um array vazio
  */
 
-const normalizedPath = require("path").join(__dirname)
+const normalizedPath = require('path').join(__dirname)
 const Schema = require('mongoose').Schema
 
 const currencySchema = {
@@ -25,10 +25,10 @@ const currencySchema = {
 const currencies = {}
 
 require('fs').readdirSync(normalizedPath)
-.forEach(filename =>
-	filename !== 'index.js' &&
+	.forEach(filename =>
+		filename !== 'index.js' &&
 	(currencies[filename.replace('.js', '')] = {...currencySchema, ...require(`./${filename}`)})
-)
+	)
 
 /**
  * @throws ValidationError

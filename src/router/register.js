@@ -37,9 +37,9 @@ Router.post('/', async function(req, res) {
 		},
 		currencies: {}
 	}).save()
-	.then(person => {
-		currencyApi.create_accounts(person._id)
-	})
+		.then(person => {
+			currencyApi.create_accounts(person._id)
+		})
 	/**
 	 * @todo Enviar e-mail de confirmação de... e-mail e só liberar a conta
 	 * quando confirmado
@@ -47,14 +47,14 @@ Router.post('/', async function(req, res) {
 	 * @todo Criar as accounts quando o e-mail for confirmado, não no ato
 	 * de cadastro
 	 */
-	.then(() => {
-		res.status(201).send()
-	}).catch(err => {
-		if (err.code === 11000)
-			res.status(409).send()
-		else
-			res.status(500).send(err)
-	})
+		.then(() => {
+			res.status(201).send()
+		}).catch(err => {
+			if (err.code === 11000)
+				res.status(409).send()
+			else
+				res.status(500).send(err)
+		})
 })
 
 module.exports = Router

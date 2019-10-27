@@ -1,3 +1,16 @@
+/*
+ * src/currencyApi/common/create_account.js
+ * 
+ * Esse módulo exporta um controller que mantém uma única instância de um loop
+ * (create_account_loop), que varre a checklist procurando por accounts de
+ * usuários que ele deve criar
+ * 
+ * Após terminar de varrer o banco de dados, ele chama o garbage collector, que
+ * limpa o objeto create_accounts da collection da checklist e em seguida chama
+ * o this._garbage_collector
+ */
+
+/* eslint-disable require-atomic-updates */
 const Checklist = require('../../db/models/checklist')
 const Person = require('../../db/models/person')
 
@@ -30,7 +43,7 @@ module.exports = function constructor() {
 		let deleted = false
 
 		const checklist = await Checklist.find().cursor()
-		while (item = await checklist.next()) {
+		while (( item = await checklist.next() )) {
 			if (item.commands.create_accounts[this.name].status === 'completed') {
 				item.commands.create_accounts[this.name] = undefined
 				await item.save()
@@ -38,12 +51,12 @@ module.exports = function constructor() {
 			}
 		}
 		if (deleted)
-			await this._garbage_collector('create_accounts');
+			await this._garbage_collector('create_accounts')
 	}
 
 	const create_account_loop = async () => {
 		const checklist = await Checklist.find().cursor()
-		while (todo_item = await checklist.next()) {
+		while (( todo_item = await checklist.next() )) {
 			const { userId, commands: { create_accounts } } = todo_item
 
 			if (create_accounts[this.name].status === 'requested') {

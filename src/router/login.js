@@ -7,7 +7,7 @@
 const Router = require('express').Router()
 const bodyParser = require('body-parser')
 const sha512 = require('js-sha512')
-const randomstring = require("randomstring")
+const randomstring = require('randomstring')
 
 const Person = require('../db/models/person')
 const Cookie = require('../db/models/cookie')

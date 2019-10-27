@@ -63,8 +63,8 @@ module.exports = async function init() {
 	 */
 	const connection_checker_loop = () => {
 		if (!looping) {
-			looping = true;
-			(loop = async () => {
+			looping = true
+			;(loop = async () => {
 				try {
 					if ((res = await this._module.get('ping')) != 'pong')
 						throw new TypeError(`Unrecognized ${this.name} module response: ${res}`)

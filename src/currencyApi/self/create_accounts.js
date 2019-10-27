@@ -28,7 +28,7 @@ module.exports = async function create_accounts(userId, currencies) {
 	/**
 	 * @todo se uma pessoa com esse userId exitir, atualizar
 	 */
-	const person = await new Checklist({
+	await new Checklist({
 		userId,
 		commands: { create_accounts }
 	}).save()

@@ -17,20 +17,20 @@
  * classe, podendo acessar qualquer método da mesma
  */
 
-const normalizedPath = require("path").join(__dirname)
+const normalizedPath = require('path').join(__dirname)
 
 const methods = {}
 
 require('fs').readdirSync(normalizedPath)
-.forEach(filename =>
-	filename !== 'index.js' &&
+	.forEach(filename =>
+		filename !== 'index.js' &&
 	(methods[filename.replace('.js', '')] = require(`./${filename}`))
-)
+	)
 
 module.exports = class {
 	constructor(currencyProps) {
 		if (typeof currencyProps != 'object')
-			throw new TypeError(`Incorrect initialization of 'common'`)
+			throw new TypeError('Incorrect initialization of \'common\'')
 
 		/** Insere os módulos desta pasta como métodos da classe */
 		for (let method in methods) {

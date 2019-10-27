@@ -2,6 +2,15 @@
  * src/currencyApi/index.js
  *
  * Endpoint do servidor principal com os módulos conectores das blockchains
+ * 
+ * Esse módulo exporta o singleton da currencyApi que tem métodos modulares
+ * (separados em arquivos e pastas) que são montados no momento da instanciação
+ * dessa módulo
+ * 
+ * A currencyApi tem o método (privado) da currencyModule, que tem a comunicação
+ * direta com cada um das currencies, as funções 'self', que são as funções da
+ * API de fato e o módulo 'currencies', que tem implementações privadas de cada
+ * uma das currencies suportadas
  */
 
 const currencies = require('./currencies')

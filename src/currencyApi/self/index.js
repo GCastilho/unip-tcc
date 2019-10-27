@@ -6,14 +6,14 @@
  * retornar o retorno de um require('modulo.js') contido nessa pasta
  */
 
-const normalizedPath = require("path").join(__dirname)
+const normalizedPath = require('path').join(__dirname)
 
 const functions = {}
 
 require('fs').readdirSync(normalizedPath)
-.forEach(filename =>
-	filename !== 'index.js' &&
+	.forEach(filename =>
+		filename !== 'index.js' &&
 	(functions[filename.replace('.js', '')] = require(`./${filename}`))
-)
+	)
 
 module.exports = functions

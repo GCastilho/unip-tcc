@@ -3,7 +3,6 @@
  * 
  * Módulo privado que permite a conexão com o módulo externo, expõe uma função
  * get() e uma função post()
- * 
  */
 
 const axios = require('axios')
@@ -15,7 +14,7 @@ module.exports = function constructor() {
 	 */
 	const get = async (command) => {
 		if (!command)
-			throw new TypeError(`'command' is required`)
+			throw new TypeError('\'command\' is required')
 
 		try {
 			const { data } = await axios.get(`http://${this.ip}:${this.port}/${command}`)
@@ -35,7 +34,7 @@ module.exports = function constructor() {
 	 */
 	const post = async (command, body) => {
 		if (!command)
-			throw new TypeError(`'command' is required`)
+			throw new TypeError('\'command\' is required')
 
 		try {
 			const { data } = await axios.post(`http://${this.ip}:${this.port}/${command}`, body)
