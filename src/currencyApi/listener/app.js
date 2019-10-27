@@ -25,7 +25,7 @@ module.exports = function listener_app(api) {
 		const response = api[currency][command](req, res)
 		if (response) res.send(response)
 	})
-	
+
 	app.get('*', (req, res) => {
 		res.status(400).send({ error: 'bad request' })
 	})

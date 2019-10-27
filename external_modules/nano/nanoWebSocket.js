@@ -1,6 +1,9 @@
 const WS = require('ws')
 const ReconnectingWebSocket = require('reconnecting-websocket')
 
+/** Keep track if there was a conn error to prevent error span */
+let connErr = false
+
 /**
  * Create a reconnecting WebSocket. In this example, we wait a maximum of
  * 2 seconds before retrying
@@ -15,7 +18,9 @@ const ws = new ReconnectingWebSocket('ws://[::1]:57000', [], {
 
 /** As soon as we connect, subscribe to block confirmations */
 ws.onopen = () => {
-	console.log('websocket listening')
+	/** Reseta o status de erro de conexão */
+	connErr = false
+	console.log('Websocket connection open')
 	const confirmation_subscription = {
 		"action": "subscribe",
 		"topic": "confirmation",
@@ -29,7 +34,16 @@ ws.onopen = () => {
 }
 
 ws.onerror = function(event) {
-	console.error("WebSocket error observed:", event)
+	if (event.error.code === 'ECONNREFUSED' ||
+		event.error.code === 'ECONNRESET') {
+		/** Faz com que a mensagem de erro de conexão apareça apenas uma vez */
+		if (!connErr) {
+			connErr = true
+			console.log('Error connecting to nano websocket')
+		}
+	} else {
+		console.error('WebSocket error observed:', event)
+	}
 }
 
 /**
