@@ -19,6 +19,45 @@ const self = require('./self')
 
 class CurrencyApi {
 	constructor() {
+		/** Insere os métodos da currencyApi, acessíveis por 'this.<method>' */
+		for (let method in self) {
+			this[method] = self[method]
+		}
+
+		/**
+		 * Instancia o EventEmitter interno da currencyApi
+		 */
+		this._events = new this._events
+
+		/**
+		 * Funções 'constructor' são funções que devem ser executadas para
+		 * inicializar módulos ou executar ações antes de retornar algo que deva
+		 * ser acessível da currencyApi (como uma função), então ela é
+		 * executada e substituída por ser valor de retorno
+		 */
+		for (let method in this) {
+			if (this[method].name === 'constructor') {
+				this[method] = this[method]()
+			}
+		}
+
+		/**
+		 * Funções 'init' servem para iniciar módulos ou executar ações mas seu
+		 * valor de retorno não é necessário ou útil na currencyApi (por
+		 * exemplo, inicializar event listeners). Como ela não retorna nada
+		 * útil, a função é deletada para reduzir a poluição
+		 * 
+		 * Nota: Todas as funções 'constructor' devem ter sido executadas antes
+		 * das funções init para garantir que todos os métodos da currencyApi
+		 * tenham sido inicializados e estejam acessíveis
+		 */
+		for (let method in this) {
+			if (this[method].name === 'init') {
+				this[method]()
+				delete this[method]
+			}
+		}
+
 		/**
 		 * Contém os métodos e propriedades internas de cada currency em
 		 * um método interno com o nome dessa currency
@@ -34,11 +73,6 @@ class CurrencyApi {
 		 */
 		for (let currency in currencies) {
 			this.currencies[currency] = new currencyModule(currencies[currency])
-		}
-
-		/** Insere os métodos da currencyApi, acessíveis por 'this.<method>' */
-		for (let method in self) {
-			this[method] = self[method]
 		}
 	}
 }

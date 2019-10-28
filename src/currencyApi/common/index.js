@@ -46,7 +46,7 @@ module.exports = class {
 		}
 
 		/**
-		 * Instancia o EventListener interno para _essa_ instância da classe
+		 * Instancia o EventEmitter interno para _essa_ instância da classe
 		 */
 		this._events = new this._events
 

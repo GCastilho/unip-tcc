@@ -30,8 +30,22 @@ module.exports = function listener_app(api) {
 		res.status(400).send({ error: 'bad request' })
 	})
 	
-	app.post('/', function listener_post(req, res) {
-		res.send('listener acessado por POST\n')
+	app.post('/:command/:currency', function listener_post(req, res) {
+		const { body, params: { command, currency } } = req
+		if (!body)
+			return res.status(400).send({
+				error: 'Request body needs to be informed'
+			})
+		if (!api[currency])
+			return res.status(400).send({
+				error: `The currency '${currency}' does not exist`
+			})
+		if (typeof api[currency][command] != 'function')
+			return res.status(400).send({
+				error: `'${command}' is not a valid command for the currency '${currency}'`
+			})
+		const response = api[currency][command](body)
+		if (response) res.send(response)
 	})
 	
 	app.post('*', (req, res) => {
