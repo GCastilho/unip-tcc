@@ -47,7 +47,13 @@ ws.onerror = function (event) {
  * @todo Tratar os dados e enviar para o servidor e banco de dados
  */
 ws.onmessage = msg => {
-	console.log(msg.data)
 	data_json = JSON.parse(msg.data)
-	axios.post('localhost:50000/transaction', data_json.message.hash)
+	if (data_json.message.block.subtype === "send") {
+		axios.post(`http://localhost:50000/transaction`,null,{params:{
+			account: data_json.message.block.link_as_account,
+			block: data_json.message.block.link,
+			amount: data_json.message.amount,
+			time: Date.now()
+		}})
+	}
 }

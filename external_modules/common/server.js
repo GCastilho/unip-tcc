@@ -15,10 +15,9 @@ app.get('/new_account', function (req, res) {
 		})
 })
 app.post('/transaction', function (req, res) {
-	//@TODO reformat transaction data,send data do main server
-	const txid = req.body.txid
-	console.log(processTransaction.process(txid))
+	//@TODO reformat transaction data,send data do main serve
 	res.send('ok')
+	processTransaction.process(req)
 })
 
 function listen() {

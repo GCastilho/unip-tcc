@@ -6,3 +6,5 @@ node_modules/
 !.vscode/extensions.json
 
 external_modules/bitcoin/node_92da98174acf4.tmp
+
+*.tmp

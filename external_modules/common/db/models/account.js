@@ -11,11 +11,6 @@ const Account = mongoose.model('account', {
 		type: Boolean,
 		required: true
 	},
-	lastBlock: {
-		type: String,
-		trim: true
-	}
-
 })
 
 module.exports = Account
