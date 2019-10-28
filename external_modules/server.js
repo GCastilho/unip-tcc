@@ -3,7 +3,7 @@ const app = require("express")()
 const nanoRcp = require("./rpc")
 
 //um get que solicita uma conta nova para o rcp da nano numa carteira local padrao
-app.get('/new_account', function(req, res) {
+app.get('/new_account', function (req, res) {
 	nanoRcp.createAccount()
 	.then(account =>{
 		res.send(account)
@@ -28,10 +28,6 @@ app.post('/transaction', function (req,res) {
 			console.log
 		})
 		res.send('ok')
-})
-
-app.get('/ping', function(req, res) {
-	res.send('pong')
 })
 
 function listen() {

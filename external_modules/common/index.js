@@ -1,17 +1,18 @@
 const Currency = process.env.CURRENCY
 const main_server_ip = process.env.main_server_ip || 'localhost:8085'
 const axios = require("axios")
-const Account = require(`../${Currency}/db/models/account`)
+const Account = require(require.resolve(`./db/models/account`,{paths:[`./`,'../common']})) 
+const saveAccount = require(require.resolve(`./save-account`,{paths:[`./`,'../common']}))
 const server = require(`./server`)
 
 
 /** Conecta ao mongodb */
-const db = require(`../${Currency}/db/mongoose`)
+const db = require(require.resolve(`./db/mongoose`,{paths:[`./`,'../common']}))
 
 /** Setup database */
-db.connection.on('connected', () => {
+db.connection.on('connected',() => {
 	/** Limpa a collection accounts */
-	Account.deleteMany().then(() => {
+	Account.collection.updateMany({},{$set: {isUpdated: false}},{}).then(() => {
 		process.stdout.write('Connecting to main server... ')
 		return connectToMainServer()
 	}).then(() => {
@@ -26,12 +27,15 @@ db.connection.on('connected', () => {
 		console.log('Success\nReceiving account stream and importing accounts into private database')
 
 		data.on('data', (chunk) => {
-			/** Cada chunk é uma NANO account */
-			new Account({ account: chunk.toString() }).save()
+			/** Cada chunk é uma account */
+			saveAccount.saveOrUpdate(chunk.toString())
 		})
 		data.on('end', (chunk) => {
 			console.log(`All ${Currency} accounts received and imported successfuly!`)
+			Account.deleteMany({isUpdated: false},{}).then(() => {
+			})
 			server.listen()
+
 		})
 	})
 })

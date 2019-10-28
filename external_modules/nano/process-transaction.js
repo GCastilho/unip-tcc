@@ -1,37 +1,61 @@
-const Transaction = require('./db/models/transaction')
-const account = require('./db/models/account')
+const Transaction = require(require.resolve(`./db/models/transaction`,{paths:[`./`,'../common']}))
+const Account = require(require.resolve(`./db/models/account`,{paths:[`./`,'../common']}))
 const Rpc = require(`./rpc`)
+const Axios = require("axios")
 
-function formatTransaction(blockHash) {
+function getReceiveHistory(firstBlock,block) {
+	let receiveArray = [block]
+	let previous = block.contents.previous
+	while (receiveArray[receiveArray.length - 1].block != firstBlock) {
+		Rpc.blockInfo(previous).then(blockInfo => {
+			receiveArray.push(blockInfo)
+			previous= blockInfo.contents.previous
+		})
+	}
+}
+function checkOld(transaction) {
 	return new Promise(function (resolve,reject) {
-		Rpc.blockInfo(blockHash).then(transaction => {
+		Rpc.blockInfo(transaction.block).then(blockInfo => {
 			new Transaction({
-				tx: blockHash,
-				info: transaction
+				tx: transaction.block,
+				info: blockInfo
 			}).save().catch(err => {
-				reject(err)
+				reject('erro ao salvar transacao no banco de dados')
 			})
-
-
-
-			let i = 0
-			const transactionMeta = []
-			for (i;
-			transactionMeta.txid = tx.txid
-			transactionMeta.address =
-				(tx.details[i].category === "receive") ? tx.details[i].address :
-					((tx.details[i = 0].category === "receive") ? tx.details[i].address : null)
-			transactionMeta.ammount = tx.details[i].amount
-			transactionMeta.blockindex = tx.blockindex
-			resolve(transactionMeta)
+			Account.findOne({account: transaction.account}).then((req,res) => {
+				if (res === null) {
+					reject()
+				} else {
+					if (lastBlock = null) {
+						getReceiveHistory('0000000000000000000000000000000000000000000000000000000000000000',blockInfo)
+					} else if (lastBlock = blockInfo.contents.previous) {
+						Account.collection.updateOne({account: data,},{$set: {lastBlock: lastBlock}},{})
+					} else {
+						getReceiveHistory(lastBlock,blockInfo)
+					}
+					let i = 0
+					const transactionMeta = []
+					resolve(transactionMeta)
+				}
+			})
 		})
 	})
 }
 
-function process(txid) {
-	formatTransaction.then((transactionMeta) => {
-		return transactionMeta
-	})
+function process(req) {
+	const transaction = {
+		account: req.query.account,
+		txid: req.query.block,
+		amount: req.query.amount,
+		time: req.query.time
+	}
+	Axios.post(`http://localhost:8085/new_transaction/nano`,null,{
+		params: {transaction: transaction}
+	}).then(res => {
+		console.log(res)
+	}).catch(err => {console.log(err)})
+	//checkOld(transaction).then(res => {console.log(res)})
+
 }
 
 

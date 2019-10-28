@@ -12,26 +12,19 @@ require("./nanoWebSocket")
 /** Setup database */
 db.connection.on('connected', () => {
 	/** Limpa a collection accounts */
-	Account.deleteMany().then(() => {
-		process.stdout.write('Connecting to main server... ')
-		return connectToMainServer()
-	}).then(() => {
-		process.stdout.write('Connected!\nRequesting ALL NANO accounts... ')
-		
+	Account.deleteMany().then(() =>
 		/** Solicita ao servidor principal a lista de contas NANO dos usuarios */
-		return axios.get(`http://${main_server_ip}/account_list/nano`, {
+		axios.get(`http://${main_server_ip}/account_list/nano`, {
 			responseType: 'stream'
 		})
-	}).then(({ data }) => {
-		console.log('Success\nReceiving account stream and importing accounts into private database')
-
+	).then(({ data }) => {
 		data.on('data', (chunk) => {
 			/** Cada chunk é uma NANO account */
 			new Account ({ account: chunk.toString() }).save()
 		})
 
 		data.on('end', (chunk) => {
-			console.log('All NANO accounts received and imported successfuly!')
+			console.log('All NANO accounts imported successfuly!')
 			server.listen()
 		})
 	}).catch(err => {
@@ -40,21 +33,3 @@ db.connection.on('connected', () => {
 		process.exit(1)
 	})
 })
-
-/** Checa a conexão com o servidor principal. Retorna ao obter uma resposta */
-function connectToMainServer() {
-	return new Promise((resolve, reject) => {
-		(function ping() {
-			axios.get(`http://${main_server_ip}/ping/nano`)
-			.then(({ data }) => {
-				if (data === 'pong')
-					resolve()
-				else
-					reject(`Unrecognized response: ${data}`)
-			}).catch(err => {
-				/** Aguarda 10 segundos e tenta novamente */
-				setTimeout(ping, 10000)
-			})
-		})()
-	})
-}
