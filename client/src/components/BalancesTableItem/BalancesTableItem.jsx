@@ -1,4 +1,5 @@
 import React from 'react';
+import QRCode from 'qrcode.react';
 
 import './BalancesTableItem.css';
 
@@ -9,13 +10,20 @@ export default props => {
 
     const [valued, setValued] = React.useState(false);
     const [devalued, setDevalued] = React.useState(false);
+    const [deposit, setDeposit] = React.useState(false);
+    const [withdraw, setWithdraw] = React.useState(false);
+
     const prevValue = usePrevious(props.value);
     let balanceValue;
+    let depositShow;
+    let withdrawShow;
 
     React.useEffect(() => {
         if (prevValue === props.value) {
             setValued(false);
             setDevalued(false);
+            setDeposit(false);
+            setWithdraw(false);
         }
     },[prevValue, props.value]);
 
@@ -39,23 +47,59 @@ export default props => {
         props.depositOnClick();
         setValued(true);
         setDevalued(false);
+        setDeposit(true);
+        setWithdraw(false);
     }
 
     function withdrawHandle() {
         props.withdrawOnClick();
         setValued(false);
         setDevalued(true);
+        setDeposit(false);
+        setWithdraw(true);
     }
 
+    deposit ? depositShow = 'drawer-container' : depositShow = 'drawer-container hide';
+    withdraw ? withdrawShow = 'drawer-container' : withdrawShow = 'drawer-container hide';
+
     return (
-        <div className='row-group row'>
-            <div className='table-row'>{props.code}</div>
-            <div className='table-row'>{props.name}</div>
-            <div className={'table-row '+balanceValue}>{props.value}</div>
-            <div className='table-row'>
-                <button className='deposit-button' onClick={depositHandle}>Deposit</button>
-                <button className='withdraw-button' onClick={withdrawHandle}>Withdraw</button>
+        <>
+            <div className='row-group row'>
+                <div className='table-row'>{props.code}</div>
+                <div className='table-row'>{props.name}</div>
+                <div className={'table-row '+balanceValue}>{props.value}</div>
+                <div className='table-row'>
+                    <button className='deposit-button' onClick={depositHandle}>Deposit</button>
+                    <button className='withdraw-button' onClick={withdrawHandle}>Withdraw</button>
+                </div>
             </div>
-        </div>
+            <div className={depositShow}>
+                <div className='deposit-container'>
+                    <div className='left-div'>
+                        <h5>Seu endereço de deposito:</h5>
+                        <div className='deposit-address'>
+                            <p>{props.address}</p>
+                        </div>
+                    </div>
+
+                    <div className='right-div'>
+                        <div className='qr-container'>
+                            <QRCode
+                                value={props.address}
+                                renderAs='svg'
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className={withdrawShow}>
+                <div className='withdraw-container'>
+                    <h5>Você tem {props.code} {props.value} disponiveis para saque :</h5>
+                    <div className='withdraw-address'>
+                        1FKnT7wvBeVhz1nUxSatHXkcuqzVCe46nF
+                    </div>
+                </div>
+            </div>
+        </>
     )
 };

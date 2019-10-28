@@ -4,8 +4,11 @@
     --color-row: white;
     --color-row-second: #f4f2f1;
     --color-row-houve: #ececec;
+    --background-color-drawer: #efefef;
+    --background-color-address: white;
     --border-color-row: #d9d9d9;
     --text-color-header: white;
+    --text-color-row: black;
     --deposit-button-color-hover: #57b846;
     --deposit-button-color-active: #316331;
     --withdraw-button-color-hover: red;
@@ -54,7 +57,7 @@
 .table-row {
     width: calc(100% / 4);
     text-align: center;
-    color: black;
+    color: var(--text-color-row);
     padding: 0.5em 0.5em;
     border-right: solid 1px var(--border-color-row);
     border-bottom: solid 1px var(--border-color-row);

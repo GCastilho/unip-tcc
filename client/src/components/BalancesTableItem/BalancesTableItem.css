@@ -5,3 +5,75 @@
 .balances-devalued {
     color: red;
 }
+
+.drawer-container {
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+    background-color: var(--background-color-drawer);
+    border: solid 1px var(--border-color-row);
+    max-height: 500px;
+    border-top: none;
+    transition: all 0.1s ease-in-out;
+}
+
+.drawer-container.hide {
+    max-height: 0;
+    opacity: 0;
+    border: none;
+    overflow: hidden;
+}
+
+.deposit-container {
+    display: flex;
+    flex-direction: row;
+    flex-flow: row wrap;
+    align-items: center;
+}
+
+.deposit-address {
+    background-color: var(--background-color-address);
+    border: solid 1px var(--border-color-row);
+    margin: 0 1rem 32px 1rem;
+}
+
+.deposit-address p {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-all;
+    display: inline-block;
+    margin: 10px 15px;
+}
+
+.right-div {
+    justify-content: center;
+    display: flex;
+    flex-grow: 1;
+}
+
+.qr-container {
+    margin: 5px;
+    padding: 10px;
+    height: 150px;
+    width: 154px;
+    background-color: var(--background-color-address);
+    border: solid 1px var(--border-color-row);
+}
+
+.deposit-container div,
+.deposit-container h5,
+.withdraw-container div,
+.withdraw-container h5 {
+    text-align: center;
+    color: var(--text-color-row);
+}
+
+.withdraw-container {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    height: 200px;
+    border-top: none;
+    max-height: 200px;
+}
+

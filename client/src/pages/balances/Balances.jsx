@@ -11,9 +11,9 @@ import BalancesTableItem from "../../components/BalancesTableItem/BalancesTableI
 
 
 let simu = [
-    { code: "ETH", name: "Etherium", value: "0.00000000" },
-    { code: "BTC", name: "Bitcoin", value: "0.00000000" },
-    { code: "NANO", name: "NANO", value: "0.00000000" }
+    { code: "ETH", name: "Etherium", value: "0.00000000", address: '1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2' },
+    { code: "BTC", name: "Bitcoin", value: "0.00000000", address: '0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413' },
+    { code: "NANO", name: "NANO", value: "0.00000000", address: 'xrb_3njakob6iz67oi5cfade3etoremah35wsdei6n6qnjrdhrjgj45kwhqotc85' }
 ];
 
 export default class Balances extends Component {
@@ -45,13 +45,13 @@ export default class Balances extends Component {
 
     /**
      * @description append new data or replace existing one
-     * @param {JSON} balance recieve the item for the balance ex. {code,name,balance}
+     * @param item: balance recieve the item for the balance ex. {code,name,balance}
      */
-    appendBalance = ({ balance, code }) => {
+    appendBalance = (item) => {
         let newState = this.state;
         for (let i = 0; i < newState.balances.length; i++) {
-            if (newState.balances[i].code === code) {
-                newState.balances[i].balance = balance;
+            if (newState.balances[i].code === item.code) {
+                newState.balances[i].balance = item.balance;
             }
         }
         this.setState(newState);
@@ -100,6 +100,7 @@ export default class Balances extends Component {
                         name={bal.name}
                         code={bal.code}
                         value={bal.value}
+                        address={bal.address}
                         depositOnClick={() => this.depositBalance(bal)}
                         withdrawOnClick={() => this.withdrawBalance(bal)}
                     />
