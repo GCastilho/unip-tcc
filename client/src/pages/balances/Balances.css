@@ -58,6 +58,7 @@
     width: calc(100% / 4);
     text-align: center;
     color: var(--text-color-row);
+    text-transform: capitalize;
     padding: 0.5em 0.5em;
     border-right: solid 1px var(--border-color-row);
     border-bottom: solid 1px var(--border-color-row);

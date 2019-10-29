@@ -85,7 +85,7 @@ export default props => {
                     <div className='right-div'>
                         <div className='qr-container'>
                             <QRCode
-                                value={props.address}
+                                value={props.name.toLowerCase()+':'+props.address}
                                 renderAs='svg'
                             />
                         </div>
@@ -94,10 +94,12 @@ export default props => {
             </div>
             <div className={withdrawShow}>
                 <div className='withdraw-container'>
-                    <h5>Você tem {props.code} {props.value} disponiveis para saque :</h5>
-                    <div className='withdraw-address'>
-                        1FKnT7wvBeVhz1nUxSatHXkcuqzVCe46nF
+                    <h5>Você tem {props.value} {props.code} disponiveis para saque :</h5>
+                    <div>
+                        <label>Endereço : </label><input/>
                     </div>
+                    <div><label>Montante : </label><input type='number' step='0,0000010' max={props.value}/></div>
+                    <button>Saque</button>
                 </div>
             </div>
         </>
