@@ -8,12 +8,9 @@ const wallet = new Client({
 	port: 40000
 });
 
-function createAccount() {
-	return 	wallet.getNewAddress()
-}
-function transactionInfo(txid) {
-	return 	wallet.getTransaction(txid)
-}
+const createAccount = () => wallet.getNewAddress()
+
+const transactionInfo = (txid) => wallet.getTransaction(txid)
 
 module.exports = {
 	createAccount,

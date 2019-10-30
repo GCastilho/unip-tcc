@@ -8,6 +8,7 @@ const options = {
 	// boolean false to turn rpc checks off, default true
 	strict: false
 }
+
 const client = new rpc.Client(options)
 
 const account_create = {
@@ -16,7 +17,7 @@ const account_create = {
 }
 
 function createAccount() {
-	return new Promise(function(resolve, reject) {
+	return new Promise((resolve, reject) => {
 		client.call(account_create,function (err, res) {
 			if (!err && !res.error) {
 				resolve(res.account)
@@ -26,20 +27,20 @@ function createAccount() {
 		}
 	)})
 }
+
 function blockInfo(block) {
-	return new Promise(function (resolve, reject) {
+	return new Promise((resolve, reject) => {
 		client.call({
 			"action": "block_info",
 			"json_block": "true",
 			"hash": block
-		}, function (err, res) {
+		}, (err, res) => {
 			if (!err && !res.error) {
 				resolve(res.account)
 			} else {
 				reject(err)
 			}
-		}
-		)
+		})
 	})
 }
 

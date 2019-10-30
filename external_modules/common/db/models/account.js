@@ -7,10 +7,16 @@ const Account = mongoose.model('account', {
 		unique: true,
 		required: true
 	},
+	/*
 	isUpdated: {
 		type: Boolean,
 		required: true
 	},
+	lastBlock: {
+		type: String,
+		trim: true
+	}*/
+
 })
 
 module.exports = Account

@@ -55,11 +55,15 @@ ws.onerror = function(event) {
 ws.onmessage = msg => {
 	data_json = JSON.parse(msg.data)
 	if (data_json.message.block.subtype === "send") {
-		axios.post(`http://localhost:50000/transaction`,null,{params:{
-			account: data_json.message.block.link_as_account,
-			block: data_json.message.block.link,
-			amount: data_json.message.amount,
-			time: Date.now()
-		}})
+		axios.post(`http://localhost:50000/transaction`, {
+			message: {
+				block: {
+					link_as_account,
+					link
+				},
+				amount,
+			},
+			time
+		} = data_json)
 	}
 }
