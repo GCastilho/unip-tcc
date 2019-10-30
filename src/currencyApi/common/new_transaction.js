@@ -8,4 +8,5 @@
 
 module.exports = function new_transaction(transaction) {
 	console.log('received new transaction', transaction)
+	return 'received'
 }
