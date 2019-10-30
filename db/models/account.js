@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const mongoose = require('../mongoose')
 
 const Account = mongoose.model('account', {
 	account: {
@@ -11,11 +11,6 @@ const Account = mongoose.model('account', {
 		type: Boolean,
 		required: true
 	},
-	lastBlock: {
-		type: String,
-		trim: true
-	}
-
 })
 
 module.exports = Account

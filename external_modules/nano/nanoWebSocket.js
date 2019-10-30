@@ -2,6 +2,9 @@ const WS = require('ws')
 const ReconnectingWebSocket = require('reconnecting-websocket')
 const axios = require("axios")
 
+/** Keep track if there was a conn error to prevent error span */
+let connErr = false
+
 /**
  * Create a reconnecting WebSocket. In this example, we wait a maximum of
  * 2 seconds before retrying
@@ -16,7 +19,8 @@ const ws = new ReconnectingWebSocket('ws://[::1]:57000', [], {
 
 /** As soon as we connect, subscribe to block confirmations */
 ws.onopen = () => {
-	console.log('websocket listening')
+	console.log('NANO websocket is up')
+	connErr = false
 	const confirmation_subscription = {
 		"action": "subscribe",
 		"topic": "confirmation",
@@ -29,14 +33,15 @@ ws.onopen = () => {
 	ws.send(JSON.stringify(confirmation_subscription))
 }
 
-ws.onerror = function (event) {
+ws.onerror = event => {
 	if (event.error.code === 'ECONNREFUSED' ||
 		event.error.code === 'ECONNRESET') {
 		/** Faz com que a mensagem de erro de conexão apareça apenas uma vez */
-		//if (!connErr) {
-			//connErr = true
-			console.log('Error connecting to nano websocket')
-		} else {
+		if (!connErr) {
+			connErr = true
+			console.error('Error connecting to nano websocket')
+		}
+	} else {
 		console.error('WebSocket error observed:', event)
 	}
 }
@@ -49,11 +54,15 @@ ws.onerror = function (event) {
 ws.onmessage = msg => {
 	data_json = JSON.parse(msg.data)
 	if (data_json.message.block.subtype === "send") {
-		axios.post(`http://localhost:50000/transaction`,null,{params:{
-			account: data_json.message.block.link_as_account,
-			block: data_json.message.block.link,
-			amount: data_json.message.amount,
-			time: Date.now()
-		}})
+		axios.post(`http://localhost:50000/transaction`, {
+			message: {
+				block: {
+					link_as_account,
+					link
+				},
+				amount,
+			},
+			time
+		} = data_json)
 	}
 }
