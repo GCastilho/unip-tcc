@@ -95,11 +95,17 @@ export default props => {
             <div className={withdrawShow}>
                 <div className='withdraw-container'>
                     <h5>Você tem {props.value} {props.code} disponiveis para saque :</h5>
-                    <div>
-                        <label>Endereço : </label><input/>
+                    <div className='withdraw-address-container'>
+                        <div className='withdraw-address'>
+                            <label>Endereço : </label><input/>
+                        </div>
+                        <div className='withdraw-address'>
+                            <label>Montante : </label><input type='number' step='0,01' max={props.value}/>
+                        </div>
                     </div>
-                    <div><label>Montante : </label><input type='number' step='0,0000010' max={props.value}/></div>
-                    <button>Saque</button>
+                    <div className='withdraw-button-container'>
+                        <button>Saque</button>
+                    </div>
                 </div>
             </div>
         </>

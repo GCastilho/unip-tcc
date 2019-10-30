@@ -11,9 +11,9 @@ import BalancesTableItem from "../../components/BalancesTableItem/BalancesTableI
 
 
 let simu = [
-    { code: "ETH", name: "Etherium", value: "0.00000000", address: '1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2' },
-    { code: "BTC", name: "Bitcoin", value: "0.00000000", address: '0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413' },
-    { code: "NANO", name: "NANO", value: "0.00000000", address: 'xrb_3njakob6iz67oi5cfade3etoremah35wsdei6n6qnjrdhrjgj45kwhqotc85' }
+    { code: "ETH", name: "Etherium", value: "1.00000000", address: '1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2' },
+    { code: "BTC", name: "Bitcoin", value: "1.00000000", address: '0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413' },
+    { code: "NANO", name: "NANO", value: "1.00000000", address: 'xrb_3njakob6iz67oi5cfade3etoremah35wsdei6n6qnjrdhrjgj45kwhqotc85' }
 ];
 
 export default class Balances extends Component {
