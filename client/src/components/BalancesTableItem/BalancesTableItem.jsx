@@ -56,9 +56,9 @@ export default props => {
      */
     function amountHandle(e) {
         /** test1: ele testa se o input somente um ponto ou uma virgula*/
-        let test1 = /^([1-9]\d*(\.|\,)\d*|0?(\.|\,)\d*[1-9]\d*|[1-9]\d*)$/gm;
+        let test1 = /^([1-9]\d*([.,])\d*|0?([.,])\d*[1-9]\d*|[1-9]\d*)$/gm;
         /** test2: ele testa se os primeiros 2 digitos são '0.' ou '0,'*/
-        let test2 = /^[0]((\.|\,){0,1}|0?(\.|\,))$/gm;
+        let test2 = /^[0](([.,])?|0?([.,])\d*)$/gm;
 
         if (test1.test(e.target.value) ||
             test2.test(e.target.value)) {
