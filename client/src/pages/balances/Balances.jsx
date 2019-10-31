@@ -25,7 +25,16 @@ export default class Balances extends Component {
              */
             balances: simu,
             valued: 0,
+            onFocus: false
         };
+    }
+
+    /**
+     * Função para abrir e fechar as abas
+     */
+    setFocus(focus) {
+        let newState = {onFocus: focus};
+        this.setState(newState);
     }
 
     /**
@@ -101,8 +110,8 @@ export default class Balances extends Component {
                         code={bal.code}
                         value={bal.value}
                         address={bal.address}
-                        depositOnClick={() => this.depositBalance(bal)}
-                        withdrawOnClick={() => this.withdrawBalance(bal)}
+                        focus={this.state.onFocus}
+                        setFocus={this.setFocus.bind(this)}
                     />
                 ))}
             </div>

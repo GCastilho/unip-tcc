@@ -8,55 +8,93 @@ import './BalancesTableItem.css';
  */
 export default props => {
 
-    const [valued, setValued] = React.useState(false);
-    const [devalued, setDevalued] = React.useState(false);
     const [deposit, setDeposit] = React.useState(false);
     const [withdraw, setWithdraw] = React.useState(false);
+    const [address, setAddress] = React.useState('');
+    const [amount, setAmount] = React.useState('');
 
-    const prevValue = usePrevious(props.value);
-    let balanceValue;
     let depositShow;
     let withdrawShow;
 
     React.useEffect(() => {
-        if (prevValue === props.value) {
-            setValued(false);
-            setDevalued(false);
+        if (props.focus) {
             setDeposit(false);
             setWithdraw(false);
+            props.setFocus(false);
         }
-    },[prevValue, props.value]);
+    },[props]);
 
-    function usePrevious(value) {
-        const ref = React.useRef();
-        React.useEffect(() => {
-            ref.current = value;
-        });
-        return ref.current;
-    }
-
-    if (!valued && !devalued) {
-        balanceValue = '';
-    } else if (valued) {
-        balanceValue = 'balances-valued';
-    } else if (devalued) {
-        balanceValue = 'balances-devalued';
-    }
-
+    /**
+     * Handle do botão 'deposito', abre a aba deposito
+     */
     function depositHandle() {
-        props.depositOnClick();
-        setValued(true);
-        setDevalued(false);
-        setDeposit(true);
-        setWithdraw(false);
+        // Fecha as outras abas abertas
+        props.setFocus(true);
+
+        setTimeout(() => {
+            props.setFocus(false);
+            setDeposit(true);
+        },1);
     }
 
+    /**
+     * Handle do botão 'sacar', abre a aba sacar
+     */
     function withdrawHandle() {
-        props.withdrawOnClick();
-        setValued(false);
-        setDevalued(true);
-        setDeposit(false);
-        setWithdraw(true);
+        // Fecha as outras abas abertas
+        props.setFocus(true);
+
+        setTimeout(() => {
+            props.setFocus(false);
+            setWithdraw(true);
+        },1)
+    }
+
+    /**
+     * @description Handle do input do amount
+     * @param e: recebe um evento do input
+     */
+    function amountHandle(e) {
+        /** test1: ele testa se o input somente um ponto ou uma virgula*/
+        let test1 = /^([1-9]\d*(\.|\,)\d*|0?(\.|\,)\d*[1-9]\d*|[1-9]\d*)$/gm;
+        /** test2: ele testa se os primeiros 2 digitos são '0.' ou '0,'*/
+        let test2 = /^[0]((\.|\,){0,1}|0?(\.|\,))$/gm;
+
+        if (test1.test(e.target.value) ||
+            test2.test(e.target.value)) {
+            // Substitui as virgulas por pontos
+            let newAmount = e.target.value.replace(/[,]/g, m => (m === ',' ? '.' : ','));
+
+            // Compara se o valor digitado é maior que a quantidade na carteira
+            if (newAmount > props.value) {
+
+                // Se for maior o valor do input é mudado para a quantidade na carteira
+                e.target.value = props.value;
+                setAmount(props.value);
+
+            } else {
+                setAmount(newAmount);
+            }
+        } else {
+            // Impedi que o usuario digite algum valor invalido
+            e.target.value = e.target.value.substring(0, e.target.value.length - 1);
+        }
+    }
+
+    /**
+     * Handle do input do address
+     */
+    function addressHandle(e) {
+        setAddress(e.target.value);
+    }
+
+    /**
+     * Handle do botão de saque
+     * ainda precisa ser implementado
+     */
+    function withdrawButtonHandle() {
+        console.log(address);
+        console.log(amount);
     }
 
     deposit ? depositShow = 'drawer-container' : depositShow = 'drawer-container hide';
@@ -67,10 +105,10 @@ export default props => {
             <div className='row-group row'>
                 <div className='table-row'>{props.code}</div>
                 <div className='table-row'>{props.name}</div>
-                <div className={'table-row '+balanceValue}>{props.value}</div>
+                <div className='table-row'>{props.value}</div>
                 <div className='table-row'>
                     <button className='deposit-button' onClick={depositHandle}>Deposit</button>
-                    <button className='withdraw-button' onClick={withdrawHandle}>Withdraw</button>
+                    <button className='withdraw-button' onClick={withdrawHandle} >Withdraw</button>
                 </div>
             </div>
             <div className={depositShow}>
@@ -97,14 +135,14 @@ export default props => {
                     <h5>Você tem {props.value} {props.code} disponiveis para saque :</h5>
                     <div className='withdraw-address-container'>
                         <div className='withdraw-address'>
-                            <label>Endereço : </label><input/>
+                            <label style={{marginLeft: '4px'}}>Endereço : </label><input onChange={addressHandle}/>
                         </div>
                         <div className='withdraw-address'>
-                            <label>Montante : </label><input type='number' step='0,01' max={props.value}/>
+                            <label>Montante : </label><input onChange={amountHandle} />
                         </div>
                     </div>
                     <div className='withdraw-button-container'>
-                        <button>Saque</button>
+                        <button onClick={withdrawButtonHandle}>Saque</button>
                     </div>
                 </div>
             </div>

@@ -35,6 +35,7 @@
     background-color: var(--background-color-address);
     border: solid 1px var(--border-color-row);
     margin: 0 1rem 32px 1rem;
+    border-radius: 10px;
 }
 
 .deposit-address p {
@@ -58,6 +59,7 @@
     width: 154px;
     background-color: var(--background-color-address);
     border: solid 1px var(--border-color-row);
+    border-radius: 10px;
 }
 
 .deposit-container div,
@@ -73,17 +75,21 @@
     justify-content: center;
     flex-direction: column;
     width: 100%;
-    height: 200px;
     border-top: none;
-    max-height: 200px;
+    max-height: 500px;
 }
 
 .withdraw-address-container {
-    margin: 20px;
+    background-color: white;
+    margin: 0 20px;
+    padding: 10px;
+    border: solid 1px var(--border-color-row);
+    border-radius: 10px;
 }
 
 .withdraw-address {
     display: flex;
+    margin: 10px;
     flex-direction: row;
     justify-content: stretch;
 }
@@ -95,16 +101,21 @@
 .withdraw-address input {
     display: flex;
     flex-grow: 1;
+    text-align: right;
 }
 
 .withdraw-button-container {
     display: flex;
-    margin: 10px;
+    margin: 10px 20px;
     justify-content: flex-end;
 }
 
 .withdraw-button-container button {
-    border: 0;
+    border: solid 1px var(--border-color-row);
+    border-radius: 10px;
+    background-color: #d3d6da;
+    height: 41px;
+    width: 92px;
     text-decoration: none;
     outline: none;
     line-height: 1.2;
@@ -112,12 +123,15 @@
 }
 
 .withdraw-button-container button:hover {
-    background-color: var(--deposit-button-color-hover);
+    border: solid 1px var(--border-color-row);
+    color: white;
+    background-color: rgba(34, 80, 180, 0.8);
     cursor: pointer;
 }
 
 .withdraw-button-container button:active {
-    background-color: var(--deposit-button-color-active);
+    color: white;
+    background-color: #1565c0;
 
 }
 
