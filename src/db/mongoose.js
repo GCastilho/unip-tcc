@@ -8,7 +8,8 @@ mongoose.connect(process.env.MONGODB_URL, {
 	pass: process.env.MONGODB_PASS,
 	useNewUrlParser: true,
 	useCreateIndex: true,
-	useUnifiedTopology: true
+	useUnifiedTopology: true,
+	useFindAndModify: false
 })
 const db = mongoose.connection
 

@@ -51,6 +51,11 @@ module.exports = class {
 		this._events = new this._events
 
 		/**
+		 * Instancia o EventEmitter público para _essa_ instância da classe
+		 */
+		this.events = new this.events
+
+		/**
 		 * Funções 'constructor' são funções que devem ser executadas para
 		 * inicializar módulos ou executar ações antes de retornar algo que deva
 		 * ser acessível da currencyModule (como uma função), então ela é

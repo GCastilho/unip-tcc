@@ -36,8 +36,17 @@ const transaction = {
 }
 
 const currencySchema = {
+	balance: {
+		type: Number,
+		default: 0
+	},
 	accounts: {
 		type: [String],
+		/**
+		 * @todo Como o sparse não funciona em indices compostos, fazer uma
+		 * função de validação personalizada que verifica se o novo endereço
+		 * é de fato único
+		 */
 		// sparse: true,
 		// unique: true,
 		trim: true

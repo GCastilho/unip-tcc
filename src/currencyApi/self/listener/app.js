@@ -44,8 +44,13 @@ module.exports = function init_listener_app() {
 			return res.status(400).send({
 				error: `'${command}' is not a valid command'`
 			})
-		const response = this.post[command](currency, body)
-		if (response) res.send(response)
+		this.post[command](currency, body)
+			.then(response => res.send(response))
+			.catch(err => {
+				const code = err.code ? err.code : 400
+				const message = err.message ? err.message : err
+				res.status(code).send(message)
+			})
 	})
 	
 	app.post('*', (req, res) => {

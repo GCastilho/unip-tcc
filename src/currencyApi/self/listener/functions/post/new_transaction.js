@@ -5,6 +5,6 @@
  * recebida seja corretamente processada
  */
 
-module.exports = function new_transaction(currency, transaction) {
-	return this.currencies[currency].new_transaction(transaction)
+module.exports = async function new_transaction(currency, transaction) {
+	return await this.currencies[currency].new_transaction(transaction)
 }
