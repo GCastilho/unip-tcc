@@ -35,7 +35,7 @@ class CurrencyApi {
 		for (let currency in currencies) {
 			this.currencies[currency] = new currencyModule(currencies[currency])
 		}
-	
+
 		/** Insere os métodos da currencyApi, acessíveis por 'this.<method>' */
 		for (let method in self) {
 			this[method] = self[method]

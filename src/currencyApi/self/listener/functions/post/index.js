@@ -1,5 +1,5 @@
 /*
- * src/currencyApi/self/index.js
+ * src/currencyApi/self/functions/post/index.js
  * 
  * Esse módulo exporta um objeto com todos os módulos dessa pasta, os módulos
  * são acessíveis em uma propriedade com o nome do módulo. Ex.: this.modulo irá

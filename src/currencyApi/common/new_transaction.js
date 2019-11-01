@@ -10,7 +10,6 @@ const Person = require('../../db/models/person')
 
 module.exports = async function new_transaction(transaction) {
 	if (!transaction) throw new TypeError('\'transaction\' is required')
-	console.log('received new transaction', transaction)
 
 	const person = await Person.findOneAndUpdate({
 		[`currencies.${this.name}.accounts`]: transaction.account
