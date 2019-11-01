@@ -6,7 +6,15 @@
  * externo da currencyApi
  */
 
-module.exports = function new_transaction(transaction) {
+const Person = require('../../db/models/person')
+
+module.exports = async function new_transaction(transaction) {
 	console.log('received new transaction', transaction)
+	const person = await Person.findOne({
+		[`currencies.${this.name}.accounts`]: transaction.account
+	})
+	person.currencies[this.name].received.push(transaction)
+	await person.save()
+	console.log({person})
 	return 'received'
 }

@@ -13,7 +13,7 @@ module.exports = function get_account_list(currency, res) {
 		.cursor()
 		.on('data', ({ currencies }) => {
 			if (!currencies) return
-			currencies[currency].forEach(account => {
+			currencies[currency].accounts.forEach(account => {
 				res.write(`${account}\n`)
 			})
 		})

@@ -15,20 +15,46 @@
 const normalizedPath = require('path').join(__dirname)
 const Schema = require('mongoose').Schema
 
+const transaction = {
+	txid: {
+		type: String,
+		required: true,
+		unique: true
+	},
+	account: {
+		type: String,
+		required: true
+	},
+	ammount: {
+		type: Number,
+		required: true
+	},
+	timestamp: {
+		type: Date,
+		required: true
+	}
+}
+
 const currencySchema = {
-	type: [String],
-	// sparse: true,
-	// unique: true,
-	trim: true
+	accounts: {
+		type: [String],
+		// sparse: true,
+		// unique: true,
+		trim: true
+	},
+	received: {
+		type: [transaction]
+	}
 }
 
 const currencies = {}
 
 require('fs').readdirSync(normalizedPath)
-	.forEach(filename =>
-		filename !== 'index.js' &&
-	(currencies[filename.replace('.js', '')] = {...currencySchema, ...require(`./${filename}`)})
-	)
+	.forEach(filename => {
+		if (filename === 'index.js') return
+		currencySchema.accounts = {...currencySchema.accounts, ...require(`./${filename}`)}
+		currencies[filename.replace('.js', '')] = currencySchema
+	})
 
 /**
  * @throws ValidationError
