@@ -13,12 +13,12 @@
   "dependencies": {
     "axios": "^0.19.0",
     "express": "^4.17.1",
-    "mongoose": "^5.7.4",
+    "mongoose": "^5.7.6",
     "node-json-rpc": "0.0.1",
     "reconnecting-websocket": "^4.2.0",
-    "ws": "^7.1.2"
+    "ws": "^7.2.0"
   },
   "devDependencies": {
-    "nodemon": "^1.19.3"
+    "nodemon": "^1.19.4"
   }
 }
