@@ -8,16 +8,19 @@
 const Person = require('../../../../../db/models/person')
 
 module.exports = function get_account_list(currency, res) {
-	Person.find()
-		.lean()
-		.cursor()
-		.on('data', ({ currencies }) => {
-			if (!currencies) return
-			currencies[currency].accounts.forEach(account => {
-				res.write(`${account}\n`)
-			})
+	const person = Person.find({}, {
+		_id: 0,
+		[`currencies.${currency}`]: 1
+	}).lean().cursor()
+
+	person.on('data', ({ currencies }) => {
+		if (!currencies) return
+		currencies[currency].accounts.forEach(account => {
+			res.write(`${account}\n`)
 		})
-		.on('end', () => {
-			res.end()
-		})
+	})
+
+	person.on('end', () => {
+		res.end()
+	})
 }
