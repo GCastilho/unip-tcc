@@ -46,9 +46,14 @@ module.exports = class {
 		}
 
 		/**
-		 * Instancia o EventListener interno para _essa_ instância da classe
+		 * Instancia o EventEmitter interno para _essa_ instância da classe
 		 */
 		this._events = new this._events
+
+		/**
+		 * Instancia o EventEmitter público para _essa_ instância da classe
+		 */
+		this.events = new this.events
 
 		/**
 		 * Funções 'constructor' são funções que devem ser executadas para

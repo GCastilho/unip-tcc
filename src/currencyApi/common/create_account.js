@@ -26,7 +26,7 @@ module.exports = function constructor() {
 	let collecting = false
 
 	this._events.on('connected', () => {
-		create_account()
+		this.create_account()
 	})
 
 	this._events.on('disconnected', () => {
@@ -63,14 +63,14 @@ module.exports = function constructor() {
 				const person = await Person.findById(userId)
 
 				// Journaling
-				const accounts_before = person.currencies[this.name].length
+				const accounts_before = person.currencies[this.name].accounts.length
 				todo_item.commands.create_accounts[this.name].status = 'processing'
 				todo_item.commands.create_accounts[this.name].accounts_before = accounts_before
 				await todo_item.save()
 
 				const account = await this._module.get('new_account')
 
-				person.currencies[this.name].push(account)
+				person.currencies[this.name].accounts.push(account)
 				await person.save()
 
 				todo_item.commands.create_accounts[this.name].status = 'completed'
@@ -81,7 +81,7 @@ module.exports = function constructor() {
 				 * pra saber o que já foi feito e o que ainda não foi
 				 */
 				const person = await Person.findById(userId)
-				const accounts_now = person.currencies[this.name].length
+				const accounts_now = person.currencies[this.name].accounts.length
 				const { accounts_before } = create_accounts[this.name]
 
 				if (accounts_now === accounts_before) {

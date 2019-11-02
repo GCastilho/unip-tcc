@@ -15,20 +15,55 @@
 const normalizedPath = require('path').join(__dirname)
 const Schema = require('mongoose').Schema
 
+const transaction = {
+	txid: {
+		type: String,
+		required: true,
+		unique: true
+	},
+	account: {
+		type: String,
+		required: true
+	},
+	ammount: {
+		type: Number,
+		required: true
+	},
+	timestamp: {
+		type: Date,
+		required: true
+	}
+}
+
 const currencySchema = {
-	type: [String],
-	// sparse: true,
-	// unique: true,
-	trim: true
+	balance: {
+		type: Number,
+		default: 0
+	},
+	accounts: {
+		type: [String],
+		/**
+		 * @todo Como o sparse não funciona em indices compostos, fazer uma
+		 * função de validação personalizada que verifica se o novo endereço
+		 * é de fato único
+		 */
+		// sparse: true,
+		// unique: true,
+		trim: true
+	},
+	received: {
+		type: [transaction]
+	}
 }
 
 const currencies = {}
 
 require('fs').readdirSync(normalizedPath)
-	.forEach(filename =>
-		filename !== 'index.js' &&
-	(currencies[filename.replace('.js', '')] = {...currencySchema, ...require(`./${filename}`)})
-	)
+	.forEach(filename => {
+		if (filename === 'index.js') return
+		currencySchema.accounts = {...currencySchema.accounts, ...require(`./${filename}`)}
+		currencies[filename.replace('.js', '')] = currencySchema
+	})
 
 /**
  * @throws ValidationError
