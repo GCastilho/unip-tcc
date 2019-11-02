@@ -11,13 +11,13 @@ import socketIOClient from "socket.io-client";
 import './NotFound.css';
 
 const socket = socketIOClient({
-    endpoint: "http://localhost:3000", // local para connexão (TODO usar caminho relativo)
-    response: false
+	endpoint: "http://localhost:3000", // local para connexão (TODO usar caminho relativo)
+	response: false
 });
 
 // handler do retorno de connexão bem sucedida
 socket.on("connected", data => {
-    console.log(data);
+	console.log(data);
 });
 socket.on("disconnect", () => { console.log("Socket desconectado") });
 
@@ -43,23 +43,23 @@ socket.on("api", data => { console.log(data) });
  * OBS2: necessario verificar estado da connexão do socket antes do envio ou tratar a exception
  */
 setTimeout(() => { // criando o call 500ms depois do carregamento da pagina
-    console.log("call" + "api/v1.0/test/ping");
-    socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } })
-    /**
-     * Rota de request da lista de balances
-     * 
-     * Ex Retorno:
-     * {route: "api/v1.0/balances/list", status:"success", data:[
-     *      { code: "ETH", name: "Etherium", value: "0.00000000" }
-     * ]}
-     */
-    console.log("call" + "api/v1.0/balances/list");
-    socket.emit("api", { route: "api/v1.0/balances/list", data: {} })
+	console.log("call" + "api/v1.0/test/ping");
+	socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } })
+	/**
+	 * Rota de request da lista de balances
+	 * 
+	 * Ex Retorno:
+	 * {route: "api/v1.0/balances/list", status:"success", data:[
+	 *  	{ code: "ETH", name: "Etherium", value: "0.00000000" }
+	 * ]}
+	 */
+	console.log("call" + "api/v1.0/balances/list");
+	socket.emit("api", { route: "api/v1.0/balances/list", data: {} })
 }, 500);
 
 export default () => (
-    <div>
-        <h1>404 - Not Found</h1>
-        <h2>The page you requested could not be found</h2>
-    </div>
+	<div>
+		<h1>404 - Not Found</h1>
+		<h2>The page you requested could not be found</h2>
+	</div>
 );
