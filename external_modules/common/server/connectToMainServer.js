@@ -4,7 +4,7 @@
  * Checa a conexão com o servidor principal. Retorna ao obter uma resposta
  */
 
-const axios = require("axios")
+const axios = require('axios')
 
 module.exports = async function connectToMainServer(currency) {
 	process.stdout.write('Connecting to main server... ')

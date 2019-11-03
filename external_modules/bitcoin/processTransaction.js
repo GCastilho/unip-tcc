@@ -1,8 +1,19 @@
-const Account = require(`../common/db/models/account`)
-const Transaction = require("../common/db/models/transaction.js")
-const Rpc = require(`./rpc`)
-const Axios = require("axios")
+const Account = require('../common/db/models/account')
+const unconfirmedTx = require('../common/db/models/unconfirmedTx')
+const Transaction = require('../common/db/models/transaction.js')
+const Rpc = require('./rpc')
+const Axios = require('axios')
 let lasTtransactionId = ''
+
+function getConfirmed(txid) {
+	Rpc.transactionInfo(txid).then(transaction => {
+		if (transaction.confirmations >= 6) {
+			console.log({txid: txid,confirmed: true,confirmations: transaction.confirmations})
+			unconfirmedTx.deleteOne({ tx: txid }).exec()
+			//Axios.post(`http://localhost:8085/new_transaction/bitcoin`, {txid: txid,confirmed: true})
+		}
+	}).catch(err => {console.log('rpc error,'+err)})
+}
 
 
 async function formatTransaction(txid) {
@@ -16,6 +27,12 @@ async function formatTransaction(txid) {
 		info: transaction
 	}).save()
 
+	await new unconfirmedTx({
+		tx: txid,
+		confirmations: transaction.confirmations
+	}).save()
+
+
 	const formattedTransaction = {}
 	transaction.details = transaction.details.filter(details =>
 		details.category === 'receive'
@@ -23,7 +40,8 @@ async function formatTransaction(txid) {
 	formattedTransaction.account = transaction.details[0].address
 
 	// Verifica se a transaçãoa é nossa
-	const account = await Account.findOne({ account: formattedTransaction.account })
+	const account = await Account.findOne({account: formattedTransaction.account})
+	console.log(account)
 	if (!account)
 		throw 'account does NOT exist in the database'
 	
@@ -37,14 +55,26 @@ async function formatTransaction(txid) {
 
 module.exports = function process(body) {
 	const { txid } = body
-	//por algum motivo a cada transacao estava sendo recebido 2x a transçao e um undefined
-	if (!txid || lasTtransactionId === txid) return
-	lasTtransactionId = txid
+	const { block } = body
+	
+	if (block) {
+		//pega todas as transaçoes que ficaram a mais do que 5 blocos no database
+		unconfirmedTx.find({blockCount: {$gte: 6}},{_id: 0,tx: 1}).then(res => {
+			if(res.length>0)
+				res.forEach((tx) => {getConfirmed(tx.tx)})
+			//incrementa o contador de blocos da transacao no
+			unconfirmedTx.collection.updateMany({},{$inc: { blockCount: 1 }},{})
+		}).catch(() => {console.log('block processing error')})
+	} else {
+		//por algum motivo a cada transacao estava sendo recebido 2x a transçao e um undefined
+		if (!txid || lasTtransactionId === txid) return
+		lasTtransactionId = txid
 
-	formatTransaction(txid)
-	.then(transaction => {
-		Axios.post(`http://localhost:8085/new_transaction/bitcoin`, transaction)
-	}).catch(err => {
-		console.error('transaction processing error', err)
-	})
+		formatTransaction(txid)
+			.then(transaction => {
+				Axios.post('http://localhost:8085/new_transaction/bitcoin',transaction)
+			}).catch(err => {
+				console.error('transaction processing error',err)
+			})
+	}
 }

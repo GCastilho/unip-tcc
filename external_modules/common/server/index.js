@@ -1,4 +1,4 @@
-const app = require("express")()
+const app = require('express')()
 const bodyParser = require('body-parser')
 const setup = require('./setup')
 const ExternalModuleEventEmitter = require('./events')
@@ -15,15 +15,24 @@ app.get('/new_account',function (req, res) {
 	EventEmmiter.emit( 'new_account', res )
 })
 
+/**
+ * recebe requests de envio de dinheiro
+ * (addres,amount)
+ */
+app.post('/send', function (req, res) {
+	EventEmmiter.emit('send', req.body,res)
+})
+
 // Comunicação com a rede da moeda
 
 /**
- * O RPC manda as novas transações aqui
+ * A rede da currency manda as novas transações aqui
  */
 app.post('/transaction', function (req, res) {
 	EventEmmiter.emit('transaction', req.body)
 	res.send()
 })
+
 
 /**
  * Inicia o servidor da currency na porta especificada

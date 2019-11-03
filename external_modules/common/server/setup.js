@@ -1,5 +1,5 @@
 const mongoose = require('../db/mongoose')
-const Account = require(require.resolve(`./db/models/account`, { paths: [`./`, '../common'] }))
+const Account = require(require.resolve('./db/models/account', { paths: ['./', '../common'] }))
 const connectToMainServer = require('./connectToMainServer')
 const getAccountList = require('./getAccountList')
 

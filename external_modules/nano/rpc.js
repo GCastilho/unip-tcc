@@ -1,4 +1,7 @@
 const rpc = require('node-json-rpc')
+const wallet = '1396F74639C8912595BDE10C766461EBBEF1EE696794DA4807B197AB140C1949'
+const stdAccount = 'nano_1cm99iqoqh53c464jz98u1qdzi37z5934rcz6byfdhkyhsq5aqqcqtt9dioi'
+
 
 const options = {
 	port: 55000,
@@ -12,8 +15,8 @@ const options = {
 const client = new rpc.Client(options)
 
 const account_create = {
-	"action": "account_create",
-	"wallet":"CA765148AB7D6200DA9F51C4AA5B33BA8CC0C2749F6097A641EBD9B78456417A"
+	'action': 'account_create',
+	'wallet': wallet
 }
 
 function createAccount() {
@@ -24,16 +27,16 @@ function createAccount() {
 			} else {
 				reject(err)
 			}
-		}
-	)})
+		})
+	})
 }
 
 function blockInfo(block) {
 	return new Promise((resolve, reject) => {
 		client.call({
-			"action": "block_info",
-			"json_block": "true",
-			"hash": block
+			'action': 'block_info',
+			'json_block': 'true',
+			'hash': block
 		}, (err, res) => {
 			if (!err && !res.error) {
 				resolve(res.account)
@@ -44,7 +47,37 @@ function blockInfo(block) {
 	})
 }
 
+function send(destination,rawAmount) {
+	return new Promise((resolve, reject) => {
+		client.call({
+			'action': 'send',
+			'wallet': wallet,
+			'source': stdAccount,
+			'destination': destination,
+			'amount': rawAmount
+		}, (err, res) => {
+			if (!err && !res.error) {
+				resolve(res.account)
+			} else {
+				reject(err)
+			}
+		})
+	})
+}
+function command(command) {
+	return new Promise((resolve, reject) => {
+		client.call(command, (err, res) => {
+			if (!err && !res.error) {
+				resolve(res.account)
+			} else {
+				reject(err)
+			}
+		})
+	})
+}
 module.exports = {
 	createAccount,
-	blockInfo
+	blockInfo,
+	send,
+	command
 }

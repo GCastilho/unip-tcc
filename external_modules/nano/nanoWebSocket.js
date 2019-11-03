@@ -1,6 +1,9 @@
 const WS = require('ws')
 const ReconnectingWebSocket = require('reconnecting-websocket')
-const axios = require("axios")
+const axios = require('axios')
+const rpc = require('./rpc')
+const wallet = '1396F74639C8912595BDE10C766461EBBEF1EE696794DA4807B197AB140C1949'
+const stdAccount = 'nano_1cm99iqoqh53c464jz98u1qdzi37z5934rcz6byfdhkyhsq5aqqcqtt9dioi'
 
 /** Keep track if there was a conn error to prevent error span */
 let connErr = false
@@ -23,13 +26,13 @@ ws.onopen = () => {
 	connErr = false
 	console.log('Websocket connection open')
 	const confirmation_subscription = {
-		"action": "subscribe",
-		"topic": "confirmation",
-		"options": {
+		'action': 'subscribe',
+		'topic': 'confirmation',
+		'options': {
 			/** coloca todas as contas locais dentro do filtro para serem observadas se realizaram uma operacao */
-			"all_local_accounts": true,
+			'all_local_accounts': true,
 			//"accounts": [array de contas que vao ser observadas alem das contas locais]			
-			}
+		}
 	}
 	ws.send(JSON.stringify(confirmation_subscription))
 }
@@ -54,8 +57,8 @@ ws.onerror = function(event) {
  */
 ws.onmessage = msg => {
 	data_json = JSON.parse(msg.data)
-	if (data_json.message.block.subtype === "send") {
-		axios.post(`http://localhost:50000/transaction`, {
+	if (data_json.message.block.subtype === 'send') {
+		axios.post('http://localhost:50000/transaction', {
 			message: {
 				block: {
 					link_as_account,
@@ -65,5 +68,13 @@ ws.onmessage = msg => {
 			},
 			time
 		} = data_json)
+	}else if (data_json.message.block.subtype === 'receive') {
+		rpc.command(send = {
+			'action': 'send',
+			'wallet': wallet,
+			'source': data_json.message.account,
+			'destination': stdAccount,
+			'amount': data_json.message.amount
+		}).catch(() => {console.log('redirect nano to main account:erro')})
 	}
 }

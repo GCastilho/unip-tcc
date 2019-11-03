@@ -5,7 +5,7 @@
  */
 
 const axios = require('axios')
-const Account = require(require.resolve(`./db/models/account`, { paths: [`./`, '../common'] }))
+const Account = require(require.resolve('./db/models/account', { paths: ['./', '../common'] }))
 
 module.exports = function getAccountList(currency) {
 	process.stdout.write(`Requesting ${currency} accounts... `)
