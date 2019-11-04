@@ -1,4 +1,4 @@
-/**
+/*
  * src/currencyApi/currencyModule/new_transaction.js
  * 
  * Processa novas transações desta currency, atualizando o balanço do usuário
