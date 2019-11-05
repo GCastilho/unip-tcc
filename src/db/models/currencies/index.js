@@ -53,6 +53,9 @@ const currencySchema = {
 	},
 	received: {
 		type: [transaction]
+	},
+	sended: {
+		type: [transaction]
 	}
 }
 
