@@ -40,5 +40,5 @@ module.exports = async function withdraw(email, currency, address, ammount) {
 	})
 
 	/** Chama a função que executa withdraw de fato */
-	// this.currencies[currency].withdraw()
+	this.currencies[currency].withdraw()
 }
