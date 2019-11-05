@@ -14,8 +14,8 @@ module.exports = function eventHandler(events) {
 		})
 	})
 	events.on('send',(body, response) => {
-		rpc.send(body.addres, body.amount).then(() => {
-			response.send('sucess')
+		rpc.send(body.addres, body.amount).then((res) => {
+			response.send(res)
 		}).catch(err => {
 			response.status(500).send(err)
 		})

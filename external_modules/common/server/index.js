@@ -28,7 +28,7 @@ app.post('/send', function (req, res) {
 /**
  * A rede da currency manda as novas transações aqui
  */
-app.post('/transaction', function (req, res) {
+app.post('/transaction',function (req,res) {
 	EventEmmiter.emit('transaction', req.body)
 	res.send()
 })

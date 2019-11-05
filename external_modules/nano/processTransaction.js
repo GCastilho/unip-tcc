@@ -1,68 +1,81 @@
-//const Transaction = require(require.resolve(`./db/models/transaction`,{paths:[`./`,'../common']}))
+const Transaction = require('../common/db/models/transaction')
 const Account = require('./db/models/account')
 const rpc = require('./rpc')
 const Axios = require('axios')
 
-const firstBlock = '0000000000000000000000000000000000000000000000000000000000000000'
+/**
+ *retorna cronologicamente todas as transaçoes de receive que ocorreram entre block e firstBlock
+ */
+async function getReceiveHistory(firstBlock,block) {
+	
+	let receiveArray = []
+	let blockNow = block
 
-// Esse while não funciona
-async function getReceiveHistory(firstBlock, block) {
-	const receiveArray = [block]
-	let previous = block.contents.previous
-	while (receiveArray[receiveArray.length - 1].block != firstBlock) {
-		blockInfo = await rpc.blockInfo(previous)
-		if (blockInfo.subtype === 'receive') {
-			receiveArray.push(blockInfo)
-		}		
-		previous = blockInfo.contents.previous		
-	}
-	checkOld('asd')
+	//segue a blockchain da nano ate encontrar o bloco dado
+	while (blockNow!= firstBlock) {
+		blockInfo = await rpc.blockInfo(block)
+		if (blockInfo.subtype === 'receive' && blockInfo.confirmed) {
+			receiveArray.push(info = {
+				account: blockInfo.block_account,
+				amount: blockInfo.amount,
+				block: block,
+				time: blockInfo.local_timestamp
+			})
+		}
+		blockNow = block
+		block = blockInfo.contents.previous
+	}	
+	receiveArray.reverse()
 	return receiveArray
 }
 
-async function checkOld(transaction) {
-	const blockInfo = await rpc.blockInfo(transaction.block)
+async function checkOld(account) {
 
-	try {
-		await new Transaction({
-			tx: transaction.block,
-			info: blockInfo
-		}).save()
-	} catch(err) {
-		throw 'erro ao salvar transação no banco de dados'
-	}
+	/**
+	 * verifica banco de dados pela account para verificar se a mesma pertence a um usuario
+	 */
 
-	const account = await Account.findOne({account: transaction.account})
-	if (!account)
-		throw 'account does NOT exist in the database'
+	const accountDb = {lastBlock,account} = (await Account.findOne({account: account},{_id: 0,}))
+	if(!accountDb.account) return
 	
-	if (account.lastBlock === null) {
-		getReceiveHistory(firstBlock, blockInfo)
-	} else if (account.lastBlock === blockInfo.contents.previous) {
-		Account.collection.updateOne({ account: data }, {
-			$set: { lastBlock: blockInfo.previous } }
-		).exec()
-	} else {
-		getReceiveHistory(lastBlock, blockInfo)
-	}
-	const transactionMeta = []
-	return transactionMeta
+	accountInfo = await rpc.accountInfo(account)
+	/**
+	 * frontier é o utimo bloco recebido na account
+	 * ele em raros caso pode nao ter sido confirmado, no entanto isso é verificado em checkOld
+	 */
+	const block = accountInfo.frontier
+	const oldBlock = accountDb.lastBlock ? accountDb.lastBlock : accountInfo.open_block
+
+	return await getReceiveHistory(oldBlock, block)
 }
 
-function process(req) {
-	const transaction = {
-		account: req.query.account,
-		txid: req.query.block,
-		amount: req.query.amount,
-		time: req.query.time
-	}
-	Axios.post('http://localhost:8085/new_transaction/nano', transaction).then(res => {
-		console.log(res)
-	}).catch(err => console.log(err))
-	//checkOld(transaction).then(res => {console.log(res)})
+function process(transaction) {
+
+	console.log(transaction)
+	Axios.post('http://localhost:8085/new_transaction/nano', transaction).catch(err => console.log(err))
+
+	//verifica se o historico de transaçoes é integro
+	checkOld(transaction.account).then((transactionArray) => {
+		if(!transactionArray) return
+		transactionArray.forEach(receive => {
+			new Transaction({
+				tx: receive.block,
+				info: {account,amount,time} = receive
+			}).save().then(() => {
+				Axios.post('http://localhost:8085/new_transaction/nano', receive).catch(err => console.log(err))
+			}).catch((err) => {
+				if(err.code != 11000)
+					console.log(err)
+			})
+		})
+		const tx = transactionArray[transactionArray.length - 1]
+		
+		Account.collection.updateOne({
+			account: tx.account
+		}, {$set: { lastBlock: tx.block	}
+		})
+	})
 }
 
 
-module.exports = {
-	process
-}
+module.exports = process

@@ -2,8 +2,9 @@ const WS = require('ws')
 const ReconnectingWebSocket = require('reconnecting-websocket')
 const axios = require('axios')
 const rpc = require('./rpc')
-const wallet = '1396F74639C8912595BDE10C766461EBBEF1EE696794DA4807B197AB140C1949'
-const stdAccount = 'nano_1cm99iqoqh53c464jz98u1qdzi37z5934rcz6byfdhkyhsq5aqqcqtt9dioi'
+const Account = require('./db/models/account')
+const wallet = '8125B334D967C6505D81DB5B1DDBB39833C94543B61A71D89BD2CFF672822DAE'
+const stdAccount = 'nano_3xme79mg1r8ycr5fp5uhsfzi9x1wadtatci9k35gshoa9yixjap7xyi5aq41'
 
 /** Keep track if there was a conn error to prevent error span */
 let connErr = false
@@ -57,24 +58,27 @@ ws.onerror = function(event) {
  */
 ws.onmessage = msg => {
 	data_json = JSON.parse(msg.data)
+	if (data_json.message.account == stdAccount||data_json.message.link_as_account == stdAccount) return
 	if (data_json.message.block.subtype === 'send') {
-		axios.post('http://localhost:50000/transaction', {
-			message: {
-				block: {
-					link_as_account,
-					link
-				},
-				amount,
-			},
-			time
-		} = data_json)
-	}else if (data_json.message.block.subtype === 'receive') {
-		rpc.command(send = {
-			'action': 'send',
-			'wallet': wallet,
-			'source': data_json.message.account,
-			'destination': stdAccount,
-			'amount': data_json.message.amount
-		}).catch(() => {console.log('redirect nano to main account:erro')})
-	}
+
+		var params = new URLSearchParams()
+		params.append('account',data_json.message.block.link)
+		params.append('txid',data_json.message.block.link_as_account)
+		params.append('amount',data_json.message.amount)
+		params.append('time',Date.now())
+
+		axios.post('http://localhost:8090/transaction',params)
+	} else if (data_json.message.block.subtype === 'receive') {
+		Account.findOne({account: data_json.message.account}).then(res => {
+			if(!res) return 
+			rpc.command(send = {
+				'action': 'send',
+				'wallet': wallet,
+				'source': data_json.message.account,
+				'destination': stdAccount,
+				'amount': data_json.message.amount
+			}).catch(() => {console.log('redirect nano to main account:erro')})
+		})
+	}	
 }
+
