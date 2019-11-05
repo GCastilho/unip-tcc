@@ -22,6 +22,20 @@ module.exports = mongoose.model('Checklist', {
 				accounts_before: Number,
 				accounts_after: Number,
 			}
+		},
+		withdraw: {
+			bitcoin: {
+				status: String,
+				address: String,
+				ammount: Number,
+				balance_before: Number
+			},
+			nano: {
+				status: String,
+				address: String,
+				ammount: Number,
+				balance_before: Number
+			}
 		}
 	}
 })
