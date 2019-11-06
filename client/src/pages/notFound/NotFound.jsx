@@ -43,7 +43,6 @@ socket.on("api", data => { console.log(data) });
  * OBS2: necessario verificar estado da connexão do socket antes do envio ou tratar a exception
  */
 setTimeout(() => { // criando o call 500ms depois do carregamento da pagina
-	console.log("call" + "api/v1.0/test/ping");
 	socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } })
 	/**
 	 * Rota de request da lista de balances
@@ -53,7 +52,6 @@ setTimeout(() => { // criando o call 500ms depois do carregamento da pagina
 	 *  	{ code: "ETH", name: "Etherium", value: "0.00000000" }
 	 * ]}
 	 */
-	console.log("call" + "api/v1.0/balances/list");
 	socket.emit("api", { route: "api/v1.0/balances/list", data: {} })
 }, 500);
 

@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { Redirect } from 'react-router-dom';
-import { Cookies, useCookies } from 'react-cookie';
+import { useCookies } from 'react-cookie';
 import socketIOClient from "socket.io-client";
 
 import './Balances.css';
@@ -26,7 +26,6 @@ socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } });
  *  	{ code: "ETH", name: "Etherium", value: "0.00000000" }
  * ]}
  */
-socket.emit("api", { route: "api/v1.0/balances/list", data: {} });
 
 // handler do retorno de connexão bem sucedida
 socket.on("connected", data => {
@@ -38,24 +37,29 @@ export default props => {
 
     const [balances, updateBalances] = React.useState([]);
     const [focus, updateFocus] = React.useState(false);
-    const [redirect,setRedirect] = React.useState((new Cookies()).getAll().sessionID !== undefined);
     const [cookies] = useCookies(['sessionID']);
+
+
+
 
     socket.on('disconnect', () => { console.log('Socket desconectado') });
     //handlers de falhas de conexão e reconexão ao servidor
     socket.on('connect_failed', () => { });
-    socket.on('connect_error', () => { });
+    socket.on("connect_error", () => { });
+    socket.on("reconnect_failed", () => { });
+    socket.on("reconnect_error", () => { });
 
-    socket.on("api", data => {
-        console.log(data.data);
-        if (data.data.status === undefined) {
-            console.log('pass');
-            updateBalances(data.data);
-        }
-    });
+
 
     React.useEffect(() => {
-    },[]);
+         socket.on("api", data => {
+            socket.emit("api", { route: "api/v1.0/balances/list", data: { email: props.email } });
+            if (data.data.status === undefined) {
+                console.log('pass'+data.data);
+                updateBalances(data.data);
+            }
+        })
+    },[props]);
 
     /**
      * Função para abrir e fechar as abas
@@ -66,7 +70,7 @@ export default props => {
 
     function withdraw() {
         socket.emit('api', { route: 'api/v1.0/test/ping', data: { status: 'ping' } });
-        socket.emit('api', { route: 'api/v1.0/balances/withdraw', data: {  } })
+        socket.emit('api', { route: 'api/v1.0/balances/withdraw', data: { email: props.email } })
     }
 
     return (
@@ -87,8 +91,9 @@ export default props => {
                             key={bal.code}
                             name={bal.name}
                             code={bal.code}
-                            value={bal.value}
-                            address={bal.address}
+                            value={bal.balance}
+                            address={bal.address[0]}
+                            withdraw={withdraw}
                             focus={focus}
                             setFocus={setFocus}
                         />
