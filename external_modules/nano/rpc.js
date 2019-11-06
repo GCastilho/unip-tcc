@@ -2,9 +2,6 @@ const rpc = require('node-json-rpc')
 const wallet = process.env.WALLET
 const stdAccount = process.env.SEND_ACCOUNT
 
-if (!wallet) throw 'WALLET needs to be informed as environment variable'
-if (!stdAccount) throw 'SEND_ACCOUNT needs to be informed as environment variable'
-
 const options = {
 	port: 55000,
 	host: '::1',
