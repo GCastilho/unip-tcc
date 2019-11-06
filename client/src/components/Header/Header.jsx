@@ -76,10 +76,12 @@ export default (props) => {
                 </div>
                 <div className='separator-button'/>
                 <div className="header-right">
-                    <Link to='/balances' className='button'>Balances</Link>
                     {/* Faz o check se há ou não um cookie, se tiver um cookie ele mostrara o botão de logout*/}
                     {userLogin ?
-                        <button className="button" onClick={logOutHandle}>Log out</button>
+                        <>
+                            <Link to='/balances' className='button'>Balances</Link>
+                            <button className="button" onClick={logOutHandle}>Log out</button>
+                        </>
                         :
                         <>
                             <Link to="/login" className="button">Login</Link>

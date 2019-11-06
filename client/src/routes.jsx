@@ -21,7 +21,12 @@ export default (props) => (
         <Switch>
             <Route exact path='/'><Main/></Route>
             <Route path='/balances'><Balances/></Route>
-            <Route path='/login'><Login checkCookie={props.checkCookie}/></Route>
+            <Route path='/login'>
+                <Login
+                    checkCookie={props.checkCookie}
+                    setEmail={props.setEmail}
+                />
+            </Route>
             <Route path='/register'><Register/></Route>
             <Route path='*'><NotFound/></Route>
         </Switch>
