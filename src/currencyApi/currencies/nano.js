@@ -4,6 +4,6 @@
 
 module.exports = {
 	code: 'nano',
-	ip: process.env.NANO_IP || '192.168.0.101',
+	ip: process.env.NANO_IP || 'localhost',
 	port: 8090,
 }

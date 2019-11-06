@@ -64,7 +64,7 @@ const currencies = {}
 require('fs').readdirSync(normalizedPath)
 	.forEach(filename => {
 		if (filename === 'index.js') return
-		currencySchema.accounts = {...currencySchema.accounts, ...require(`./${filename}`)}
+		// currencySchema.accounts = {...currencySchema.accounts, ...require(`./${filename}`)}
 		currencies[filename.replace('.js', '')] = currencySchema
 	})
 
