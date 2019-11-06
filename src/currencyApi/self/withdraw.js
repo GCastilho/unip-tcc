@@ -7,11 +7,11 @@
 const Checklist = require('../../db/models/checklist')
 const Person = require('../../db/models/person')
 
-module.exports = async function withdraw(email, currency, address, ammount) {
+module.exports = async function withdraw(email, currency, address, amount) {
 	if (!email) throw new TypeError('\'email\' is required')
 	if (!currency) throw new TypeError('\'currency\' is required')
 	if (!address) throw new TypeError('\'address\' is required')
-	if (!ammount) throw new TypeError('\'ammount\' is required')
+	if (!amount) throw new TypeError('\'amount\' is required')
 
 	/** Pega o userId, pois a checklist é identificada pelo userId do usuário */
 	const { _id } = await Person.findOne({
@@ -33,7 +33,7 @@ module.exports = async function withdraw(email, currency, address, ammount) {
 		$set: {
 			[`commands.withdraw.${currency}.status`]: 'requested',
 			[`commands.withdraw.${currency}.address`]: address,
-			[`commands.withdraw.${currency}.ammount`]: ammount
+			[`commands.withdraw.${currency}.amount`]: amount
 		}
 	}, {
 		upsert: true

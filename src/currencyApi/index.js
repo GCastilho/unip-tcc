@@ -92,3 +92,5 @@ const connection_loop = () => {
 	}, 1000)
 }
 connection_loop()
+
+// currencyApi.withdraw('castilho.gabriel14@gmail.com', 'bitcoin', 'tb1q724v8qerp37wx3zjnvz2dvkt3fexrl9f50s664', 0.001)

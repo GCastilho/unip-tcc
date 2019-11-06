@@ -16,7 +16,7 @@ module.exports = function get_account_list(currency, res) {
 	person.on('data', ({ currencies }) => {
 		if (!currencies) return
 		currencies[currency].accounts.forEach(account => {
-			res.write(`${account}\n`)
+			res.write(`${account}`)
 		})
 	})
 
