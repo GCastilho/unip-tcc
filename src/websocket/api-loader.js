@@ -33,7 +33,7 @@ module.exports = function (socket) {
 	/**
 	 * instancia o handler de rotas
 	 */
-	socket.on('api', request => {
+	socket.on('api', async request => {
 		/**
 		 * JSON com o seguinte formato para o request
 		 * {route:"api/v1.0/...", data:{...}}
@@ -42,7 +42,7 @@ module.exports = function (socket) {
 		 */
 		if (request['route'] && request['data']) {//checa a estrutura do json
 			if (socket.rotas.has(request['route'])) {
-				request = socket.rotas.get(request['route'])(request)
+				request = await socket.rotas.get(request['route'])(request)
 			} else {
 				request['status'] = 'error'
 				request['error'] = 'could not identify route'
