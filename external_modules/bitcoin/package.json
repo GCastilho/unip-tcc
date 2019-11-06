@@ -1,24 +1,22 @@
 {
-  "name": "external_api_nano",
+  "name": "bitcoin",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
+  "main": "eventHandler.js",
   "dependencies": {
     "axios": "^0.19.0",
+    "bitcoin-core": "^3.0.0",
+    "body-parser": "^1.19.0",
+    "events": "^3.0.0",
     "express": "^4.17.1",
-    "mongoose": "^5.7.4",
-    "node-json-rpc": "0.0.1",
-    "reconnecting-websocket": "^4.2.0",
-    "ws": "^7.1.2"
+    "mongoose": "^5.7.8"
   },
-  "devDependencies": {
-    "nodemon": "^1.19.3"
-  }
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

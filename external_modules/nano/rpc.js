@@ -16,15 +16,20 @@ const client = new rpc.Client(options)
 
 function createAccount() {
 	return new Promise((resolve, reject) => {
-		client.call( {
+		client.call({
 			'action': 'account_create',
 			'wallet': wallet
-		},function (err,res) {
-				
+		}, function (err, res) {
 			if (!err && !res.error) {
-				resolve(res.account)
+				new Account({
+					account: res.account,
+					isUpdated: true
+				}).save().then(() => {
+					resolve(res.account)
+				}).catch(err => {
+					reject(err)
+				})
 			} else {
-				console.log(res)
 				reject(err)
 			}
 		})
@@ -63,7 +68,7 @@ function accountInfo(account) {
 }
 
 
-function send(destination,rawAmount) {
+function send(destination, rawAmount) {
 	return new Promise((resolve, reject) => {
 		client.call({
 			'action': 'send',

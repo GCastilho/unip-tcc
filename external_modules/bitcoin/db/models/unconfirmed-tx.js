@@ -1,4 +1,4 @@
-const mongoose = require('../mongoose')
+const mongoose = require('../../../common/db/mongoose')
 
 const unconfirmedTransaction = mongoose.model('transactions-unconfirmed', {
 	tx: {
@@ -9,6 +9,7 @@ const unconfirmedTransaction = mongoose.model('transactions-unconfirmed', {
 	},
 	blockCount: {
 		type: Number,
+        default:0,
 		trim: true,
 		required: true
 	}

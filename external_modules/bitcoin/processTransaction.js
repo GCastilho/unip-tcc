@@ -1,6 +1,6 @@
 const Account = require('../common/db/models/account')
-const unconfirmedTx = require('../common/db/models/unconfirmedTx')
-const Transaction = require('../common/db/models/transaction.js')
+const unconfirmedTx = require('./db/models/unconfirmed-tx')
+const Transaction = require('../common/db/models/transaction')
 const Rpc = require('./rpc')
 const Axios = require('axios')
 let lasTtransactionId = ''
@@ -56,7 +56,7 @@ async function formatTransaction(txid) {
 module.exports = function process(body) {
 	const { txid } = body
 	const { block } = body
-	
+	console.log(body)
 	if (block) {
 		//pega todas as transaçoes que ficaram a mais do que 5 blocos no database
 		unconfirmedTx.find({blockCount: {$gte: 6}},{_id: 0,tx: 1}).then(res => {
