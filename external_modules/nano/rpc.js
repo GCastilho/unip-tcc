@@ -29,7 +29,8 @@ function createAccount() {
 					reject(err)
 				})
 			} else {
-				reject(err, res.error)
+				const error = err ? err : res.error
+				reject(error)
 			}
 		})
 	})
