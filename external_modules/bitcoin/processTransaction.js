@@ -10,7 +10,7 @@ function getConfirmed(txid) {
 		if (transaction.confirmations >= 6) {
 			console.log({txid: txid,confirmed: true,confirmations: transaction.confirmations})
 			unconfirmedTx.deleteOne({ tx: txid }).exec()
-			//Axios.post(`http://localhost:8085/new_transaction/bitcoin`, {txid: txid,confirmed: true})
+			Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/bitcoin`, {txid: txid,confirmed: true})
 		}
 	}).catch(err => {console.log('rpc error,'+err)})
 }
@@ -72,7 +72,7 @@ module.exports = function process(body) {
 
 		formatTransaction(txid)
 			.then(transaction => {
-				Axios.post('http://localhost:8085/new_transaction/bitcoin',transaction)
+				Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/bitcoin`,transaction)
 			}).catch(err => {
 				console.error('transaction processing error',err)
 			})
