@@ -22,9 +22,6 @@ function createAccount() {
 		})
 	})
 }
-createAccount().then((res) => {
-	console.log(res)
-})
 const transactionInfo = (txid) => wallet.getTransaction(txid)
 
 const blockInfo = (block) => wallet.getBlock(block)
