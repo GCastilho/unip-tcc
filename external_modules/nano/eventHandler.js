@@ -9,9 +9,10 @@ module.exports = function eventHandler(events) {
 	events.on('new_account',(res) => {
 		rpc.createAccount().then(account => {
 			res.send(account)
-		}).catch(err => {
-			console.log(err)
-			res.status(500).send(err)
+		}).catch((err, res_err) => {
+			const error = err ? err : res_err
+			console.error(error)
+			res.status(500).send(error)
 		})
 	})
 	

@@ -32,7 +32,7 @@ function createAccount() {
 					reject(err)
 				})
 			} else {
-				reject(err)
+				reject(err, res.error)
 			}
 		})
 	})
