@@ -13,5 +13,5 @@ module.exports = function constructor() {
 		})
 	})
 
-	return getCurrenciesList = () => currenciesList 
+	return getCurrenciesList = () => currenciesList
 }

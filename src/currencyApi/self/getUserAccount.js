@@ -1,22 +1,22 @@
-/*
- * src/currencyApi/self/getBalance.js
+/**
+ * src/currencyApi/self/getUserAccount.js
  * 
- * Retorna o balance atual de um usuário
+ * Retorna a ccunt de um usuário para determinada currency
  */
 
 const Person = require('../../db/models/person')
 
-module.exports = async function getBalance(email, currency) {
+module.exports = async function getUserAccount(email, currency) {
 	if (!email) throw new TypeError('\'email\' is required')
 	if (!currency) throw new TypeError('\'currency\' is required')
 
 	const person = await Person.findOne({
 		email
 	}, {
-		[`currencies.${currency}.balance`]: 1
+		[`currencies.${currency}.accounts`]: 1
 	})
 
 	if (!person) throw `User not found: ${email}`
 
-	return person.currencies[currency].balance
+	return person.currencies[currency].accounts
 }
