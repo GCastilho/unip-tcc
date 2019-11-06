@@ -1,6 +1,7 @@
 const rpc = require('node-json-rpc')
 const wallet = process.env.WALLET
 const stdAccount = process.env.SEND_ACCOUNT
+const Account = require('./db/models/account')
 
 const options = {
 	port: 55000,
