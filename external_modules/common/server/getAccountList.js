@@ -11,7 +11,7 @@ module.exports = function getAccountList(currency) {
 	process.stdout.write(`Requesting ${currency} accounts... `)
 
 	return new Promise((resolve, reject) => {
-		axios.get(`http://${global.main_server_ip}/account_list/${currency}`, {
+		axios.get(`http://${global.main_server_ip}:${global.main_server_port}/account_list/${currency}`, {
 			responseType: 'stream'
 		}).then(({ data }) => {
 			console.log('Success\nReceiving account stream and importing accounts into private database')

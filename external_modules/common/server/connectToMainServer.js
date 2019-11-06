@@ -12,10 +12,11 @@ module.exports = async function connectToMainServer(currency) {
 		(async function ping() {
 			try {
 				const { data } = await axios.get(
-					`http://${global.main_server_ip}/ping/${currency}`
+					`http://${global.main_server_ip}:${global.main_server_port}/ping/${currency}`
 				)
 				if (data !== 'pong')
 					throw new AssertionError(`Unrecognized response: ${data}`)
+				console.log('Success!')
 				resolve()
 			} catch (err) {
 				if (err.code !== 'ECONNREFUSED') throw err

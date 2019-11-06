@@ -8,23 +8,18 @@ const wallet = new Client({
 	port: 40000
 })
 
+async function createAccount() {
+	const address = await wallet.getNewAddress()
+	await new Account({
+		account: address,
+		isUpdated: true
+	}).save()
 
-
-function createAccount() {
-	return new Promise((resolve, reject) => {
-		wallet.getNewAddress().then(address => {
-			new Account({
-				account: address,
-				isUpdated: true
-			}).save().then(() => { resolve(address) }).catch(err => {
-				reject(err)
-			})
-		})
-	})
+	return address
 }
-const transactionInfo = (txid) => wallet.getTransaction(txid)
+const transactionInfo = txid => wallet.getTransaction(txid)
 
-const blockInfo = (block) => wallet.getBlock(block)
+const blockInfo = block => wallet.getBlock(block)
 
 const send = (address, amount) => wallet.SendToAddress(address, amount)
 

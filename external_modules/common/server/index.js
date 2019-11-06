@@ -9,10 +9,17 @@ app.use(bodyParser.urlencoded({ extended: true }))
 // Comunicação com o main server
 
 /**
+ * Responde pong para informar ao servidor principal que está vivo
+ */
+app.get('/ping', (req, res) => {
+	res.send('pong')
+})
+
+/**
  * recebe requests para criação de nova account
  */
 app.get('/new_account',function (req, res) {
-	EventEmmiter.emit( 'new_account', res )
+	EventEmmiter.emit('new_account', res)
 })
 
 /**
