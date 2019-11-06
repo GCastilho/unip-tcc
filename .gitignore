@@ -4,3 +4,5 @@ node_modules/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/extensions.json
+
+npm-debug.log
