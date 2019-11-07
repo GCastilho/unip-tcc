@@ -18,7 +18,7 @@ module.exports = function eventHandler(events) {
 	events.on('send',(body, response) => {
 		rpc.send(body.address,body.amount).then((res) => {
 			response.send({
-				txid: res,
+				txid: res.block,
 				timestamp: Date.now(),
 				account: body.address,
 				amount: body.amount
