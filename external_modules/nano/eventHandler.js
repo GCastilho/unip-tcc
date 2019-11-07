@@ -15,15 +15,18 @@ module.exports = function eventHandler(events) {
 		})
 	})
 	
-	events.on('send',(body, response) => {
+	events.on('send',(body,response) => {
+		console.log(body)
 		rpc.send(body.address,body.amount).then((res) => {
+			console.log('rpc enviou'+ res.block +' - ' +res )
 			response.send({
-				txid: res.block,
+				txid: res,
 				timestamp: Date.now(),
 				account: body.address,
 				amount: body.amount
 			})
 		}).catch(err => {
+			console.log(err)
 			response.status(500).send(err)
 		})
 	})

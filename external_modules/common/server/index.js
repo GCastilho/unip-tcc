@@ -24,7 +24,7 @@ app.get('/new_account',function (req, res) {
 
 /**
  * recebe requests de envio de dinheiro
- * (addres,amount)
+ * (address,amount)
  */
 app.post('/send', function (req, res) {
 	EventEmmiter.emit('send', req.body,res)

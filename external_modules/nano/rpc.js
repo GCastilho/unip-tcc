@@ -79,9 +79,10 @@ function send(destination, rawAmount) {
 			'amount': rawAmount
 		}, (err, res) => {
 			if (!err && !res.error) {
-				resolve(res.account)
+				resolve(res.block)
 			} else {
-				console.log(res)
+				console.log(res)	
+				console.log(err)
 				reject(err)
 			}
 		})
