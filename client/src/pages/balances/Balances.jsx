@@ -39,6 +39,9 @@ export default props => {
     socket.on('reconnect_failed', () => { });
     socket.on('reconnect_error', () => { });
 
+
+
+
     React.useEffect(() => {
         if (socketConnect) {
             socket.emit('api', { route: 'api/v1.0/balances/list', data: { email: props.email } });
@@ -74,7 +77,7 @@ export default props => {
          * "status" string contendo o status do chamado "success" ou "error"
          */
         socket.on('api', setBalance);
-    },[props, setBalance]);
+    },[props, socketConnect]);
 
     function setBalance(data) {
         if (data.route === 'api/v1.0/balances/list') {
