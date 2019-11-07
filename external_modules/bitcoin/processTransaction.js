@@ -44,7 +44,8 @@ async function formatTransaction(txid) {
 	transaction.details = transaction.details.filter(details =>
 		details.category === 'receive'
 	)
-	if(!transaction.details[0]) return 
+	if (!transaction.details[0]) throw {code:0}
+	
 	formattedTransaction.account = transaction.details[0].address
 
 	// Verifica se a transaçãoa é nossa
@@ -82,7 +83,8 @@ module.exports = function process(body) {
 			.then(transaction => {
 				Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/bitcoin`,transaction)
 			}).catch(err => {
-				console.error('transaction processing error',err)
+				if(err.cod != 0)
+					console.error('transaction processing error',err)
 			})
 	}
 }
