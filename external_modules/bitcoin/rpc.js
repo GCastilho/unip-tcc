@@ -21,7 +21,7 @@ const transactionInfo = txid => wallet.getTransaction(txid)
 
 const blockInfo = block => wallet.getBlock(block)
 
-const send = (address, amount) => wallet.SendToAddress(address, amount)
+const send = (address, amount) => wallet.sendToAddress(address, amount)
 
 module.exports = {
 	createAccount,

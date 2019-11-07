@@ -19,7 +19,7 @@ async function getReceiveHistory(firstBlock,block) {
 				account: blockInfo.block_account,
 				amount: blockInfo.amount,
 				block: block,
-				time: blockInfo.local_timestamp
+				timestamp: blockInfo.local_timestamp
 			})
 		}
 		blockNow = block
@@ -60,7 +60,7 @@ function process(transaction) {
 		transactionArray.forEach(receive => {
 			new Transaction({
 				tx: receive.block,
-				info: {account,amount,time} = receive
+				info: {account,amount,timestamp} = receive
 			}).save().then(() => {
 				Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/nano`, receive).catch(err => console.log(err))
 			}).catch((err) => {

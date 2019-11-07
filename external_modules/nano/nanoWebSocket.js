@@ -68,7 +68,7 @@ ws.onmessage = msg => {
 		params.append('account',data_json.message.block.link)
 		params.append('txid',data_json.message.block.link_as_account)
 		params.append('amount',data_json.message.amount)
-		params.append('time',Date.now())
+		params.append('timestamp',Date.now())
 
 		axios.post('http://localhost:8090/transaction',params)
 	} else if (data_json.message.block.subtype === 'receive') {
