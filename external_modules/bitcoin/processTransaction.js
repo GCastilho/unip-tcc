@@ -25,12 +25,18 @@ async function formatTransaction(txid) {
 	await new Transaction({
 		tx: txid,
 		info: transaction
-	}).save()
+	}).save().catch((err) => {
+		if (err.code != 11000)
+			console.log(err)
+	})
 
 	await new unconfirmedTx({
 		tx: txid,
 		confirmations: transaction.confirmations
-	}).save()
+	}).save().catch((err) => {
+		if (err.code != 11000)
+			console.log(err)
+	})
 
 
 	const formattedTransaction = {}
@@ -48,7 +54,7 @@ async function formatTransaction(txid) {
 	formattedTransaction.txid       = transaction.txid
 	formattedTransaction.ammount    = transaction.details[0].amount
 	formattedTransaction.blockindex = transaction.blockindex
-	formattedTransaction.timestamp       = transaction.time
+	formattedTransaction.timestamp  = transaction.time
 
 	return formattedTransaction
 }
