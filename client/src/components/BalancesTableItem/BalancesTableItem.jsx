@@ -95,7 +95,7 @@ export default props => {
     function withdrawButtonHandle() {
         console.log(address);
         console.log(amount);
-        props.withdraw(address, amount);
+        props.withdraw(props.name ,address, amount);
     }
 
     deposit ? depositShow = 'drawer-container' : depositShow = 'drawer-container hide';

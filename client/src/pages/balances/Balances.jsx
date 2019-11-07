@@ -13,7 +13,7 @@ import BalancesTableItem from "../../components/BalancesTableItem/BalancesTableI
 import ReactLoading from "react-loading";
 
 const socket = socketIOClient({
-    endpoint: "http://localhost:3000", // local para connexão (TODO usar caminho relativo)
+    endpoint: 'http://localhost:'+window.location.port, // local para connexão (TODO usar caminho relativo)
     response: false
 });
 
@@ -53,9 +53,10 @@ export default props => {
 
     function setBalance(data) {
         console.log(data);
-        if (data.route === 'api/v1.0/balances/list') {
+        console.log(window.location.port);
+        if (data.route === 'api/v1.0/balances/list' || data.route === 'api/v1.0/balances/withdraw') {
             console.log(data.data);
-            updateBalances(data.data);
+            setTimeout((() => updateBalances(data.data)),1000);
         }
     }
 
