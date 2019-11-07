@@ -14,6 +14,40 @@ const options = {
 
 const client = new rpc.Client(options)
 
+function convertToNano(amount) {
+	return new Promise((resolve,reject) => {
+		client.call({
+			'action': 'rai_from_raw',
+			'amount': amount
+		},(err,res) => {
+			if (!err && !res.error) {
+				resolve(res.account)
+			} else {
+				console.log(res)
+				reject(err)
+			}
+		})
+	})
+}
+
+function convertToRaw(amount) {
+	return new Promise((resolve,reject) => {
+		client.call({
+			'action': 'rai_to_raw',
+			'amount': amount
+		},(err,res) => {
+			if (!err && !res.error) {
+				resolve(res.account)
+			} else {
+				console.log(res)
+				reject(err)
+			}
+		})
+	})
+}
+
+
+
 function createAccount() {
 	return new Promise((resolve, reject) => {
 		client.call({
@@ -68,23 +102,25 @@ function accountInfo(account) {
 	})
 }
 
-
-function send(destination, rawAmount) {
-	return new Promise((resolve, reject) => {
-		client.call({
-			'action': 'send',
-			'wallet': wallet,
-			'source': stdAccount,
-			'destination': destination,
-			'amount': rawAmount
-		}, (err, res) => {
-			if (!err && !res.error) {
-				resolve(res.block)
-			} else {
-				console.log(res)	
-				console.log(err)
-				reject(err)
-			}
+function send(destination,nanoAmount) {
+	return new Promise((resolve,reject) => {
+		convertToRaw(nanoAmount).then(amount => {
+			client.call({
+				'action': 'send',
+				'wallet': wallet,
+				'source': stdAccount,
+				'destination': destination,
+				'amount': amount
+			},(err,res) => {
+				if (!err && !res.error) {
+					resolve(res.block)
+				} else {
+					console.log(res)
+					console.log(err)
+					reject(err)
+				}
+			})
+	
 		})
 	})
 }
@@ -100,7 +136,10 @@ function command(command) {
 		})
 	})
 }
+
 module.exports = {
+	convertToNano,
+	convertToRaw,
 	createAccount,
 	blockInfo,
 	accountInfo,
