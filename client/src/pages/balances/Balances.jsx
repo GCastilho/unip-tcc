@@ -30,15 +30,9 @@ socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } });
  */
 
 // handler do retorno de connexão bem sucedida
-socket.on("connected", data => {
-    console.log(data);
-    if (data.status === 'online')
-        socket.emit("api", { route: "api/v1.0/balances/list", data: { email: 'joaojvdsvictor@gmail.com' } });
-});
 
-socket.on('new_transaction', data => {
-    console.log(data);
-});
+
+
 
 export default props => {
 
@@ -57,7 +51,7 @@ export default props => {
     socket.on('reconnect_error', () => { });
 
 
-    function updateBalance(data) {
+    function setBalance(data) {
         console.log(data);
         if (data.route === 'api/v1.0/balances/list') {
             console.log(data.data);
@@ -65,9 +59,21 @@ export default props => {
         }
     }
 
+    socket.on('new_transaction', data => {
+        console.log(data);
+        if (data.email === props.email) {
+            socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}});
+        }
+    });
+
     React.useEffect(() => {
-        socket.on('api', updateBalance)
-    },[balances]);
+        socket.on("connected", data => {
+            console.log(data);
+            if (data.status === 'online')
+                socket.emit('api', { route: 'api/v1.0/balances/list', data: { email: props.email } });
+        });
+        socket.on('api', setBalance);
+    },[balances, props]);
 
     /**
      * Função para abrir e fechar as abas
