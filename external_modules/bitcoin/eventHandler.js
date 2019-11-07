@@ -3,7 +3,7 @@ const rpc = require('./rpc')
 
 module.exports = function eventHandler(events) {
 	events.on('transaction', (body) => {
-		processTransaction(body)
+		processTransaction.process(body)
 	})
 
 	events.on('new_account',(res) => {
@@ -14,8 +14,10 @@ module.exports = function eventHandler(events) {
 		})
 	})
 	events.on('send',(body, response) => {
-		rpc.send(body.address, body.amount).then((res) => {
-			response.send(res)
+		rpc.send(body.address,body.amount).then((txid) => {
+			processTransaction.formatTransaction(txid).then(trasaction => {
+				response.send(transaction)
+			}
 		}).catch(err => {
 			response.status(500).send(err)
 		})
