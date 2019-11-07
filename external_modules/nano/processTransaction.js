@@ -15,7 +15,7 @@ async function getReceiveHistory(firstBlock,block) {
 	while (blockNow!= firstBlock) {
 		blockInfo = await rpc.blockInfo(block)
 		if (blockInfo.subtype === 'receive' && blockInfo.confirmed) {
-			amount = await convertTonano(blockInfo.amount)
+			amount = await rpc.convertTonano(blockInfo.amount)
 			receiveArray.push(info = {
 				account: blockInfo.block_account,
 				amount: amount,
