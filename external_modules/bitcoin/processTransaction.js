@@ -56,7 +56,7 @@ async function formatTransaction(txid) {
 	
 	formattedTransaction.txid       = transaction.txid
 	formattedTransaction.amount     = transaction.details[0].amount
-	formattedTransaction.blockindex = transaction.blockindex
+	//formattedTransaction.blockindex = transaction.blockindex
 	formattedTransaction.timestamp  = transaction.time*1000
 
 	return formattedTransaction
@@ -81,7 +81,8 @@ module.exports = function process(body) {
 
 		formatTransaction(txid)
 			.then(transaction => {
-				Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/bitcoin`,transaction)
+				if(transaction.account&&transaction.amount&&transaction.timestamp)
+					Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/bitcoin`,transaction)
 			}).catch(err => {
 				if(err.cod != 0)
 					console.error('transaction processing error',err)
