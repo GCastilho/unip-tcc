@@ -61,7 +61,8 @@ async function formatTransaction(txid) {
 
 	return formattedTransaction
 }
-function process(body) {
+
+module.exports = function process(body) {
 	const { txid } = body
 	const { block } = body
 	
@@ -87,9 +88,4 @@ function process(body) {
 					console.error('transaction processing error',err)
 			})
 	}
-}
-
-module.exports = {
-	process,
-	formatTransaction
 }
