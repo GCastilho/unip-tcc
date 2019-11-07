@@ -20,8 +20,8 @@ export default (props) => {
      * Variaveis de estado usando React hooks, mesmo efeito que a variavel this.state
      */
     const [sideDrawerOpen, setSideDrawerOpen] = React.useState(false);
-    const [cookies,,removeCookie] = useCookies(['sessionID']);
-    const [userLogin, setUserLogin] = React.useState(cookies.sessionID !== undefined);
+    const [,,removeCookie] = useCookies(['sessionID']);
+    const [userLogin, setUserLogin] = React.useState(false);
     const [redirect, setRedirect] = React.useState(false);
 
     /** A função useEffect é chamada toda vez que um estado é atualizado */
@@ -72,13 +72,15 @@ export default (props) => {
 
                 <Link to="/" className="button">Home</Link>
                 <div className='header-left'>
-                    <Link to="/notfound" className="button">Not Found</Link>
                 </div>
                 <div className='separator-button'/>
                 <div className="header-right">
                     {/* Faz o check se há ou não um cookie, se tiver um cookie ele mostrara o botão de logout*/}
                     {userLogin ?
-                        <button className="button" onClick={logOutHandle}>Log out</button>
+                        <>
+                            <Link to='/balances' className='button'>Balances</Link>
+                            <button className="button" onClick={logOutHandle}>Log out</button>
+                        </>
                         :
                         <>
                             <Link to="/login" className="button">Login</Link>

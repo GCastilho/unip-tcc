@@ -4,3 +4,5 @@ build/
 tests/
 node_modules/
 cfg/**
+src/websocket/web-jsnative
+external_modules/

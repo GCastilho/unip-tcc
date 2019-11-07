@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<header>
+	<script src="./socket.io.js"></script>
+</header>
+
+<body>
+
+</body>
+<script>
+	let socket = io.connect("http://localhost:3001", { reconnection: false, transports: ['websocket'] }); //use the next port to communicate
+
+	// handler do retorno de connexão bem sucedida
+	socket.on("connected", data => {
+		console.log(data);
+	});
+	socket.on("disconnect", () => { console.log("Socket desconectado") });
+
+	//handlers de falhas de conexão e reconexão ao servidor
+	socket.on('connect_failed', () => { });
+	socket.on("connect_error", () => { });
+	socket.on("reconnect_failed", () => { });
+	socket.on("reconnect_error", () => { });
+
+
+	// handler de retorno de resposta pelo mesmo caminho
+	socket.on("api/v1.0/teste/version", data => { console.log(data) });
+
+	/* call de uma rota de teste da API v1.0
+	 * OBS: o call precisa ser feito posterior a declaração do handler do retorno
+	 * OBS2: necessario verificar estado da connexão do socket antes do envio ou tratar a exception
+	 */
+	setTimeout(() => {
+		console.log("call");
+		socket.emit("api.version", { status: "ping" })
+
+	}, 500);
+</script>

@@ -1,4 +1,4 @@
-/**
+/*
  * src/currencyApi/currencyModule/new_transaction.js
  * 
  * Processa novas transações desta currency, atualizando o balanço do usuário
@@ -15,7 +15,7 @@ module.exports = async function new_transaction(transaction) {
 		[`currencies.${this.name}.accounts`]: transaction.account
 	}, {
 		$push: { [`currencies.${this.name}.received`]: transaction },
-		$inc: { [`currencies.${this.name}.balance`]: transaction.ammount }
+		$inc: { [`currencies.${this.name}.balance`]: transaction.amount }
 	})
 
 	if (!person) throw { code: 404, message: 'No user found for this account'}

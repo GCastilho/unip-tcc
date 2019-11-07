@@ -19,16 +19,27 @@ class App extends React.Component {
         super(props);
         /** Cria uma variavel para o cookie para que todos os filhos tenham acesso */
         this.state = {
-            haveCookie: this.cookies.getAll().sessionID !== undefined,
+            email: '',
+            haveCookie: false,
         };
         this.checkCookie = this.checkCookie.bind(this);
     }
 
     cookies = new Cookies();
 
+    componentDidMount() {
+        if (this.cookies.getAll().sessionID) {
+            this.cookies.remove('sessionID');
+        }
+    }
+
     /** Função para alterar a variavel haveCookie */
     checkCookie = (cookie) => {
         this.setState({haveCookie: cookie});
+    };
+
+    setEmail = (email) => {
+        this.setState({email: email});
     };
 
     render() {
@@ -36,7 +47,11 @@ class App extends React.Component {
             <BrowserRouter>
                 <Header checkCookie={this.checkCookie} haveCookie={this.state.haveCookie}/>
                 <div className='home-container'>
-                    <Routes checkCookie={this.checkCookie}/>
+                    <Routes
+                        checkCookie={this.checkCookie}
+                        setEmail={this.setEmail}
+                        email={this.state.email}
+                    />
                 </div>
             </BrowserRouter>
         )

@@ -26,8 +26,12 @@ export default props => {
             <props.LogoutRedirect/>
             <ul>
                 <li><Link to="/" className="drawer-button" onClick={props.handleButton}>Home</Link></li>
+                <li><Link to='/balances' className='drawer-button' onClick={props.handleButton}>Balances</Link></li>
                 {props.userLogin ?
-                    <li><button className="drawer-button" onClick={handleClick}>Log out</button></li>
+                    <>
+                        <li><Link to='/balances' className="drawer-button" onClick={props.handleButton}>Balances</Link></li>
+                        <li><button className="drawer-button" onClick={handleClick}>Log out</button></li>
+                    </>
                     :
                     <>
                         <li><Link to="/login" className="drawer-button" onClick={props.handleButton}>Login</Link></li>
