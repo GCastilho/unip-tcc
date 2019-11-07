@@ -1,4 +1,4 @@
-const mongoose = require('../../../common/db/mongoose')
+const mongoose = require('../mongoose')
 
 const Account = mongoose.model('account', {
 	account: {
@@ -7,6 +7,7 @@ const Account = mongoose.model('account', {
 		unique: true,
 		required: true
 	},
+	/*
 	isUpdated: {
 		type: Boolean,
 		required: true
@@ -14,7 +15,7 @@ const Account = mongoose.model('account', {
 	lastBlock: {
 		type: String,
 		trim: true
-	}
+	}*/
 
 })
 
