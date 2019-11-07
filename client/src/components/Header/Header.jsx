@@ -20,8 +20,8 @@ export default (props) => {
      * Variaveis de estado usando React hooks, mesmo efeito que a variavel this.state
      */
     const [sideDrawerOpen, setSideDrawerOpen] = React.useState(false);
-    const [cookies,,removeCookie] = useCookies(['sessionID']);
-    const [userLogin, setUserLogin] = React.useState(cookies.sessionID !== undefined);
+    const [,,removeCookie] = useCookies(['sessionID']);
+    const [userLogin, setUserLogin] = React.useState(false);
     const [redirect, setRedirect] = React.useState(false);
 
     /** A função useEffect é chamada toda vez que um estado é atualizado */
