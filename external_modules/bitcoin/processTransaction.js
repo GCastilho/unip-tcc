@@ -27,7 +27,7 @@ async function formatTransaction(txid) {
 		info: transaction
 	}).save().catch((err) => {
 		if (err.code != 11000)
-			console.log(err)
+			console.error(err)
 	})
 
 	await new unconfirmedTx({
@@ -35,14 +35,16 @@ async function formatTransaction(txid) {
 		confirmations: transaction.confirmations
 	}).save().catch((err) => {
 		if (err.code != 11000)
-			console.log(err)
+			console.error(err)
 	})
 
 
 	const formattedTransaction = {}
+
 	transaction.details = transaction.details.filter(details =>
 		details.category === 'receive'
 	)
+	if(!transaction.details[0]) return 
 	formattedTransaction.account = transaction.details[0].address
 
 	// Verifica se a transaçãoa é nossa
@@ -52,9 +54,9 @@ async function formatTransaction(txid) {
 		throw 'account does NOT exist in the database'
 	
 	formattedTransaction.txid       = transaction.txid
-	formattedTransaction.amount    = transaction.details[0].amount
+	formattedTransaction.amount     = transaction.details[0].amount
 	formattedTransaction.blockindex = transaction.blockindex
-	formattedTransaction.timestamp  = transaction.time
+	formattedTransaction.timestamp  = transaction.time*1000
 
 	return formattedTransaction
 }
