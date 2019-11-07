@@ -70,10 +70,9 @@ export default props => {
     },[ props]);
 
     function setBalance(data) {
-        console.log(data);
         if (data.route === 'api/v1.0/balances/list') {
             console.log(data);
-            setTimeout((() => updateBalances(data.data)),1000);
+            setTimeout((() => updateBalances(data.data)),5000);
         }
         if (data.route === 'api/v1.0/balances/withdraw') {
             console.log(data)
