@@ -18,7 +18,7 @@ const socket = socketIOClient({
 });
 
 socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } });
-socket.emit("api", { route: "api/v1.0/balances/list", data: { email: 'joaojvdsvictor@gmail.com' } });
+
 
 /**
  * Rota de request da lista de balances
@@ -32,8 +32,13 @@ socket.emit("api", { route: "api/v1.0/balances/list", data: { email: 'joaojvdsvi
 // handler do retorno de connexão bem sucedida
 socket.on("connected", data => {
     console.log(data);
+    if (data.status === 'online')
+        socket.emit("api", { route: "api/v1.0/balances/list", data: { email: 'joaojvdsvictor@gmail.com' } });
 });
 
+socket.on('new_transaction', data => {
+    console.log(data);
+});
 
 export default props => {
 
@@ -47,21 +52,21 @@ export default props => {
     socket.on('disconnect', () => { console.log('Socket desconectado') });
     //handlers de falhas de conexão e reconexão ao servidor
     socket.on('connect_failed', () => { });
-    socket.on("connect_error", () => { });
-    socket.on("reconnect_failed", () => { });
-    socket.on("reconnect_error", () => { });
+    socket.on('connect_error', () => { });
+    socket.on('reconnect_failed', () => { });
+    socket.on('reconnect_error', () => { });
 
 
     function updateBalance(data) {
-        if (data.data.status === undefined) {
-            console.log('pass'+data.data);
+        console.log(data);
+        if (data.route === 'api/v1.0/balances/list') {
+            console.log(data.data);
             updateBalances(data.data);
         }
     }
 
-
     React.useEffect(() => {
-        socket.on("api", updateBalance)
+        socket.on('api', updateBalance)
     },[balances]);
 
     /**
@@ -72,7 +77,6 @@ export default props => {
     }
 
     function withdraw(address, amount) {
-        socket.emit('api', { route: 'api/v1.0/test/ping', data: { status: 'ping' } });
         socket.emit('api', { route: 'api/v1.0/balances/withdraw', data: { email: props.email, address: address, amount: amount } })
     }
 
