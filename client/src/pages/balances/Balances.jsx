@@ -18,6 +18,8 @@ const socket = socketIOClient({
 });
 
 socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } });
+socket.emit("api", { route: "api/v1.0/balances/list", data: { email: 'joaojvdsvictor@gmail.com' } });
+
 /**
  * Rota de request da lista de balances
  *
@@ -50,16 +52,17 @@ export default props => {
     socket.on("reconnect_error", () => { });
 
 
+    function updateBalance(data) {
+        if (data.data.status === undefined) {
+            console.log('pass'+data.data);
+            updateBalances(data.data);
+        }
+    }
+
 
     React.useEffect(() => {
-         socket.on("api", data => {
-            socket.emit("api", { route: "api/v1.0/balances/list", data: { email: props.email } });
-            if (data.data.status === undefined) {
-                console.log('pass'+data.data);
-                updateBalances(data.data);
-            }
-        })
-    },[props]);
+        socket.on("api", updateBalance)
+    },[balances]);
 
     /**
      * Função para abrir e fechar as abas
@@ -68,9 +71,9 @@ export default props => {
         updateFocus(focus);
     }
 
-    function withdraw() {
+    function withdraw(address, amount) {
         socket.emit('api', { route: 'api/v1.0/test/ping', data: { status: 'ping' } });
-        socket.emit('api', { route: 'api/v1.0/balances/withdraw', data: { email: props.email } })
+        socket.emit('api', { route: 'api/v1.0/balances/withdraw', data: { email: props.email, address: address, amount: amount } })
     }
 
     return (
