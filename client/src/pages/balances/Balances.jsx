@@ -17,6 +17,8 @@ const socket = socketIOClient({
     response: false
 });
 
+let socketConnect = false;
+
 /* call de uma rota de teste da API v1.0
  * OBS: o call precisa ser feito posterior a declaração do handler do retorno
  * OBS2: necessario verificar estado da connexão do socket antes do envio ou tratar a exception
@@ -38,9 +40,12 @@ export default props => {
     socket.on('reconnect_error', () => { });
 
     React.useEffect(() => {
+        if (socketConnect) {
+            socket.emit('api', { route: 'api/v1.0/balances/list', data: { email: props.email } });
+        }
         socket.on("connected", data => {
             console.log(data);
-            if (data.status === 'online')
+            if (data.status === 'online') {
                 /**
                  * Rota de request da lista de balances
                  *
@@ -49,7 +54,9 @@ export default props => {
                  *  	{ code: "ETH", name: "Etherium", value: "0.00000000", address: "" }
                  * ]}
                  */
-                socket.emit('api', { route: 'api/v1.0/balances/list', data: { email: props.email } });
+                socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}});
+                socketConnect = true;
+            }
         });
         socket.on('new_transaction', data => {
             console.log(data);
@@ -67,7 +74,7 @@ export default props => {
          * "status" string contendo o status do chamado "success" ou "error"
          */
         socket.on('api', setBalance);
-    },[ props]);
+    },[props, setBalance]);
 
     function setBalance(data) {
         if (data.route === 'api/v1.0/balances/list') {
