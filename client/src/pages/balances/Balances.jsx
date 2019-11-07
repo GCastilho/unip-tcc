@@ -77,6 +77,7 @@ export default props => {
          * "status" string contendo o status do chamado "success" ou "error"
          */
         socket.on('api', setBalance);
+        return () => socket.off('api', setBalance);
     },[props, socketConnect]);
 
     function setBalance(data) {
