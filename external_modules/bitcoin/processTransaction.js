@@ -43,8 +43,17 @@ async function formatTransaction(txid) {
 
 	transaction.details = transaction.details.filter(details =>
 		details.category === 'receive'
-	)	
+	)
+	if (!transaction.details[0]) throw {code:0}
+	
 	formattedTransaction.account = transaction.details[0].address
+
+	// Verifica se a transaçãoa é nossa
+	const account = await Account.findOne({account: formattedTransaction.account})
+	console.log(account)
+	if (!account)
+		throw 'account does NOT exist in the database'
+	
 	formattedTransaction.txid       = transaction.txid
 	formattedTransaction.amount     = transaction.details[0].amount
 	//formattedTransaction.blockindex = transaction.blockindex
@@ -59,27 +68,24 @@ function process(body) {
 	if (block) {
 		//pega todas as transaçoes que ficaram a mais do que 5 blocos no database
 		unconfirmedTx.find({blockCount: {$gte: 6}},{_id: 0,tx: 1}).then(res => {
-			if (res.length > 0)
+			if(res.length>0)
 				res.forEach((tx) => {getConfirmed(tx.tx)})
 			//incrementa o contador de blocos da transacao no
-			unconfirmedTx.collection.updateMany({},{$inc: {blockCount: 1}},{})
+			unconfirmedTx.collection.updateMany({},{$inc: { blockCount: 1 }},{})
 		}).catch(() => {console.error('block processing error')})
 	} else {
 		//por algum motivo a cada transacao estava sendo recebido 2x a transçao e um undefined
 		if (!txid || lasTtransactionId === txid) return
 		lasTtransactionId = txid
 
-		formatTransaction(txid).then(transaction => {
-			Account.findOne({account: transaction.account}).then(account => {
-				if (!account) throw 'account does NOT exist in the database'
-					.then(transaction => {
-						Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/bitcoin`,transaction)
-					}).catch(err => {
-						if (err.cod != 0)
-							console.error('transaction processing error',err)
-					})
+		formatTransaction(txid)
+			.then(transaction => {
+				if(transaction.account&&transaction.amount&&transaction.timestamp)
+					Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/bitcoin`,transaction)
+			}).catch(err => {
+				if(err.cod != 0)
+					console.error('transaction processing error',err)
 			})
-		})
 	}
 }
 
