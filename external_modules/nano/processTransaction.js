@@ -15,9 +15,10 @@ async function getReceiveHistory(firstBlock,block) {
 	while (blockNow!= firstBlock) {
 		blockInfo = await rpc.blockInfo(block)
 		if (blockInfo.subtype === 'receive' && blockInfo.confirmed) {
+			amount = await convertTonano(blockInfo.amount)
 			receiveArray.push(info = {
 				account: blockInfo.block_account,
-				amount: blockInfo.amount,
+				amount: amount,
 				txid: block,
 				timestamp: blockInfo.local_timestamp
 			})
@@ -51,6 +52,7 @@ async function checkOld(account) {
 }
 
 function process(transaction) {
+	console.log(transaction)
 	Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/nano`, transaction).catch(err => console.log(err))
 	//verifica se o historico de transaçoes é integro
 	checkOld(transaction.account).then((transactionArray) => {
