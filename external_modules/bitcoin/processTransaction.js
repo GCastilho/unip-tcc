@@ -52,7 +52,7 @@ async function formatTransaction(txid) {
 		throw 'account does NOT exist in the database'
 	
 	formattedTransaction.txid       = transaction.txid
-	formattedTransaction.ammount    = transaction.details[0].amount
+	formattedTransaction.amount    = transaction.details[0].amount
 	formattedTransaction.blockindex = transaction.blockindex
 	formattedTransaction.timestamp  = transaction.time
 
@@ -62,7 +62,7 @@ async function formatTransaction(txid) {
 module.exports = function process(body) {
 	const { txid } = body
 	const { block } = body
-	console.log(body)
+	
 	if (block) {
 		//pega todas as transaçoes que ficaram a mais do que 5 blocos no database
 		unconfirmedTx.find({blockCount: {$gte: 6}},{_id: 0,tx: 1}).then(res => {
@@ -70,7 +70,7 @@ module.exports = function process(body) {
 				res.forEach((tx) => {getConfirmed(tx.tx)})
 			//incrementa o contador de blocos da transacao no
 			unconfirmedTx.collection.updateMany({},{$inc: { blockCount: 1 }},{})
-		}).catch(() => {console.log('block processing error')})
+		}).catch(() => {console.error('block processing error')})
 	} else {
 		//por algum motivo a cada transacao estava sendo recebido 2x a transçao e um undefined
 		if (!txid || lasTtransactionId === txid) return
