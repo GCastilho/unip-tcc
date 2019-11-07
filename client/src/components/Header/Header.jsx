@@ -72,7 +72,6 @@ export default (props) => {
 
                 <Link to="/" className="button">Home</Link>
                 <div className='header-left'>
-                    <Link to="/notfound" className="button">Not Found</Link>
                 </div>
                 <div className='separator-button'/>
                 <div className="header-right">
