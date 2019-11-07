@@ -36,7 +36,8 @@ async function checkOld(account) {
 	 */
 
 	const accountDb = {lastBlock,account} = (await Account.findOne({account: account},{_id: 0,}))
-	if(!accountDb.account) return
+	
+	if (!accountDb || !accountDb.account) return
 	
 	accountInfo = await rpc.accountInfo(account)
 	/**
@@ -50,10 +51,10 @@ async function checkOld(account) {
 }
 
 function process(transaction) {
-
+	console.log('2 ')
 	console.log(transaction)
 	Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/nano`, transaction).catch(err => console.log(err))
-
+	console.log('3 after send')
 	//verifica se o historico de transaçoes é integro
 	checkOld(transaction.account).then((transactionArray) => {
 		if(!transactionArray) return
