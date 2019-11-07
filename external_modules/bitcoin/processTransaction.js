@@ -48,7 +48,7 @@ async function formatTransaction(txid) {
 	formattedTransaction.txid       = transaction.txid
 	formattedTransaction.ammount    = transaction.details[0].amount
 	formattedTransaction.blockindex = transaction.blockindex
-	formattedTransaction.time       = transaction.time
+	formattedTransaction.timestamp       = transaction.time
 
 	return formattedTransaction
 }
