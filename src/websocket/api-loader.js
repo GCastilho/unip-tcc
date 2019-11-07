@@ -5,6 +5,7 @@
  */
 const fs = require('fs')
 const path = require('path')
+const currencyApi = require('../currencyApi')
 
 const subpath = 'api/'
 
@@ -28,6 +29,12 @@ module.exports = function (socket) {
 		if (fs.existsSync(subLoader)) {
 			require(subLoader)(socket, subpath)
 		}
+	})
+
+	currencyApi.events.on('new_transaction', (currency, email, transaction) => {
+		transaction.currency = currency
+		transaction.email = email
+		socket.emit('new_transaction', transaction)
 	})
 
 	/**

@@ -27,13 +27,13 @@ module.exports = mongoose.model('Checklist', {
 			bitcoin: {
 				status: String,
 				address: String,
-				ammount: Number,
+				amount: Number,
 				balance_before: Number
 			},
 			nano: {
 				status: String,
 				address: String,
-				ammount: Number,
+				amount: Number,
 				balance_before: Number
 			}
 		}

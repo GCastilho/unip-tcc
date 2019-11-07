@@ -57,7 +57,7 @@ module.exports = function constructor() {
 	/**
 	 * @todo Reprojetar o journaling
 	 * @todo Handler do journaling
-	 * @todo Checar por possível race condition (especialmente no ammount)
+	 * @todo Checar por possível race condition (especialmente no amount)
 	 */
 	const withdraw_loop = async () => {
 		const checklist = await Checklist.find().cursor()
@@ -72,8 +72,8 @@ module.exports = function constructor() {
 				const person = await Person.findById(userId)
 				
 				const balance = person.currencies[this.name].balance
-				const ammount = withdraw[this.name].ammount
-				if (balance - ammount < 0) {
+				const amount = withdraw[this.name].amount
+				if (balance - amount < 0) {
 					withdraw[this.name].status = 'completed'
 					await item.save()
 					continue
@@ -88,7 +88,7 @@ module.exports = function constructor() {
 				const [transaction] = await Promise.all([
 					this._module.post('send', {
 						address: withdraw[this.name].address,
-						ammount
+						amount
 					}),
 					await item.save()
 				])
@@ -96,7 +96,7 @@ module.exports = function constructor() {
 				withdraw[this.name].status = 'order executed'
 				await item.save()
 
-				person.currencies[this.name].balance -= ammount
+				person.currencies[this.name].balance -= amount
 				person.currencies[this.name].sended.push(transaction)
 				person.save()
 
