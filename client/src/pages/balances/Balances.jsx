@@ -75,7 +75,8 @@ export default props => {
             setTimeout((() => updateBalances(data.data)),5000);
         }
         if (data.route === 'api/v1.0/balances/withdraw') {
-            console.log(data)
+            console.log(data);
+            socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}})
         }
     }
 
