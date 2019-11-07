@@ -13,26 +13,15 @@ import BalancesTableItem from "../../components/BalancesTableItem/BalancesTableI
 import ReactLoading from "react-loading";
 
 const socket = socketIOClient({
-    endpoint: 'http://localhost:'+window.location.port, // local para connexão (TODO usar caminho relativo)
+    endpoint: 'http://'+window.location.host,
     response: false
 });
 
-socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } });
-
-
-/**
- * Rota de request da lista de balances
- *
- * Ex Retorno:
- * {route: "api/v1.0/balances/list", status:"success", data:[
- *  	{ code: "ETH", name: "Etherium", value: "0.00000000" }
- * ]}
+/* call de uma rota de teste da API v1.0
+ * OBS: o call precisa ser feito posterior a declaração do handler do retorno
+ * OBS2: necessario verificar estado da connexão do socket antes do envio ou tratar a exception
  */
-
-// handler do retorno de connexão bem sucedida
-
-
-
+socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } });
 
 export default props => {
 
@@ -40,41 +29,56 @@ export default props => {
     const [focus, updateFocus] = React.useState(false);
     const [cookies] = useCookies(['sessionID']);
 
-
-
-
     socket.on('disconnect', () => { console.log('Socket desconectado') });
+
     //handlers de falhas de conexão e reconexão ao servidor
     socket.on('connect_failed', () => { });
     socket.on('connect_error', () => { });
     socket.on('reconnect_failed', () => { });
     socket.on('reconnect_error', () => { });
 
-
-    function setBalance(data) {
-        console.log(data);
-        console.log(window.location.port);
-        if (data.route === 'api/v1.0/balances/list' || data.route === 'api/v1.0/balances/withdraw') {
-            console.log(data.data);
-            setTimeout((() => updateBalances(data.data)),1000);
-        }
-    }
-
-    socket.on('new_transaction', data => {
-        console.log(data);
-        if (data.email === props.email) {
-            socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}});
-        }
-    });
-
     React.useEffect(() => {
         socket.on("connected", data => {
             console.log(data);
             if (data.status === 'online')
+                /**
+                 * Rota de request da lista de balances
+                 *
+                 * Ex Retorno:
+                 * {route: "api/v1.0/balances/list", status:"success", data:[
+                 *  	{ code: "ETH", name: "Etherium", value: "0.00000000", address: "" }
+                 * ]}
+                 */
                 socket.emit('api', { route: 'api/v1.0/balances/list', data: { email: props.email } });
         });
+        socket.on('new_transaction', data => {
+            console.log(data);
+            if (data.email === props.email) {
+                socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}});
+            }
+        });
+
+        /**
+         * handler de retorno de resposta da api
+         * estrutura do JSON:
+         * {route:"api/v1.0/...", data:{...}}
+         * "route" sendo a rota de chamamento
+         * "data" os dados de retorno da api
+         * "status" string contendo o status do chamado "success" ou "error"
+         */
         socket.on('api', setBalance);
-    },[balances, props]);
+    },[ props]);
+
+    function setBalance(data) {
+        console.log(data);
+        if (data.route === 'api/v1.0/balances/list') {
+            console.log(data);
+            setTimeout((() => updateBalances(data.data)),1000);
+        }
+        if (data.route === 'api/v1.0/balances/withdraw') {
+            console.log(data)
+        }
+    }
 
     /**
      * Função para abrir e fechar as abas
@@ -83,8 +87,11 @@ export default props => {
         updateFocus(focus);
     }
 
-    function withdraw(address, amount) {
-        socket.emit('api', { route: 'api/v1.0/balances/withdraw', data: { email: props.email, address: address, amount: amount } })
+    /**
+     * Função de saque da pagina
+     */
+    function withdraw(currency, address, amount) {
+        socket.emit('api', { route: 'api/v1.0/balances/withdraw', data: { address: address, amount: amount, currency: currency, email: props.email } })
     }
 
     return (
