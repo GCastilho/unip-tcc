@@ -3,9 +3,9 @@ const bodyParser = require('body-parser')
 const setup = require('./setup')
 const ExternalModuleEventEmitter = require('./events')
 let EventEmmiter
+app.use(bodyParser.urlencoded({extended: true}))
 
-app.use(bodyParser.urlencoded({ extended: true }))
-
+app.use(bodyParser.json({ extended: true }))
 // Comunicação com o main server
 
 /**
