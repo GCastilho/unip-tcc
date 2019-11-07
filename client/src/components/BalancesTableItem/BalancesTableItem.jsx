@@ -95,6 +95,7 @@ export default props => {
     function withdrawButtonHandle() {
         console.log(address);
         console.log(amount);
+        props.withdraw(props.name ,address, amount);
     }
 
     deposit ? depositShow = 'drawer-container' : depositShow = 'drawer-container hide';
@@ -103,7 +104,7 @@ export default props => {
     return (
         <>
             <div className='row-group row'>
-                <div className='table-row'>{props.code}</div>
+                <div className='table-row'>{props.code.toUpperCase()}</div>
                 <div className='table-row'>{props.name}</div>
                 <div className='table-row'>{props.value}</div>
                 <div className='table-row'>
@@ -132,7 +133,7 @@ export default props => {
             </div>
             <div className={withdrawShow}>
                 <div className='withdraw-container'>
-                    <h5>Você tem {props.value} {props.code} disponiveis para saque :</h5>
+                    <h5>Você tem {props.value} {props.code.toUpperCase()} disponiveis para saque :</h5>
                     <div className='withdraw-address-container'>
                         <div className='withdraw-address'>
                             <label style={{marginLeft: '4px'}}>Endereço : </label><input onChange={addressHandle}/>

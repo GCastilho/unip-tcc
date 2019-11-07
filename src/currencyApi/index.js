@@ -83,3 +83,13 @@ class CurrencyApi {
 }
 
 module.exports = currencyApi = new CurrencyApi()
+
+const connection_loop = () => {
+	setTimeout(async () => {
+		await currencyApi.currencies.nano._module.get('ping').catch(() => {})
+		await currencyApi.currencies.bitcoin._module.get('ping').catch(() => {})
+		connection_loop()
+	}, 1000)
+}
+connection_loop()
+

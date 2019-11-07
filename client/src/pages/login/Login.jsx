@@ -51,6 +51,7 @@ export default class Login extends React.Component {
             /** Se o post foi bem sucedido e houver um cookie, ele fara o redirect */
             if (this.cookies.getAll().sessionID !== undefined) {
                 this.props.checkCookie(true);
+                this.props.setEmail(this.state.email);
                 this.setState({redirect: true});
             } else {
                 this.setState({errorMsg: 'Não foi possivel fazer o login'});

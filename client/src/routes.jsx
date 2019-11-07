@@ -20,8 +20,13 @@ export default (props) => (
     <React.Suspense fallback={<ReactLoading className='loading' type='spinningBubbles' color='#fff'/>}>
         <Switch>
             <Route exact path='/'><Main/></Route>
-            <Route path='/balances'><Balances/></Route>
-            <Route path='/login'><Login checkCookie={props.checkCookie}/></Route>
+            <Route path='/balances'><Balances email={props.email} /></Route>
+            <Route path='/login'>
+                <Login
+                    checkCookie={props.checkCookie}
+                    setEmail={props.setEmail}
+                />
+            </Route>
             <Route path='/register'><Register/></Route>
             <Route path='*'><NotFound/></Route>
         </Switch>

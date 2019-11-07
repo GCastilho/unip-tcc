@@ -1,120 +1,137 @@
 /**
  * client/src/pages/balances/Balances.jsx
- * 
+ *
  * User Balances Page
  */
-import React, { Component } from 'react';
-// import axios from 'axios';
+import React from 'react';
+import { Redirect } from 'react-router-dom';
+import { useCookies } from 'react-cookie';
+import socketIOClient from "socket.io-client";
 
 import './Balances.css';
 import BalancesTableItem from "../../components/BalancesTableItem/BalancesTableItem";
+import ReactLoading from "react-loading";
+
+const socket = socketIOClient({
+    endpoint: 'http://'+window.location.host,
+    response: false
+});
+
+let socketConnect = false;
+
+/* call de uma rota de teste da API v1.0
+ * OBS: o call precisa ser feito posterior a declaração do handler do retorno
+ * OBS2: necessario verificar estado da connexão do socket antes do envio ou tratar a exception
+ */
+socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } });
+
+export default props => {
+
+    const [balances, updateBalances] = React.useState([]);
+    const [focus, updateFocus] = React.useState(false);
+    const [cookies] = useCookies(['sessionID']);
+
+    socket.on('disconnect', () => { console.log('Socket desconectado') });
+
+    //handlers de falhas de conexão e reconexão ao servidor
+    socket.on('connect_failed', () => { });
+    socket.on('connect_error', () => { });
+    socket.on('reconnect_failed', () => { });
+    socket.on('reconnect_error', () => { });
 
 
-let simu = [
-    { code: "ETH", name: "Etherium", value: "1.00000000", address: '1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2' },
-    { code: "BTC", name: "Bitcoin", value: "1.00000000", address: '0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413' },
-    { code: "NANO", name: "NANO", value: "1.00000000", address: 'xrb_3njakob6iz67oi5cfade3etoremah35wsdei6n6qnjrdhrjgj45kwhqotc85' }
-];
 
-export default class Balances extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            /**
-             * @description Balances on the page (Just to save for posterior use)
-             */
-            balances: simu,
-            valued: 0,
-            onFocus: false
-        };
+
+    React.useEffect(() => {
+        if (socketConnect) {
+            socket.emit('api', { route: 'api/v1.0/balances/list', data: { email: props.email } });
+        }
+        socket.on("connected", data => {
+            console.log(data);
+            if (data.status === 'online') {
+                /**
+                 * Rota de request da lista de balances
+                 *
+                 * Ex Retorno:
+                 * {route: "api/v1.0/balances/list", status:"success", data:[
+                 *  	{ code: "ETH", name: "Etherium", value: "0.00000000", address: "" }
+                 * ]}
+                 */
+                socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}});
+                socketConnect = true;
+            }
+        });
+        socket.on('new_transaction', data => {
+            console.log(data);
+            if (data.email === props.email) {
+                socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}});
+            }
+        });
+
+        /**
+         * handler de retorno de resposta da api
+         * estrutura do JSON:
+         * {route:"api/v1.0/...", data:{...}}
+         * "route" sendo a rota de chamamento
+         * "data" os dados de retorno da api
+         * "status" string contendo o status do chamado "success" ou "error"
+         */
+        socket.on('api', setBalance);
+        return () => socket.off('api', setBalance);
+    },[props, socketConnect]);
+
+    function setBalance(data) {
+        if (data.route === 'api/v1.0/balances/list') {
+            console.log(data);
+            setTimeout((() => updateBalances(data.data)),5000);
+        }
+        if (data.route === 'api/v1.0/balances/withdraw') {
+            console.log(data);
+            socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}})
+        }
     }
 
     /**
      * Função para abrir e fechar as abas
      */
-    setFocus(focus) {
-        let newState = {onFocus: focus};
-        this.setState(newState);
+    function setFocus(focus) {
+        updateFocus(focus);
     }
 
     /**
-     * @description create a request for the server to push the balances from user
+     * Função de saque da pagina
      */
-    loadBalances = () => {
-        //need to create a request in here from server
-        let recieveData = simu;
-        recieveData.forEach(bal => {
-            if (bal) {
-                let newState = this.state;
-                newState.balances.push(bal);
-                this.setState(newState);
-            }
-        });
-    };
-
-    /**
-     * @description append new data or replace existing one
-     * @param item: balance recieve the item for the balance ex. {code,name,balance}
-     */
-    appendBalance = (item) => {
-        let newState = this.state;
-        for (let i = 0; i < newState.balances.length; i++) {
-            if (newState.balances[i].code === item.code) {
-                newState.balances[i].balance = item.balance;
-            }
-        }
-        this.setState(newState);
-    };
-
-    /**
-     * @description method called from client to make an deposit
-     * @param {JSON} item recieve the item for the respective balance ex. {code,name,balance}
-     */
-    depositBalance(item) {
-        /*
-         * this need to create an request in the server for deposit the value
-         * after the user insert a new value for deposit
-         */
-        let nitem = item;
-        item.value = (parseFloat(item.value) + 0.00000005).toFixed(8);
-        this.appendBalance(nitem);
+    function withdraw(currency, address, amount) {
+        socket.emit('api', { route: 'api/v1.0/balances/withdraw', data: { address: address, amount: amount, currency: currency, email: props.email } })
     }
 
-    /**
-     * @description method called from client to make an withdraw
-     * @param {JSON} item recieve the item for the respective balance ex. {code,name,balance}
-     */
-    withdrawBalance(item) {
-        /*
-         * this need to create an request in the server for withdraw the value
-         * after the user insert a new value for withdraw
-         */
-        let nitem = item;
-        item.value = (parseFloat(item.value) - 0.00000005).toFixed(8);
-        this.appendBalance(nitem);
-    }
-
-    render() {
-        return (
-            <div className='table-container' role='table'>
-                <div className='row-group header'>
-                    <div className='table-row'>Coin</div>
-                    <div className='table-row'>Name</div>
-                    <div className='table-row'>Balance</div>
-                    <div className='table-row'>Actions</div>
+    return (
+        <>
+            {cookies.sessionID ? null : <Redirect to='/'/>}
+            {balances.length === 0 ?
+                <ReactLoading className='loading' type='spinningBubbles' color='#fff'/>
+                :
+                <div className='table-container' role='table'>
+                    <div className='row-group header'>
+                        <div className='table-row'>Coin</div>
+                        <div className='table-row'>Name</div>
+                        <div className='table-row'>Balance</div>
+                        <div className='table-row'>Actions</div>
+                    </div>
+                    {balances.map((bal) => (
+                        <BalancesTableItem
+                            key={bal.code}
+                            name={bal.name}
+                            code={bal.code}
+                            value={bal.balance}
+                            address={bal.address[0]}
+                            withdraw={withdraw}
+                            focus={focus}
+                            setFocus={setFocus}
+                        />
+                    ))}
                 </div>
-                {this.state.balances.map((bal) => (
-                    <BalancesTableItem
-                        key={bal.code}
-                        name={bal.name}
-                        code={bal.code}
-                        value={bal.value}
-                        address={bal.address}
-                        focus={this.state.onFocus}
-                        setFocus={this.setFocus.bind(this)}
-                    />
-                ))}
-            </div>
-        )
-    }
+            }
+        </>
+    )
 }
