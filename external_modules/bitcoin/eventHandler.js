@@ -15,9 +15,9 @@ module.exports = function eventHandler(events) {
 	})
 	events.on('send',(body, response) => {
 		rpc.send(body.address,body.amount).then((txid) => {
-			processTransaction.formatTransaction(txid).then(trasaction => {
+			processTransaction.formatTransaction(txid).then(transaction => {
 				response.send(transaction)
-			}
+			})
 		}).catch(err => {
 			response.status(500).send(err)
 		})
