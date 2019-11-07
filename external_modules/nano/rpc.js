@@ -21,9 +21,8 @@ function convertToNano(amount) {
 			'amount': amount
 		},(err,res) => {
 			if (!err && !res.error) {
-				resolve(res.account)
+				resolve(res.amount)
 			} else {
-				console.log(res)
 				reject(err)
 			}
 		})
@@ -37,9 +36,8 @@ function convertToRaw(amount) {
 			'amount': amount
 		},(err,res) => {
 			if (!err && !res.error) {
-				resolve(res.account)
+				resolve(res.amount)
 			} else {
-				console.log(res)
 				reject(err)
 			}
 		})
