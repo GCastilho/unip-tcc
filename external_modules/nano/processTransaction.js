@@ -51,21 +51,18 @@ async function checkOld(account) {
 }
 
 function process(transaction) {
-	console.log('2 ')
-	console.log(transaction)
 	Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/nano`, transaction).catch(err => console.log(err))
-	console.log('3 after send')
 	//verifica se o historico de transaçoes é integro
 	checkOld(transaction.account).then((transactionArray) => {
-		if(!transactionArray) return
+		if (!transactionArray) return
 		transactionArray.forEach(receive => {
 			new Transaction({
 				tx: receive.txid,
 				info: {account,amount,timestamp} = receive
 			}).save().then(() => {
-				Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/nano`, receive).catch(err => console.log(err))
+				Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/nano`,receive).catch(err => console.log(err))
 			}).catch((err) => {
-				if(err.code != 11000)
+				if (err.code != 11000)
 					console.log(err)
 			})
 		})
@@ -73,8 +70,12 @@ function process(transaction) {
 		
 		Account.collection.updateOne({
 			account: tx.account
-		}, {$set: { lastBlock: tx.txid	}
+		},{
+			$set: {lastBlock: tx.txid}
 		})
+	}).catch((err) => {
+		if (err.error != 'Account not found')
+			console.log(err)
 	})
 }
 
