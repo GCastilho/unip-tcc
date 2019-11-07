@@ -60,13 +60,14 @@ ws.onerror = function(event) {
  * @todo Tratar os dados e enviar para o servidor e banco de dados
  */
 ws.onmessage = msg => {
+	console.log('1 nano websocket')
 	data_json = JSON.parse(msg.data)
 	if (data_json.message.account == stdAccount||data_json.message.link_as_account == stdAccount) return
 	if (data_json.message.block.subtype === 'send') {
 
 		var params = new URLSearchParams()
-		params.append('account',data_json.message.block.link)
-		params.append('txid',data_json.message.block.link_as_account)
+		params.append('txid',data_json.message.block.link)
+		params.append('account',data_json.message.block.link_as_account)
 		params.append('amount',data_json.message.amount)
 		params.append('timestamp',Date.now())
 
