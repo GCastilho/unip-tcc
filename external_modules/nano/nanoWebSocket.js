@@ -63,7 +63,7 @@ ws.onmessage = msg => {
 	console.log('1 nano websocket')
 	data_json = JSON.parse(msg.data)
 	if (data_json.message.account == stdAccount) return
-	if (data_json.message.link_as_account == stdAccount) return
+	if (data_json.message.block.link_as_account == stdAccount) return
 	if (data_json.message.block.subtype === 'send') {
 		rpc.convertToNano(data_json.message.amount).then(amount=> {
 			var params = new URLSearchParams()
