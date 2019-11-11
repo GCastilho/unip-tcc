@@ -4,7 +4,7 @@
  * @description Model da collection de usuários (people)
  */
 
-const mongoose = require('mongoose')
+const mongoose = require('../mongoose')
 const currencieSchema = require('./currencies')
 
 module.exports = mongoose.model('Person', {
