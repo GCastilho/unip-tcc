@@ -9,6 +9,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * métodos que o socket se conectou
 	 */
 	socket.on('connect', () => {
+		console.log(`Connected to the '${this.name}' module`)
 		this._events.emit('connected')
 	})
 
@@ -17,6 +18,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * métodos que o socket se desconectou
 	 */
 	socket.on('disconnect', () => {
+		console.log(`Disconnected from the '${this.name}' module`)
 		this._events.emit('disconnected')
 	})
 
@@ -67,8 +69,12 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * para serem enviados ao módulo externo
 	 */
 	this._events.on('module', (event: string, ...args: any) => {
-		socket.emit(event, ...args)
+		if (socket.connected) {
+			socket.emit(event, ...args)
+		} else {
+			/** O último argumento é o callback do evento */
+			const callback: Function = args[args.length - 1]
+			callback('Socket disconnected')
+		}
 	})
-
-	console.log('from connection', socket.nsp.name)
 }

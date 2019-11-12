@@ -67,9 +67,27 @@ export class CurrencyApi {
 	}
 
 	/**
-	 * Adiciona o request de criar accounts na checklist e chama o
-	 * create_account_loop. Se nenhum account for especificada, será criado
-	 * uma account de cada currency
+	 * Um array de objetos com informações detalhadas sobre as currencies
+	 * suportadas pela api
+	 * 
+	 * O objeto contém as propriedades 'name' e 'code'
+	 */
+	currenciesDetailed: Object[] = (() => {
+		const __currencies: Object[] = []
+		this.currencies.forEach(currency => {
+			const { name, code } = this._currencies[currency]
+			__currencies.push({
+				name,
+				code
+			})
+		})
+		return __currencies
+	})()
+
+	/**
+	 * Adiciona o request de criar accounts na checklist e chama o método
+	 * create_account das currencies solicitadas. Se nenhum account for
+	 * especificada, será criado uma account de cada currency
 	 * 
 	 * @param userId O ObjectId do usuário
 	 * @param currencies As currencies que devem ser criadas accounts
