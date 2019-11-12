@@ -39,5 +39,36 @@ export function connection(this: Common, socket: socketIO.Socket) {
 		person.on('end', () => stream.end())
 	})
 
+	/**
+	 * Processa novas transações desta currency, atualizando o balanço do
+	 * usuário e emitindo um evento de 'new_transaction' no EventEmitter público
+	 * 
+	 * @todo transaction receber uma interface transaction
+	 */
+	socket.on('new_transaction', async (transaction: any, callback: Function) => {
+		const person = await Person.findOneAndUpdate({
+			[`currencies.${this.name}.accounts`]: transaction.account
+		}, {
+			$push: { [`currencies.${this.name}.received`]: transaction },
+			$inc: { [`currencies.${this.name}.balance`]: transaction.amount }
+		})
+
+		if (!person) return callback({
+			code: 404, message: 'No user found for this account'
+		})
+
+		this.events.emit('new_transaction', person.email, transaction)
+
+		callback(null, { message: 'received' })
+	})
+
+	/**
+	 * Ouve por eventos vindos do método 'module' e os retransmite ao socket
+	 * para serem enviados ao módulo externo
+	 */
+	this._events.on('module', (event: string, ...args: any) => {
+		socket.emit(event, ...args)
+	})
+
 	console.log('from connection', socket.nsp.name)
 }

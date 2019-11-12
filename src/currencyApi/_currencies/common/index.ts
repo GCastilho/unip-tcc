@@ -4,7 +4,6 @@
 
 import * as methods from './methods'
 import { EventEmitter } from 'events'
-import socketIO = require('socket.io')
 
 /**
  * EventEmmiter genérico
@@ -16,11 +15,6 @@ export default abstract class Common {
 	abstract code: string
 
 	/**
-	 * Handler da conexão com o módulo externo
-	 */
-	protected connection: (socket: socketIO.Socket) => void
-
-	/**
 	 * EventEmmiter para eventos internos
 	 */
 	protected _events = new Events()
@@ -30,7 +24,23 @@ export default abstract class Common {
 	 */
 	events = new Events()
 
-	constructor() {
-		this.connection = methods.connection
+	/** Indica se o módulo externo está online ou não */
+	protected isOnline: boolean = false
+
+	/**
+	 * Handler da conexão com o módulo externo
+	 */
+	protected connection = methods.connection
+
+	/**
+	 * Wrapper de comunicação com o socket do módulo externo
+	 * 
+	 * @param event O evento que será enviado ao socket
+	 * @param args Os argumentos desse evento
+	 */
+	protected module(event: string, ...args: any) {
+		this._events.emit('module', event, ...args)
 	}
+
+	constructor() {}
 }
