@@ -40,6 +40,7 @@ export default abstract class Common {
 	 */
 	protected module(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {
+			if (!this.isOnline) reject('Module is offline')
 			this._events.emit('module', event, ...args, ((error, response) => {
 				if (error)
 					reject(error)
