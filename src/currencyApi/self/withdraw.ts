@@ -1,6 +1,6 @@
 import Checklist = require('../../db/models/checklist')
 import Person = require('../../db/models/person')
-import { CurrencyApi } from '../index'
+import { CurrencyApi } from '../currencyApi'
 
 /**
  * Adiciona o request de withdraw na checklist e chama o withdraw loop

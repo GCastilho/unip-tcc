@@ -1,5 +1,5 @@
 import Checklist = require('../../db/models/checklist')
-import { CurrencyApi } from '../index'
+import { CurrencyApi } from '../currencyApi'
 import { Schema } from 'mongoose'
 
 /**
