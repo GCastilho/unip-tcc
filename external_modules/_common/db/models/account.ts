@@ -1,7 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose'
 
 export interface IAccount extends Document {
-	account: string
+	account: string,
+	lastBlock: string
 }
 
 const Account: Schema = new Schema({
@@ -10,6 +11,10 @@ const Account: Schema = new Schema({
 		trim: true,
 		unique: true,
 		required: true
+	},
+	lastBlock: {
+		type: String,
+		trim: true
 	}
 })
 

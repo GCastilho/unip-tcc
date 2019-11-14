@@ -1,7 +1,8 @@
 import socketIO = require('socket.io')
 import ss = require('socket.io-stream')
 import Common from '../index'
-import Person = require('../../../../db/models/person')
+import Person from '../../../../db/models/person'
+import { Transaction } from '../../../../db/models/currencies/common'
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*
@@ -42,10 +43,8 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	/**
 	 * Processa novas transações desta currency, atualizando o balanço do
 	 * usuário e emitindo um evento de 'new_transaction' no EventEmitter público
-	 * 
-	 * @todo transaction receber uma interface transaction
 	 */
-	socket.on('new_transaction', async (transaction: any, callback: Function) => {
+	socket.on('new_transaction', async (transaction: Transaction, callback: Function) => {
 		const person = await Person.findOneAndUpdate({
 			[`currencies.${this.name}.accounts`]: transaction.account
 		}, {
@@ -53,13 +52,11 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			$inc: { [`currencies.${this.name}.balance`]: transaction.amount }
 		})
 
-		if (!person) return callback({
-			code: 404, message: 'No user found for this account'
-		})
+		if (!person) return callback('No user found for this account')
 
 		this.events.emit('new_transaction', person.email, transaction)
 
-		callback(null, { message: 'received' })
+		callback(null, 'received')
 	})
 
 	/**

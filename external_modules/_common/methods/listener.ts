@@ -1,10 +1,11 @@
-/**
- * Essa função é o handler de requests vindos do servidor principal
- */
 import Common from '../index'
 import Account from '../db/models/account'
 const ss = require('socket.io-stream')
+import { Transaction } from '../index'
 
+/**
+ * Essa função é o handler de requests vindos do servidor principal
+ */
 export function listener(this: Common) {
 	this.socket.on('connect', async () => {
 		console.log(`Connected to the main server`)
@@ -44,8 +45,7 @@ export function listener(this: Common) {
 	})
 
 	this.socket.on('withdraw', (address: string, amount: number, callback: Function) => {
-		/**@todo Receber interface transaction */
-		this.withdraw(address, amount).then((trasanction: any) => {
+		this.withdraw(address, amount).then((trasanction: Transaction) => {
 			callback(null, trasanction)
 		}).catch(err => {
 			callback(err)

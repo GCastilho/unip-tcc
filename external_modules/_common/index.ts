@@ -1,7 +1,9 @@
 import io from 'socket.io-client'
-import { init, Mongoose } from './db/mongoose'
-import * as methods from './methods'
 import { EventEmitter } from 'events'
+import * as methods from './methods'
+import { init, Mongoose } from './db/mongoose'
+import { Transaction } from '../../src/db/models/currencies/common'
+export { Transaction } from '../../src/db/models/currencies/common'
 
 /**
  * EventEmmiter genérico
@@ -20,31 +22,27 @@ export default abstract class Common {
 
 	/**
 	 * Executa o request de saque de uma currency em sua blockchain
-	 * 
-	 * @todo Retornar interface transaction
 	 */
-	abstract withdraw(address: string, ammount: number): Promise<any>
+	abstract withdraw(address: string, ammount: number): Promise<Transaction>
+
+	/**
+	 * Inicia o listener de requests da blockchain
+	 */
+	abstract initBlockchainListener(): void
+
+	/**
+	 * Processa novas transações recebidas e as envia ao servidor principal
+	 * 
+	 * @param transaction A transação que foi recebida da rede
+	 */
+	abstract processTransaction(transaction: Transaction): Promise<void>
 
 	constructor() {
 		this.setupDatabase().then(() => {
 			this.connectToMainServer()
+			this.initBlockchainListener()
 		})
 	}
-
-	/**
-	 * EventEmitter para eventos internos
-	 */
-	protected _events = new Events()
-
-	/**
-	 * Driver de conexão com o mongoose
-	 */
-	protected mongoose: Mongoose
-
-	/**
-	 * Socket de conexão com o servidor principal
-	 */
-	protected socket: SocketIOClient.Socket
 
 	/**
 	 * Inicializa o database e seta a propriedade 'mongoose' da classe para o
@@ -62,6 +60,21 @@ export default abstract class Common {
 		this.socket = io(`http://${this.MAIN_SERVER_IP}:${this.MAIN_SERVER_PORT}/${this.name}`)
 		methods.listener.bind(this)()
 	}
+
+	/**
+	 * EventEmitter para eventos internos
+	 */
+	protected _events = new Events()
+
+	/**
+	 * Driver de conexão com o mongoose
+	 */
+	protected mongoose: Mongoose
+
+	/**
+	 * Socket de conexão com o servidor principal
+	 */
+	protected socket: SocketIOClient.Socket
 
 	/**
 	 * Wrapper de comunicação com o socket do servidor principal
