@@ -78,10 +78,10 @@ export function withdraw(this: Common) {
 				withdraw[this.name].status = 'order dispatched'
 				/**@todo transaction ser uma interface transaction */
 				const [transaction] = await Promise.all([
-					this.module('send', {
-						address: withdraw[this.name].address,
+					this.module('withdraw',
+						withdraw[this.name].address,
 						amount
-					}),
+					),
 					await todo_item.save()
 				])
 

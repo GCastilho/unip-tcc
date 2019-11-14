@@ -4,14 +4,11 @@ import Common from '../index'
 import Person = require('../../../../db/models/person')
 
 export function connection(this: Common, socket: socketIO.Socket) {
-	/**
-	 * Emite um 'connected' no event emitter interno para informar aos outros
-	 * métodos que o socket se conectou
+	/*
+	 * Essa função é executada (pela currencyApi) quando o socket se conecta
 	 */
-	socket.on('connect', () => {
-		console.log(`Connected to the '${this.name}' module`)
-		this._events.emit('connected')
-	})
+	this.isOnline = true
+	this._events.emit('connected')
 
 	/**
 	 * Emite um 'disconnected' no event emitter interno para informar aos outros
@@ -19,6 +16,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 */
 	socket.on('disconnect', () => {
 		console.log(`Disconnected from the '${this.name}' module`)
+		this.isOnline = false
 		this._events.emit('disconnected')
 	})
 

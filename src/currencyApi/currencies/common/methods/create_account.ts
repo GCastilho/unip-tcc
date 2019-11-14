@@ -64,7 +64,7 @@ export function create_account(this: Common) {
 				todo_item.commands.create_accounts[this.name].accounts_before = accounts_before
 				await todo_item.save()
 
-				const account: string = await this.module('get_new_account')
+				const account: string = await this.module('create_new_account')
 
 				person.currencies[this.name].accounts.push(account)
 				await person.save()

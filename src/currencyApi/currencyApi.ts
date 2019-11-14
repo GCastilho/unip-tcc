@@ -49,6 +49,7 @@ export class CurrencyApi {
 		 */
 		this.currencies.forEach(currency => {
 			io.of(currency).on('connection', (socket: socketIO.Socket) => {
+				console.log(`Connected to the '${currency}' module`)
 				this._currencies[currency].connection(socket)
 			})
 		})
