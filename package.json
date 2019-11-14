@@ -35,6 +35,7 @@
     "@types/mongoose": "^5.5.31",
     "@types/node": "^12.12.7",
     "@types/socket.io": "^2.1.4",
+    "@types/ws": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^2.7.0",
     "@typescript-eslint/parser": "^2.7.0",
     "concurrently": "^5.0.0",

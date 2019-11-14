@@ -1,0 +1,17 @@
+{
+  "name": "_nano",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-json-rpc": "0.0.1",
+    "reconnecting-websocket": "^4.2.0",
+    "ws": "^7.2.0"
+  }
+}

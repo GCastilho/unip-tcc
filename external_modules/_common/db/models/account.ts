@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose'
 
-export interface IAccount extends Document {
+export interface Account extends Document {
 	account: string,
 	lastBlock: string
 }
@@ -18,4 +18,4 @@ const Account: Schema = new Schema({
 	}
 })
 
-export default mongoose.model<IAccount>('account', Account)
+export default mongoose.model<Account>('account', Account)

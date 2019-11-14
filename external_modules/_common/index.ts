@@ -77,6 +77,16 @@ export default abstract class Common {
 	protected socket: SocketIOClient.Socket
 
 	/**
+	 * Envia uma nova transação recebida ao servidr principal
+	 * 
+	 * @param transaction A transação recebida que será enviada ao servidor
+	 * principal
+	 */
+	protected gotNewTransaction(transaction: Transaction): Promise<string> {
+		return this.module('new_transaction', transaction)
+	}
+
+	/**
 	 * Wrapper de comunicação com o socket do servidor principal
 	 * 
 	 * @param event O evento que será enviado ao socket
