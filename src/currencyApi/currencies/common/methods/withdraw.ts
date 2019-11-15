@@ -61,6 +61,7 @@ export function withdraw(this: Common) {
 
 			if (withdraw[this.name].status === 'requested') {
 				const person = await Person.findById(userId)
+				if (!person) throw `Person with userId ${userId} not found`
 				
 				const balance = person.currencies[this.name].balance
 				const amount = withdraw[this.name].amount

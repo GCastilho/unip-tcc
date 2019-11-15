@@ -37,12 +37,13 @@ export function nanoWebSocket(this: Nano) {
 	
 	ws.onerror = function(event: any) {
 		if (event.error.code === 'ECONNREFUSED' ||
-			event.error.code === 'ECONNRESET' &&
-			!connErr
+			event.error.code === 'ECONNRESET'
 		) {
 			/** Faz com que a mensagem de erro de conexão apareça apenas uma vez */
-			connErr = true
-			console.error('Error connecting to nano websocket')
+			if (!connErr) {
+				connErr = true
+				console.error('Error connecting to nano websocket')
+			}
 		} else {
 			console.error('WebSocket error observed', event)
 		}
@@ -54,7 +55,7 @@ export function nanoWebSocket(this: Nano) {
 	 * @todo Tratar os dados e enviar para o servidor e banco de dados
 	 */
 	ws.onmessage = async msg => {
-		const data: Nano.WebSocket = JSON.parse(msg.data)
+		const data = JSON.parse(msg.data)
 	
 		// Ignora transações recebidas na account de change
 		if (data.message.account === this.stdAccount) return
@@ -70,7 +71,7 @@ export function nanoWebSocket(this: Nano) {
 					timestamp: new Date(data.time)
 				})
 			} else if (data.message.block.subtype === 'receive') {
-				const account = Account.findOne({
+				const account = await Account.findOne({
 					account: data.message.account
 				})
 				if(!account) return

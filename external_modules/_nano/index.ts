@@ -11,11 +11,11 @@ if (!stdAccount) throw 'STANDARD_ACCOUNT needs to be informed as environment var
 
 export class Nano extends Common {
 	name = 'nano'
-	MAIN_SERVER_IP = MAIN_SERVER_IP
-	MAIN_SERVER_PORT = MAIN_SERVER_PORT
+	mainServerIp = MAIN_SERVER_IP
+	mainServerPort = MAIN_SERVER_PORT
 
-	protected wallet: string = wallet
-	protected stdAccount: string = stdAccount
+	protected wallet: string
+	protected stdAccount: string
 
 	protected rpc = methods.nanoRpc.bind(this)()
 
@@ -27,8 +27,12 @@ export class Nano extends Common {
 
 	withdraw = this.rpc.send
 
-	constructor() {
+	constructor(wallet: string, stdAccount: string) {
 		super()
-		this.initBlockchainListener()
+		this.wallet = wallet
+		this.stdAccount = stdAccount
 	}
 }
+
+const nano = new Nano(wallet, stdAccount)
+nano.init()

@@ -39,4 +39,3 @@ const PersonSchema: Schema = new Schema({
  * usuários
  */
 export = mongoose.model<Person>('Person', PersonSchema)
-

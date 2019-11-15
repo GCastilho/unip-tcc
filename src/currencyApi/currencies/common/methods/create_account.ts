@@ -57,6 +57,7 @@ export function create_account(this: Common) {
 
 			if (create_accounts[this.name].status === 'requested') {
 				const person = await Person.findById(userId)
+				if (!person) throw `Person with userId ${userId} not found`
 
 				// Journaling
 				const accounts_before = person.currencies[this.name].accounts.length
@@ -77,6 +78,7 @@ export function create_account(this: Common) {
 				 * pra saber o que já foi feito e o que ainda não foi
 				 */
 				const person = await Person.findById(userId)
+				if (!person) throw `Person with userId ${userId} not found`
 				const accounts_now = person.currencies[this.name].accounts.length
 				const { accounts_before } = create_accounts[this.name]
 

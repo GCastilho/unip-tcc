@@ -1,18 +1,32 @@
+const ss = require('socket.io-stream')
 import Common from '../index'
 import Account from '../db/models/account'
-const ss = require('socket.io-stream')
 import { Transaction } from '../index'
 
 /**
  * Essa função é o handler de requests vindos do servidor principal
  */
-export function listener(this: Common) {
-	this.socket.on('connect', async () => {
+export function connection(this: Common, socket: SocketIOClient.Socket) {
+	/**
+	 * Ouve por eventos vindos do método 'module' e os retransmite ao socket
+	 * para serem enviados ao módulo externo
+	 */
+	this._events.on('module', (event: string, ...args: any) => {
+		if (socket.connected) {
+			socket.emit(event, ...args)
+		} else {
+			/** O último argumento é o callback do evento */
+			const callback: Function = args[args.length - 1]
+			callback('Socket disconnected')
+		}
+	})
+
+	socket.on('connect', async () => {
 		console.log(`Connected to the main server`)
 
 		process.stdout.write(`Requesting ${this.name} accounts...`)
 		const stream: NodeJS.ReadableStream = ss.createStream()
-		this.socket.emit('get_account_list', stream)
+		ss(socket).emit('get_account_list', stream)
 
 		stream.once('data', () => {
 			console.log('Success\nReceiving and importing accounts into the database')
@@ -21,10 +35,10 @@ export function listener(this: Common) {
 		stream.on('data', (chunk) => {
 			/** Cada chunk é uma account */
 			Account.updateOne({
-				account: chunk.toString(),
+				account: chunk.toString()
 			}, {}, {
 				upsert: true
-			})
+			}).exec()
 		})
 
 		stream.on('end', () => {
@@ -32,11 +46,11 @@ export function listener(this: Common) {
 		})
 	})
 
-	this.socket.on('disconnect', () => {
+	socket.on('disconnect', () => {
 		console.log(`Disconnected from the main server`)
 	})
 
-	this.socket.on('create_new_account', (callback: Function) => {
+	socket.on('create_new_account', (callback: Function) => {
 		this.createNewAccount().then((account: string) => {
 			callback(null, account)
 		}).catch(err => {
@@ -44,7 +58,7 @@ export function listener(this: Common) {
 		})
 	})
 
-	this.socket.on('withdraw', (address: string, amount: number, callback: Function) => {
+	socket.on('withdraw', (address: string, amount: number, callback: Function) => {
 		this.withdraw(address, amount).then((trasanction: Transaction) => {
 			callback(null, trasanction)
 		}).catch(err => {

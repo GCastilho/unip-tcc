@@ -17,12 +17,15 @@ export async function withdraw(this: CurrencyApi,
 		amount: number
 	) {
 
-	/** Pega o userId, pois a checklist é identificada pelo userId do usuário */
-	const { _id } = await Person.findOne({
+	const person = await Person.findOne({
 		email
 	}, {
 		_id: 1
 	})
+	if (!person) throw `Person with email ${email} not found`
+
+	/** Pega o userId, pois a checklist é identificada pelo userId do usuário */
+	const { _id } = person
 
 	/**
 	 * Adiciona o comando de withdraw na checklist

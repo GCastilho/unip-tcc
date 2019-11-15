@@ -1,7 +1,7 @@
 import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
-import { init, Mongoose } from './db/mongoose'
+import * as mongoose from './db/mongoose'
 import { Transaction } from '../../src/db/models/currencies/common'
 export { Transaction } from '../../src/db/models/currencies/common'
 
@@ -12,8 +12,8 @@ class Events extends EventEmitter {}
 
 export default abstract class Common {
 	abstract name: string
-	abstract MAIN_SERVER_IP: string
-	abstract MAIN_SERVER_PORT: number
+	abstract mainServerIp: string
+	abstract mainServerPort: number
 
 	/**
 	 * Cria uma nova account para essa currency
@@ -38,43 +38,35 @@ export default abstract class Common {
 	abstract processTransaction(transaction: Transaction): Promise<void>
 
 	constructor() {
-		this.setupDatabase().then(() => {
-			this.connectToMainServer()
-			this.initBlockchainListener()
-		})
+		this.connection = methods.connection
+	}
+
+	async init() {
+		await mongoose.init(`exchange-${this.name}`)
+		await this.connectToMainServer()
+		this.initBlockchainListener()
 	}
 
 	/**
-	 * Inicializa o database e seta a propriedade 'mongoose' da classe para o
-	 * driver do mongoose
+	 * Handler da conexão com o servidor principal
 	 */
-	private setupDatabase = async () => {
-		const mongoose = await init(`exchange-${this.name}`)
-		this.mongoose = mongoose
-	}
+	private connection: (socket: SocketIOClient.Socket) => void
 
 	/**
 	 * Conecta com o servidor principal
 	 */
 	private connectToMainServer = async () => {
-		this.socket = io(`http://${this.MAIN_SERVER_IP}:${this.MAIN_SERVER_PORT}/${this.name}`)
-		methods.listener.bind(this)()
+		/**
+		 * Socket de conexão com o servidor principal
+		 */
+		const socket = io(`http://${this.mainServerIp}:${this.mainServerPort}/${this.name}`)
+		this.connection(socket)
 	}
 
 	/**
 	 * EventEmitter para eventos internos
 	 */
 	protected _events = new Events()
-
-	/**
-	 * Driver de conexão com o mongoose
-	 */
-	protected mongoose: Mongoose
-
-	/**
-	 * Socket de conexão com o servidor principal
-	 */
-	protected socket: SocketIOClient.Socket
 
 	/**
 	 * Wrapper de comunicação com o socket do servidor principal
@@ -84,8 +76,7 @@ export default abstract class Common {
 	 */
 	protected module(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {
-			if (this.socket.disconnected) reject('Socket is not connected')
-			this.socket.emit(event, ...args, ((error, response) => {
+			this._events.emit('module', event, ...args, ((error, response) => {
 				if (error)
 					reject(error)
 				else
