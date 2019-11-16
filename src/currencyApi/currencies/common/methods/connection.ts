@@ -45,6 +45,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * usuário e emitindo um evento de 'new_transaction' no EventEmitter público
 	 */
 	socket.on('new_transaction', async (transaction: Transaction, callback: Function) => {
+		console.log('received new transaction', transaction)
 		const person = await Person.findOneAndUpdate({
 			[`currencies.${this.name}.accounts`]: transaction.account
 		}, {

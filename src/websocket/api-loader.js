@@ -31,7 +31,7 @@ module.exports = function (socket) {
 		}
 	})
 
-	currencyApi.events.on('new_transaction', (currency, email, transaction) => {
+	currencyApi.events.on('new_transaction', (email, currency, transaction) => {
 		transaction.currency = currency
 		transaction.email = email
 		socket.emit('new_transaction', transaction)

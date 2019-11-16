@@ -1,15 +1,11 @@
-import Person = require('../db/models/person')
+import Person from '../db/models/person'
 
 class User {
+	/** @todo receber interface Person */
 	private person: any
 
-	constructor(email: string) {
-		Person.findOne({ email }).then(person => {
-			if (!person) throw 'User not found'
-			this.person = person
-		}).catch(err => {
-			throw err
-		})
+	constructor(person: any) {
+		this.person = person
 	}
 
 	/**
@@ -28,7 +24,14 @@ class UserApi {
 	 * Retorna uma instância de um usuário, com métodos para acessar e modificar
 	 * dados do mesmo no database
 	 */
-	user = (email: string): User => new User(email)
+	user = (email: string): Promise<User> => {
+		return Person.findOne({ email }).then(person => {
+			if (!person) throw 'User not found'
+			return new User(person)
+		}).catch(err => {
+			throw err
+		})
+	}
 }
 
 /**
@@ -36,4 +39,4 @@ class UserApi {
  * no banco de dados, como balance, accounts, password, etc
  */
 const userApi = new UserApi()
-export default userApi
+export = userApi

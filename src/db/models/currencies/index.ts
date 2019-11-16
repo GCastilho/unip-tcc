@@ -15,8 +15,8 @@ export interface CurrenciesSchema {
 }
 
 const CurrenciesSchema: Schema = new Schema({
-	Bitcoin,
-	Nano
+	nano: Nano,
+	bitcoin: Bitcoin
 })
 
 export default CurrenciesSchema

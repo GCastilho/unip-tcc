@@ -5,16 +5,18 @@
  */
 
 const currencyApi = require('../../../../currencyApi')
+const userApi = require('../../../../userApi')
 
 module.exports = async function (socket, upRota) {
 	if (socket.enableLog) console.log('-- criado rota: ' + upRota + 'list')
 	socket.rotas.set(upRota + 'list', async function(request) {
 		console.log(request)
 
-		const currenciesList = await currencyApi.getCurrenciesList()
+		const currenciesList = currencyApi.currenciesDetailed
+		const user = await userApi.user(request.data.email)
 		for (let currency of currenciesList) {
-			currency.balance = await currencyApi.getBalance(request.data.email, currency.name)
-			currency.address = await currencyApi.getUserAccount(request.data.email, currency.name)
+			currency.balance = user.getBalance(currency.name)
+			currency.address = user.getAccounts(currency.name)
 		}
 
 		request['data'] = currenciesList

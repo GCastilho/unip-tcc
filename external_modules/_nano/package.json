@@ -1,9 +1,10 @@
 {
-  "name": "_nano",
+  "name": "external_api_nano",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "env-cmd -f ./environment.env ts-node-dev index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
