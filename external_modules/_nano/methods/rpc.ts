@@ -13,7 +13,7 @@ export function nanoRpc(this: Nano) {
 
 	const rpcCommand = (command: any): Promise<any> =>
 		new Promise((resolve, reject) => {
-			client.call(JSON.stringify(command), (err, res) => {
+			client.call(command, (err, res) => {
 				if (!err && !res.error) {
 					resolve(res)
 				} else {
