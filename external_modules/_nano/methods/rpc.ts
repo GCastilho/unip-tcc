@@ -19,7 +19,7 @@ export function nanoRpc(this: Nano) {
 				} else {
 					const error = err ? err : res.error
 					console.error(error)
-					reject(err)
+					reject(error)
 				}
 			})
 		})
@@ -74,9 +74,16 @@ export function nanoRpc(this: Nano) {
 				destination: destination,
 				amount: amount
 			})
-		).then(res =>
-			res.block
-		)
+		).then(res => {
+			const transaction: Transaction = {
+				txid: res.block,
+				timestamp: Date.now(), /**@todo Utilizar o timestamp do bloco */
+				account: destination,
+				amount: nanoAmount
+			}
+			console.log('sended new transction:', transaction)
+			return transaction
+		})
 
 	return {
 		command: rpcCommand,

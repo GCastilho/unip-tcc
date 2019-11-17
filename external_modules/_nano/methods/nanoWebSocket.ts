@@ -1,6 +1,5 @@
 import WS from 'ws'
 import ReconnectingWebSocket from 'reconnecting-websocket'
-import Account from '../../_common/db/models/account'
 import { Nano } from '../index'
 
 export function nanoWebSocket(this: Nano) {
@@ -45,7 +44,7 @@ export function nanoWebSocket(this: Nano) {
 				console.error('Error connecting to nano websocket')
 			}
 		} else {
-			console.error('WebSocket error observed', event)
+			console.error('WebSocket error observed:', event)
 		}
 	}
 	
@@ -56,39 +55,12 @@ export function nanoWebSocket(this: Nano) {
 	 */
 	ws.onmessage = async msg => {
 		const data = JSON.parse(msg.data)
-	
-		// Ignora transações recebidas na account de change
-		if (data.message.account === this.stdAccount) return
-		if (data.message.block.link_as_account === this.stdAccount) return
-	
-		try {
-			if (data.message.block.subtype === 'send') {
-				const amount = await this.rpc.convertToNano(data.message.amount)
-				await this.module('new_transaction', {
-					txid: data.message.block.link,
-					account: data.message.block.link_as_account,
-					amount: parseInt(amount),
-					timestamp: new Date(data.time)
-				})
-			} else if (data.message.block.subtype === 'receive') {
-				const account = await Account.findOne({
-					account: data.message.account
-				})
-				if(!account) return
+		if (data.message.block.subtype != 'receive') return
 
-				this.rpc.command({
-					action: 'send',
-					wallet: this.wallet,
-					source: data.message.account,
-					destination: this.stdAccount,
-					amount: data.message.amount
-				}).catch(err => {
-					console.error('Error redirecting to nano stdAccount', err)
-				})
-			}
-		} catch(err) {
+		try {
+			this.processTransaction(data)
+		} catch (err) {
 			console.error('Error while processing socket message', err)
 		}
 	}
 }
-

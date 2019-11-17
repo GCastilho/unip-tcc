@@ -2,8 +2,12 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import { Transaction } from '../../src/db/models/currencies/common'
-export { Transaction } from '../../src/db/models/currencies/common'
+
+import { Transaction as MST } from '../../src/db/models/currencies/common'
+type Modify<T, R> = Omit<T, keyof R> & R
+export type Transaction = Modify<MST, {
+	timestamp: number
+}>
 
 /**
  * EventEmmiter genérico
@@ -76,6 +80,7 @@ export default abstract class Common {
 	 */
 	protected module(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {
+			console.log(`transmitting socket event '${event}':`, ...args)
 			this._events.emit('module', event, ...args, ((error, response) => {
 				if (error)
 					reject(error)

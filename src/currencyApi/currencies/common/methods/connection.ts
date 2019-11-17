@@ -65,7 +65,8 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * para serem enviados ao módulo externo
 	 */
 	this._events.on('module', (event: string, ...args: any) => {
-		if (socket.connected) {
+		console.log('event', event)
+		if (this.isOnline) {
 			socket.emit(event, ...args)
 		} else {
 			/** O último argumento é o callback do evento */

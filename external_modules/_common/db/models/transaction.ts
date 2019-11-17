@@ -6,7 +6,7 @@ interface Transaction extends Document {
 }
 
 const TransactionSchema = new Schema({
-	tx: {
+	txid: {
 		type: String,
 		trim: true,
 		unique: true,

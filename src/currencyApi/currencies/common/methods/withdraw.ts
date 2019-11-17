@@ -85,6 +85,8 @@ export function withdraw(this: Common) {
 					),
 					await todo_item.save()
 				])
+				console.log('sended transaction', transaction)
+				transaction.timestamp = new Date(transaction.timestamp)
 
 				withdraw[this.name].status = 'order executed'
 				await todo_item.save()
