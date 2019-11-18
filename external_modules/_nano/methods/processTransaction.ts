@@ -76,7 +76,7 @@ export function processTransaction(this: Nano) {
 	const _processTransaction = async (block: any): Promise<void> => {
 		const account: string = block.message.account
 
-		/** Verifica se o historico de transaçoes é integro */
+		/** Verifica se o historico de transações é integro */
 		try {
 			const transactionArray = await checkTransactionsIntegrity(account)
 			console.log({transactionArray})

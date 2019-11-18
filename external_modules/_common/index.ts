@@ -37,12 +37,12 @@ export default abstract class Common {
 	/**
 	 * Processa novas transações recebidas e as envia ao servidor principal
 	 * 
-	 * @param transaction A transação que foi recebida da rede
+	 * @param data O dado (bloco, transação, etc) que foi recebido da rece
 	 */
-	abstract processTransaction(transaction: Transaction): Promise<void>
+	abstract processTransaction(data: any): Promise<void>
 
 	constructor() {
-		this.connection = methods.connection
+		this.connectionHandler = methods.connection
 	}
 
 	async init() {
@@ -54,7 +54,7 @@ export default abstract class Common {
 	/**
 	 * Handler da conexão com o servidor principal
 	 */
-	private connection: (socket: SocketIOClient.Socket) => void
+	private connectionHandler: (socket: SocketIOClient.Socket) => void
 
 	/**
 	 * Conecta com o servidor principal
@@ -64,7 +64,7 @@ export default abstract class Common {
 		 * Socket de conexão com o servidor principal
 		 */
 		const socket = io(`http://${this.mainServerIp}:${this.mainServerPort}/${this.name}`)
-		this.connection(socket)
+		this.connectionHandler(socket)
 	}
 
 	/**
