@@ -1,6 +1,6 @@
 const Client = require('bitcoin-core')
-import Account from '../../_common/db/models/account'
-import { Transaction as Tx } from '../../_common'
+import Account from '../../common/db/models/account'
+import { Transaction as Tx } from '../../common'
 
 const wallet = new Client({
 	network: 'testnet',

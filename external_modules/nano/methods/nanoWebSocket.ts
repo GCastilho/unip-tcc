@@ -1,6 +1,6 @@
 import WS from 'ws'
-import ReconnectingWebSocket from 'reconnecting-websocket'
 import { Nano } from '../index'
+const ReconnectingWebSocket = require('reconnecting-websocket')
 
 export function nanoWebSocket(this: Nano) {
 	/** Keep track if there was a conn error to prevent error span */

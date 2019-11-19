@@ -1,8 +1,8 @@
-import Account from '../../_common/db/models/account'
-import Transaction from '../../_common/db/models/transaction'
+import Account from '../../common/db/models/account'
+import Transaction from '../../common/db/models/transaction'
 import unconfirmedTx from '../db/models/unconfirmedTx'
 import { Bitcoin } from '../index'
-import { Transaction as Tx } from '../../_common'
+import { Transaction as Tx } from '../../common'
 
 export function processTransaction(this: Bitcoin) {
 	const formatTransaction = async (txid): Promise<Tx | void> => {

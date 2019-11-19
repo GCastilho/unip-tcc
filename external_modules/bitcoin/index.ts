@@ -1,4 +1,4 @@
-import Common from '../_common'
+import Common from '../common'
 import * as methods from './methods'
 import express from 'express'
 const bodyParser = require('body-parser')

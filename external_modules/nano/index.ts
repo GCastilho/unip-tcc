@@ -1,4 +1,4 @@
-import Common from '../_common'
+import Common from '../common'
 import * as methods from './methods'
 
 const MAIN_SERVER_IP: string = process.env.MAIN_SERVER_IP || 'localhost'

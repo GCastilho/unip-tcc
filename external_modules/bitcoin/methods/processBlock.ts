@@ -1,6 +1,6 @@
 import { Bitcoin } from '../index'
 import unconfirmedTx from '../db/models/unconfirmedTx'
-import { Transaction as Tx } from '../../_common'
+import { Transaction as Tx } from '../../common'
 
 export function processBlock(this: Bitcoin) {
 	/**

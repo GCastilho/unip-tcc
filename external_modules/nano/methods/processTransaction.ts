@@ -1,7 +1,7 @@
-import Transaction from '../../_common/db/models/transaction'
-import Account from '../../_common/db/models/account'
+import Transaction from '../../common/db/models/transaction'
+import Account from '../../common/db/models/account'
 import { Nano } from '../index'
-import { Transaction as ITransaction } from '../../_common'
+import { Transaction as ITransaction } from '../../common'
 
 export function processTransaction(this: Nano) {
 	/**

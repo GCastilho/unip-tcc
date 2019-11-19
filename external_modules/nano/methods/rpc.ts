@@ -1,6 +1,6 @@
 import rpc from 'node-json-rpc'
-import Account from '../../_common/db/models/account'
-import { Transaction } from '../../_common'
+import Account from '../../common/db/models/account'
+import { Transaction } from '../../common'
 import { Nano } from '../index'
 
 export function nanoRpc(this: Nano) {
