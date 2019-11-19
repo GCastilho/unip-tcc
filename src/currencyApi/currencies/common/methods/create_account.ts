@@ -59,6 +59,10 @@ export function create_account(this: Common) {
 				const person = await Person.findById(userId)
 				if (!person) throw `Person with userId ${userId} not found`
 
+				/** Ao fazer o cadastro o objeto é undefined */
+				if (!person.currencies[this.name])
+					person.currencies[this.name] = {}
+
 				// Journaling
 				const accounts_before = person.currencies[this.name].accounts.length
 				todo_item.commands.create_accounts[this.name].status = 'processing'

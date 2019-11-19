@@ -1,9 +1,10 @@
 {
-  "name": "_bitcoin",
+  "name": "external_api_bitcoin",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "ts-node-dev index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

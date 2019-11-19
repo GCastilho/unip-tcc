@@ -22,7 +22,7 @@ const TransactionSchema: Schema = new Schema({
 	txid: {
 		type: String,
 		required: true,
-		unique: true
+		// unique: true
 	},
 	account: {
 		type: String,

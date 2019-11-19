@@ -1,91 +1,83 @@
-const Account = require('../common/db/models/account')
-const unconfirmedTx = require('./db/models/unconfirmed-tx')
-const Transaction = require('../common/db/models/transaction')
-const Rpc = require('./rpc')
-const Axios = require('axios')
-let lasTtransactionId = ''
+import Account from '../../_common/db/models/account'
+import Transaction from '../../_common/db/models/transaction'
+import unconfirmedTx from '../db/models/unconfirmedTx'
+import { Bitcoin } from '../index'
+import { Transaction as Tx } from '../../_common'
 
-function getConfirmed(txid) {
-	Rpc.transactionInfo(txid).then(transaction => {
-		if (transaction.confirmations >= 6) {
-			console.log({txid: txid,confirmed: true,confirmations: transaction.confirmations})
-			unconfirmedTx.deleteOne({ tx: txid }).exec()
-			Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/bitcoin`, {txid: txid,confirmed: true})
+export function processTransaction(this: Bitcoin) {
+	const formatTransaction = async (txid): Promise<Tx | void> => {
+		/**
+		 * Informações da transação pegas da blockchain
+		 */
+		const txInfo = await this.rpc.transactionInfo(txid)
+		
+		/**
+		 * Verifica se o txid é de uma transação de mineração
+		 */
+		if (txInfo.generated) return
+		
+		/** Salva uma nova transação no database */
+		try {
+			await new Transaction({
+				txid,
+				info: txInfo
+			}).save()
+
+			await new unconfirmedTx({
+				txid,
+				confirmations: txInfo.confirmations
+			}).save()
+		} catch(err) {
+			/** Ignora erros de 'transação já existe' */
+			if (err.code != 11000) {
+				console.log('erro ao inserir no mongo')
+				throw err
+			}
 		}
-	}).catch(err => {console.log('rpc error,'+err)})
-}
 
+		console.log('aqui', txInfo)
+		/**
+		 * Verifica se é uma transação recebida
+		 */
+		const received = txInfo.details.find(details =>
+			details.category === 'receive'
+		)
+		if(!received) return
+		
+		const address: Tx['account'] = received.address
+		
+		/** Verifica se a transação é nossa */
+		const account = await Account.findOne({ account: address })
+		if (!account) return
 
-async function formatTransaction(txid) {
-	// Pega informações da transaction da blockchain
-	const transaction = await Rpc.transactionInfo(txid)
-	if (transaction.generated) throw 'not a transaction'
+		/**
+		 * Pega o amount recebido da transação
+		 */
+		const { amount } = received
 
-	// Salva no database e da throw se a transação já existe
-	await new Transaction({
-		tx: txid,
-		info: transaction
-	}).save().catch((err) => {
-		if (err.code != 11000)
-			console.error(err)
-	})
-
-	await new unconfirmedTx({
-		tx: txid,
-		confirmations: transaction.confirmations
-	}).save().catch((err) => {
-		if (err.code != 11000)
-			console.error(err)
-	})
-
-
-	const formattedTransaction = {}
-
-	transaction.details = transaction.details.filter(details =>
-		details.category === 'receive'
-	)
-	if (!transaction.details[0]) throw {code:0}
+		const formattedTransaction: Tx = {
+			txid: txInfo.txid,
+			account: address,
+			amount,
+			timestamp: txInfo.time*1000 // O timestamp do bitcoin é em segundos
+		}
 	
-	formattedTransaction.account = transaction.details[0].address
-
-	// Verifica se a transaçãoa é nossa
-	const account = await Account.findOne({account: formattedTransaction.account})
-	console.log(account)
-	if (!account)
-		throw 'account does NOT exist in the database'
-	
-	formattedTransaction.txid       = transaction.txid
-	formattedTransaction.amount     = transaction.details[0].amount
-	//formattedTransaction.blockindex = transaction.blockindex
-	formattedTransaction.timestamp  = transaction.time*1000
-
-	return formattedTransaction
-}
-
-module.exports = function process(body) {
-	const { txid } = body
-	const { block } = body
-	
-	if (block) {
-		//pega todas as transaçoes que ficaram a mais do que 5 blocos no database
-		unconfirmedTx.find({blockCount: {$gte: 6}},{_id: 0,tx: 1}).then(res => {
-			if(res.length>0)
-				res.forEach((tx) => {getConfirmed(tx.tx)})
-			//incrementa o contador de blocos da transacao no
-			unconfirmedTx.collection.updateMany({},{$inc: { blockCount: 1 }},{})
-		}).catch(() => {console.error('block processing error')})
-	} else {
-		//por algum motivo a cada transacao estava sendo recebido 2x a transçao e um undefined
-		if (!txid || lasTtransactionId === txid) return
-		lasTtransactionId = txid
-
-		formatTransaction(txid)
-			.then(transaction => {
-				if(transaction.account&&transaction.amount&&transaction.timestamp)
-					Axios.post(`http://${global.main_server_ip}:${global.main_server_port}/new_transaction/bitcoin`,transaction)
-			}).catch(err => {
-				if(err.cod != 0)
-					console.error('transaction processing error',err)
-			})
+		return formattedTransaction
 	}
+
+	const _processTransaction = async (body: any) => {
+		const { txid } = body
+		if (!txid) return
+
+		try {
+			const transaction: Tx | void = await formatTransaction(txid)
+			if (!transaction) return
+			console.log('received transaction', transaction)
+			this.module('new_transaction', transaction)
+		} catch (err) {
+			console.error('transaction processing error', err)
+		}
+	}
+	
+	return _processTransaction
 }

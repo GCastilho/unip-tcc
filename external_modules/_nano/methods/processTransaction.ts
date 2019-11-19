@@ -11,8 +11,14 @@ export function processTransaction(this: Nano) {
 	 * @param lastKnownBlock Último block salvo no database
 	 * @param block Último bloco recebido
 	 */
-	const getReceiveHistory = async (lastKnownBlock, block): Promise<[any]> => {
-		let receiveArray: any = []
+	const getReceiveHistory = async (lastKnownBlock, block, wsBlock): Promise<[any]> => {
+		let receiveArray: any=[{
+			txid: wsBlock.message.hash,
+			account: wsBlock.message.account,
+			amount: parseInt(await this.rpc.convertToNano(wsBlock.message.amount)),
+			timestamp: wsBlock.time,
+		}]
+		
 	
 		/** Segue a blockchain da nano até encontrar o firstBlock */
 		while (block != lastKnownBlock) {
@@ -30,7 +36,8 @@ export function processTransaction(this: Nano) {
 		return receiveArray.reverse()
 	}
 	
-	const checkTransactionsIntegrity = async (account): Promise<any> => {
+	const checkTransactionsIntegrity = async (wsBlock): Promise<any> => {
+		const account = wsBlock.message.account
 		/**
 		 * verifica banco de dados pela account para verificar se a mesma pertence a um usuario
 		 */
@@ -45,7 +52,7 @@ export function processTransaction(this: Nano) {
 		 * ele em raros caso pode nao ter sido confirmado, no entanto isso é
 		 * verificado em getReceiveHistory
 		 */
-		return await getReceiveHistory(lastKnownBlock, accountInfo.frontier)
+		return await getReceiveHistory(lastKnownBlock, accountInfo.frontier, wsBlock)
 	}
 	
 	const redirectToStd = async (transaction: ITransaction): Promise<void> => {
@@ -74,11 +81,9 @@ export function processTransaction(this: Nano) {
 	 * @param block O bloco que acabou de ser recebido
 	 */
 	const _processTransaction = async (block: any): Promise<void> => {
-		const account: string = block.message.account
-
 		/** Verifica se o historico de transações é integro */
 		try {
-			const transactionArray = await checkTransactionsIntegrity(account)
+			const transactionArray = await checkTransactionsIntegrity(block)
 			console.log({transactionArray})
 			if (transactionArray.length === 0) return
 			transactionArray.forEach(async (transaction: any) => {

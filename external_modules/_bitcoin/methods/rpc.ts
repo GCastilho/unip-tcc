@@ -27,12 +27,15 @@ export function rpc() {
 	const send = async (account: Tx['account'], amount: Tx['amount']): Promise<Tx> => {
 		const txid: Tx['txid'] = await wallet.sendToAddress(account, amount)
 		const tInfo = await transactionInfo(txid)
-		return {
+		const transaction: Tx = {
 			txid,
 			amount,
 			account,
-			timestamp: tInfo.time
+			timestamp: tInfo.time*1000 // O timestamp do bitcoin é em segundos
 		}
+		
+		console.log('sended new transaction', transaction)
+		return transaction
 	}
 	
 	return {
@@ -42,4 +45,3 @@ export function rpc() {
 		send
 	}
 }
-

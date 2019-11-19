@@ -31,7 +31,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 		}).lean().cursor()
 
 		person.on('data', ({ currencies }) => {
-			if (!currencies) return
+			if (Object.keys(currencies).length === 0) return
 			currencies[this.name].accounts.forEach((account: string) => {
 				stream.write(account)
 			})

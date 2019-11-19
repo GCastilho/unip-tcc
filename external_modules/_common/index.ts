@@ -2,12 +2,17 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-
 import { Transaction as MST } from '../../src/db/models/currencies/common'
-type Modify<T, R> = Omit<T, keyof R> & R
-export type Transaction = Modify<MST, {
+
+/**
+ * Modelo de transaction que o servidor principal aceita
+ */
+export interface Transaction {
+	txid: MST['txid']
+	account: MST['account']
+	amount: MST['amount']
 	timestamp: number
-}>
+}
 
 /**
  * EventEmmiter genérico
@@ -37,9 +42,9 @@ export default abstract class Common {
 	/**
 	 * Processa novas transações recebidas e as envia ao servidor principal
 	 * 
-	 * @param data O dado (bloco, transação, etc) que foi recebido da rece
+	 * @param txid O txid da transação recém recebida
 	 */
-	abstract processTransaction(data: any): Promise<void>
+	abstract processTransaction(txid: Transaction['txid']): Promise<void>
 
 	constructor() {
 		this.connectionHandler = methods.connection
