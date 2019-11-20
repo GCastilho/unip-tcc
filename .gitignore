@@ -1,6 +1,7 @@
 node_modules/
 build/
-.idea/*
+public/
+.idea/
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
