@@ -3,6 +3,7 @@
 build/
 tests/
 node_modules/
+public/
 cfg/**
 src/websocket/web-jsnative
 external_modules/

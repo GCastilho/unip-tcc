@@ -4,43 +4,55 @@
   "description": "Cryptocurrency exchange webserver",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node build/main_server/index.js",
+    "start:nano": "npm start --prefix ./build/external_modules/nano",
+    "start:bitcoin": "npm start --prefix ./build/external_modules/bitcoin",
     "dev": "npm run eslint && concurrently --kill-others-on-fail \"npm run dev-server\" \"npm run dev-client\"",
-    "test": "env-cmd -f ./cfg/test.env jest",
+    "build": "npm run build:clean && npm run build:server && npm run build:react && npm run build:restruct && npm run build:config && npm run build:install-dep",
     "eslint": "eslint .",
     "eslint-fix": "eslint --fix .",
-    "testdaemon": "env-cmd -f ./cfg/test.env jest --watchAll --verbose",
-    "dev-server": "env-cmd -f ./cfg/dev.env nodemon --inspect src/index.js",
-    "dev-client": "npm start --prefix ./client"
-  },
-  "jest": {
-    "testEnvironment": "node"
+    "dev-server": "env-cmd -f ./cfg/dev.env ts-node-dev src/index.js --inspect",
+    "dev-client": "npm start --prefix ./client",
+    "build:clean": "rm -rf ./build",
+    "build:server": "tsc --build",
+    "build:react": "npm run build --prefix ./client",
+    "build:restruct": "mv ./build/src ./build/main_server && mv ./public ./build",
+    "build:config": "cpy external_modules '!**/node_modules' '!**/*.js' '!**/*.ts' build --parents",
+    "build:install-dep": "npm install --prefix ./build/external_modules/bitcoin && npm install --prefix ./build/external_modules/common && npm install --prefix ./build/external_modules/nano"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.19.0",
     "body-parser": "^1.19.0",
+    "env-cmd": "^10.0.1",
     "express": "^4.17.1",
     "js-sha512": "^0.8.0",
-    "mongoose": "^5.7.6",
-    "nano-address-validator": "^3.0.0",
+    "mongoose": "^5.7.12",
+    "multicoin-address-validator": "^0.3.10",
     "randomstring": "^1.1.5",
     "socket.io": "^2.3.0",
-    "socket.io-client": "^2.3.0"
+    "socket.io-stream": "^0.9.1"
   },
   "devDependencies": {
+    "@types/express": "^4.17.2",
+    "@types/mongoose": "^5.5.32",
+    "@types/node": "^12.12.11",
+    "@types/socket.io": "^2.1.4",
+    "@types/socket.io-client": "^1.4.32",
+    "@types/ws": "^6.0.3",
+    "@typescript-eslint/eslint-plugin": "^2.8.0",
+    "@typescript-eslint/parser": "^2.8.0",
     "concurrently": "^5.0.0",
     "cookieparser": "^0.1.0",
-    "env-cmd": "^10.0.1",
+    "cpy-cli": "^2.0.0",
     "eslint": "^6.6.0",
-    "eslint-plugin-flowtype": "^4.3.0",
+    "eslint-plugin-flowtype": "^4.4.1",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-react": "^7.16.0",
-    "eslint-plugin-react-hooks": "^2.2.0",
-    "jest": "^24.8.0",
-    "nodemon": "^1.19.4",
-    "supertest": "^4.0.2"
+    "eslint-plugin-react-hooks": "^2.3.0",
+    "ts-node-dev": "^1.0.0-pre.44",
+    "typescript": "^3.7.2"
   }
 }

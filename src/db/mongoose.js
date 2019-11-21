@@ -1,9 +1,10 @@
 const mongoose = require('mongoose')
+const mongodb_url = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/exchange'
 
 /**
  * Conecta ao database usando as variáveis de ambiente informadas
  */
-mongoose.connect(process.env.MONGODB_URL, {
+mongoose.connect(mongodb_url, {
 	user: process.env.MONGODB_USER,
 	pass: process.env.MONGODB_PASS,
 	useNewUrlParser: true,
