@@ -1,52 +1,26 @@
 /**
- * src/router/register.js
- * 
  * Handler da página de cadastro de usuários
  */
 
 const Router = require('express').Router()
-const sha512 = require('js-sha512')
 const bodyParser = require('body-parser')
-const randomstring = require('randomstring')
 
-const Person = require('../db/models/person')
-const currencyApi = require('../currencyApi')
+const userApi = require('../userApi')
 
 /**
  * Ativa o middleware de parse no body enviado pelo form da página de cadastro
  */
 Router.use(bodyParser.json({ extended: true }))
 
-Router.post('/', async function(req, res) {
-	const email = req.body.email
-	const password = req.body.password
-	if (!email || !password)
+Router.post('/', function(req, res) {
+	if (!req.body.email || !req.body.password)
 		return res.status(400).send({ error: 'Bad request' })
 
-	const salt = randomstring.generate({ length: 32 })
-	const password_hash = sha512.create()
-		.update(salt)
-		.update(password)
-		.hex()
-
-	new Person({
-		email,
-		credentials: {
-			salt,
-			password_hash
-		},
-		currencies: {}
-	}).save()
-		.then(person => {
-			currencyApi.create_accounts(person._id)
-		})
-	/**
-	 * @todo Enviar e-mail de confirmação de... e-mail e só liberar a conta
-	 * quando confirmado
-	 * 
-	 * @todo Criar as accounts quando o e-mail for confirmado, não no ato
-	 * de cadastro
-	 */
+	userApi.createUser(req.body.email, req.body.password)
+		/**
+		 * @todo Enviar e-mail de confirmação de... e-mail e só liberar a conta
+		 * quando confirmado
+		 */
 		.then(() => {
 			res.status(201).send()
 		}).catch(err => {

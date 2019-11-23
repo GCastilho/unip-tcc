@@ -1,12 +1,14 @@
-import PersonModel from '../db/models/person'
-import { Person } from '../db/models/person/interface'
+import randomstring from 'randomstring'
 import { sha512 } from 'js-sha512'
+import PersonModel from '../db/models/person'
+import currencyApi from '../currencyApi'
+import { Person } from '../db/models/person/interface'
 
 class User {
 	private person: Person
 
 	/**
-	 * Cria o sha512 do password com o salt, seguindo o padrão do person
+	 * Cria o sha512 do salt com o password, seguindo o padrão do person
 	 */
 	private _hashPassword = (password: string): string =>
 		sha512.create()
@@ -14,7 +16,7 @@ class User {
 			.update(password)
 			.hex()
 
-	constructor(person: any) {
+	constructor(person: Person) {
 		this.person = person
 	}
 
@@ -39,8 +41,6 @@ class User {
 	 * @throws InvalidPassword if password is invalid
 	 */
 	checkPassword = (password: string): void => {
-		if (typeof password != 'string') throw 'InvalidFunctionCall'
-
 		const password_hash = this._hashPassword(password)
 		if (password_hash != this.person.credentials.password_hash)
 			throw 'InvalidPassword'
@@ -52,8 +52,6 @@ class User {
 	 * @returns The updated person object
 	 */
 	changePassword = async (password: string): Promise<Person> => {
-		if (typeof password != 'string') throw 'InvalidFunctionCall'
-
 		const password_hash = this._hashPassword(password)
 		this.person.credentials.password_hash = password_hash
 		await this.person.save()
@@ -75,6 +73,37 @@ class UserApi {
 		}).catch(err => {
 			throw err
 		})
+	}
+
+	/**
+	 * Cria um novo usuário no database com as credenciais informadas
+	 * 
+	 * @throws ValidationError from mongoose.Error if document validation fails
+	 * @returns The newly created document
+	 */
+	async createUser (email: string, password: string): Promise<Person> {
+		const salt = randomstring.generate({ length: 32 })
+		const password_hash = sha512.create()
+			.update(salt)
+			.update(password)
+			.hex()
+		
+		const person = await new PersonModel({
+			email,
+			credentials: {
+				salt,
+				password_hash
+			},
+			currencies: {}
+		}).save()
+
+		/**
+		 * @todo Criar as accounts quando o e-mail for confirmado, não ao
+		 * criar o usuário
+		 */
+		currencyApi.create_accounts(person._id)
+
+		return person
 	}
 }
 
