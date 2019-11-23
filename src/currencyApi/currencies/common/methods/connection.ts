@@ -2,7 +2,7 @@ import socketIO = require('socket.io')
 import ss = require('socket.io-stream')
 import Common from '../index'
 import Person from '../../../../db/models/person'
-import { Transaction } from '../../../../db/models/currencies/common'
+import { Transaction } from '../../../../db/models/person/currencies/interface'
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*

@@ -3,20 +3,7 @@
  */
 
 import { Schema } from 'mongoose'
-
-export interface Transaction {
-	txid: string,
-	account: string,
-	amount: number
-	timestamp: Date
-}
-
-export interface Currency {
-	balance: number,
-	accounts: string[]
-	received: Transaction[]
-	sended: Transaction[]
-}
+import * as validators from './validators'
 
 const TransactionSchema: Schema = new Schema({
 	txid: {
@@ -38,7 +25,7 @@ const TransactionSchema: Schema = new Schema({
 	}
 })
 
-export const CurrencySchema: Schema = new Schema({
+const CurrencySchema: Schema = new Schema({
 	balance: {
 		type: Number,
 		default: 0
@@ -61,3 +48,12 @@ export const CurrencySchema: Schema = new Schema({
 		type: [TransactionSchema]
 	}
 })
+
+/*
+ * Adiciona a função de validação de address na currency e monta o novo schema
+ */
+CurrencySchema.obj.accounts.validade = validators.bitcoin
+export const Bitcoin: Schema = new Schema(CurrencySchema.obj)
+
+CurrencySchema.obj.accounts.validade = validators.nano
+export const Nano: Schema = new Schema(CurrencySchema.obj)
