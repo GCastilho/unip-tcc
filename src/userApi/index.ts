@@ -5,10 +5,8 @@ import currencyApi from '../currencyApi'
 import { Person } from '../db/models/person/interface'
 
 class User {
-	private person: Person
-
 	/**
-	 * Cria o sha512 do salt com o password, seguindo o padrão do person
+	 * Cria o sha512 do salt com o password, seguindo o padrão do createUser
 	 */
 	private _hashPassword = (password: string): string =>
 		sha512.create()
@@ -19,6 +17,11 @@ class User {
 	constructor(person: Person) {
 		this.person = person
 	}
+
+	/**
+	 * Documento do mongodb desta person, acessível publicamente
+	 */
+	person: Person
 
 	/**
 	 * Retorna o saldo de um usuário para determinada currency

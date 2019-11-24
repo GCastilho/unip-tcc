@@ -2,9 +2,14 @@
  * Módulo para interfaces e schemas comuns para todas as currencies
  */
 
-import { Schema } from 'mongoose'
+import mongoose, { Schema } from 'mongoose'
 import * as validators from './validators'
+import { Decimal128 } from 'bson'
 
+/**
+ * @deprecated Essa schema será removida da collection people qdo a nova
+ * implementação do sistema de salvar transações estiver pronta
+ */
 const TransactionSchema: Schema = new Schema({
 	txid: {
 		type: String,
@@ -25,9 +30,32 @@ const TransactionSchema: Schema = new Schema({
 	}
 })
 
+/**
+ * Schema das operações (que involvem alteração de saldo) pendentes desse
+ * usuário, uma vez concluídas elas devem ser removidas da collection
+ */
+const PendingSchema: Schema = new Schema({
+	opid: {
+		type: mongoose.SchemaTypes.ObjectId,
+		required: true
+	},
+	type: {
+		type: String,
+		required: true
+	},
+	amount: {
+		type: Decimal128,
+		required: true
+	}
+})
+
+/**
+ * Schema de cada uma das currencies da collection people, haverá um
+ * sub-documento desse schema para cada currency
+ */
 const CurrencySchema: Schema = new Schema({
 	balance: {
-		type: Number,
+		type: Decimal128,
 		default: 0
 	},
 	accounts: {
@@ -41,11 +69,20 @@ const CurrencySchema: Schema = new Schema({
 		// unique: true,
 		trim: true
 	},
+	/**
+	 * @deprecated As transações recebidas serão removidas da collection people
+	 */
 	received: {
 		type: [TransactionSchema]
 	},
+	/**
+	 * @deprecated As transações enviadas serão removidas da collection people
+	 */
 	sended: {
 		type: [TransactionSchema]
+	},
+	pending: {
+		type: [PendingSchema]
 	}
 })
 
