@@ -13,7 +13,7 @@ module.exports = async function (socket, upRota) {
 		console.log(request)
 
 		const currenciesList = currencyApi.currenciesDetailed
-		const user = await userApi.user(request.data.email)
+		const user = await userApi.findUser.byEmail(request.data.email)
 		for (let currency of currenciesList) {
 			currency.balance = user.getBalance(currency.name)
 			currency.address = user.getAccounts(currency.name)

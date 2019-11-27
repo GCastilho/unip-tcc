@@ -3,80 +3,14 @@ import { sha512 } from 'js-sha512'
 import PersonModel from '../db/models/person'
 import currencyApi from '../currencyApi'
 import { Person } from '../db/models/person/interface'
-
-class User {
-	/**
-	 * Cria o sha512 do salt com o password, seguindo o padrão do createUser
-	 */
-	private _hashPassword = (password: string): string =>
-		sha512.create()
-			.update(this.person.credentials.salt)
-			.update(password)
-			.hex()
-
-	constructor(person: Person) {
-		this.person = person
-	}
-
-	/**
-	 * Documento do mongodb desta person, acessível publicamente
-	 */
-	person: Person
-
-	/**
-	 * Retorna o saldo de um usuário para determinada currency
-	 */
-	getBalance = (currency: string): number => this.person.currencies[currency].balance
-
-	/**
-	 * Retorna as accounts de um usuário para determinada currency
-	 */
-	getAccounts = (currency: string): string[] => this.person.currencies[currency].accounts
-
-	/**
-	 * Retorna o objectId do documento person
-	 */
-	getObjectId = (): Person['_id'] => this.person._id
-
-	/**
-	 * Retorna 'void' se o password informado é o password correto do usuário
-	 * 
-	 * @throws InvalidPassword if password is invalid
-	 */
-	checkPassword = (password: string): void => {
-		const password_hash = this._hashPassword(password)
-		if (password_hash != this.person.credentials.password_hash)
-			throw 'InvalidPassword'
-	}
-
-	/**
-	 * Atualiza o password do usuário com o password informado
-	 * 
-	 * @returns The updated person object
-	 */
-	changePassword = async (password: string): Promise<Person> => {
-		const password_hash = this._hashPassword(password)
-		this.person.credentials.password_hash = password_hash
-		await this.person.save()
-		return this.person
-	}
-}
+import FindUser from './findUser'
 
 class UserApi {
 	/**
-	 * Retorna uma instância de um usuário, com métodos para acessar e modificar
-	 * dados do mesmo no database
-	 * 
-	 * @throws UserNotFound If no user found for given email
+	 * Expõe vários métodos para procurar por um usuário e retornar uma
+	 * instância da classe User com ele
 	 */
-	user = (email: string): Promise<User> => {
-		return PersonModel.findOne({ email }).then(person => {
-			if (!person) throw 'UserNotFound'
-			return new User(person)
-		}).catch(err => {
-			throw err
-		})
-	}
+	findUser = new FindUser()
 
 	/**
 	 * Cria um novo usuário no database com as credenciais informadas

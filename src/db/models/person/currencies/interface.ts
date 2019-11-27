@@ -43,7 +43,7 @@ export interface Currency {
 	 */
 	received: Transaction[]
 	/**
-	 * @deprecated As transações recebidas serão removidas da collection people
+	 * @deprecated As transações enviadas serão removidas da collection people
 	 */
 	sended: Transaction[],
 	/**
