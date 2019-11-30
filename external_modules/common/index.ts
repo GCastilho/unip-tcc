@@ -2,7 +2,7 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import { Transaction as MST } from '../../src/db/models/person/currencies/interface'
+import { Transaction as MST } from '../../src/db/models/transaction'
 
 /**
  * Modelo de transaction que o servidor principal aceita

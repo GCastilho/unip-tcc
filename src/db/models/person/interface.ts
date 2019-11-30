@@ -1,7 +1,8 @@
-import { Document } from 'mongoose'
+import { Document, Schema } from 'mongoose'
 import { Currencies } from './currencies/interface'
 
 export interface Person extends Document {
+	_id: Schema.Types.ObjectId,
 	/** O email do usuário */
 	email: string,
 	credentials: {

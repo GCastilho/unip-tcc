@@ -1,23 +1,12 @@
-import mongoose from 'mongoose'
+import { Schema } from 'mongoose'
 import { Decimal128 } from 'bson'
 
-/**
- * A interface das transactions da collection people
- * 
- * @deprecated Essa interface não ficará mais nessa collection
- */
-export interface Transaction {
-	txid: string,
-	account: string,
-	amount: number
-	timestamp: Date
-}
-
+/** A interface de operações de alteração de saldo pendentes*/
 export interface Pending {
 	/**
-	 * O objectId da operação em sua respectiva collection
+	 * Referencia ao objectId da operação em sua respectiva collection
 	 */
-	opid: mongoose.Types.ObjectId,
+	opid: Schema.Types.ObjectId,
 	/**
 	 * O tipo da operação, para identificar em qual collection ela está
 	 */
@@ -29,12 +18,9 @@ export interface Pending {
 	amount: number
 }
 
-/**
- * A interface de uma currency da colletion people
- */
-export interface Currency {
-	balance: number,
-	_balance: {
+/** A interface de uma currency da colletion people */
+interface Currency {
+	balance: {
 		/** Saldo disponível para operações */
 		available: Decimal128,
 		/** Saldo bloqueado em operações */
@@ -42,14 +28,6 @@ export interface Currency {
 	}
 	/** Array de accounts de <currency> do usuário */
 	accounts: string[]
-	/**
-	 * @deprecated As transações recebidas serão removidas da collection people
-	 */
-	received: Transaction[]
-	/**
-	 * @deprecated As transações enviadas serão removidas da collection people
-	 */
-	sended: Transaction[],
 	/** Operações pendentes que involvem alteração de saldo */
 	pending: Pending[]
 }
