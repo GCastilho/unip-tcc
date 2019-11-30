@@ -26,7 +26,7 @@ export interface Pending {
 	 * O amount da operação. Positivo se é uma operação que aumenta o saldo do
 	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
 	 */
-	amount: Decimal128
+	amount: number
 }
 
 /**
@@ -34,9 +34,13 @@ export interface Pending {
  */
 export interface Currency {
 	balance: number,
-	/**
-	 * Array de accounts de <currency> do usuário
-	 */
+	_balance: {
+		/** Saldo disponível para operações */
+		available: Decimal128,
+		/** Saldo bloqueado em operações */
+		locked: Decimal128
+	}
+	/** Array de accounts de <currency> do usuário */
 	accounts: string[]
 	/**
 	 * @deprecated As transações recebidas serão removidas da collection people
@@ -46,9 +50,7 @@ export interface Currency {
 	 * @deprecated As transações enviadas serão removidas da collection people
 	 */
 	sended: Transaction[],
-	/**
-	 * Operações pendentes que involvem alteração de saldo
-	 */
+	/** Operações pendentes que involvem alteração de saldo */
 	pending: Pending[]
 }
 

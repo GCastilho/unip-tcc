@@ -56,7 +56,20 @@ const PendingSchema: Schema = new Schema({
 const CurrencySchema: Schema = new Schema({
 	balance: {
 		type: Decimal128,
-		default: 0
+		default: 0,
+		min: [0, 'Balance can not be less than 0']
+	},
+	_balance: {
+		available: {
+			type: Decimal128,
+			default: 0,
+			min: [0, 'Available balance can not be less than 0']
+		},
+		locked: {
+			type: Decimal128,
+			default: 0,
+			min: [0, 'Locked balance can not be less than 0']
+		}
 	},
 	accounts: {
 		type: [String],
