@@ -15,12 +15,18 @@ export default class User {
 
 	constructor(person: Person) {
 		this.person = person
+		this.id = person._id
 	}
 
 	/**
 	 * Documento do mongodb desta person, acessível publicamente
 	 */
 	person: Person
+
+	/**
+	 * Identificador único do documento desse usuário no database
+	 */
+	id: Person['_id']
 
 	/**
 	 * Retorna o saldo de um usuário para determinada currency
@@ -31,11 +37,6 @@ export default class User {
 	 * Retorna as accounts de um usuário para determinada currency
 	 */
 	getAccounts = (currency: string): string[] => this.person.currencies[currency].accounts
-
-	/**
-	 * Retorna o objectId do documento person
-	 */
-	getObjectId = (): Person['_id'] => this.person._id
 
 	/**
 	 * Retorna 'void' se o password informado é o password correto do usuário
@@ -220,7 +221,7 @@ export default class User {
 
 		/**
 		 * Completa uma operação pendente, atualizando os saldos e removendo a
-		 * operation do array de 'pending'
+		 * operação do array de 'pending'
 		 * 
 		 * Essa função é async safe
 		 * 

@@ -2,6 +2,8 @@ import socketIO = require('socket.io')
 import { EventEmitter } from 'events'
 import * as currencies from './currencies'
 import * as self from './self'
+import User from '../userApi/user'
+import { Transaction as Tx } from '../db/models/transaction'
 
 /**
  * EventEmmiter genérico
@@ -61,8 +63,9 @@ export class CurrencyApi {
 	 */
 	private __new_transaction() {
 		this.currencies.forEach(currency => {
-			this._currencies[currency].events.on('new_transaction', (email, transaction) => {
-				this.events.emit('new_transaction', email, currency, transaction)
+			this._currencies[currency].events
+				.on('new_transaction', (userId: User['id'], transaction: Tx ) => {
+					this.events.emit('new_transaction', userId, currency, transaction)
 			})
 		})
 	}

@@ -1,12 +1,11 @@
-import { Schema } from 'mongoose'
-import { Decimal128 } from 'bson'
+import { Decimal128, ObjectId } from 'bson'
 
 /** A interface de operações de alteração de saldo pendentes*/
 export interface Pending {
 	/**
 	 * Referencia ao objectId da operação em sua respectiva collection
 	 */
-	opid: Schema.Types.ObjectId,
+	opid: ObjectId,
 	/**
 	 * O tipo da operação, para identificar em qual collection ela está
 	 */

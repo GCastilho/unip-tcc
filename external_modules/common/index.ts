@@ -2,17 +2,8 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import { Transaction as MST } from '../../src/db/models/transaction'
-
-/**
- * Modelo de transaction que o servidor principal aceita
- */
-export interface Transaction {
-	txid: MST['txid']
-	account: MST['account']
-	amount: MST['amount']
-	timestamp: number
-}
+import { EMT as Transaction } from '../../src/db/models/transaction'
+export { EMT as Transaction } from '../../src/db/models/transaction'
 
 /**
  * EventEmmiter genérico

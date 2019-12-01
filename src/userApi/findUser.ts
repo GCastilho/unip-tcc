@@ -41,4 +41,20 @@ export default class FindUser {
 		if (!cookie) throw 'CookieNotFound'
 		return this.byId(cookie.personID)
 	}
+
+	/**
+	 * Procura por um usuário usando uma account informada
+	 * 
+	 * @param currency A currency que a account se refere
+	 * @param account A account pertencente ao usuário
+	 * @returns A User class instance with the found user
+	 * @throws 'UserNotFound'
+	 */
+	byAccount = async (currency: string, account: string): Promise<User> => {
+		const person = await Person.findOne({
+			[`currencies.${currency}.accounts`]: account
+		})
+		if (!person) throw 'UserNotFound'
+		return new User(person)
+	}
 }

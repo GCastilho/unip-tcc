@@ -1,8 +1,11 @@
 import socketIO = require('socket.io')
 import ss = require('socket.io-stream')
+import { ObjectId } from 'bson'
 import Common from '../index'
 import Person from '../../../../db/models/person'
-import { Transaction } from '../../../../db/models/transaction'
+import userApi from '../../../../userApi'
+import User from '../../../../userApi/user'
+import { default as Tx, Transaction } from '../../../../db/models/transaction'
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*
@@ -46,18 +49,57 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 */
 	socket.on('new_transaction', async (transaction: Transaction, callback: Function) => {
 		console.log('received new transaction', transaction)
-		const person = await Person.findOneAndUpdate({
-			[`currencies.${this.name}.accounts`]: transaction.account
-		}, {
-			$push: { [`currencies.${this.name}.received`]: transaction },
-			$inc: { [`currencies.${this.name}.balance`]: transaction.amount }
-		})
 
-		if (!person) return callback('No user found for this account')
+		/** Os módulos mandam o timestamp em number */
+		transaction.timestamp = new Date(transaction.timestamp)
 
-		this.events.emit('new_transaction', person.email, transaction)
+		let user: User
+		try {
+			user = await userApi.findUser.byAccount(this.name, transaction.account)
+		} catch (err) {
+			if (err === 'UserNotFound') {
+				return callback('No user found for this account')
+			} else {
+				return console.error('Error identifying user while processing new_transaction', err)
+			}
+		}
 
-		callback(null, 'received')
+		const opid = new ObjectId()
+
+		try {
+			await user.balanceOp.add(this.name, {
+				opid,
+				type: 'transaction',
+				amount: transaction.amount
+			})
+
+			await new Tx({
+				user: user.id,
+				txid: transaction.txid,
+				type: 'receive',
+				account: transaction.account,
+				amount: transaction.amount,
+				timestamp: transaction.timestamp
+			}).save()
+
+			await user.balanceOp.complete(this.name, opid)
+
+			this.events.emit('new_transaction', user.id, transaction)
+
+			callback(null, 'received')
+		} catch(err) {
+			if (err === 'OperationNotFound') {
+				console.error(`Error seting operation '${opid}' to complete`, err)
+			} else if (err.code === 11000 && err.keyPattern.txid) {
+				// A transação já existe, retornar ela ao módulo externo
+				const tx = await Tx.findOne({ txid: transaction.txid })
+				callback({ message: 'TransactionExists', transaction: tx })
+				await user.balanceOp.cancel(this.name, opid)
+			} else {
+				console.error('Error processing new_transaction', err)
+				await user.balanceOp.cancel(this.name, opid)
+			}
+		}
 	})
 
 	/**
