@@ -39,7 +39,7 @@ export default class FindUser {
 	byCookie = async (sessionID: string): Promise<User> => {
 		const cookie = await Cookie.findOne({ sessionID })
 		if (!cookie) throw 'CookieNotFound'
-		return this.byId(cookie.personID)
+		return this.byId(cookie.userId)
 	}
 
 	/**

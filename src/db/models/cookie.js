@@ -5,10 +5,11 @@
 const mongoose = require('mongoose')
 
 module.exports = mongoose.model('Cookie', {
-	personId : {
-		type: mongoose.SchemaTypes.ObjectId,
+	userId : {
+		type: mongoose.Schema.Types.ObjectId,
 		required: true,
-		unique: true
+		unique: true,
+		ref: 'Person'
 	},
 	sessionID: {
 		type: String,

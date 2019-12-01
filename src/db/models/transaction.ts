@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose'
+import { ObjectId } from 'bson'
 import { Person } from './person/interface'
 
 /**
@@ -7,7 +8,7 @@ import { Person } from './person/interface'
  * Interface de transações base utilizada pelo servidor principal e pelos
  * módulos externos
  */
-export interface MST {
+interface MST {
 	/** Identificador único dessa transação */
 	txid: string,
 	/** Account que recebeu a transação */
@@ -24,15 +25,36 @@ export interface MST {
 /**
  * External Module Transaction Interface
  * 
- * Interface Transaction que os módulos externos utilizam para comunicação com
- * o servidor principal
+ * Interface Transaction para COMUNICAÇÃO entre os módulos externos e o
+ * servidor principal
  */
 export interface EMT extends MST {
+	/**
+	 * Identificador da operação na collection de transactions do
+	 * servidor principal
+	 */
+	opid?: TransactionDoc['_id'],
+	/**
+	 * Status da transação
+	 * 
+	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
+	 * 
+	 * confirmed: A transação foi confirmada pela rede e é considerada
+	 * irreversível
+	 */
+	status: 'pending' | 'confirmed',
+	/**
+	 * A quantidade de confirmações que uma transação tem. Transações
+	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
+	 */
+	confirmations?: TransactionDoc['confirmations'],
+	/** Timestamp em transmissões para e com os módulos externos é em number */
 	timestamp: number
 }
 
 /**
- * Interface Transaction do servidor principal
+ * Interface Transaction do que o servidor principal usa para se comunicar
+ * entre seus módulos internos
  */
 export interface Transaction extends MST {
 	/** Timestamp da transação */
@@ -41,10 +63,29 @@ export interface Transaction extends MST {
 
 /** A interface dessa collection */
 interface TransactionDoc extends Transaction, Document {
+	_id: ObjectId,
 	/** Referência ao usuário dono dessa transação */
 	user: Person['_id'],
 	/** Tipo dessa transação */
-	type: 'receive' | 'send'
+	type: 'receive' | 'send',
+	/**
+	 * Status da transação
+	 * 
+	 * pending: A transação já foi processada e aceita no saldo do usuário e
+	 * está pendente para ser confirmada na rede
+	 * 
+	 * confirmed: A transação foi confirmada na rede e teve o saldo do usuário
+	 * atualizado no database
+	 * 
+	 * processing: A transação ainda não foi processada no saldo do usuário,
+	 * podendo ser negada quando isso ocorrer (e deletada do db)
+	 */
+	status: EMT['status'] | 'processing',
+	/**
+	 * A quantidade de confirmações que uma transação tem. Transações
+	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
+	 */
+	confirmations?: 1|2|3|4|5|6
 }
 
 /** Schema da collection de transações dos usuários */
@@ -63,6 +104,17 @@ const TransactionSchema: Schema = new Schema({
 		type: String,
 		enum: ['receive', 'send'],
 		required: true
+	},
+	status: {
+		type: String,
+		enum: [ 'processing', 'pending', 'confirmed' ],
+		required: true
+	},
+	confirmations: {
+		type: Number,
+		min: 0,
+		max: 6,
+		required: false
 	},
 	account: {
 		type: String,

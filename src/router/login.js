@@ -25,7 +25,7 @@ Router.post('/', function(req, res) {
 		user.checkPassword(req.body.password)
 
 		return Cookie.findOneAndUpdate({
-			personId: user.getObjectId()
+			userId: user.id
 		}, {
 			sessionID: randomstring.generate(128),
 			date: new Date()

@@ -5,7 +5,7 @@ import Common from '../index'
 import Person from '../../../../db/models/person'
 import userApi from '../../../../userApi'
 import User from '../../../../userApi/user'
-import { default as Tx, Transaction } from '../../../../db/models/transaction'
+import { default as Tx, EMT } from '../../../../db/models/transaction'
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*
@@ -47,15 +47,15 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Processa novas transações desta currency, atualizando o balanço do
 	 * usuário e emitindo um evento de 'new_transaction' no EventEmitter público
 	 */
-	socket.on('new_transaction', async (transaction: Transaction, callback: Function) => {
+	socket.on('new_transaction', async (transaction: EMT, callback: Function) => {
 		console.log('received new transaction', transaction)
 
-		/** Os módulos mandam o timestamp em number */
-		transaction.timestamp = new Date(transaction.timestamp)
+		const { txid, account, amount, status, confirmations } = transaction
+		const timestamp = new Date(transaction.timestamp)
 
 		let user: User
 		try {
-			user = await userApi.findUser.byAccount(this.name, transaction.account)
+			user = await userApi.findUser.byAccount(this.name, account)
 		} catch (err) {
 			if (err === 'UserNotFound') {
 				return callback('No user found for this account')
@@ -64,40 +64,152 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			}
 		}
 
+		/**
+		 * ObjectId dessa transação na collection de transactions e
+		 * identificador dessa operação para o resto do sistema
+		 */
 		const opid = new ObjectId()
 
 		try {
+			const tx = await new Tx({
+				_id: opid,
+				user: user.id,
+				txid,
+				type: 'receive',
+				status: 'processing',
+				confirmations,
+				account,
+				amount,
+				timestamp
+			}).save()
+
 			await user.balanceOp.add(this.name, {
 				opid,
 				type: 'transaction',
-				amount: transaction.amount
+				amount
 			})
 
-			await new Tx({
-				user: user.id,
-				txid: transaction.txid,
-				type: 'receive',
-				account: transaction.account,
-				amount: transaction.amount,
-				timestamp: transaction.timestamp
-			}).save()
-
-			await user.balanceOp.complete(this.name, opid)
+			tx.status = status
+			await tx.save()
 
 			this.events.emit('new_transaction', user.id, transaction)
-
-			callback(null, 'received')
+			callback(null, { opid })
 		} catch(err) {
-			if (err === 'OperationNotFound') {
-				console.error(`Error seting operation '${opid}' to complete`, err)
-			} else if (err.code === 11000 && err.keyPattern.txid) {
-				// A transação já existe, retornar ela ao módulo externo
-				const tx = await Tx.findOne({ txid: transaction.txid })
-				callback({ message: 'TransactionExists', transaction: tx })
-				await user.balanceOp.cancel(this.name, opid)
+			if (err.code === 11000 && err.keyPattern.txid) {
+				// A transação já existe
+				const tx = await Tx.findOne({ txid })
+				if (!tx) {
+					throw `Error finding transaction '${txid}' that SHOULD exist`
+				} else if (tx.status === 'processing') {
+					/*
+					 * Houve um erro entre adicionar a tx e a update do status,
+					 * restaurar o database para status inicial e tentar de novo
+					 * 
+					 * Esse tipo de erro não deve ocorrer a menos que ocorra
+					 * uma falha no database (no momento específico) ou falha de
+					 * energia, slá. O q importa é que PODE ocorrer, então o
+					 * melhor é ter uma maneira de reolver
+					 */
+					try {
+						/** Tenta cancelar a operação do usuário */
+						await user.balanceOp.cancel(this.name, tx._id)
+					} catch(err) {
+						if (err != 'OperationNotFound')
+							throw err
+					}
+					/** Remove a transação do database */
+					await tx.remove()
+					/**
+					 * Chama essa função novamente com os mesmos parâmetros
+					 * 
+					 * Ao emitir o evento no socket ele também será
+					 * transmitido ao módulo externo, mas, como o módulo externo
+					 * não tem (não devería ter) um handler para um evento de
+					 * socket que ele mesmo emite, não deve dar problema
+					 */
+					socket.emit('new_transaction', transaction, callback)
+				} else {
+					// A transação já existe, retornar ela ao módulo externo
+					const {
+						_id,
+						txid,
+						account,
+						amount,
+						timestamp,
+						status,
+						confirmations
+					} = tx
+					const transaction: EMT = {
+						opid: _id,
+						status,
+						confirmations,
+						txid,
+						account,
+						amount,
+						timestamp: timestamp.getTime()
+					}
+					callback({ code: 'TransactionExists', transaction })
+					await user.balanceOp.cancel(this.name, opid)
+				}
 			} else {
 				console.error('Error processing new_transaction', err)
+				callback({ code: 'InternalServerError' })
 				await user.balanceOp.cancel(this.name, opid)
+			}
+		}
+	})
+
+	/**
+	 * Processa requests de atualização de transações PENDENTES existentes
+	 * Os únicos campos que serão atualizados são o status e o confirmations
+	 */
+	socket.on('transaction_update', async (transaction: EMT, callback: Function) => {
+		if (!transaction.opid) return callback({
+			code: 'BadRequest',
+			details: '\'opid\' needs to be informed to update a transaction'
+		})
+
+		const { opid, account, status, confirmations } = transaction
+
+		/**
+		 * Uma transação confirmada deve ter o campo de confirmações
+		 * definido como undefined
+		 */
+		if (status === 'confirmed' && confirmations != undefined) return callback({
+			code: 'BadRequest',
+			message: 'A confirmation update must have \'confirmations\' field set as undefined'
+		})
+
+		try {
+			const res = await Tx.findOneAndUpdate({
+				_id: opid,
+				status: 'pending'
+			}, {
+				$set: {
+					status,
+					confirmations
+				}
+			})
+			if (!res) return callback({
+				code: 'OperationNotFound',
+				message: `No pending transaction with id: '${opid}' found`
+			})
+
+			const user = await userApi.findUser.byAccount(this.name, account)
+			await user.balanceOp.complete(this.name, opid)
+
+			this.events.emit('transaction_update', user.id, transaction)
+		} catch(err) {
+			if (err === 'UserNotFound') {
+				callback({ code: 'UserNotFound' })
+			} else if (err === 'OperationNotFound') {
+				callback({
+					code: 'OperationNotFound',
+					message: 'userApi could not find the requested operation'
+				})
+			} else {
+				console.error('Error processing transaction_update', err)
+				callback({ code: 'InternalServerError' })
 			}
 		}
 	})

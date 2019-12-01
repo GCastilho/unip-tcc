@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import { ObjectId } from 'bson'
 import { sha512 } from 'js-sha512'
 import { Person } from '../db/models/person/interface'
 import { Pending } from '../db/models/person/currencies/interface'
@@ -109,7 +109,7 @@ export default class User {
 		}
 
 		/**
-		 * Retorna o amount de uma operação DESSE usuário
+		 * Retorna uma operação salva no documento desse usuário
 		 * 
 		 * @param currency A currency que a operação se refere
 		 * @param opid O ObjectId que referencia o documento da operação em sua
@@ -117,10 +117,10 @@ export default class User {
 		 * 
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
-		const _getOpAmount = async (
+		const get = async (
 			currency: string,
-			opid: mongoose.Types.ObjectId
-		): Promise<number> => {
+			opid: ObjectId
+		): Promise<Pending> => {
 			// No primeiro item do array retornado pega o objeto 'operations'
 			const [{ operations }] = await this.person.collection.aggregate([
 				{
@@ -144,7 +144,22 @@ export default class User {
 			if (!operations[0] || typeof operations[0].amount != 'number')
 				throw 'OperationNotFound'
 
-			return operations[0].amount
+			return operations[0]
+		}
+
+		/**
+		 * Retorna o amount de uma operação DESSE usuário
+		 * 
+		 * @param currency A currency que a operação se refere
+		 * @param opid O ObjectId que referencia o documento da operação em sua
+		 * respectiva collection
+		 * 
+		 * @throws OperationNotFound if an operation was not found for THIS user
+		 */
+		const _getOpAmount = async (currency: string, opid: ObjectId)
+		:Promise<number> => {
+			const operation = await get(currency, opid)
+			return operation.amount
 		}
 
 		/**
@@ -163,7 +178,7 @@ export default class User {
 		 */
 		const _removeOperation = async(
 			currency: string,
-			opid: mongoose.Types.ObjectId,
+			opid: ObjectId,
 			opAmount: number,
 			changeInAvailable: number
 		): Promise<void> => {
@@ -200,7 +215,7 @@ export default class User {
 		 */
 		const cancel = async (
 			currency: string,
-			opid: mongoose.Types.ObjectId
+			opid: ObjectId
 		): Promise<void> => {
 			/**
 			 * O amount da operação
@@ -233,7 +248,7 @@ export default class User {
 		 */
 		const complete = async (
 			currency: string,
-			opid: mongoose.Types.ObjectId
+			opid: ObjectId
 		): Promise<void> => {
 			/**
 			 * O amount da operação
@@ -255,7 +270,8 @@ export default class User {
 		return {
 			add,
 			cancel,
-			complete
+			complete,
+			get
 		}
 	})()
 }
