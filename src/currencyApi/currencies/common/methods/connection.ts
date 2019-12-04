@@ -5,7 +5,7 @@ import Common from '../index'
 import Person from '../../../../db/models/person'
 import userApi from '../../../../userApi'
 import User from '../../../../userApi/user'
-import { default as Tx, EMT } from '../../../../db/models/transaction'
+import { default as Tx, EMT, TxUpdt } from '../../../../db/models/transaction'
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*
@@ -92,8 +92,16 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			tx.status = status
 			await tx.save()
 
+			/**
+			 * TODO: balanceOp.add ter um argumento opcional
+			 * 'status' = 'pending' | 'complete', que se for o segundo adiciona
+			 * uma operação confirmada
+			 */
+			if (status === 'confirmed')
+				await user.balanceOp.complete(this.name, opid)
+
 			this.events.emit('new_transaction', user.id, transaction)
-			callback(null, { opid })
+			callback(null, opid)
 		} catch(err) {
 			if (err.code === 11000 && err.keyPattern.txid) {
 				// A transação já existe
@@ -140,7 +148,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 						confirmations
 					} = tx
 					const transaction: EMT = {
-						opid: _id,
+						opid: _id.toHexString(),
 						status,
 						confirmations,
 						txid,
@@ -163,13 +171,13 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Processa requests de atualização de transações PENDENTES existentes
 	 * Os únicos campos que serão atualizados são o status e o confirmations
 	 */
-	socket.on('transaction_update', async (transaction: EMT, callback: Function) => {
-		if (!transaction.opid) return callback({
+	socket.on('transaction_update', async (txUpdate: TxUpdt, callback: Function) => {
+		if (!txUpdate.opid) return callback({
 			code: 'BadRequest',
 			details: '\'opid\' needs to be informed to update a transaction'
 		})
 
-		const { opid, account, status, confirmations } = transaction
+		const { opid, status, confirmations } = txUpdate
 
 		/**
 		 * Uma transação confirmada deve ter o campo de confirmações
@@ -195,10 +203,10 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				message: `No pending transaction with id: '${opid}' found`
 			})
 
-			const user = await userApi.findUser.byAccount(this.name, account)
-			await user.balanceOp.complete(this.name, opid)
+			const user = await userApi.findUser.byId(res.user)
+			await user.balanceOp.complete(this.name, new ObjectId(opid))
 
-			this.events.emit('transaction_update', user.id, transaction)
+			this.events.emit('transaction_update', user.id, txUpdate)
 		} catch(err) {
 			if (err === 'UserNotFound') {
 				callback({ code: 'UserNotFound' })

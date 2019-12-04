@@ -15,6 +15,7 @@ export function init(database: string): Promise<Mongoose> {
 			pass: process.env.MONGODB_PASS,
 			useNewUrlParser: true,
 			useCreateIndex: true,
+			useFindAndModify: false,
 			useUnifiedTopology: true
 		})
 

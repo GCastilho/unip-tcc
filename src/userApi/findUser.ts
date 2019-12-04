@@ -1,7 +1,7 @@
-import mongoose from 'mongoose'
 import Person from '../db/models/person'
 import Cookie from '../db/models/cookie'
 import User from './user'
+import { ObjectId } from 'bson'
 
 export default class FindUser {
 	/**
@@ -22,7 +22,7 @@ export default class FindUser {
 	 * @returns A User class instance with the found user
 	 * @throws 'UserNotFound'
 	 */
-	byId = async (id: mongoose.Types.ObjectId): Promise<User> => {
+	byId = async (id: ObjectId): Promise<User> => {
 		const person = await Person.findById(id)
 		if (!person) throw 'UserNotFound'
 		return new User(person)

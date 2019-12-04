@@ -1,11 +1,13 @@
 const Client = require('bitcoin-core')
 import Account from '../../common/db/models/account'
 import { Transaction as Tx } from '../../common'
+import unconfirmedTx from '../db/models/unconfirmedTx'
 
 const wallet = new Client({
 	network: 'testnet',
 	username: 'exchange',
 	password: 'password',
+	host: '192.168.0.102',
 	port: 40000
 })
 
@@ -21,7 +23,7 @@ export function rpc() {
 
 	const transactionInfo = async (txid: Tx['txid']): Promise<any> =>
 		wallet.getTransaction(txid)
-	
+
 	const blockInfo = async block => wallet.getBlock(block)
 	
 	const send = async (account: Tx['account'], amount: Tx['amount']): Promise<Tx> => {
@@ -29,11 +31,20 @@ export function rpc() {
 		const tInfo = await transactionInfo(txid)
 		const transaction: Tx = {
 			txid,
+			status: 'pending',
+			confirmations: 0,
 			amount,
 			account,
 			timestamp: tInfo.time*1000 // O timestamp do bitcoin é em segundos
 		}
-		
+
+		await new unconfirmedTx({
+			txid,
+			confirmations: 0
+		}).save().catch(err => {
+			console.error('Error saving sended unconfirmedTx', err)
+		})
+
 		console.log('sended new transaction', transaction)
 		return transaction
 	}

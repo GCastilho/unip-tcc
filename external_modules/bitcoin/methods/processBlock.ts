@@ -1,33 +1,46 @@
 import { Bitcoin } from '../index'
-import unconfirmedTx from '../db/models/unconfirmedTx'
+import unconfirmedTx, { unconfirmedTx as uTx } from '../db/models/unconfirmedTx'
 import { Transaction as Tx } from '../../common'
+import { TxUpdt } from '../../../src/db/models/transaction'
 
 export function processBlock(this: Bitcoin) {
 	/**
-	 * Verifica se uma transação foi confirmada e em caso positivo,
-	 * remove-a do database. Em caso negativo atualiza a quantidade de
-	 * confirmacoes que ela tem
+	 * Verifica a quantidade de confirmações de uma transação e informa o
+	 * servidor principal
+	 * 
+	 * Se uma transação foi confirmada, remove-a da collection da transações
+	 * não confirmadas
 	 */
-	const getConfirmed = (txid: Tx['txid']): void => {
-		this.rpc.transactionInfo(txid).then(txInfo => {
+	const checkConfirmations = (tx: uTx): void => {
+		this.rpc.transactionInfo(tx.txid).then(txInfo => {
+			let status: Tx['status'] = 'pending'
+
 			if (txInfo.confirmations >= 6) {
-				console.log({
-					txid,
-					confirmed: true,
+				status = 'confirmed'
+				unconfirmedTx.deleteOne({ txid: tx.txid }).exec()
+				console.log('transaction confirmed', {
+					txid: tx.txid,
+					status,
 					confirmations: txInfo.confirmations
 				})
-				unconfirmedTx.deleteOne({ txid }).exec()
-				/**
-				 * @todo redirecionar a quantidade de confirmaçoes para o
-				 * servidor principal
-				 */
 			} else {
 				unconfirmedTx.updateOne({
-					txid
+					txid: tx.txid
 				}, {
 					confirmations: txInfo.confirmations
 				}).exec()
 			}
+
+			if (!tx.opid)
+				throw 'Error: \'opid\' is required to update a transaction'
+
+			const txUpdate: TxUpdt = {
+				opid: tx.opid,
+				status,
+				confirmations: txInfo.confirmations >= 6 ? undefined : txInfo.confirmations
+			}
+
+			this.module('transaction_update', txUpdate)
 		}).catch(err => {
 			console.log('rpc error', err)
 		})
@@ -40,11 +53,11 @@ export function processBlock(this: Bitcoin) {
 	 */
 	const _processBlock = async (body: any) => {
 		if (!body.block) return
-		/** Procura por todas as transações não confirmadas no database */
 		try {
-			const transaction = await unconfirmedTx.find()
+			/** Todas as transações não confirmadas no database */
+			const transaction: uTx[] = await unconfirmedTx.find()
 			if (transaction.length > 0)
-				transaction.forEach(tx => getConfirmed(tx.txid))
+				transaction.forEach(tx => checkConfirmations(tx))
 		} catch(err) {
 			console.error('Block processing error', err)
 		}

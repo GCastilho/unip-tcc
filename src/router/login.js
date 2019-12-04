@@ -19,9 +19,9 @@ Router.post('/', function(req, res) {
 	if (!req.body.email || !req.body.password)
 		return res.status(400).send({ error: 'Bad request' })
 
-	userApi.findUser.byEmail({
-		email: req.body.email
-	}).then(user => {
+	userApi.findUser.byEmail(
+		req.body.email
+	).then(user => {
 		user.checkPassword(req.body.password)
 
 		return Cookie.findOneAndUpdate({

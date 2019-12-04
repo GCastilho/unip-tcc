@@ -78,10 +78,13 @@ export default abstract class Common {
 		return new Promise((resolve, reject) => {
 			console.log(`transmitting socket event '${event}':`, ...args)
 			this._events.emit('module', event, ...args, ((error, response) => {
-				if (error)
+				if (error) {
+					console.error('Received socket error:', error)
 					reject(error)
-				else
+				} else {
+					console.log('Received socket response:', response)
 					resolve(response)
+				}
 			}))
 		})
 	}

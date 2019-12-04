@@ -3,6 +3,7 @@ import Transaction from '../../common/db/models/transaction'
 import unconfirmedTx from '../db/models/unconfirmedTx'
 import { Bitcoin } from '../index'
 import { Transaction as Tx } from '../../common'
+import { ObjectId } from 'bson'
 
 export function processTransaction(this: Bitcoin) {
 	const formatTransaction = async (txid): Promise<Tx | void> => {
@@ -35,7 +36,8 @@ export function processTransaction(this: Bitcoin) {
 			}
 		}
 
-		console.log('aqui', txInfo)
+		console.log('txInfo', txInfo)
+
 		/**
 		 * Verifica se é uma transação recebida
 		 */
@@ -53,10 +55,12 @@ export function processTransaction(this: Bitcoin) {
 		/**
 		 * Pega o amount recebido da transação
 		 */
-		const { amount } = received
+		const amount: Tx['amount'] = received.amount
 
 		const formattedTransaction: Tx = {
 			txid: txInfo.txid,
+			status: 'pending',
+			confirmations: txInfo.confirmations,
 			account: address,
 			amount,
 			timestamp: txInfo.time*1000 // O timestamp do bitcoin é em segundos
@@ -65,6 +69,10 @@ export function processTransaction(this: Bitcoin) {
 		return formattedTransaction
 	}
 
+	/**
+	 * @todo Uma maneira de pegar transacções de quado o servidor estava off
+	 * @todo Adicionar um handler de tx cancelada (o txid muda se aumentar o fee)
+	 */
 	const _processTransaction = async (body: any) => {
 		const { txid } = body
 		if (!txid) return
@@ -73,9 +81,25 @@ export function processTransaction(this: Bitcoin) {
 			const transaction: Tx | void = await formatTransaction(txid)
 			if (!transaction) return
 			console.log('received transaction', transaction)
-			this.module('new_transaction', transaction)
+			const opid: Tx['opid'] = await this.module('new_transaction', transaction)
+			
+			await unconfirmedTx.findOneAndUpdate({ txid }, {
+				opid: new ObjectId(opid)
+			}, {
+				upsert: true
+			}).catch(err => {
+				console.error('Erro ao adicionar tx na unconfirmedTx', err)
+			})
+
+			await Transaction.findOneAndUpdate({ txid }, {
+				opid: new ObjectId(opid)
+			}, {
+				upsert: true
+			}).catch(err => {
+				console.error('Erro ao adicionar tx na transactions', err)
+			})
 		} catch (err) {
-			console.error('transaction processing error', err)
+			console.error('Transaction processing error', err)
 		}
 	}
 	

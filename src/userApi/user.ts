@@ -31,7 +31,7 @@ export default class User {
 	/**
 	 * Retorna o saldo de um usuário para determinada currency
 	 */
-	getBalance = (currency: string): number => this.person.currencies[currency].balance
+	getBalance = (currency: string): number => this.person.currencies[currency].balance.available
 
 	/**
 	 * Retorna as accounts de um usuário para determinada currency
@@ -85,7 +85,7 @@ export default class User {
 		 * 'available' do balance) para executar a operação
 		 */
 		const add = async (currency: string, op: Pending): Promise<void> => {
-			const balanceObj = `currencies.${currency}._balance`
+			const balanceObj = `currencies.${currency}.balance`
 	
 			const response = await this.person.collection.findOneAndUpdate({
 				_id: this.person._id,
@@ -103,7 +103,7 @@ export default class User {
 					[`currencies.${currency}.pending`]: op
 				}
 			})
-	
+
 			if (!response.lastErrorObject.updatedExisting)
 				throw 'NotEnoughFunds'
 		}
@@ -182,7 +182,7 @@ export default class User {
 			opAmount: number,
 			changeInAvailable: number
 		): Promise<void> => {
-			const balanceObj = `currencies.${currency}._balance`
+			const balanceObj = `currencies.${currency}.balance`
 
 			const response = await this.person.collection.findOneAndUpdate({
 				_id: this.person._id,

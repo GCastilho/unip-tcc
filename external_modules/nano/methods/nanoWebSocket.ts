@@ -54,7 +54,7 @@ export function nanoWebSocket(this: Nano) {
 	 * @todo Tratar os dados e enviar para o servidor e banco de dados
 	 */
 	ws.onmessage = async msg => {
-		const data = JSON.parse(msg.data)
+		const data: Nano.WebSocket = JSON.parse(msg.data)
 		if (data.message.block.subtype != 'receive') return
 
 		try {

@@ -77,6 +77,7 @@ export function nanoRpc(this: Nano) {
 		).then(res => {
 			const transaction: Transaction = {
 				txid: res.block,
+				status: 'confirmed',
 				timestamp: Date.now(), /**@todo Utilizar o timestamp do bloco */
 				account: destination,
 				amount: nanoAmount

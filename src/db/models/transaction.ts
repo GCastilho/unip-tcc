@@ -31,9 +31,9 @@ interface MST {
 export interface EMT extends MST {
 	/**
 	 * Identificador da operação na collection de transactions do
-	 * servidor principal
+	 * servidor principal, enviado na forma de string ao passar pelo socket
 	 */
-	opid?: TransactionDoc['_id'],
+	opid?: string,
 	/**
 	 * Status da transação
 	 * 
@@ -61,6 +61,31 @@ export interface Transaction extends MST {
 	timestamp: Date
 }
 
+/**
+ * Interface para o evento de update_transaction
+ */
+export interface TxUpdt {
+	/**
+	 * Identificador da operação na collection de transactions do
+	 * servidor principal
+	 */
+	opid: string,
+	/**
+	 * Status da transação
+	 * 
+	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
+	 * 
+	 * confirmed: A transação foi confirmada pela rede e é considerada
+	 * irreversível
+	 */
+	status: EMT['status'],
+	/**
+	 * A quantidade de confirmações que uma transação tem. Transações
+	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
+	 */
+	confirmations?: EMT['confirmations']
+}
+
 /** A interface dessa collection */
 interface TransactionDoc extends Transaction, Document {
 	_id: ObjectId,
@@ -85,13 +110,13 @@ interface TransactionDoc extends Transaction, Document {
 	 * A quantidade de confirmações que uma transação tem. Transações
 	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
 	 */
-	confirmations?: 1|2|3|4|5|6
+	confirmations?: 0|1|2|3|4|5|6
 }
 
 /** Schema da collection de transações dos usuários */
 const TransactionSchema: Schema = new Schema({
 	user: {
-		type: Schema.Types.ObjectId,
+		type: ObjectId,
 		required: true,
 		ref: 'Person'
 	},
