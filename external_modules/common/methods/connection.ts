@@ -17,7 +17,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		} else {
 			/** O último argumento é o callback do evento */
 			const callback: Function = args[args.length - 1]
-			callback('Socket disconnected')
+			callback('SocketDisconnected')
 		}
 	})
 

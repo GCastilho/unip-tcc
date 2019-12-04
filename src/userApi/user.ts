@@ -65,7 +65,7 @@ export default class User {
 	 * 
 	 * Todos os métodos são async safe
 	 */
-	balanceOp = (() => {
+	balanceOps = (() => {
 		/**
 		 * Adiciona uma operação de mudança de saldo pendente no array 'pending'
 		 * da currency trava o saldo utilizado na operação

@@ -5,6 +5,7 @@ import { ObjectId } from 'bson'
 export interface UnconfirmedTx extends Document {
 	opid: Tx['opid'],
 	txid: string,
+	account: Tx['account'],
 	confirmations: number
 }
 
@@ -18,6 +19,10 @@ const UnconfirmedTxSchema: Schema = new Schema({
 		type: String,
 		trim: true,
 		unique: true,
+		required: true
+	},
+	account: {
+		type: String,
 		required: true
 	},
 	confirmations: {

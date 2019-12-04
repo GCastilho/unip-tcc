@@ -110,7 +110,7 @@ interface TransactionDoc extends Transaction, Document {
 	 * A quantidade de confirmações que uma transação tem. Transações
 	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
 	 */
-	confirmations?: 0|1|2|3|4|5|6
+	confirmations?: number
 }
 
 /** Schema da collection de transações dos usuários */
@@ -138,7 +138,6 @@ const TransactionSchema: Schema = new Schema({
 	confirmations: {
 		type: Number,
 		min: 0,
-		max: 6,
 		required: false
 	},
 	account: {

@@ -58,7 +58,10 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			user = await userApi.findUser.byAccount(this.name, account)
 		} catch (err) {
 			if (err === 'UserNotFound') {
-				return callback('No user found for this account')
+				return callback({
+					code: 'UserNotFound',
+					message: 'No user found for this account'
+				})
 			} else {
 				return console.error('Error identifying user while processing new_transaction', err)
 			}
@@ -83,7 +86,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				timestamp
 			}).save()
 
-			await user.balanceOp.add(this.name, {
+			await user.balanceOps.add(this.name, {
 				opid,
 				type: 'transaction',
 				amount
@@ -98,7 +101,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			 * uma operação confirmada
 			 */
 			if (status === 'confirmed')
-				await user.balanceOp.complete(this.name, opid)
+				await user.balanceOps.complete(this.name, opid)
 
 			this.events.emit('new_transaction', user.id, transaction)
 			callback(null, opid)
@@ -120,7 +123,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					 */
 					try {
 						/** Tenta cancelar a operação do usuário */
-						await user.balanceOp.cancel(this.name, tx._id)
+						await user.balanceOps.cancel(this.name, tx._id)
 					} catch(err) {
 						if (err != 'OperationNotFound')
 							throw err
@@ -157,12 +160,14 @@ export function connection(this: Common, socket: socketIO.Socket) {
 						timestamp: timestamp.getTime()
 					}
 					callback({ code: 'TransactionExists', transaction })
-					await user.balanceOp.cancel(this.name, opid)
+					await user.balanceOps.cancel(this.name, opid).catch(err => {
+						if (err != 'OperationNotFound') throw err
+					})
 				}
 			} else {
 				console.error('Error processing new_transaction', err)
 				callback({ code: 'InternalServerError' })
-				await user.balanceOp.cancel(this.name, opid)
+				await user.balanceOps.cancel(this.name, opid)
 			}
 		}
 	})
@@ -183,9 +188,9 @@ export function connection(this: Common, socket: socketIO.Socket) {
 
 		/**
 		 * Uma transação confirmada deve ter o campo de confirmações
-		 * definido como undefined
+		 * definido como null
 		 */
-		if (status === 'confirmed' && confirmations != undefined) return callback({
+		if (status === 'confirmed' && confirmations != null) return callback({
 			code: 'BadRequest',
 			message: 'A confirmation update must have \'confirmations\' field set as undefined'
 		})
@@ -207,7 +212,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 
 			if (status === 'confirmed') {
 				const user = await userApi.findUser.byId(res.user)
-				await user.balanceOp.complete(this.name, new ObjectId(opid))
+				await user.balanceOps.complete(this.name, new ObjectId(opid))
 			}
 
 			this.events.emit('transaction_update', res.user, txUpdate)

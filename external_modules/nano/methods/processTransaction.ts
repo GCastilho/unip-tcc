@@ -73,17 +73,37 @@ export function processTransaction(this: Nano) {
 		})
 	}
 	
+	/**
+	 * @todo Handler se não conseguir enviar a transation ao main
+	 */
 	const sendToMainServer = async (transaction: Tx): Promise<void> => {
-		// TODO: handle updateExists
-		const opid: Tx['opid'] = await this.module('new_transaction', transaction)
-		
-		/** Adiciona o opid à transaction no db local */
-		await Transaction.findOneAndUpdate({ txid: transaction.txid }, {
-			opid: new ObjectId(opid)
-		}).catch(err => {
-			console.error('Erro ao adicionar opid à Transaction', err)
-		})
-		
+		try {
+			const opid: Tx['opid'] = await this.module('new_transaction', transaction)
+			
+			/** Adiciona o opid à transaction no db local */
+			await Transaction.findOneAndUpdate({ txid: transaction.txid }, {
+				opid: new ObjectId(opid)
+			})
+		} catch (err) {
+			if (err.code === 'UserNotFound') {
+				await Account.deleteOne({ account: transaction.account })
+				await Transaction.deleteMany({ account: transaction.account })
+			} else if (err.code === 'TransactionExists' && err.transaction.opid) {
+				await Transaction.updateOne({
+					txid: transaction.txid
+				}, {
+					opid: new ObjectId(err.transaction.opid)
+				})
+			} else if (err.code === 'SocketDisconnected') {
+				/**
+				 * @todo A transação deve ficar numa collection 'pendente' que
+				 * tem uma prop Tx e ser reenviada ao main on connection
+				 */
+			} else {
+				console.error('Erro ao adicionar opid à Transaction', err)
+			}
+		}
+
 		await redirectToStd(transaction)
 	}
 
@@ -98,11 +118,10 @@ export function processTransaction(this: Nano) {
 			const transactionArray = await checkTransactionsIntegrity(block)
 			console.log({transactionArray}) // remove
 			if (!transactionArray) return
-			transactionArray.forEach(async (transaction: Tx) => {
-				const { account, amount, timestamp} = transaction
+			transactionArray.forEach(transaction => {
 				new Transaction({
 					txid: transaction.txid,
-					info: { account, amount, timestamp }
+					account: transaction.account
 				}).save().then(() => {
 					return sendToMainServer(transaction)
 				}).catch(err => {

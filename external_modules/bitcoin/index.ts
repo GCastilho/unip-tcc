@@ -17,17 +17,17 @@ export class Bitcoin extends Common {
 
 	withdraw = this.rpc.send
 
-	processTransaction = methods.processTransaction.bind(this)()
+	processTransaction = methods.processTransaction.bind(this)
 
 	initBlockchainListener() {
 		const app = express()
-		app.use(bodyParser.urlencoded())
+		app.use(bodyParser.urlencoded({ extended: true }))
 
 		/**
 		 * Novas transações são enviadas aqui
 		 */
 		app.post('/transaction', (req, res) => {
-			this.processTransaction(req.body)
+			this.processTransaction(req.body.txid)
 			res.send() // Finaliza a comunicação com o curl do BTC
 		})
 
