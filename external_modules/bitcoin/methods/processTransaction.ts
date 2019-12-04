@@ -81,6 +81,7 @@ export function processTransaction(this: Bitcoin) {
 			const transaction: Tx | void = await formatTransaction(txid)
 			if (!transaction) return
 			console.log('received transaction', transaction)
+			// TODO: handle updateExists
 			const opid: Tx['opid'] = await this.module('new_transaction', transaction)
 			
 			await unconfirmedTx.findOneAndUpdate({ txid }, {

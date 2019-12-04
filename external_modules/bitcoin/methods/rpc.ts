@@ -7,7 +7,6 @@ const wallet = new Client({
 	network: 'testnet',
 	username: 'exchange',
 	password: 'password',
-	host: '192.168.0.102',
 	port: 40000
 })
 

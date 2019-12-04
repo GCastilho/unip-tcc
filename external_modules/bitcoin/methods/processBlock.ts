@@ -1,5 +1,5 @@
 import { Bitcoin } from '../index'
-import unconfirmedTx, { unconfirmedTx as uTx } from '../db/models/unconfirmedTx'
+import unconfirmedTx, { UnconfirmedTx as uTx } from '../db/models/unconfirmedTx'
 import { Transaction as Tx } from '../../common'
 import { TxUpdt } from '../../../src/db/models/transaction'
 
@@ -40,7 +40,7 @@ export function processBlock(this: Bitcoin) {
 				confirmations: txInfo.confirmations >= 6 ? undefined : txInfo.confirmations
 			}
 
-			this.module('transaction_update', txUpdate)
+			return this.module('transaction_update', txUpdate)
 		}).catch(err => {
 			console.log('rpc error', err)
 		})

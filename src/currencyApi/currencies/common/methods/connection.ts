@@ -177,6 +177,8 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			details: '\'opid\' needs to be informed to update a transaction'
 		})
 
+		console.log('received transaction_update', txUpdate)
+
 		const { opid, status, confirmations } = txUpdate
 
 		/**
@@ -203,10 +205,12 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				message: `No pending transaction with id: '${opid}' found`
 			})
 
-			const user = await userApi.findUser.byId(res.user)
-			await user.balanceOp.complete(this.name, new ObjectId(opid))
+			if (status === 'confirmed') {
+				const user = await userApi.findUser.byId(res.user)
+				await user.balanceOp.complete(this.name, new ObjectId(opid))
+			}
 
-			this.events.emit('transaction_update', user.id, txUpdate)
+			this.events.emit('transaction_update', res.user, txUpdate)
 		} catch(err) {
 			if (err === 'UserNotFound') {
 				callback({ code: 'UserNotFound' })

@@ -74,6 +74,7 @@ export function processTransaction(this: Nano) {
 	}
 	
 	const sendToMainServer = async (transaction: Tx): Promise<void> => {
+		// TODO: handle updateExists
 		const opid: Tx['opid'] = await this.module('new_transaction', transaction)
 		
 		/** Adiciona o opid à transaction no db local */

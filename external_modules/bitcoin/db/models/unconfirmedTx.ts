@@ -1,14 +1,14 @@
-import mongoose, { Schema, Document } from 'mongoose'
-import { Transaction as ITransaction } from '../../../common'
+import mongoose, { Schema, Document } from '../../../common/node_modules/mongoose'
+import { Transaction as Tx } from '../../../common'
 import { ObjectId } from 'bson'
 
-export interface unconfirmedTx extends Document {
-	opid: ITransaction['opid'],
+export interface UnconfirmedTx extends Document {
+	opid: Tx['opid'],
 	txid: string,
 	confirmations: number
 }
 
-const unconfirmedTxSchema = new Schema({
+const UnconfirmedTxSchema: Schema = new Schema({
 	opid: {
 		type: ObjectId,
 		unique: true,
@@ -27,4 +27,4 @@ const unconfirmedTxSchema = new Schema({
 	}
 })
 
-export default mongoose.model<unconfirmedTx>('unconfirmedTx', unconfirmedTxSchema, 'unconfirmedTxs')
+export default mongoose.model<UnconfirmedTx>('unconfirmedTx', UnconfirmedTxSchema, 'unconfirmedTxs')
