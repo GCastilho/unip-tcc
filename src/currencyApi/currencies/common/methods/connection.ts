@@ -141,24 +141,16 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					socket.emit('new_transaction', transaction, callback)
 				} else {
 					// A transação já existe, retornar ela ao módulo externo
-					const {
-						_id,
-						txid,
-						account,
-						amount,
-						timestamp,
-						status,
-						confirmations
-					} = tx
 					const transaction: EMT = {
-						opid: _id.toHexString(),
-						status,
-						confirmations,
-						txid,
-						account,
-						amount,
-						timestamp: timestamp.getTime()
+						opid:          tx._id.toHexString(),
+						status:        tx.status,
+						confirmations: tx.confirmations,
+						txid:          tx.txid,
+						account:       tx.account,
+						amount:        tx.amount,
+						timestamp:     tx.timestamp.getTime()
 					}
+					console.log('Rejecting existing transaction:', transaction)
 					callback({ code: 'TransactionExists', transaction })
 					await user.balanceOps.cancel(this.name, opid).catch(err => {
 						if (err != 'OperationNotFound') throw err
@@ -215,6 +207,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				await user.balanceOps.complete(this.name, new ObjectId(opid))
 			}
 
+			callback(null, `${txUpdate.opid} updated`)
 			this.events.emit('transaction_update', res.user, txUpdate)
 		} catch(err) {
 			if (err === 'UserNotFound') {

@@ -1,7 +1,7 @@
 const Client = require('bitcoin-core')
 import Account from '../../common/db/models/account'
 import { Transaction as Tx } from '../../common'
-import unconfirmedTx from '../db/models/unconfirmedTx'
+import PendingTx from '../../common/db/models/pendingTx'
 
 const wallet = new Client({
 	network: 'testnet',
@@ -28,6 +28,7 @@ export function rpc() {
 	const send = async (account: Tx['account'], amount: Tx['amount']): Promise<Tx> => {
 		const txid: Tx['txid'] = await wallet.sendToAddress(account, amount)
 		const tInfo = await transactionInfo(txid)
+		/** @todo Adicionar type: 'send' em transações enviadas */
 		const transaction: Tx = {
 			txid,
 			status: 'pending',
@@ -37,11 +38,11 @@ export function rpc() {
 			timestamp: tInfo.time*1000 // O timestamp do bitcoin é em segundos
 		}
 
-		await new unconfirmedTx({
+		await new PendingTx({
 			txid,
-			confirmations: 0
+			transaction
 		}).save().catch(err => {
-			console.error('Error saving sended unconfirmedTx', err)
+			console.error('Error saving sended pendingTx', err)
 		})
 
 		console.log('sended new transaction', transaction)

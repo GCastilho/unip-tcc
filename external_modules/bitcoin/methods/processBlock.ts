@@ -1,8 +1,7 @@
+import PendingTx, { PTx } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
-import unconfirmedTx, { UnconfirmedTx as uTx } from '../db/models/unconfirmedTx'
 import { Transaction as Tx } from '../../common'
 import { TxUpdt } from '../../../src/db/models/transaction'
-import { formatTransaction, insertOpid } from './processTransaction'
 
 export function processBlock(this: Bitcoin) {
 	/**
@@ -12,43 +11,37 @@ export function processBlock(this: Bitcoin) {
 	 * Se uma transação foi confirmada, remove-a da collection da transações
 	 * não confirmadas
 	 */
-	const checkConfirmations = async (tx: uTx): Promise<void> => {
+	const updateConfirmations = async (tx: PTx): Promise<void> => {
 		try {
 			const txInfo = await this.rpc.transactionInfo(tx.txid)
 
 			/**
-			 * Se não tem a opid é pq ou houve um erro ao inicialmente informar
-			 * o main server ou pq o database local não tinha a tx mas o main
-			 * server sim, então envia a transação para o main_server, pega o
-			 * opid e continua
+			 * Se não tem a opid é pq o main server não foi informado
+			 * dessa transação
 			 */
-			if (!tx.opid) {
-				const transaction = await formatTransaction(tx.txid, this.rpc.transactionInfo)
-				try {
-					// Informa o main da transação
-					tx.opid = await this.module('new_transaction', transaction)
-				} catch(err) {
-					// A tx existia no main mas não no database local
-					if (err.code === 'TransactionExists') {
-						tx.opid = err.transaction.opid
-					} else {
-						throw err
-					}
-				}
-				await insertOpid(tx.txid, tx.opid)
+			if (!tx.transaction.opid) {
+				// !opid -> não foi possível enviar a tx ao main
+				const opid = await this.sendToMainServer(tx.transaction)
+				if (!opid) return
+
+				tx.transaction.opid = opid
 			}
 
-			const status: Tx['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
-
-			await unconfirmedTx.updateOne({
+			/** Atualiza o número de confirmações */
+			await PendingTx.updateOne({
 				txid: tx.txid
 			}, {
-				confirmations: txInfo.confirmations
+				$set: {
+					'transaction.confirmations': txInfo.confirmations
+				}
 			})
 
-			if (!tx.opid) return
+			const status: Tx['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
+			tx.transaction.status = status
+			await tx.save()
+
 			const txUpdate: TxUpdt = {
-				opid: tx.opid,
+				opid: tx.transaction.opid,
 				status,
 				confirmations: status === 'confirmed' ? null : txInfo.confirmations
 			}
@@ -58,28 +51,29 @@ export function processBlock(this: Bitcoin) {
 			} catch (err) {
 				if (err === 'SocketDisconnected') return
 				/**
-				 * Um erro de OperationNotFound significa ou que a transação não
-				 * existe no main server ou que ela foi concluída (e está
-				 * inacessível a um update)
+				 * OperationNotFound significa ou que a transação não existe
+				 * no main server ou que ela foi concluída (e está inacessível
+				 * a um update), em ambos os casos o procedimento é
+				 * deletar ela daqui
 				 */
 				if (err.code != 'OperationNotFound') throw err
 			}
-	
+
 			/**
 			 * Deleta a transação apenas se conseguir informá-la ao servidor
 			 * principal ou se retornado OperationNotFound
 			 */
 			if (status === 'confirmed') {
 				console.log('deleting confirmed transaction', {
-					opid: tx.opid,
-					txid: tx.txid,
+					opid: tx.transaction.opid,
+					txid: tx.transaction.txid,
 					status,
 					confirmations: txInfo.confirmations
 				})
-				await unconfirmedTx.deleteOne({ txid: tx.txid })
+				await PendingTx.deleteOne({ txid: tx.txid })
 			}
 		} catch (err) {
-			console.error('Error cheking confirmations', err)
+			console.error('Error updating confirmations', err)
 		}
 	}
 
@@ -92,9 +86,9 @@ export function processBlock(this: Bitcoin) {
 		if (!body.block) return
 		try {
 			/** Todas as transações não confirmadas no database */
-			const transactions: uTx[] = await unconfirmedTx.find()
+			const transactions: PTx[] = await PendingTx.find()
 			if (transactions.length > 0)
-				transactions.forEach(tx => checkConfirmations(tx))
+				transactions.forEach(tx => updateConfirmations(tx))
 		} catch(err) {
 			console.error('Error fetching unconfirmed transactions', err)
 		}

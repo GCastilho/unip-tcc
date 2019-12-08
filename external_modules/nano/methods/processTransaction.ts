@@ -69,7 +69,12 @@ export function processTransaction(this: Nano) {
 
 			console.log({ txArray }) // remove
 
-			/** Adiciona a transação recebida ao array */
+			/**
+			 * A transação mais recente deveria estar no txArray, entretanto,
+			 * graças a velocidade do nosso sistema, esse código pode rodar
+			 * antes da atualização da blockchain ter concluido, por esse
+			 * motivo a tx é adicionada manualmente aqui
+			 */
 			txArray.push({
 				txid: block.message.hash,
 				account: block.message.account,
@@ -79,6 +84,11 @@ export function processTransaction(this: Nano) {
 			})
 
 			txArray.forEach(transaction => {
+				/**
+				 * Uma transação duplicada irá disparar o erro 11000 do mongo,
+				 * por consequência ela não será transmitida mais de uma vez
+				 * ao main server
+				 */
 				new Transaction({
 					txid: transaction.txid,
 					account: transaction.account

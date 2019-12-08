@@ -65,9 +65,15 @@ export default abstract class Common {
 	}
 
 	/**
-	 * Envia uma transação ao servidor principal e atualiza o database
+	 * Envia uma transação ao servidor principal e atualiza seuo opid no
+	 * database
+	 * 
+	 * @param transaction A transação que será enviada ao servidor
+	 * 
+	 * @returns opid se o envio foi bem-sucedido
+	 * @returns void se a transação não foi enviada
 	 */
-	protected sendToMainServer: (transaction: Transaction) => Promise<void>
+	protected sendToMainServer: (transaction: Transaction) => Promise<string|void>
 
 	/**
 	 * EventEmitter para eventos internos
@@ -75,7 +81,9 @@ export default abstract class Common {
 	protected _events = new Events()
 
 	/**
-	 * Wrapper de comunicação com o socket do servidor principal
+	 * Wrapper de comunicação com o socket do servidor principal. Essa função
+	 * resolve ou rejeita uma promessa AO RECEBER UMA RESPOSTA do main server,
+	 * até lá ela ficará pendente
 	 * 
 	 * @param event O evento que será enviado ao socket
 	 * @param args Os argumentos desse evento

@@ -5,25 +5,47 @@ import Common, { Transaction as Tx } from '../index'
 import { ObjectId } from 'bson'
 
 export function sendToMainServer(this: Common) {
-	/** Reenvia todas as transações pendentes sem opid ao se conectar com o main */
+	/**
+	 * Envia todas as transações pendentes que ainda não foram enviadas ao main
+	 * ao se conectar
+	 */
 	this._events.on('connected', () => {
 		const transactions = PendingTx.find({
 			'transaction.opid': { $exists: false }
 		}).lean().cursor()
 
 		transactions.on('data', async (document: PTx) => {
-			await _sendToMainServer(document.transaction)
+			const opid = await _sendToMainServer(document.transaction)
+			if (!opid) return
 
-			/** Deleta Tx da collection de transações pendentes */
 			if (document.transaction.status === 'confirmed') {
+				/** Deleta a Tx confirmada da collection de Tx pendentes */
 				await PendingTx.deleteOne({ txid: document.transaction.txid })
+			} else {
+				/** Atualiza o opid da transação pendente */
+				await PendingTx.updateOne({
+					txid: document.transaction.txid
+				}, {
+					$set: {
+						'transaction.opid': new ObjectId(opid)
+					}
+				})
 			}
 		})
 	})
 
-	const _sendToMainServer = async (transaction: Tx): Promise<void> => {
+	/**
+	 * Envia uma transação ao servidor principal e atualiza o opid dela no
+	 * database
+	 * 
+	 * @param transaction A transação que será enviada ao servidor
+	 * 
+	 * @returns opid se o envio foi bem-sucedido
+	 * @returns void se a transação não foi enviada
+	 */
+	const _sendToMainServer = async (transaction: Tx): Promise<Tx['opid']|void> => {
 		try {
-			const opid: Tx['opid'] = await this.module('new_transaction', transaction)
+			const opid: string = await this.module('new_transaction', transaction)
 			
 			/** Adiciona o opid à transação no db local */
 			await Transaction.findOneAndUpdate({
@@ -32,14 +54,7 @@ export function sendToMainServer(this: Common) {
 				opid: new ObjectId(opid)
 			})
 
-			if (transaction.status != 'confirmed') {
-				await new PendingTx({
-					txid: transaction.txid,
-					transaction: transaction,
-				}).save().catch(err => {
-					if (err.code != 11000) throw err
-				})
-			}
+			return opid
 		} catch (err) {
 			if (err === 'SocketDisconnected') {
 				/**
@@ -61,6 +76,7 @@ export function sendToMainServer(this: Common) {
 				}, {
 					opid: new ObjectId(err.transaction.opid)
 				})
+				return err.transaction.opid
 			} else {
 				throw err
 			}

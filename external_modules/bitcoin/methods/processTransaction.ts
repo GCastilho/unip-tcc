@@ -1,6 +1,6 @@
 import Account from '../../common/db/models/account'
 import Transaction from '../../common/db/models/transaction'
-import UnconfirmedTx from '../db/models/unconfirmedTx'
+import PendingTx from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
 import { Transaction as Tx } from '../../common'
 import { ObjectId } from 'bson'
@@ -13,7 +13,7 @@ import { ObjectId } from 'bson'
  * @param getInfo Uma função que recebe um txid e retorna informações brutas da
  * transação da blockchain
  */
-export async function formatTransaction(txid: string, getInfo: Function): Promise<Tx | void> {
+export async function formatTransaction(txid: string, getInfo: Function): Promise<Tx|void> {
 	/**
 	 * Informações da transação pegas da blockchain
 	 */
@@ -51,29 +51,6 @@ export async function formatTransaction(txid: string, getInfo: Function): Promis
 }
 
 /**
- * Insere um opid na transação com o txid informado na collection Transactions
- * e UnconfirmedTxs
- * 
- * @param txid txid da transação daquele opid
- * @param opid string do opid retornado do main_server
- */
-export async function insertOpid(txid: Tx['txid'], opid: Tx['opid']) {
-	if (!opid) return
-
-	await UnconfirmedTx.findOneAndUpdate({ txid }, {
-		opid: new ObjectId(opid)
-	}).catch(err => {
-		console.error('Erro ao adicionar opid em uma unconfirmedTx', err)
-	})
-
-	await Transaction.findOneAndUpdate({ txid }, {
-		opid: new ObjectId(opid)
-	}).catch(err => {
-		console.error('Erro ao adicionar opid em uma transaction', err)
-	})
-}
-
-/**
  * @todo Uma maneira de pegar transacções de quado o servidor estava off
  * @todo Adicionar um handler de tx cancelada (o txid muda se aumentar o fee)
  */
@@ -83,41 +60,41 @@ export async function processTransaction(this: Bitcoin, txid: Tx['txid']) {
 	try {
 		const transaction = await formatTransaction(txid, this.rpc.transactionInfo)
 		if (!transaction) return
-		console.log('received transaction', transaction)
+		console.log('received transaction', transaction) //remove
 
 		/** Salva a nova transação no database */
-		try {
-			await new Transaction({
-				txid,
-				account: transaction.account
-			}).save()
-			await new UnconfirmedTx({
-				txid,
-				confirmations: transaction.confirmations
-			}).save()
-		} catch (err) {
-			/** Para a execução se a transação já existe */
-			if (err.core === 11000) return
-			console.error('Erro ao adicionar tx na Transactions/UnconfirmedTx')
-			throw err
-		}
+		await new Transaction({
+			txid,
+			account: transaction.account
+		}).save()
 
-		try {
-			const opid: Tx['opid'] = await this.module('new_transaction', transaction)
-			await insertOpid(transaction.txid, opid)
-		} catch (err) {
-			if (err === 'SocketDisconnected') return
-			if (err.code === 'TransactionExists') {
-				await insertOpid(txid, err.transaction.opid)
-			} else if (err.code === 'UserNotFound') {
-				// A account não existe no servidor principal
-				await UnconfirmedTx.deleteMany({ account: transaction.account })
-				await Transaction.deleteMany({ account: transaction.account })
-			} else {
-				throw err
+		/** Salva a nova transação na collection de Tx pendente */
+		await new PendingTx({
+			txid,
+			transaction
+		}).save()
+
+		/**
+		 * opid vai ser undefined caso a transação não tenha sido enviada ao
+		 * main, nesse caso não há mais nada o que fazer aqui
+		 */
+		const opid = await this.sendToMainServer(transaction)
+		if (!opid) return
+
+		await PendingTx.updateOne({
+			txid
+		}, {
+			$set: {
+				'transaction.opid': new ObjectId(opid)
 			}
-		}
+		})
 	} catch (err) {
-		console.error('Transaction processing error', err)
+		/**
+		 * O evento de transação recebida acontece quando a transação é
+		 * recebida e quando ela recebe a primeira confimação, o que causa um
+		 * erro 11000
+		 */
+		if (err.code != 11000)
+			console.error('Transaction processing error:', err)
 	}
 }
