@@ -24,12 +24,12 @@ export function nanoRpc(this: Nano) {
 			})
 		})
 	
-	const convertToNano = (amount: string): Promise<string> =>
+	const convertToNano = (amount: string): Promise<number> =>
 		rpcCommand({
 			action: 'rai_from_raw',
 			amount: amount
 		}).then(res =>
-			res.amount
+			parseFloat(res.amount)
 		)
 	
 	const convertToRaw = (amount: string): Promise<string> =>

@@ -122,8 +122,7 @@ const TransactionSchema: Schema = new Schema({
 	},
 	txid: {
 		type: String,
-		unique: true,
-		sparse: true
+		unique: true
 	},
 	type: {
 		type: String,

@@ -2,67 +2,13 @@ import Transaction from '../../common/db/models/transaction'
 import Account from '../../common/db/models/account'
 import { Nano } from '../index'
 import { Transaction as Tx } from '../../common'
-import { ObjectId } from 'bson'
 
 export function processTransaction(this: Nano) {
-	/**
-	 * Retorna cronologicamente todas as transaçoes de receive que ocorreram
-	 * entre block e lastKnownBlock
-	 * 
-	 * @param lastKnownBlock Último block salvo no database
-	 * @param block Último bloco recebido
-	 * @param wsBlock Bloco recebido pelo webSocket
-	 */
-	const getReceiveHistory = async (lastKnownBlock, block, wsBlock): Promise<Tx[]> => {
-		const receiveArray: Tx[] = [{
-			txid: wsBlock.message.hash,
-			status: 'confirmed',
-			account: wsBlock.message.account,
-			amount: parseFloat(await this.rpc.convertToNano(wsBlock.message.amount)),
-			timestamp: parseInt(wsBlock.time),
-		}]
-	
-		/** Segue a blockchain da nano até encontrar o firstBlock */
-		while (block != lastKnownBlock) {
-			const blockInfo: any = await this.rpc.blockInfo(block)
-			if (blockInfo.subtype === 'receive' && blockInfo.confirmed === 'true' ) {
-				receiveArray.push({
-					txid: block,
-					account: blockInfo.block_account,
-					status: 'confirmed',
-					amount: parseFloat(await this.rpc.convertToNano(blockInfo.amount)),
-					timestamp: parseInt(blockInfo.local_timestamp)
-				})
-			}
-			block = blockInfo.contents.previous
-		}
-		return receiveArray.reverse()
-	}
-	
-	const checkTransactionsIntegrity = async (wsBlock): Promise<Tx[] | undefined> => {
-		const account = wsBlock.message.account
-		/**
-		 * verifica banco de dados pela account para verificar se a mesma pertence a um usuario
-		 */
-		const savedAccount = await Account.findOne({ account })
-		if (!savedAccount) return
-		
-		const accountInfo = await this.rpc.accountInfo(account)
-		const lastKnownBlock = savedAccount.lastBlock ? savedAccount.lastBlock : accountInfo.open_block
-	
-		/**
-		 * frontier é o utimo bloco recebido na account
-		 * ele em raros caso pode nao ter sido confirmado, no entanto isso é
-		 * verificado em getReceiveHistory
-		 */
-		return await getReceiveHistory(lastKnownBlock, accountInfo.frontier, wsBlock)
-	}
-	
 	const redirectToStd = async (transaction: Tx): Promise<void> => {
-		/** Ignora transações recebidas na stdAccount */
+		/** Não redireciona para a stdAccount transações recebidas na stdAccount */
 		if (transaction.account === this.stdAccount) return
 
-		this.rpc.command({
+		await this.rpc.command({
 			action: 'send',
 			wallet: this.wallet,
 			source: transaction.account,
@@ -72,64 +18,80 @@ export function processTransaction(this: Nano) {
 			console.error('Error redirecting to nano stdAccount', err)
 		})
 	}
-	
-	/**
-	 * @todo Handler se não conseguir enviar a transation ao main
-	 */
-	const sendToMainServer = async (transaction: Tx): Promise<void> => {
-		try {
-			const opid: Tx['opid'] = await this.module('new_transaction', transaction)
-			
-			/** Adiciona o opid à transaction no db local */
-			await Transaction.findOneAndUpdate({ txid: transaction.txid }, {
-				opid: new ObjectId(opid)
-			})
-		} catch (err) {
-			if (err.code === 'UserNotFound') {
-				await Account.deleteOne({ account: transaction.account })
-				await Transaction.deleteMany({ account: transaction.account })
-			} else if (err.code === 'TransactionExists' && err.transaction.opid) {
-				await Transaction.updateOne({
-					txid: transaction.txid
-				}, {
-					opid: new ObjectId(err.transaction.opid)
-				})
-			} else if (err.code === 'SocketDisconnected') {
-				/**
-				 * @todo A transação deve ficar numa collection 'pendente' que
-				 * tem uma prop Tx e ser reenviada ao main on connection
-				 */
-			} else {
-				console.error('Erro ao adicionar opid à Transaction', err)
-			}
-		}
 
-		await redirectToStd(transaction)
+	/**
+	 * Procura por transações não computadas até a última transação salva no db
+	 * e as retorna em um array de Tx
+	 * 
+	 * @param account A account para checar o histórico de transações
+	 */
+	const findMissingTx = async (account: string): Promise<Tx[] | undefined> => {
+		/** Verifica se a account pertence a um usuário */
+		const savedAccount = await Account.findOne({ account })
+		if (!savedAccount) return
+		
+		const accountInfo = await this.rpc.accountInfo(account)
+		const lastKnownBlock = savedAccount.lastBlock ? savedAccount.lastBlock : accountInfo.open_block
+
+		const receiveArray: Tx[] = []
+		let blockHash = accountInfo.frontier
+	
+		/** Segue a blockchain da nano até encontrar o lastKnownBlock */
+		while (blockHash != lastKnownBlock) {
+			const blockInfo = await this.rpc.blockInfo(blockHash)
+			// pega apenas blocos de received q foram confirmados
+			if (blockInfo.subtype === 'receive' && blockInfo.confirmed === 'true' ) {
+				receiveArray.push({
+					txid: blockHash,
+					account: blockInfo.block_account,
+					status: 'confirmed',
+					amount: await this.rpc.convertToNano(blockInfo.amount),
+					timestamp: parseInt(blockInfo.local_timestamp)
+				})
+			}
+			blockHash = blockInfo.contents.previous
+		}
+		return receiveArray.reverse()
 	}
 
 	/**
 	 * Processa blocos de receive da nano
 	 * 
 	 * @param block O bloco que acabou de ser recebido
+	 * 
+	 * @todo Common não receber string, mas any
 	 */
 	const _processTransaction = async (block: any): Promise<void> => {
-		/** Verifica se o historico de transações é integro */
 		try {
-			const transactionArray = await checkTransactionsIntegrity(block)
-			console.log({transactionArray}) // remove
-			if (!transactionArray) return
-			transactionArray.forEach(transaction => {
+			/** Procura por transações que não foram computadas */
+			const txArray = await findMissingTx(block.message.account)
+			if (!txArray) return
+
+			console.log({ txArray }) // remove
+
+			/** Adiciona a transação recebida ao array */
+			txArray.push({
+				txid: block.message.hash,
+				account: block.message.account,
+				status: 'confirmed',
+				amount: await this.rpc.convertToNano(block.message.amount),
+				timestamp: parseInt(block.time),
+			})
+
+			txArray.forEach(transaction => {
 				new Transaction({
 					txid: transaction.txid,
 					account: transaction.account
 				}).save().then(() => {
-					return sendToMainServer(transaction)
+					return this.sendToMainServer(transaction)
+				}).then(() => {
+					return redirectToStd(transaction)
 				}).catch(err => {
 					if (err.code != 11000) console.error(err)
 				})
 			})
-			const lastTx = transactionArray[transactionArray.length - 1]
-			
+
+			const lastTx = txArray[txArray.length - 1]
 			await Account.updateOne({
 				account: lastTx.account
 			}, {

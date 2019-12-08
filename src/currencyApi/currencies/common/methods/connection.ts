@@ -192,7 +192,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 		 */
 		if (status === 'confirmed' && confirmations != null) return callback({
 			code: 'BadRequest',
-			message: 'A confirmation update must have \'confirmations\' field set as undefined'
+			message: 'A confirmation update must have \'confirmations\' field set as null'
 		})
 
 		try {
