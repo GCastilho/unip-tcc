@@ -43,11 +43,13 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 
 		stream.on('end', () => {
 			console.log(`All accounts received and imported successfuly!`)
+			this._events.emit('connected')
 		})
 	})
 
 	socket.on('disconnect', () => {
 		console.log(`Disconnected from the main server`)
+		this._events.emit('disconnected')
 	})
 
 	socket.on('create_new_account', (callback: Function) => {

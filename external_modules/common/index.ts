@@ -39,6 +39,7 @@ export default abstract class Common {
 
 	constructor() {
 		this.connectionHandler = methods.connection
+		this.sendToMainServer = methods.sendToMainServer.bind(this)()
 	}
 
 	async init() {
@@ -62,6 +63,11 @@ export default abstract class Common {
 		const socket = io(`http://${this.mainServerIp}:${this.mainServerPort}/${this.name}`)
 		this.connectionHandler(socket)
 	}
+
+	/**
+	 * Envia uma transação ao servidor principal e atualiza o database
+	 */
+	protected sendToMainServer: (transaction: Transaction) => Promise<void>
 
 	/**
 	 * EventEmitter para eventos internos

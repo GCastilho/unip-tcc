@@ -5,7 +5,7 @@ import { ObjectId } from 'bson'
 export interface Transaction extends Document {
 	opid: Tx['opid'],
 	account: Tx['account'],
-	txid: string
+	txid: Tx['txid']
 }
 
 const TransactionSchema = new Schema({
