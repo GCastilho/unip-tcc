@@ -1,10 +1,9 @@
 import { Schema } from 'mongoose'
+import { ObjectId } from 'bson'
 
 export interface WithdrawInterface {
 	status: string,
-	address: string,
-	amount: number,
-	balance_before: number
+	opid: ObjectId
 }
 
 export const WithdrawSchema = new Schema({
@@ -12,16 +11,8 @@ export const WithdrawSchema = new Schema({
 		type: String,
 		required: true
 	},
-	address: {
-		type: String,
-		required: true
-	},
-	amount: {
-		type: Number,
-		required: true
-	},
-	balance_before: {
-		type: Number,
+	opid: {
+		type: ObjectId,
 		required: true
 	}
 })
