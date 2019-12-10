@@ -14,7 +14,9 @@ interface MST {
 	/** Account que recebeu a transação */
 	account: string,
 	/** Amount da transação */
-	amount: number
+	amount: number,
+	/** Tipo dessa transação */
+	type: 'receive' | 'send',
 	/**
 	 * Timestamp da transação, o servidor principal usa Date, os módulos
 	 * externos transmitem o timestamp como um number
@@ -91,8 +93,6 @@ interface TransactionDoc extends Transaction, Document {
 	_id: ObjectId,
 	/** Referência ao usuário dono dessa transação */
 	user: Person['_id'],
-	/** Tipo dessa transação */
-	type: 'receive' | 'send',
 	/**
 	 * Status da transação
 	 * 

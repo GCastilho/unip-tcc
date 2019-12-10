@@ -29,7 +29,7 @@ export async function withdraw(this: CurrencyApi,
 	}, {
 		$push: {
 			[`commands.withdraw.${currency}`]: {
-				status: 'analysing',
+				status: 'preparing',
 				opid
 			}
 		}

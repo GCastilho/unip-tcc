@@ -6,8 +6,9 @@ import { Transaction as Tx } from '../../common'
 import { ObjectId } from 'bson'
 
 /**
- * Recebe um txid e uma função para pegar informações brutas dessa transação de
- * blockchain, retorna uma transação formatada usando a interface Tx ou void
+ * Recebe um txid e uma função para pegar informações brutas dessa transação
+ * recebida da blockchain, retorna uma transação formatada usando
+ * a interface Tx ou void
  * 
  * @param txid A txid da transação
  * @param getInfo Uma função que recebe um txid e retorna informações brutas da
@@ -39,12 +40,13 @@ export async function formatTransaction(txid: string, getInfo: Function): Promis
 	if (!account) return
 
 	const formattedTransaction: Tx = {
-		txid: txInfo.txid,
-		status: 'pending',
+		txid:          txInfo.txid,
+		type:          'receive',
+		status:        'pending',
 		confirmations: txInfo.confirmations,
-		account: address,
-		amount: received.amount,
-		timestamp: txInfo.time*1000 // O timestamp do bitcoin é em segundos
+		account:       address,
+		amount:        received.amount,
+		timestamp:     txInfo.time*1000 // O timestamp do bitcoin é em segundos
 	}
 
 	return formattedTransaction

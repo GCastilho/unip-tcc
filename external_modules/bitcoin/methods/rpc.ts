@@ -28,9 +28,9 @@ export function rpc() {
 	const send = async (account: Tx['account'], amount: Tx['amount']): Promise<Tx> => {
 		const txid: Tx['txid'] = await wallet.sendToAddress(account, amount)
 		const tInfo = await transactionInfo(txid)
-		/** @todo Adicionar type: 'send' em transações enviadas */
 		const transaction: Tx = {
 			txid,
+			type: 'send',
 			status: 'pending',
 			confirmations: 0,
 			amount,

@@ -143,11 +143,12 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					// A transação já existe, retornar ela ao módulo externo
 					const transaction: EMT = {
 						opid:          tx._id.toHexString(),
-						status:        tx.status,
-						confirmations: tx.confirmations,
 						txid:          tx.txid,
 						account:       tx.account,
 						amount:        tx.amount,
+						type:          tx.type,
+						status:        tx.status,
+						confirmations: tx.confirmations,
 						timestamp:     tx.timestamp.getTime()
 					}
 					console.log('Rejecting existing transaction:', transaction)
