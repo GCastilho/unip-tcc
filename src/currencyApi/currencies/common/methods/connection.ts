@@ -5,7 +5,7 @@ import Common from '../index'
 import Person from '../../../../db/models/person'
 import userApi from '../../../../userApi'
 import User from '../../../../userApi/user'
-import { default as Tx, TxReceived, TxUpdt } from '../../../../db/models/transaction'
+import { default as Tx, TxReceived, UpdtReceived } from '../../../../db/models/transaction'
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*
@@ -169,13 +169,13 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Processa requests de atualização de transações PENDENTES existentes
 	 * Os únicos campos que serão atualizados são o status e o confirmations
 	 */
-	socket.on('transaction_update', async (txUpdate: TxUpdt, callback: Function) => {
+	socket.on('update_received_tx', async (txUpdate: UpdtReceived, callback: Function) => {
 		if (!txUpdate.opid) return callback({
 			code: 'BadRequest',
 			details: '\'opid\' needs to be informed to update a transaction'
 		})
 
-		console.log('received transaction_update', txUpdate)
+		console.log('received update_received_tx', txUpdate)
 
 		const { opid, status, confirmations } = txUpdate
 
@@ -209,7 +209,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			}
 
 			callback(null, `${txUpdate.opid} updated`)
-			this.events.emit('transaction_update', res.user, txUpdate)
+			this.events.emit('update_received_tx', res.user, txUpdate)
 		} catch(err) {
 			if (err === 'UserNotFound') {
 				callback({ code: 'UserNotFound' })
@@ -219,7 +219,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					message: 'userApi could not find the requested operation'
 				})
 			} else {
-				console.error('Error processing transaction_update', err)
+				console.error('Error processing update_received_tx', err)
 				callback({ code: 'InternalServerError' })
 			}
 		}

@@ -1,7 +1,7 @@
 import PendingTx, { PTx } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
 import { TxSend } from '../../common'
-import { TxUpdt } from '../../../src/db/models/transaction'
+import { UpdtReceived } from '../../../src/db/models/transaction'
 
 export function processBlock(this: Bitcoin) {
 	/**
@@ -40,14 +40,14 @@ export function processBlock(this: Bitcoin) {
 			tx.received.status = status
 			await tx.save()
 
-			const txUpdate: TxUpdt = {
+			const txUpdate: UpdtReceived = {
 				opid: tx.received.opid,
 				status,
 				confirmations: status === 'confirmed' ? null : txInfo.confirmations
 			}
 
 			try {
-				await this.module('transaction_update', txUpdate)
+				await this.module('update_received_tx', txUpdate)
 			} catch (err) {
 				if (err === 'SocketDisconnected') return
 				/**

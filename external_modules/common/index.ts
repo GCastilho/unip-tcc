@@ -2,8 +2,8 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import { TxReceived, TxSend } from '../../src/db/models/transaction'
-export { TxReceived, TxSend } from '../../src/db/models/transaction'
+import { TxReceived, UpdtSended } from '../../src/db/models/transaction'
+export { TxReceived, TxSend, UpdtSended } from '../../src/db/models/transaction'
 import { PTx } from './db/models/pendingTx'
 
 /**
@@ -24,7 +24,7 @@ export default abstract class Common {
 	/**
 	 * Executa o request de saque de uma currency em sua blockchain
 	 */
-	abstract withdraw(pTx: PTx): Promise<TxSend>
+	abstract withdraw(pTx: PTx): Promise<UpdtSended>
 
 	/**
 	 * Inicia o listener de requests da blockchain

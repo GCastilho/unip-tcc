@@ -58,13 +58,25 @@ export interface TxSend extends ExternalModuleTransaction {
 }
 
 /**
- * Interface para atualização de transações recebidas
- * utilizando o evento update_transaction
+ * Interface para atualização de transações recebidas utilizando
+ * o evento update_received_tx
  */
-export interface TxUpdt {
-	opid: ExternalModuleTransaction['opid']
+export interface UpdtReceived {
+	opid: string
 	status: ExternalModuleTransaction['status']
 	confirmations: Transaction['confirmations']
+}
+
+/**
+ * Interface para atualização de transações enviadas utilizando
+ * o evento update_sended_tx
+ */
+export interface UpdtSended {
+	opid: TxSend['opid']
+	txid: string,
+	status: ExternalModuleTransaction['status']
+	confirmations?: Transaction['confirmations']
+	timestamp: ExternalModuleTransaction['timestamp']
 }
 
 /**

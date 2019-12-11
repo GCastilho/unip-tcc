@@ -1,6 +1,6 @@
 import rpc from 'node-json-rpc'
 import Account from '../../common/db/models/account'
-import { TxSend } from '../../common'
+import { UpdtSended } from '../../common'
 import { Nano } from '../index'
 import { PTx } from '../../common/db/models/pendingTx'
 
@@ -66,9 +66,15 @@ export function nanoRpc(this: Nano) {
 			account: account
 		})
 
-	const send = async (pTx: PTx): Promise<TxSend> => {
+	/**
+	 * Executa uma transação na rede da nano
+	 * @param PTx O documento da transação pendente da collection pendingTx
+	 * @returns Um objeto UpdtSended para ser enviado ao servidor
+	 */
+	const send = async (pTx: PTx): Promise<UpdtSended> => {
 		const { send: { opid, account } } = pTx
 		const nanoAmount = await convertToRaw(pTx.send.amount.toString())
+
 		const res = await rpcCommand({
 			action: 'send',
 			wallet: this.wallet,
@@ -76,14 +82,12 @@ export function nanoRpc(this: Nano) {
 			destination: account,
 			amount: nanoAmount
 		})
-		const transaction: TxSend = {
+
+		const transaction: UpdtSended = {
 			opid,
 			txid: res.block,
-			type: 'send',
 			status: 'confirmed',
 			timestamp: Date.now(), /**@todo Utilizar o timestamp do bloco */
-			account,
-			amount: parseFloat(nanoAmount)
 		}
 
 		return transaction

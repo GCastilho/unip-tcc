@@ -1,6 +1,6 @@
 const Client = require('bitcoin-core')
 import Account from '../../common/db/models/account'
-import { TxSend } from '../../common'
+import { UpdtSended } from '../../common'
 import { PTx } from '../../common/db/models/pendingTx'
 
 const wallet = new Client({
@@ -25,26 +25,34 @@ export function rpc() {
 
 	const blockInfo = async block => wallet.getBlock(block)
 	
-	const send = async (PTx: PTx): Promise<TxSend> => {
+	/**
+	 * Executa uma transação na rede da bitcoin
+	 * @param PTx O documento da transação pendente da collection pendingTx
+	 * @returns Um objeto UpdtSended para ser enviado ao servidor
+	 */
+	const send = async (PTx: PTx): Promise<UpdtSended> => {
 		const { send: { opid, account, amount } } = PTx
 		const txid: string = await wallet.sendToAddress(account, amount)
 		const tInfo = await transactionInfo(txid)
-
-		PTx.send.txid = txid
-		await PTx.save()
-
-		const transaction: TxSend = {
+		
+		const transaction: UpdtSended = {
 			opid,
 			txid,
-			type: 'send',
 			status: 'pending',
 			confirmations: 0,
-			amount,
-			account,
 			timestamp: tInfo.time*1000 // O timestamp do bitcoin é em segundos
 		}
-
 		console.log('sended new transaction', transaction)
+
+		/**
+		 * Adiciona o txid no documento
+		 * 
+		 * @todo fazer isso no withdraw loop (no side-effects)
+		 * @todo journaling
+		 */
+		PTx.send.txid = txid
+		await PTx.save()
+		
 		return transaction
 	}
 	
