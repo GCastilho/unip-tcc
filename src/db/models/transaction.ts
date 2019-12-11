@@ -2,19 +2,14 @@ import mongoose, { Schema, Document } from 'mongoose'
 import { ObjectId } from 'bson'
 import { Person } from './person/interface'
 
-/**
- * Master Server Transaction Interface
- * 
- * Interface de transações base utilizada pelo servidor principal e pelos
- * módulos externos
- */
-interface MST {
+/** Interface base de uma transaction */
+interface Transaction {
 	/** Identificador único dessa transação */
-	txid: string,
-	/** Account que recebeu a transação */
-	account: string,
+	txid?: string
+	/** Account de destino da transação */
+	account: string
 	/** Amount da transação */
-	amount: number,
+	amount: number
 	/** Tipo dessa transação */
 	type: 'receive' | 'send',
 	/**
@@ -22,20 +17,23 @@ interface MST {
 	 * externos transmitem o timestamp como um number
 	 */
 	timestamp: number | Date
+	/**
+	 * A quantidade de confirmações que uma transação tem. Transações
+	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
+	 */
+	confirmations?: number
 }
 
 /**
- * External Module Transaction Interface
- * 
- * Interface Transaction para COMUNICAÇÃO entre os módulos externos e o
- * servidor principal
+ * Interface base para interfaces de comunicação entre o módulo externo
+ * e o main server
  */
-export interface EMT extends MST {
+interface ExternalModuleTransaction extends Transaction {
 	/**
 	 * Identificador da operação na collection de transactions do
 	 * servidor principal, enviado na forma de string ao passar pelo socket
 	 */
-	opid?: string,
+	opid?: string
 	/**
 	 * Status da transação
 	 * 
@@ -44,52 +42,42 @@ export interface EMT extends MST {
 	 * confirmed: A transação foi confirmada pela rede e é considerada
 	 * irreversível
 	 */
-	status: 'pending' | 'confirmed',
-	/**
-	 * A quantidade de confirmações que uma transação tem. Transações
-	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
-	 */
-	confirmations?: TransactionDoc['confirmations'],
-	/** Timestamp em transmissões para e com os módulos externos é em number */
+	status: 'pending' | 'confirmed'
+	/** Timestamp deve ser transmitida em number e em milisegundos */
 	timestamp: number
+}
+
+/** Interface para transações recebidas */
+export interface TxReceived extends ExternalModuleTransaction {
+	txid: string
+}
+
+/** Interface para ordem de envio de transações */
+export interface TxSend extends ExternalModuleTransaction {
+	opid: string
+}
+
+/**
+ * Interface para atualização de transações recebidas
+ * utilizando o evento update_transaction
+ */
+export interface TxUpdt {
+	opid: ExternalModuleTransaction['opid']
+	status: ExternalModuleTransaction['status']
+	confirmations: Transaction['confirmations']
 }
 
 /**
  * Interface Transaction do que o servidor principal usa para se comunicar
  * entre seus módulos internos
  */
-export interface Transaction extends MST {
-	/** Timestamp da transação */
+export interface TransactionInternal extends Transaction {
 	timestamp: Date
 }
 
-/**
- * Interface para o evento de update_transaction
- */
-export interface TxUpdt {
-	/**
-	 * Identificador da operação na collection de transactions do
-	 * servidor principal
-	 */
-	opid: string,
-	/**
-	 * Status da transação
-	 * 
-	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
-	 * 
-	 * confirmed: A transação foi confirmada pela rede e é considerada
-	 * irreversível
-	 */
-	status: EMT['status'],
-	/**
-	 * A quantidade de confirmações que uma transação tem. Transações
-	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
-	 */
-	confirmations?: EMT['confirmations']
-}
-
 /** A interface dessa collection */
-interface TransactionDoc extends Transaction, Document {
+interface TransactionDoc extends TransactionInternal, Document {
+	txid: string
 	_id: ObjectId,
 	/** Referência ao usuário dono dessa transação */
 	user: Person['_id'],
@@ -105,12 +93,7 @@ interface TransactionDoc extends Transaction, Document {
 	 * processing: A transação ainda não foi processada no saldo do usuário,
 	 * podendo ser negada quando isso ocorrer (e deletada do db)
 	 */
-	status: EMT['status'] | 'processing',
-	/**
-	 * A quantidade de confirmações que uma transação tem. Transações
-	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
-	 */
-	confirmations?: number
+	status: ExternalModuleTransaction['status'] | 'processing'
 }
 
 /** Schema da collection de transações dos usuários */

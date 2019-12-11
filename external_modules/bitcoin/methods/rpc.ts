@@ -1,7 +1,7 @@
 const Client = require('bitcoin-core')
 import Account from '../../common/db/models/account'
-import { Transaction as Tx } from '../../common'
-import PendingTx from '../../common/db/models/pendingTx'
+import { TxSend } from '../../common'
+import { PTx } from '../../common/db/models/pendingTx'
 
 const wallet = new Client({
 	network: 'testnet',
@@ -12,7 +12,7 @@ const wallet = new Client({
 
 export function rpc() {
 	const createAccount = async () => {
-		const address: Tx['account'] = await wallet.getNewAddress()
+		const address: string = await wallet.getNewAddress()
 		await new Account({
 			account: address
 		}).save()
@@ -20,15 +20,21 @@ export function rpc() {
 		return address
 	}
 
-	const transactionInfo = async (txid: Tx['txid']): Promise<any> =>
+	const transactionInfo = async (txid: string): Promise<any> =>
 		wallet.getTransaction(txid)
 
 	const blockInfo = async block => wallet.getBlock(block)
 	
-	const send = async (account: Tx['account'], amount: Tx['amount']): Promise<Tx> => {
-		const txid: Tx['txid'] = await wallet.sendToAddress(account, amount)
+	const send = async (PTx: PTx): Promise<TxSend> => {
+		const { send: { opid, account, amount } } = PTx
+		const txid: string = await wallet.sendToAddress(account, amount)
 		const tInfo = await transactionInfo(txid)
-		const transaction: Tx = {
+
+		PTx.send.txid = txid
+		await PTx.save()
+
+		const transaction: TxSend = {
+			opid,
 			txid,
 			type: 'send',
 			status: 'pending',
@@ -37,13 +43,6 @@ export function rpc() {
 			account,
 			timestamp: tInfo.time*1000 // O timestamp do bitcoin é em segundos
 		}
-
-		await new PendingTx({
-			txid,
-			transaction
-		}).save().catch(err => {
-			console.error('Error saving sended pendingTx', err)
-		})
 
 		console.log('sended new transaction', transaction)
 		return transaction

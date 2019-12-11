@@ -2,8 +2,9 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import { EMT as Transaction } from '../../src/db/models/transaction'
-export { EMT as Transaction } from '../../src/db/models/transaction'
+import { TxReceived, TxSend } from '../../src/db/models/transaction'
+export { TxReceived, TxSend } from '../../src/db/models/transaction'
+import { PTx } from './db/models/pendingTx'
 
 /**
  * EventEmmiter genérico
@@ -23,7 +24,7 @@ export default abstract class Common {
 	/**
 	 * Executa o request de saque de uma currency em sua blockchain
 	 */
-	abstract withdraw(address: string, ammount: number): Promise<Transaction>
+	abstract withdraw(pTx: PTx): Promise<TxSend>
 
 	/**
 	 * Inicia o listener de requests da blockchain
@@ -35,7 +36,7 @@ export default abstract class Common {
 	 * 
 	 * @param txid O txid da transação recém recebida
 	 */
-	abstract processTransaction(txid: Transaction['txid']): Promise<void>
+	abstract processTransaction(txid: TxReceived['txid']): Promise<void>
 
 	constructor() {
 		this.connectionHandler = methods.connection
@@ -65,6 +66,12 @@ export default abstract class Common {
 	}
 
 	/**
+	 * Vasculha a collection 'pendingTx' em busca de transações não enviadas
+	 * e chama a função de withdraw para cara um delas
+	 */
+	protected withdraw_loop = methods.withdraw_loop
+
+	/**
 	 * Envia uma transação ao servidor principal e atualiza seuo opid no
 	 * database
 	 * 
@@ -73,7 +80,7 @@ export default abstract class Common {
 	 * @returns opid se o envio foi bem-sucedido
 	 * @returns void se a transação não foi enviada
 	 */
-	protected sendToMainServer: (transaction: Transaction) => Promise<string|void>
+	protected sendToMainServer: (transaction: TxReceived) => Promise<string|void>
 
 	/**
 	 * EventEmitter para eventos internos

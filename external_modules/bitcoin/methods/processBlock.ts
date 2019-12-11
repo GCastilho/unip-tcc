@@ -1,6 +1,6 @@
 import PendingTx, { PTx } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
-import { Transaction as Tx } from '../../common'
+import { TxSend } from '../../common'
 import { TxUpdt } from '../../../src/db/models/transaction'
 
 export function processBlock(this: Bitcoin) {
@@ -19,12 +19,12 @@ export function processBlock(this: Bitcoin) {
 			 * Se não tem a opid é pq o main server não foi informado
 			 * dessa transação
 			 */
-			if (!tx.transaction.opid) {
+			if (!tx.received.opid) {
 				// !opid -> não foi possível enviar a tx ao main
-				const opid = await this.sendToMainServer(tx.transaction)
+				const opid = await this.sendToMainServer(tx.received)
 				if (!opid) return
 
-				tx.transaction.opid = opid
+				tx.received.opid = opid
 			}
 
 			/** Atualiza o número de confirmações */
@@ -32,16 +32,16 @@ export function processBlock(this: Bitcoin) {
 				txid: tx.txid
 			}, {
 				$set: {
-					'transaction.confirmations': txInfo.confirmations
+					'received.confirmations': txInfo.confirmations
 				}
 			})
 
-			const status: Tx['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
-			tx.transaction.status = status
+			const status: TxSend['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
+			tx.received.status = status
 			await tx.save()
 
 			const txUpdate: TxUpdt = {
-				opid: tx.transaction.opid,
+				opid: tx.received.opid,
 				status,
 				confirmations: status === 'confirmed' ? null : txInfo.confirmations
 			}
@@ -65,8 +65,8 @@ export function processBlock(this: Bitcoin) {
 			 */
 			if (status === 'confirmed') {
 				console.log('deleting confirmed transaction', {
-					opid: tx.transaction.opid,
-					txid: tx.transaction.txid,
+					opid: tx.received.opid,
+					txid: tx.received.txid,
 					status,
 					confirmations: txInfo.confirmations
 				})

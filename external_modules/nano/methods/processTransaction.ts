@@ -1,10 +1,10 @@
 import Transaction from '../../common/db/models/transaction'
 import Account from '../../common/db/models/account'
 import { Nano } from '../index'
-import { Transaction as Tx } from '../../common'
+import { TxReceived } from '../../common'
 
 export function processTransaction(this: Nano) {
-	const redirectToStd = async (transaction: Tx): Promise<void> => {
+	const redirectToStd = async (transaction: TxReceived): Promise<void> => {
 		/** Não redireciona para a stdAccount transações recebidas na stdAccount */
 		if (transaction.account === this.stdAccount) return
 
@@ -25,7 +25,7 @@ export function processTransaction(this: Nano) {
 	 * 
 	 * @param account A account para checar o histórico de transações
 	 */
-	const findMissingTx = async (account: string): Promise<Tx[] | undefined> => {
+	const findMissingTx = async (account: string): Promise<TxReceived[] | undefined> => {
 		/** Verifica se a account pertence a um usuário */
 		const savedAccount = await Account.findOne({ account })
 		if (!savedAccount) return
@@ -33,7 +33,7 @@ export function processTransaction(this: Nano) {
 		const accountInfo = await this.rpc.accountInfo(account)
 		const lastKnownBlock = savedAccount.lastBlock ? savedAccount.lastBlock : accountInfo.open_block
 
-		const receiveArray: Tx[] = []
+		const receiveArray: TxReceived[] = []
 		let blockHash = accountInfo.frontier
 	
 		/** Segue a blockchain da nano até encontrar o lastKnownBlock */

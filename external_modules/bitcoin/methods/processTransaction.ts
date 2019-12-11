@@ -2,7 +2,7 @@ import Account from '../../common/db/models/account'
 import Transaction from '../../common/db/models/transaction'
 import PendingTx from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
-import { Transaction as Tx } from '../../common'
+import { TxReceived } from '../../common'
 import { ObjectId } from 'bson'
 
 /**
@@ -14,7 +14,7 @@ import { ObjectId } from 'bson'
  * @param getInfo Uma função que recebe um txid e retorna informações brutas da
  * transação da blockchain
  */
-export async function formatTransaction(txid: string, getInfo: Function): Promise<Tx|void> {
+export async function formatTransaction(txid: string, getInfo: Function): Promise<TxReceived|void> {
 	/**
 	 * Informações da transação pegas da blockchain
 	 */
@@ -33,13 +33,13 @@ export async function formatTransaction(txid: string, getInfo: Function): Promis
 	)
 	if(!received) return
 	
-	const address: Tx['account'] = received.address
+	const address: TxReceived['account'] = received.address
 	
 	/** Verifica se a transação é nossa */
 	const account = await Account.findOne({ account: address })
 	if (!account) return
 
-	const formattedTransaction: Tx = {
+	const formattedTransaction: TxReceived = {
 		txid:          txInfo.txid,
 		type:          'receive',
 		status:        'pending',
@@ -56,7 +56,7 @@ export async function formatTransaction(txid: string, getInfo: Function): Promis
  * @todo Uma maneira de pegar transacções de quado o servidor estava off
  * @todo Adicionar um handler de tx cancelada (o txid muda se aumentar o fee)
  */
-export async function processTransaction(this: Bitcoin, txid: Tx['txid']) {
+export async function processTransaction(this: Bitcoin, txid: TxReceived['txid']) {
 	if (typeof txid != 'string') return
 
 	try {
@@ -73,7 +73,7 @@ export async function processTransaction(this: Bitcoin, txid: Tx['txid']) {
 		/** Salva a nova transação na collection de Tx pendente */
 		await new PendingTx({
 			txid,
-			transaction
+			received: transaction
 		}).save()
 
 		/**
@@ -87,7 +87,7 @@ export async function processTransaction(this: Bitcoin, txid: Tx['txid']) {
 			txid
 		}, {
 			$set: {
-				'transaction.opid': new ObjectId(opid)
+				'received.opid': new ObjectId(opid)
 			}
 		})
 	} catch (err) {

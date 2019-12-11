@@ -3,7 +3,7 @@ import { EventEmitter } from 'events'
 import * as currencies from './currencies'
 import * as self from './self'
 import User from '../userApi/user'
-import { Transaction as Tx } from '../db/models/transaction'
+import { TransactionInternal as Tx } from '../db/models/transaction'
 
 /**
  * EventEmmiter genérico

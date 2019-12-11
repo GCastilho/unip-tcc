@@ -5,7 +5,7 @@ import Common from '../index'
 import Person from '../../../../db/models/person'
 import userApi from '../../../../userApi'
 import User from '../../../../userApi/user'
-import { default as Tx, EMT, TxUpdt } from '../../../../db/models/transaction'
+import { default as Tx, TxReceived, TxUpdt } from '../../../../db/models/transaction'
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*
@@ -47,7 +47,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Processa novas transações desta currency, atualizando o balanço do
 	 * usuário e emitindo um evento de 'new_transaction' no EventEmitter público
 	 */
-	socket.on('new_transaction', async (transaction: EMT, callback: Function) => {
+	socket.on('new_transaction', async (transaction: TxReceived, callback: Function) => {
 		console.log('received new transaction', transaction)
 
 		const { txid, account, amount, status, confirmations } = transaction
@@ -141,7 +141,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					socket.emit('new_transaction', transaction, callback)
 				} else {
 					// A transação já existe, retornar ela ao módulo externo
-					const transaction: EMT = {
+					const transaction: TxReceived = {
 						opid:          tx._id.toHexString(),
 						txid:          tx.txid,
 						account:       tx.account,

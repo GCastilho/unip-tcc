@@ -1,7 +1,8 @@
 const ss = require('socket.io-stream')
 import Common from '../index'
 import Account from '../db/models/account'
-import { Transaction } from '../index'
+import { TxSend } from '../index'
+import PendingTx from '../db/models/pendingTx'
 
 /**
  * Essa função é o handler de requests vindos do servidor principal
@@ -60,11 +61,23 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		})
 	})
 
-	socket.on('withdraw', (address: string, amount: number, callback: Function) => {
-		this.withdraw(address, amount).then((trasanction: Transaction) => {
-			callback(null, trasanction)
-		}).catch(err => {
+	socket.on('withdraw', async (request: TxSend, callback: Function) => {
+		/**
+		 * Salva na pending e retorna um callback dando ciência do recebimento
+		 * ou da falha
+		 */
+		try {
+			await new PendingTx({
+				opid: request.opid,
+				send: request
+			}).save()
+			callback(null, `received withdraw request for '${request.opid}'`)
+		} catch (err) {
 			callback(err)
-		})
+			console.error('Error receiving withdraw request:', err)
+		}
+
+		/** Faz o withdraw de todas as transações ainda não enviadas */
+		this.withdraw_loop()
 	})
 }

@@ -1,11 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose'
-import { Transaction as Tx } from '../../../common'
 import { ObjectId } from 'bson'
 
 export interface Transaction extends Document {
-	opid: Tx['opid'],
-	account: Tx['account'],
-	txid: Tx['txid']
+	opid: ObjectId,
+	account: string,
+	txid: string
 }
 
 const TransactionSchema = new Schema({

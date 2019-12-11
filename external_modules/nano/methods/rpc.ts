@@ -1,7 +1,8 @@
 import rpc from 'node-json-rpc'
 import Account from '../../common/db/models/account'
-import { Transaction } from '../../common'
+import { TxSend } from '../../common'
 import { Nano } from '../index'
+import { PTx } from '../../common/db/models/pendingTx'
 
 export function nanoRpc(this: Nano) {
 	const client = new rpc.Client({
@@ -65,27 +66,28 @@ export function nanoRpc(this: Nano) {
 			account: account
 		})
 
-	const send = (destination: string , nanoAmount: number): Promise<Transaction> =>
-		convertToRaw(nanoAmount.toString()).then(amount =>
-			rpcCommand({
-				action: 'send',
-				wallet: this.wallet,
-				source: this.stdAccount,
-				destination: destination,
-				amount: amount
-			})
-		).then(res => {
-			const transaction: Transaction = {
-				txid: res.block,
-				type: 'send',
-				status: 'confirmed',
-				timestamp: Date.now(), /**@todo Utilizar o timestamp do bloco */
-				account: destination,
-				amount: nanoAmount
-			}
-			console.log('sended new transction:', transaction)
-			return transaction
+	const send = async (pTx: PTx): Promise<TxSend> => {
+		const { send: { opid, account } } = pTx
+		const nanoAmount = await convertToRaw(pTx.send.amount.toString())
+		const res = await rpcCommand({
+			action: 'send',
+			wallet: this.wallet,
+			source: this.stdAccount,
+			destination: account,
+			amount: nanoAmount
 		})
+		const transaction: TxSend = {
+			opid,
+			txid: res.block,
+			type: 'send',
+			status: 'confirmed',
+			timestamp: Date.now(), /**@todo Utilizar o timestamp do bloco */
+			account,
+			amount: parseFloat(nanoAmount)
+		}
+
+		return transaction
+	}
 
 	return {
 		command: rpcCommand,

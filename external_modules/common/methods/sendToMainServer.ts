@@ -1,33 +1,33 @@
 import Transaction from '../db/models/transaction'
 import PendingTx, { PTx } from '../db/models/pendingTx'
 import Account from '../db/models/account'
-import Common, { Transaction as Tx } from '../index'
+import Common, { TxReceived } from '../index'
 import { ObjectId } from 'bson'
 
 export function sendToMainServer(this: Common) {
 	/**
-	 * Envia todas as transações pendentes que ainda não foram enviadas ao main
-	 * ao se conectar
+	 * Ao se conectar, informa o main server de todas as transações pendentes
+	 * ainda não informadas
 	 */
 	this._events.on('connected', () => {
 		const transactions = PendingTx.find({
-			'transaction.opid': { $exists: false }
+			'received.opid': { $exists: false }
 		}).lean().cursor()
 
-		transactions.on('data', async (document: PTx) => {
-			const opid = await _sendToMainServer(document.transaction)
+		transactions.on('data', async (transaction: PTx) => {
+			const opid = await _sendToMainServer(transaction.received)
 			if (!opid) return
 
-			if (document.transaction.status === 'confirmed') {
+			if (transaction.received.status === 'confirmed') {
 				/** Deleta a Tx confirmada da collection de Tx pendentes */
-				await PendingTx.deleteOne({ txid: document.transaction.txid })
+				await PendingTx.deleteOne({ txid: transaction.received.txid })
 			} else {
 				/** Atualiza o opid da transação pendente */
 				await PendingTx.updateOne({
-					txid: document.transaction.txid
+					txid: transaction.received.txid
 				}, {
 					$set: {
-						'transaction.opid': new ObjectId(opid)
+						'received.opid': new ObjectId(opid)
 					}
 				})
 			}
@@ -43,7 +43,7 @@ export function sendToMainServer(this: Common) {
 	 * @returns opid se o envio foi bem-sucedido
 	 * @returns void se a transação não foi enviada
 	 */
-	const _sendToMainServer = async (transaction: Tx): Promise<Tx['opid']|void> => {
+	const _sendToMainServer = async (transaction: TxReceived): Promise<string|void> => {
 		try {
 			const opid: string = await this.module('new_transaction', transaction)
 			
@@ -70,6 +70,7 @@ export function sendToMainServer(this: Common) {
 			} else if (err.code === 'UserNotFound') {
 				await Account.deleteOne({ account: transaction.account })
 				await Transaction.deleteMany({ account: transaction.account })
+				await PendingTx.deleteMany({ 'received.account': transaction.account })
 			} else if (err.code === 'TransactionExists' && err.transaction.opid) {
 				await Transaction.updateOne({
 					txid: transaction.txid
