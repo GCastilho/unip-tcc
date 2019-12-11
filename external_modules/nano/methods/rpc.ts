@@ -2,7 +2,7 @@ import rpc from 'node-json-rpc'
 import Account from '../../common/db/models/account'
 import { UpdtSended } from '../../common'
 import { Nano } from '../index'
-import { PTx } from '../../common/db/models/pendingTx'
+import { PSended } from '../../common/db/models/pendingTx'
 
 export function nanoRpc(this: Nano) {
 	const client = new rpc.Client({
@@ -68,12 +68,12 @@ export function nanoRpc(this: Nano) {
 
 	/**
 	 * Executa uma transação na rede da nano
-	 * @param PTx O documento da transação pendente da collection pendingTx
+	 * @param doc O documento da transação pendente da collection pendingTx
 	 * @returns Um objeto UpdtSended para ser enviado ao servidor
 	 */
-	const send = async (pTx: PTx): Promise<UpdtSended> => {
-		const { send: { opid, account } } = pTx
-		const nanoAmount = await convertToRaw(pTx.send.amount.toString())
+	const send = async (doc: PSended): Promise<UpdtSended> => {
+		const { transaction: { opid, account } } = doc
+		const nanoAmount = await convertToRaw(doc.transaction.amount.toString())
 
 		const res = await rpcCommand({
 			action: 'send',

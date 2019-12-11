@@ -1,5 +1,5 @@
 import Transaction from '../db/models/transaction'
-import PendingTx, { PTx } from '../db/models/pendingTx'
+import { ReceivedPending, PReceived } from '../db/models/pendingTx'
 import Account from '../db/models/account'
 import Common, { TxReceived } from '../index'
 import { ObjectId } from 'bson'
@@ -10,24 +10,24 @@ export function sendToMainServer(this: Common) {
 	 * ainda não informadas
 	 */
 	this._events.on('connected', () => {
-		const transactions = PendingTx.find({
-			'received.opid': { $exists: false }
+		const transactions = ReceivedPending.find({
+			'transaction.opid': { $exists: false }
 		}).lean().cursor()
 
-		transactions.on('data', async (transaction: PTx) => {
-			const opid = await _sendToMainServer(transaction.received)
+		transactions.on('data', async (document: PReceived) => {
+			const opid = await _sendToMainServer(document.transaction)
 			if (!opid) return
 
-			if (transaction.received.status === 'confirmed') {
+			if (document.transaction.status === 'confirmed') {
 				/** Deleta a Tx confirmada da collection de Tx pendentes */
-				await PendingTx.deleteOne({ txid: transaction.received.txid })
+				await ReceivedPending.deleteOne({ txid: document.transaction.txid })
 			} else {
 				/** Atualiza o opid da transação pendente */
-				await PendingTx.updateOne({
-					txid: transaction.received.txid
+				await ReceivedPending.updateOne({
+					txid: document.transaction.txid
 				}, {
 					$set: {
-						'received.opid': new ObjectId(opid)
+						'transaction.opid': new ObjectId(opid)
 					}
 				})
 			}
@@ -61,7 +61,7 @@ export function sendToMainServer(this: Common) {
 				 * Salva a Tx no database para ser enviada quando
 				 * reconectar-se ao main
 				 */
-				await new PendingTx({
+				await new ReceivedPending({
 					txid: transaction.txid,
 					transaction: transaction,
 				}).save().catch(err => {
@@ -70,7 +70,7 @@ export function sendToMainServer(this: Common) {
 			} else if (err.code === 'UserNotFound') {
 				await Account.deleteOne({ account: transaction.account })
 				await Transaction.deleteMany({ account: transaction.account })
-				await PendingTx.deleteMany({ 'received.account': transaction.account })
+				await ReceivedPending.deleteMany({ 'transaction.account': transaction.account })
 			} else if (err.code === 'TransactionExists' && err.transaction.opid) {
 				await Transaction.updateOne({
 					txid: transaction.txid

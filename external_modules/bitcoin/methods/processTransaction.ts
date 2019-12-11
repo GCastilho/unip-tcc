@@ -1,6 +1,6 @@
 import Account from '../../common/db/models/account'
 import Transaction from '../../common/db/models/transaction'
-import PendingTx from '../../common/db/models/pendingTx'
+import { ReceivedPending } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
 import { TxReceived } from '../../common'
 import { ObjectId } from 'bson'
@@ -71,9 +71,9 @@ export async function processTransaction(this: Bitcoin, txid: TxReceived['txid']
 		}).save()
 
 		/** Salva a nova transação na collection de Tx pendente */
-		await new PendingTx({
+		await new ReceivedPending({
 			txid,
-			received: transaction
+			transaction
 		}).save()
 
 		/**
@@ -83,11 +83,11 @@ export async function processTransaction(this: Bitcoin, txid: TxReceived['txid']
 		const opid = await this.sendToMainServer(transaction)
 		if (!opid) return
 
-		await PendingTx.updateOne({
+		await ReceivedPending.updateOne({
 			txid
 		}, {
 			$set: {
-				'received.opid': new ObjectId(opid)
+				'transaction.opid': new ObjectId(opid)
 			}
 		})
 	} catch (err) {

@@ -2,7 +2,7 @@ const ss = require('socket.io-stream')
 import Common from '../index'
 import Account from '../db/models/account'
 import { TxSend } from '../index'
-import PendingTx from '../db/models/pendingTx'
+import { SendPending } from '../db/models/pendingTx'
 
 /**
  * Essa função é o handler de requests vindos do servidor principal
@@ -67,9 +67,9 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		 * ou da falha
 		 */
 		try {
-			await new PendingTx({
+			await new SendPending({
 				opid: request.opid,
-				send: request
+				transaction: request
 			}).save()
 			callback(null, `received withdraw request for '${request.opid}'`)
 		} catch (err) {

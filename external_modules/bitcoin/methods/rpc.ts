@@ -1,7 +1,7 @@
 const Client = require('bitcoin-core')
 import Account from '../../common/db/models/account'
 import { UpdtSended } from '../../common'
-import { PTx } from '../../common/db/models/pendingTx'
+import { PSended } from '../../common/db/models/pendingTx'
 
 const wallet = new Client({
 	network: 'testnet',
@@ -27,11 +27,11 @@ export function rpc() {
 	
 	/**
 	 * Executa uma transação na rede da bitcoin
-	 * @param PTx O documento da transação pendente da collection pendingTx
+	 * @param pSend O documento da transação pendente da collection pendingTx
 	 * @returns Um objeto UpdtSended para ser enviado ao servidor
 	 */
-	const send = async (PTx: PTx): Promise<UpdtSended> => {
-		const { send: { opid, account, amount } } = PTx
+	const send = async (pSend: PSended): Promise<UpdtSended> => {
+		const { transaction: { opid, account, amount } } = pSend
 		const txid: string = await wallet.sendToAddress(account, amount)
 		const tInfo = await transactionInfo(txid)
 		
@@ -50,8 +50,8 @@ export function rpc() {
 		 * @todo fazer isso no withdraw loop (no side-effects)
 		 * @todo journaling
 		 */
-		PTx.send.txid = txid
-		await PTx.save()
+		pSend.transaction.txid = txid
+		await pSend.save()
 		
 		return transaction
 	}

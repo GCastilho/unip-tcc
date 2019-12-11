@@ -4,7 +4,7 @@ import * as methods from './methods'
 import * as mongoose from './db/mongoose'
 import { TxReceived, UpdtSended } from '../../src/db/models/transaction'
 export { TxReceived, TxSend, UpdtSended } from '../../src/db/models/transaction'
-import { PTx } from './db/models/pendingTx'
+import { PSended } from './db/models/pendingTx'
 
 /**
  * EventEmmiter genérico
@@ -23,8 +23,11 @@ export default abstract class Common {
 
 	/**
 	 * Executa o request de saque de uma currency em sua blockchain
+	 * @param pSended O documento dessa operação pendente na collection
+	 * @returns UpdtSended object se a transação foi executada imediatamente
+	 * @returns true se a transação foi agendada para ser executada em batch
 	 */
-	abstract withdraw(pTx: PTx): Promise<UpdtSended>
+	abstract withdraw(pSended: PSended): Promise<UpdtSended|true>
 
 	/**
 	 * Inicia o listener de requests da blockchain

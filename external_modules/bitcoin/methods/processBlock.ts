@@ -1,4 +1,4 @@
-import PendingTx, { PTx } from '../../common/db/models/pendingTx'
+import { ReceivedPending, PReceived } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
 import { TxSend } from '../../common'
 import { UpdtReceived } from '../../../src/db/models/transaction'
@@ -11,37 +11,37 @@ export function processBlock(this: Bitcoin) {
 	 * Se uma transação foi confirmada, remove-a da collection da transações
 	 * não confirmadas
 	 */
-	const updateConfirmations = async (tx: PTx): Promise<void> => {
+	const updateConfirmations = async (doc: PReceived): Promise<void> => {
 		try {
-			const txInfo = await this.rpc.transactionInfo(tx.txid)
+			const txInfo = await this.rpc.transactionInfo(doc.txid)
 
 			/**
 			 * Se não tem a opid é pq o main server não foi informado
 			 * dessa transação
 			 */
-			if (!tx.received.opid) {
+			if (!doc.transaction.opid) {
 				// !opid -> não foi possível enviar a tx ao main
-				const opid = await this.sendToMainServer(tx.received)
+				const opid = await this.sendToMainServer(doc.transaction)
 				if (!opid) return
 
-				tx.received.opid = opid
+				doc.transaction.opid = opid
 			}
 
 			/** Atualiza o número de confirmações */
-			await PendingTx.updateOne({
-				txid: tx.txid
+			await ReceivedPending.updateOne({
+				txid: doc.txid
 			}, {
 				$set: {
-					'received.confirmations': txInfo.confirmations
+					'transaction.confirmations': txInfo.confirmations
 				}
 			})
 
 			const status: TxSend['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
-			tx.received.status = status
-			await tx.save()
+			doc.transaction.status = status
+			await doc.save()
 
 			const txUpdate: UpdtReceived = {
-				opid: tx.received.opid,
+				opid: doc.transaction.opid,
 				status,
 				confirmations: status === 'confirmed' ? null : txInfo.confirmations
 			}
@@ -65,12 +65,12 @@ export function processBlock(this: Bitcoin) {
 			 */
 			if (status === 'confirmed') {
 				console.log('deleting confirmed transaction', {
-					opid: tx.received.opid,
-					txid: tx.received.txid,
+					opid: doc.transaction.opid,
+					txid: doc.transaction.txid,
 					status,
 					confirmations: txInfo.confirmations
 				})
-				await PendingTx.deleteOne({ txid: tx.txid })
+				await ReceivedPending.deleteOne({ txid: doc.txid })
 			}
 		} catch (err) {
 			console.error('Error updating confirmations', err)
@@ -86,7 +86,7 @@ export function processBlock(this: Bitcoin) {
 		if (!body.block) return
 		try {
 			/** Todas as transações não confirmadas no database */
-			const transactions: PTx[] = await PendingTx.find()
+			const transactions: PReceived[] = await ReceivedPending.find()
 			if (transactions.length > 0)
 				transactions.forEach(tx => updateConfirmations(tx))
 		} catch(err) {

@@ -2,12 +2,6 @@ import mongoose, { Schema, Document } from 'mongoose'
 import { TxReceived, TxSend } from '../../../common'
 import { ObjectId } from 'bson'
 
-export interface PTx extends Document {
-	txid: string,
-	received: TxReceived
-	send: TxSend
-}
-
 const TxBaseSchema = new Schema({
 	account: {
 		type: String,
@@ -33,28 +27,41 @@ const TxBaseSchema = new Schema({
 	}
 })
 
-const PendingTxSchema: Schema = new Schema({
+export interface PReceived extends Document {
+	txid: string
+	transaction: TxReceived
+}
+
+const PendingReceivedSchema = new Schema({
 	txid: {
 		type: String,
 		unique: true,
-		sparse: true,
-		required: false
+		required: true
 	},
-	received: {
+	transaction: {
 		txid: {
 			type: String,
 			required: true,
 			unique: true
 		},
 		...TxBaseSchema.obj
-	},
+	}
+})
+
+export const ReceivedPending = mongoose.model<PReceived>('ReceivedPendingTx', PendingReceivedSchema)
+
+export interface PSended extends Document {
+	opid: ObjectId
+	transaction: TxSend
+}
+
+const PendingSendSchema = new Schema({
 	opid: {
 		type: ObjectId,
 		unique: true,
-		sparse: true,
-		required: false
+		required: true
 	},
-	send: {
+	transaction: {
 		opid: {
 			type: ObjectId,
 			required: true,
@@ -64,4 +71,4 @@ const PendingTxSchema: Schema = new Schema({
 	}
 })
 
-export default mongoose.model<PTx>('pendingTx', PendingTxSchema, 'pendingTxs')
+export const SendPending = mongoose.model<PSended>('SendPendingTx', PendingSendSchema)
