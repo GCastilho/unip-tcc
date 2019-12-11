@@ -78,6 +78,6 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		}
 
 		/** Faz o withdraw de todas as transações ainda não enviadas */
-		this.withdraw_loop()
+		this.withdraw_pending()
 	})
 }

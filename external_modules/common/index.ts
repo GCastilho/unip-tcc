@@ -23,11 +23,16 @@ export default abstract class Common {
 
 	/**
 	 * Executa o request de saque de uma currency em sua blockchain
+	 * 
 	 * @param pSended O documento dessa operação pendente na collection
+	 * @param callback Caso transações foram agendadas para ser executadas em
+	 * batch, o callback deve ser chamado com elas para informar que elas foram
+	 * executadas
+	 * 
 	 * @returns UpdtSended object se a transação foi executada imediatamente
 	 * @returns true se a transação foi agendada para ser executada em batch
 	 */
-	abstract withdraw(pSended: PSended): Promise<UpdtSended|true>
+	abstract withdraw(pSended: PSended, callback?: (transactions: UpdtSended[]) => void): Promise<UpdtSended|true>
 
 	/**
 	 * Inicia o listener de requests da blockchain
@@ -72,7 +77,7 @@ export default abstract class Common {
 	 * Vasculha a collection 'pendingTx' em busca de transações não enviadas
 	 * e chama a função de withdraw para cara um delas
 	 */
-	protected withdraw_loop = methods.withdraw_loop
+	protected withdraw_pending = methods.withdraw_pending.bind(this)()
 
 	/**
 	 * Envia uma transação ao servidor principal e atualiza seuo opid no

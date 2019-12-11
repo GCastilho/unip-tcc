@@ -10,6 +10,8 @@ export function processBlock(this: Bitcoin) {
 	 * 
 	 * Se uma transação foi confirmada, remove-a da collection da transações
 	 * não confirmadas
+	 * 
+	 * @todo Atualizar confirmação de transações enviadas
 	 */
 	const updateConfirmations = async (doc: PReceived): Promise<void> => {
 		try {

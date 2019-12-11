@@ -44,15 +44,6 @@ export function rpc() {
 		}
 		console.log('sended new transaction', transaction)
 
-		/**
-		 * Adiciona o txid no documento
-		 * 
-		 * @todo fazer isso no withdraw loop (no side-effects)
-		 * @todo journaling
-		 */
-		pSend.transaction.txid = txid
-		await pSend.save()
-		
 		return transaction
 	}
 	

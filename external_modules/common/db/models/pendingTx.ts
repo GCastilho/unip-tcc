@@ -3,6 +3,16 @@ import { TxReceived, TxSend } from '../../../common'
 import { ObjectId } from 'bson'
 
 const TxBaseSchema = new Schema({
+	opid: {
+		type: ObjectId,
+		required: false,
+		unique: true,
+		sparse: true
+	},
+	txid: {
+		type: String,
+		required: false
+	},
 	account: {
 		type: String,
 		required: true
@@ -39,12 +49,12 @@ const PendingReceivedSchema = new Schema({
 		required: true
 	},
 	transaction: {
+		...TxBaseSchema.obj,
 		txid: {
 			type: String,
 			required: true,
 			unique: true
-		},
-		...TxBaseSchema.obj
+		}
 	}
 })
 
@@ -52,6 +62,7 @@ export const ReceivedPending = mongoose.model<PReceived>('ReceivedPendingTx', Pe
 
 export interface PSended extends Document {
 	opid: ObjectId
+	journaling: string
 	transaction: TxSend
 }
 
@@ -61,13 +72,17 @@ const PendingSendSchema = new Schema({
 		unique: true,
 		required: true
 	},
+	journaling: {
+		type: String,
+		default: 'requested'
+	},
 	transaction: {
+		...TxBaseSchema.obj,
 		opid: {
 			type: ObjectId,
 			required: true,
 			unique: true
-		},
-		...TxBaseSchema.obj
+		}
 	}
 })
 
