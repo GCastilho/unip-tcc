@@ -3,7 +3,7 @@ import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
 import { TxReceived, UpdtSended } from '../../src/db/models/transaction'
-export { TxReceived, TxSend, UpdtSended } from '../../src/db/models/transaction'
+export { TxReceived, TxSend, UpdtSended, UpdtReceived } from '../../src/db/models/transaction'
 import { PSended } from './db/models/pendingTx'
 
 /**

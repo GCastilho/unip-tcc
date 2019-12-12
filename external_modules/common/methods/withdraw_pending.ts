@@ -78,7 +78,6 @@ export function withdraw_pending(this: Common) {
 	/**
 	 * @todo Não rodar o loop se o node da currency estiver offline
 	 * @todo Iniciar esse loop ao se conectar com o node
-	 * @todo Interromper o loop se houver um erro (com log)
 	 */
 	const _withdraw_pending = async () => {
 		if (looping) return
