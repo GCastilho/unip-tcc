@@ -1,5 +1,5 @@
-import Checklist = require('../../../../db/models/checklist')
-import Person = require('../../../../db/models/person')
+import Checklist, { Checklist as Ck } from '../../../../db/models/checklist'
+import Transaction, { TxSend, UpdtSended } from '../../../../db/models/transaction'
 import Common from '../index'
 
 /**
@@ -26,77 +26,105 @@ export function withdraw(this: Common) {
 		looping = false
 	})
 
+	this._events.on('update_sended_tx', async (updtSended: UpdtSended, callback: Function) => {
+		const tx = await Transaction.findById(updtSended.opid)
+		if (!tx) return callback({
+			code: 'NotFound',
+			message: '\'opid\' not found'
+		})
+
+		/**
+		 * Uma transação confirmada deve ter o campo de confirmações
+		 * definido como null
+		 */
+		if (status === 'confirmed' && updtSended.confirmations != null) return callback({
+			code: 'BadRequest',
+			message: 'A confirmation update must have \'confirmations\' field set as null'
+		})
+
+		// Atualiza a transação no database
+		tx.txid = updtSended.txid
+		tx.status = updtSended.status
+		tx.timestamp = new Date(updtSended.timestamp)
+		tx.confirmations = updtSended.confirmations ? updtSended.confirmations : undefined
+		await tx.save()
+
+		this.events.emit('update_sended_tx', tx.user, updtSended)
+	})
+
 	/**
-	 * Limpa da checklist.withdraw os requests de currencies com state 'completed'
+	 * Remove os itens do array de withdraw que tem status 'completed'
+	 * Remove (seta como undefined) todos os arrays de withdraw vazios
+	 * Chama a garbage_collector para o withdraw
 	 */
 	const garbage_collector = async () => {
-		/**
-		 * Se um item foi ou não deletado
-		 */
-		let deleted = false
-
-		const checklist = await Checklist.find().cursor()
-		let item: any = undefined
-		while ( item = await checklist.next() ) {
-			if (item.commands.withdraw[this.name].status === 'completed') {
-				item.commands.withdraw[this.name] = undefined
-				await item.save()
-				deleted = true
+		// Remove os itens do array de withdraw que tem status 'completed'
+		const resArray = await Checklist.collection.findAndModify({
+			[`commands.withdraw.${this.name}`]: { $exists: true }
+		}, {
+			$pull: {
+				[`commands.withdraw.${this.name}`]: { status: 'completed' }
 			}
-		}
-		if (deleted)
-			await this.garbage_collector('withdraw')
+		})
+
+		// Nenhum item foi removido de nenhum array
+		if (!resArray.lastErrorObject.updatedExisting) return
+
+		// Procura por arrays de withdraw vazios e os deleta
+		const resWithdraw = await Checklist.collection.findAndModify({
+			[`commands.withdraw.${this.name}`]: { $size: 0 }
+		}, {
+			$unset: {
+				[`commands.withdraw.${this.name}`]: true
+			}
+		})
+
+		// Nenhum array de withdraw foi deletado
+		if (!resWithdraw.lastErrorObject.updatedExisting) return
+
+		await this.garbage_collector('withdraw')
 	}
 
 	/**
-	 * @todo Reprojetar o journaling
-	 * @todo Handler do journaling
-	 * @todo Checar por possível race condition (especialmente no amount)
+	 * Percorre a checklist procurando por requests de withdraw 
+	 * com status 'requested' e os executa
 	 */
 	const withdraw_loop = async () => {
 		const checklist = Checklist.find().cursor()
-		let todo_item: any
-		while ( todo_item = await checklist.next() ) {
-			const { userId, commands: { withdraw } } = todo_item
+		let item: Ck
+		while ( item = await checklist.next() ) {
+			const { commands: { withdraw } } = item
 
-			if (withdraw[this.name].status === 'requested') {
-				const person = await Person.findById(userId)
-				if (!person) throw `Person with userId ${userId} not found`
-				
-				const balance = person.currencies[this.name].balance
-				const amount = withdraw[this.name].amount
-				if (balance - amount < 0) {
-					withdraw[this.name].status = 'completed'
-					await todo_item.save()
-					continue
+			for (const request of withdraw[this.name]) {
+				if (request.status != 'requested') continue
+
+				const tx = await Transaction.findById(request.opid)
+				if (!tx) throw `Withdraw error: Transaction ${request.opid} not found!`
+
+				const transaction: TxSend = {
+					opid:      tx._id.toHexString(),
+					/**
+					 * Uma transação não enviada tem status 'processing', ela
+					 * deveria ser enviada com esse status, não como 'pending'.
+					 * Ou seja, usat tx.status, não um valor hardcoded
+					 */
+					status:    'pending',
+					account:   tx.account,
+					amount:    tx.amount,
+					type:      tx.type,
+					timestamp: tx.timestamp.getTime()
 				}
 
-				// Journaling
-				withdraw[this.name].status = 'processing'
-				withdraw[this.name].balance_before = balance
-				await todo_item.save()
+				try {
+					await this.module('withdraw', transaction)
+					console.log('sended transaction', transaction)
 
-				withdraw[this.name].status = 'order dispatched'
-				/**@todo transaction ser uma interface transaction */
-				const [transaction] = await Promise.all([
-					this.module('withdraw',
-						withdraw[this.name].address,
-						amount
-					),
-					await todo_item.save()
-				])
-				console.log('sended transaction', transaction)
-				transaction.timestamp = new Date(transaction.timestamp)
-
-				withdraw[this.name].status = 'order executed'
-				await todo_item.save()
-
-				person.currencies[this.name].balance -= amount
-				person.currencies[this.name].sended.push(transaction)
-				person.save()
-
-				withdraw[this.name].status = 'completed'
-				await todo_item.save()
+					request.status = 'completed'
+					await item.save()
+				} catch (err) {
+					if (err != 'SocketDisconnected')
+						throw err
+				}
 			}
 			if (!looping) break
 		}
@@ -109,7 +137,7 @@ export function withdraw(this: Common) {
 			await withdraw_loop()
 			await garbage_collector()
 		} catch(err) {
-			console.error(err)
+			console.error('Error on withdraw_loop', err)
 		}
 		looping = false
 	}

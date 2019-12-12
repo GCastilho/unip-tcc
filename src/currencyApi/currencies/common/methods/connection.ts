@@ -172,7 +172,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	socket.on('update_received_tx', async (txUpdate: UpdtReceived, callback: Function) => {
 		if (!txUpdate.opid) return callback({
 			code: 'BadRequest',
-			details: '\'opid\' needs to be informed to update a transaction'
+			message: '\'opid\' needs to be informed to update a transaction'
 		})
 
 		console.log('received update_received_tx', txUpdate)
@@ -226,6 +226,14 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	})
 
 	/**
+	 * Ouve por requests de atualização de transações enviada e os retransmite
+	 * no eventEmitter interno
+	 */
+	socket.on('update_sended_tx', (updtSended, callback) => {
+		this._events.emit('update_sended_tx', updtSended, callback)
+	})
+
+	/**
 	 * Ouve por eventos vindos do método 'module' e os retransmite ao socket
 	 * para serem enviados ao módulo externo
 	 */
@@ -236,7 +244,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 		} else {
 			/** O último argumento é o callback do evento */
 			const callback: Function = args[args.length - 1]
-			callback('Socket disconnected')
+			callback('SocketDisconnected')
 		}
 	})
 }

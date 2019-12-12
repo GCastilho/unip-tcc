@@ -23,7 +23,7 @@ const TxBaseSchema = new Schema({
 	},
 	status: {
 		type: String,
-		enum: [ 'pending', 'confirmed' ],
+		enum: [ 'processing', 'pending', 'confirmed' ],
 		required: true
 	},
 	confirmations: {

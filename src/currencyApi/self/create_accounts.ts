@@ -1,4 +1,4 @@
-import Checklist = require('../../db/models/checklist')
+import Checklist from '../../db/models/checklist'
 import { CurrencyApi } from '../currencyApi'
 import { Person } from '../../db/models/person/interface'
 
@@ -12,9 +12,8 @@ import { Person } from '../../db/models/person/interface'
  */
 export async function create_accounts(this: CurrencyApi,
 		userId: Person['_id'],
-		currencies?: string[]
+		currencies: string[] = this.currencies
 	) {
-	if (!currencies) currencies = this.currencies
 
 	/**
 	 * O objeto 'create_accounts' que será salvo na checklist do database
@@ -25,13 +24,13 @@ export async function create_accounts(this: CurrencyApi,
 		create_accounts[currency].status = 'requested'
 	}
 
-	/**
-	 * @todo se uma pessoa com esse userId exitir, atualizar
-	 */
-	await new Checklist({
-		userId,
+	await Checklist.findOneAndUpdate({
+		userId
+	}, {
 		commands: { create_accounts }
-	}).save()
+	}, {
+		upsert: true
+	})
 
 	/**
 	 * Chama create_account de cada currency que precisa ser criada uma account

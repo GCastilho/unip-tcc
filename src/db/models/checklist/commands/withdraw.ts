@@ -2,7 +2,7 @@ import { Schema } from 'mongoose'
 import { ObjectId } from 'bson'
 
 export interface WithdrawInterface {
-	status: string,
+	status: 'preparing'|'requested'|'completed',
 	opid: ObjectId
 }
 

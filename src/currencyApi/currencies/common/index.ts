@@ -11,7 +11,7 @@ import { EventEmitter } from 'events'
 class Events extends EventEmitter {}
 
 export default abstract class Common {
-	abstract name: string
+	abstract name: 'bitcoin'|'nano'
 	abstract code: string
 
 	/**
@@ -37,6 +37,8 @@ export default abstract class Common {
 	 * 
 	 * @param event O evento que será enviado ao socket
 	 * @param args Os argumentos desse evento
+	 * 
+	 * @throws SocketDisconnected if socket is disconnected
 	 */
 	protected module(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {

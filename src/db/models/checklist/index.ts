@@ -3,7 +3,7 @@ import { ObjectId } from 'bson'
 import { CreateAccountsSchema, CreateAccountsInterface } from './commands/create_accounts'
 import { WithdrawSchema, WithdrawInterface } from './commands/withdraw'
 
-interface Checklist extends Document {
+export interface Checklist extends Document {
 	userId: ObjectId,
 	commands: {
 		create_accounts: {
@@ -35,4 +35,4 @@ const ChecklistSchema = new Schema({
 	}
 })
 
-export = mongoose.model<Checklist>('Checklist', ChecklistSchema)
+export default mongoose.model<Checklist>('Checklist', ChecklistSchema)

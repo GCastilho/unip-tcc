@@ -1,5 +1,5 @@
-import Checklist = require('../../../../db/models/checklist')
-import Person = require('../../../../db/models/person')
+import Checklist, { Checklist as Ck } from '../../../../db/models/checklist'
+import Person from '../../../../db/models/person'
 import Common from '../index'
 
 /**
@@ -28,86 +28,41 @@ export function create_account(this: Common) {
 	})
 
 	/**
-	 * Limpa da checklist.create_accounts as currencies com state 'completed'
+	 * Limpa da commands.create_accounts os requests de currencies
+	 * com status 'completed'
 	 */
 	const garbage_collector = async () => {
-		/**
-		 * Se um item foi ou não deletado
-		 */
-		let deleted = false
-
-		const checklist = Checklist.find().cursor()
-		let item: any
-		while (( item = await checklist.next() )) {
-			if (item.commands.create_accounts[this.name].status === 'completed') {
-				item.commands.create_accounts[this.name] = undefined
-				await item.save()
-				deleted = true
+		const res = await Checklist.collection.findAndModify({
+			[`commands.create_accounts.${this.name}.status`]: 'completed'
+		}, {
+			$unset: {
+				[`commands.create_accounts.${this.name}`]: true
 			}
-		}
-		if (deleted)
-			await this.garbage_collector('create_accounts')
+		})
+
+		// Nenhum create_account foi deletado
+		if (!res.lastErrorObject.updatedExisting) return
+
+		await this.garbage_collector('create_accounts')
 	}
 
 	const create_account_loop = async () => {
-		const checklist = Checklist.find().cursor()
-		let todo_item: any
-		while (( todo_item = await checklist.next() )) {
-			const { userId, commands: { create_accounts } } = todo_item
+		const checklist = Checklist.find({
+			[`commands.create_accounts.${this.name}.status`]: 'requested'
+		}).cursor()
 
-			if (create_accounts[this.name].status === 'requested') {
-				const person = await Person.findById(userId)
-				if (!person) throw `Person with userId ${userId} not found`
-
-				/** Ao fazer o cadastro o objeto é undefined */
-				if (!person.currencies[this.name])
-					person.currencies[this.name] = {}
-
-				// Journaling
-				const accounts_before = person.currencies[this.name].accounts.length
-				todo_item.commands.create_accounts[this.name].status = 'processing'
-				todo_item.commands.create_accounts[this.name].accounts_before = accounts_before
-				await todo_item.save()
-
-				const account: string = await this.module('create_new_account')
-
-				person.currencies[this.name].accounts.push(account)
-				await person.save()
-
-				todo_item.commands.create_accounts[this.name].status = 'completed'
-				await todo_item.save()
-			} else if (create_accounts[this.name].status === 'processing') {
-				/*
-				 * Caso o processo tenha sido interrompido, usa o journaling
-				 * pra saber o que já foi feito e o que ainda não foi
-				 */
-				const person = await Person.findById(userId)
-				if (!person) throw `Person with userId ${userId} not found`
-				const accounts_now = person.currencies[this.name].accounts.length
-				const { accounts_before } = create_accounts[this.name]
-
-				if (accounts_now === accounts_before) {
-					/**
-					 * Quer dizer que nada foi feito, nesse caso voltar para
-					 * 'requested' irá fazer esse item ser executado normalmente
-					 * pela parte do if que processa o 'requested'
-					 */
-					todo_item.commands.create_accounts[this.name].status = 'requested'
-					await todo_item.save()
-				} else if (accounts_now > accounts_before) {
-					/**
-					 * Significa que a account já foi adicionada mas por algum
-					 * motivo a checklist não foi atualizada
-					 */
-					todo_item.commands.create_accounts[this.name].status = 'completed'
-					await todo_item.save()
-				} else {
-					console.error(`Ao encontrar o status do usuário '${person.email}' como 'processing', o create_account detectou um número de accounts INFERIOR ao estado salvo na checklist, ESTE É UM ERRO GRAVE.`)
-					todo_item.commands.create_accounts[this.name].status = 'ERROR'
-					todo_item.commands.create_accounts[this.name].accounts_after = accounts_now
-					await todo_item.save()
+		let item: Ck
+		while (( item = await checklist.next() )) {
+			const account: string = await this.module('create_new_account')
+			await Person.findByIdAndUpdate(item.userId, {
+				$push: {
+					[`currencies.${this.name}.accounts`]: account
 				}
-			}
+			})
+
+			item.commands.create_accounts[this.name].status = 'completed'
+			await item.save()
+
 			if (!looping) break
 		}
 	}
@@ -119,7 +74,7 @@ export function create_account(this: Common) {
 			await create_account_loop()
 			await garbage_collector()
 		} catch(err) {
-			console.error(err)
+			console.error('Error on create_account_loop:', err)
 		}
 		looping = false
 	}

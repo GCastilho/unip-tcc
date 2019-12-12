@@ -1,4 +1,4 @@
-import Checklist = require('../../../../db/models/checklist')
+import Checklist from '../../../../db/models/checklist'
 
 /**
  * Retorna uma função que recebe um 'command' como argumento e varre a checklist
@@ -10,45 +10,26 @@ import Checklist = require('../../../../db/models/checklist')
  */
 export function garbage_collector() {
 	/**
-	 * Controla se há uma instancia do collector para [command]
-	 */
-	const collecting: any = {}
-
-	/**
-	 * Limpa os itens com item.commands vazios da checklist
+	 * Limpa os itens da checklist em que a prop 'commands' está vazia
 	 */
 	const itemCollector = async () => {
-		if (collecting.item) return
-		collecting.item = true
-		const checklist = await Checklist.find().cursor()
-		let item: any
-		while ((item = await checklist.next())) {
-			if (item.$isEmpty('commands'))
-				await item.remove()
-		}
-		collecting.item = false
+		await Checklist.deleteMany({ 'commands': null })
 	}
 
 	/**
-	 * Limpa os comandos vazios da item.commands[command] da checklist
+	 * Limpa os comandos que são objetos vazios da checklist
 	 */
 	const commandCollector = async (command: string) => {
-		if (collecting[command]) return
-		collecting[command] = true
-		/** Controla se pelo menos um item foi deletado da checklist */
-		let collected = false
-		const checklist = await Checklist.find().cursor()
-		let item: any
-		while (( item = await checklist.next() )) {
-			if (item.$isEmpty(`commands.${command}`)) {
-				item.commands[command] = undefined
-				await item.save()
-				collected = true
+		const res = await Checklist.updateMany({
+			[`commands.${command}`]: {}
+		}, {
+			$unset: {
+				[`commands.${command}`]: true
 			}
-		}
-		if (collected)
+		})
+
+		if (res.deletedCount && res.deletedCount > 0)
 			await itemCollector()
-		collecting[command] = false
 	}
 
 	return commandCollector
