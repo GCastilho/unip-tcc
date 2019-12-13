@@ -3,8 +3,9 @@ import { ObjectId } from 'bson'
 
 export interface Transaction extends Document {
 	opid: ObjectId,
+	txid: string,
 	account: string,
-	txid: string
+	type: 'send'|'receive'
 }
 
 const TransactionSchema = new Schema({
@@ -13,14 +14,19 @@ const TransactionSchema = new Schema({
 		unique: true,
 		required: false,
 	},
+	txid: {
+		type: String,
+		unique: true,
+		sparse: true,
+		required: false
+	},
 	account: {
 		type: String,
 		required: true
 	},
-	txid: {
+	type: {
 		type: String,
-		trim: true,
-		unique: true,
+		enum: ['send', 'receive'],
 		required: true
 	}
 })

@@ -7,8 +7,8 @@ import { Schema } from 'mongoose'
 import * as schemas from './schemas'
 
 const CurrenciesSchema: Schema = new Schema({
-	nano: schemas.Nano,
-	bitcoin: schemas.Bitcoin
+	nano: schemas.Nano.obj,
+	bitcoin: schemas.Bitcoin.obj
 })
 
 export default CurrenciesSchema

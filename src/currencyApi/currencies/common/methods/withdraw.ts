@@ -37,7 +37,7 @@ export function withdraw(this: Common) {
 		 * Uma transação confirmada deve ter o campo de confirmações
 		 * definido como null
 		 */
-		if (status === 'confirmed' && updtSended.confirmations != null) return callback({
+		if (updtSended.status === 'confirmed' && updtSended.confirmations != null) return callback({
 			code: 'BadRequest',
 			message: 'A confirmation update must have \'confirmations\' field set as null'
 		})
@@ -59,7 +59,7 @@ export function withdraw(this: Common) {
 	 */
 	const garbage_collector = async () => {
 		// Remove os itens do array de withdraw que tem status 'completed'
-		const resArray = await Checklist.collection.findAndModify({
+		const resArray = await Checklist.updateMany({
 			[`commands.withdraw.${this.name}`]: { $exists: true }
 		}, {
 			$pull: {
@@ -68,10 +68,10 @@ export function withdraw(this: Common) {
 		})
 
 		// Nenhum item foi removido de nenhum array
-		if (!resArray.lastErrorObject.updatedExisting) return
+		if (!resArray.nModified) return
 
 		// Procura por arrays de withdraw vazios e os deleta
-		const resWithdraw = await Checklist.collection.findAndModify({
+		const resWithdraw = await Checklist.updateMany({
 			[`commands.withdraw.${this.name}`]: { $size: 0 }
 		}, {
 			$unset: {
@@ -80,7 +80,7 @@ export function withdraw(this: Common) {
 		})
 
 		// Nenhum array de withdraw foi deletado
-		if (!resWithdraw.lastErrorObject.updatedExisting) return
+		if (!resWithdraw.nModified) return
 
 		await this.garbage_collector('withdraw')
 	}
@@ -90,9 +90,12 @@ export function withdraw(this: Common) {
 	 * com status 'requested' e os executa
 	 */
 	const withdraw_loop = async () => {
-		const checklist = Checklist.find().cursor()
+		const checklist = Checklist.find({
+			[`commands.withdraw.${this.name}`]: { $exists: true }
+		}).cursor()
+
 		let item: Ck
-		while ( item = await checklist.next() ) {
+		while ( looping && (item = await checklist.next()) ) {
 			const { commands: { withdraw } } = item
 
 			for (const request of withdraw[this.name]) {
@@ -122,11 +125,13 @@ export function withdraw(this: Common) {
 					request.status = 'completed'
 					await item.save()
 				} catch (err) {
-					if (err != 'SocketDisconnected')
+					if (err.code === 'OperationExists') {
+						request.status = 'completed'
+						await item.save()
+					} else if (err != 'SocketDisconnected')
 						throw err
 				}
 			}
-			if (!looping) break
 		}
 	}
 

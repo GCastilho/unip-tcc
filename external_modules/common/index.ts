@@ -46,6 +46,11 @@ export default abstract class Common {
 	 */
 	abstract processTransaction(txid: TxReceived['txid']): Promise<void>
 
+	/**
+	 * EventEmitter para eventos internos
+	 */
+	protected _events = new Events()
+
 	constructor() {
 		this.connectionHandler = methods.connection
 		this.sendToMainServer = methods.sendToMainServer.bind(this)()
@@ -89,11 +94,6 @@ export default abstract class Common {
 	 * @returns void se a transação não foi enviada
 	 */
 	protected sendToMainServer: (transaction: TxReceived) => Promise<string|void>
-
-	/**
-	 * EventEmitter para eventos internos
-	 */
-	protected _events = new Events()
 
 	/**
 	 * Wrapper de comunicação com o socket do servidor principal. Essa função

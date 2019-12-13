@@ -93,6 +93,7 @@ export function processTransaction(this: Nano) {
 				 */
 				new Transaction({
 					txid: transaction.txid,
+					type: 'receive',
 					account: transaction.account
 				}).save().then(() => {
 					return this.sendToMainServer(transaction)

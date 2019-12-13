@@ -67,6 +67,7 @@ export async function processTransaction(this: Bitcoin, txid: TxReceived['txid']
 		/** Salva a nova transação no database */
 		await new Transaction({
 			txid,
+			type: 'receive',
 			account: transaction.account
 		}).save()
 

@@ -24,10 +24,12 @@ Router.post('/', function(req, res) {
 		.then(() => {
 			res.status(201).send()
 		}).catch(err => {
-			if (err.code === 11000)
+			if (err.code === 11000) {
 				res.status(409).send()
-			else
-				res.status(500).send(err)
+			} else {
+				res.status(500).send()
+				console.error('Register error:', err)
+			}
 		})
 })
 

@@ -25,12 +25,12 @@ const ChecklistSchema = new Schema({
 	},
 	commands: {
 		create_accounts: {
-			bitcoin: CreateAccountsSchema.obj,
-			nano: CreateAccountsSchema.obj
+			bitcoin: CreateAccountsSchema,
+			nano: CreateAccountsSchema
 		},
 		withdraw: {
-			bitcoin: [WithdrawSchema.obj],
-			nano: [WithdrawSchema.obj]
+			bitcoin: [WithdrawSchema],
+			nano: [WithdrawSchema]
 		}
 	}
 })

@@ -32,7 +32,7 @@ export function create_account(this: Common) {
 	 * com status 'completed'
 	 */
 	const garbage_collector = async () => {
-		const res = await Checklist.collection.findAndModify({
+		const res = await Checklist.updateMany({
 			[`commands.create_accounts.${this.name}.status`]: 'completed'
 		}, {
 			$unset: {
@@ -41,7 +41,7 @@ export function create_account(this: Common) {
 		})
 
 		// Nenhum create_account foi deletado
-		if (!res.lastErrorObject.updatedExisting) return
+		if (!res.nModified) return
 
 		await this.garbage_collector('create_accounts')
 	}
@@ -52,7 +52,7 @@ export function create_account(this: Common) {
 		}).cursor()
 
 		let item: Ck
-		while (( item = await checklist.next() )) {
+		while (( looping && (item = await checklist.next()) )) {
 			const account: string = await this.module('create_new_account')
 			await Person.findByIdAndUpdate(item.userId, {
 				$push: {
@@ -60,8 +60,16 @@ export function create_account(this: Common) {
 				}
 			})
 
-			item.commands.create_accounts[this.name].status = 'completed'
-			await item.save()
+			await Checklist.updateOne({
+				userId: item.userId
+			}, {
+				$set: {
+					[`commands.create_accounts.${this.name}.status`]: 'completed'
+				}
+			})
+
+			// item.commands.create_accounts[this.name].status = 'completed'
+			// await item.save()
 
 			if (!looping) break
 		}

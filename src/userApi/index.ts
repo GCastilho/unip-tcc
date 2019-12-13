@@ -30,8 +30,7 @@ class UserApi {
 			credentials: {
 				salt,
 				password_hash
-			},
-			currencies: {}
+			}
 		}).save()
 
 		/**

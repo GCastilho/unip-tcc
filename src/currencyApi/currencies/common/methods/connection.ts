@@ -3,9 +3,11 @@ import ss = require('socket.io-stream')
 import { ObjectId } from 'bson'
 import Common from '../index'
 import Person from '../../../../db/models/person'
-import userApi from '../../../../userApi'
+import FindUser from '../../../../userApi/findUser'
 import User from '../../../../userApi/user'
 import { default as Tx, TxReceived, UpdtReceived } from '../../../../db/models/transaction'
+
+const findUser = new FindUser()
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*
@@ -55,7 +57,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 
 		let user: User
 		try {
-			user = await userApi.findUser.byAccount(this.name, account)
+			user = await findUser.byAccount(this.name, account)
 		} catch (err) {
 			if (err === 'UserNotFound') {
 				return callback({
@@ -204,7 +206,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			})
 
 			if (status === 'confirmed') {
-				const user = await userApi.findUser.byId(res.user)
+				const user = await findUser.byId(res.user)
 				await user.balanceOps.complete(this.name, new ObjectId(opid))
 			}
 

@@ -3,6 +3,7 @@ import Common from '../index'
 import Account from '../db/models/account'
 import { TxSend } from '../index'
 import { SendPending } from '../db/models/pendingTx'
+import Transaction from '../db/models/transaction'
 
 /**
  * Essa função é o handler de requests vindos do servidor principal
@@ -67,14 +68,29 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		 * ou da falha
 		 */
 		try {
+			await new Transaction({
+				opid: request.opid,
+				account: request.account,
+				type: 'send'
+			}).save()
+
 			await new SendPending({
 				opid: request.opid,
 				transaction: request
 			}).save()
+
 			callback(null, `received withdraw request for '${request.opid}'`)
 		} catch (err) {
-			callback(err)
-			console.error('Error receiving withdraw request:', err)
+			if (err.code === 11000) {
+				callback({
+					code: 'OperationExists',
+					message: 'This opid was already received',
+					opid: request.opid
+				})
+			} else {
+				callback(err)
+				console.error('Error receiving withdraw request:', err)
+			}
 		}
 
 		/** Faz o withdraw de todas as transações ainda não enviadas */

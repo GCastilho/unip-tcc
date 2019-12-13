@@ -22,5 +22,5 @@ export const PersonSchema: Schema = new Schema({
 			required: true
 		}
 	},
-	currencies: currenciesSchema
+	currencies: currenciesSchema.obj
 })
