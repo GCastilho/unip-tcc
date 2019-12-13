@@ -11,7 +11,9 @@ const TxBaseSchema = new Schema({
 	},
 	txid: {
 		type: String,
-		required: false
+		required: false,
+		unique: true,
+		sparse: true
 	},
 	account: {
 		type: String,
@@ -62,7 +64,26 @@ export const ReceivedPending = mongoose.model<PReceived>('ReceivedPendingTx', Pe
 
 export interface PSended extends Document {
 	opid: ObjectId
-	journaling: string
+	/**
+	 * Journaling da transação, para manter registro de o que já aconteceu com ela
+	 * 
+	 * requested: A transação foi recebida do main e não foi enviada para a rede
+	 * 
+	 * picked: A transação foi enviada para a função de saque e não se sabe se
+	 * foi enviada ou não
+	 * 
+	 * sended: A função de saque retornou sucesso e a transação foi enviada
+	 * 
+	 * batched: A função de saque retornou true, indicando que a transação foi
+	 * agendada para ser enviada em batch
+	 * 
+	 * pending: A transação foi enviada e sabe-se que ela está pendente
+	 * 
+	 * confirmed: A transação foi enviada e sabe-se que ela está confirmada
+	 * 
+	 * processing: Usado apenas pelo main
+	 */
+	journaling: TxSend['status']|'requested'|'picked'|'sended'|'batched'
 	transaction: TxSend
 }
 

@@ -53,9 +53,10 @@ export interface TxReceived extends ExternalModuleTransaction {
 }
 
 /** Interface para ordem de envio de transações */
-export interface TxSend extends ExternalModuleTransaction {
+export interface TxSend extends Transaction {
 	opid: string
-	// transações enviadas devem ir com status 'processing', não pending
+	status: TransactionDoc['status']
+	timestamp: ExternalModuleTransaction['timestamp']
 }
 
 /**

@@ -85,7 +85,7 @@ export default abstract class Common {
 	protected withdraw_pending = methods.withdraw_pending.bind(this)()
 
 	/**
-	 * Envia uma transação ao servidor principal e atualiza seuo opid no
+	 * Envia uma transação ao servidor principal e atualiza seu opid no
 	 * database
 	 * 
 	 * @param transaction A transação que será enviada ao servidor

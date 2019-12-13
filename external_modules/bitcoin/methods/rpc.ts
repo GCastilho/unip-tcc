@@ -3,7 +3,7 @@ import Account from '../../common/db/models/account'
 import { UpdtSended } from '../../common'
 import { PSended } from '../../common/db/models/pendingTx'
 
-const wallet = new Client({
+const client = new Client({
 	network: 'testnet',
 	username: 'exchange',
 	password: 'password',
@@ -12,7 +12,7 @@ const wallet = new Client({
 
 export function rpc() {
 	const createAccount = async () => {
-		const address: string = await wallet.getNewAddress()
+		const address: string = await client.getNewAddress()
 		await new Account({
 			account: address
 		}).save()
@@ -21,9 +21,9 @@ export function rpc() {
 	}
 
 	const transactionInfo = async (txid: string): Promise<any> =>
-		wallet.getTransaction(txid)
+		await client.getTransaction(txid)
 
-	const blockInfo = async block => wallet.getBlock(block)
+	const blockInfo = async block => await client.getBlock(block)
 	
 	/**
 	 * Executa uma transação na rede da bitcoin
@@ -32,7 +32,22 @@ export function rpc() {
 	 */
 	const send = async (pSend: PSended): Promise<UpdtSended> => {
 		const { transaction: { opid, account, amount } } = pSend
-		const txid: string = await wallet.sendToAddress(account, amount)
+		let txid: string
+		try {
+			txid = await client.sendToAddress(account, amount)
+		} catch (err) {
+			if (err.code === 'ECONNREFUSED') {
+				const port = err.port
+				const address = err.address
+				err = {
+					code: 'NotSended',
+					message: 'Connection refused on bitcoin node',
+					address,
+					port
+				}
+			}
+			throw err
+		}
 		const tInfo = await transactionInfo(txid)
 		
 		const transaction: UpdtSended = {

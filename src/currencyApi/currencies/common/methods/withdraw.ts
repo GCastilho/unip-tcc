@@ -1,6 +1,9 @@
 import Checklist, { Checklist as Ck } from '../../../../db/models/checklist'
 import Transaction, { TxSend, UpdtSended } from '../../../../db/models/transaction'
+import FindUser from '../../../../userApi/findUser'
 import Common from '../index'
+
+const findUser = new FindUser()
 
 /**
  * Retorna uma função que varre a collection da checklist procurando por
@@ -26,8 +29,8 @@ export function withdraw(this: Common) {
 		looping = false
 	})
 
-	this._events.on('update_sended_tx', async (updtSended: UpdtSended, callback: Function) => {
-		const tx = await Transaction.findById(updtSended.opid)
+	this._events.on('update_sended_tx', async (txUpdate: UpdtSended, callback: Function) => {
+		const tx = await Transaction.findById(txUpdate.opid)
 		if (!tx) return callback({
 			code: 'NotFound',
 			message: '\'opid\' not found'
@@ -37,19 +40,25 @@ export function withdraw(this: Common) {
 		 * Uma transação confirmada deve ter o campo de confirmações
 		 * definido como null
 		 */
-		if (updtSended.status === 'confirmed' && updtSended.confirmations != null) return callback({
+		if (txUpdate.status === 'confirmed' && txUpdate.confirmations != null) return callback({
 			code: 'BadRequest',
 			message: 'A confirmation update must have \'confirmations\' field set as null'
 		})
 
 		// Atualiza a transação no database
-		tx.txid = updtSended.txid
-		tx.status = updtSended.status
-		tx.timestamp = new Date(updtSended.timestamp)
-		tx.confirmations = updtSended.confirmations ? updtSended.confirmations : undefined
+		tx.txid = txUpdate.txid
+		tx.status = txUpdate.status
+		tx.timestamp = new Date(txUpdate.timestamp)
+		tx.confirmations = txUpdate.confirmations ? txUpdate.confirmations : undefined
 		await tx.save()
 
-		this.events.emit('update_sended_tx', tx.user, updtSended)
+		if (txUpdate.status === 'confirmed') {
+			const user = await findUser.byId(tx.user)
+			await user.balanceOps.complete(this.name, tx._id)
+		}
+
+		callback(null, `${txUpdate.opid} updated`)
+		this.events.emit('update_sended_tx', tx.user, txUpdate)
 	})
 
 	/**
@@ -106,12 +115,7 @@ export function withdraw(this: Common) {
 
 				const transaction: TxSend = {
 					opid:      tx._id.toHexString(),
-					/**
-					 * Uma transação não enviada tem status 'processing', ela
-					 * deveria ser enviada com esse status, não como 'pending'.
-					 * Ou seja, usat tx.status, não um valor hardcoded
-					 */
-					status:    'pending',
+					status:    tx.status,
 					account:   tx.account,
 					amount:    tx.amount,
 					type:      tx.type,

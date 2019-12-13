@@ -31,10 +31,9 @@ export function withdraw_pending(this: Common) {
 				}
 			})
 
-			/**
-			 * @todo não tentar enviar se o socket não está conectado
-			 */
+			/** @todo não tentar enviar se o socket não está conectado */
 			await this.module('update_sended_tx', transaction)
+
 			if (transaction.status === 'confirmed')
 				await SendPending.deleteOne({ opid: transaction.opid })
 		} catch(err) {
@@ -67,8 +66,20 @@ export function withdraw_pending(this: Common) {
 		while( doc = await pendingTx.next() ) {
 			doc.journaling = 'picked'
 			await doc.save()
-	
-			const transaction = await this.withdraw(doc, batchCallback)
+
+			let transaction: true|UpdtSended
+			try {
+				transaction = await this.withdraw(doc, batchCallback)
+			} catch (err) {
+				if (err.code === 'NotSended') {
+					doc.journaling = 'requested'
+					await doc.save()
+					console.error('Withdraw: Transaction was not sended', err)
+					break
+				}
+				throw err
+			}
+
 			if (transaction === true) {
 				doc.journaling = 'batched'
 				await doc.save()
@@ -82,6 +93,9 @@ export function withdraw_pending(this: Common) {
 		}
 	}
 
+	/**
+	 * Controla as instâncias do withdraw_loop
+	 */
 	let looping: boolean = false
 
 	/**
