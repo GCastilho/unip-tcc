@@ -17,9 +17,9 @@ export default abstract class Common {
 	abstract mainServerPort: number
 
 	/**
-	 * Cria uma nova account para essa currency
+	 * Pede uma nova account para o node dessa currency e a retorna
 	 */
-	abstract createNewAccount(): Promise<string>
+	abstract getNewAccount(): Promise<string>
 
 	/**
 	 * Executa o request de saque de uma currency em sua blockchain
@@ -54,6 +54,18 @@ export default abstract class Common {
 	constructor() {
 		this.connectionHandler = methods.connection
 		this.sendToMainServer = methods.sendToMainServer.bind(this)()
+
+		// Monitora os eventos do rpc para manter o nodeOnline atualizado
+		this._events.on('rpc_connected', () => {
+			if (this.nodeOnline) return
+			this.nodeOnline = true
+			this._events.emit('node_connected')
+		})
+		this._events.on('rpc_disconnected', () => {
+			if (!this.nodeOnline) return
+			this.nodeOnline = false
+			this._events.emit('node_disconnected')
+		})
 	}
 
 	async init() {
@@ -77,6 +89,17 @@ export default abstract class Common {
 		const socket = io(`http://${this.mainServerIp}:${this.mainServerPort}/${this.name}`)
 		this.connectionHandler(socket)
 	}
+
+	/**
+	 * Indica se o node da currency está online ou não
+	 * 
+	 * Os eventos 'node_connected' e 'node_disconnected' devem ser disparados
+	 * no event emitter interno para manter essa váriável atualizada e outras
+	 * partes do sistema que dependem desses eventos, funcionando
+	 * 
+	 * NÃO MODIFICAR MANUALMENTE
+	 */
+	protected nodeOnline: boolean = false
 
 	/**
 	 * Vasculha a collection 'pendingTx' em busca de transações não enviadas

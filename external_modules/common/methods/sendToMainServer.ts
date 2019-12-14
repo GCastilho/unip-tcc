@@ -14,17 +14,17 @@ export function sendToMainServer(this: Common) {
 			'transaction.opid': { $exists: false }
 		}).lean().cursor()
 
-		transactions.on('data', async (document: PReceived) => {
-			const opid = await _sendToMainServer(document.transaction)
+		transactions.on('data', async (doc: PReceived) => {
+			const opid = await _sendToMainServer(doc.transaction)
 			if (!opid) return
 
-			if (document.transaction.status === 'confirmed') {
+			if (doc.transaction.status === 'confirmed') {
 				/** Deleta a Tx confirmada da collection de Tx pendentes */
-				await ReceivedPending.deleteOne({ txid: document.transaction.txid })
+				await ReceivedPending.deleteOne({ txid: doc.transaction.txid })
 			} else {
 				/** Atualiza o opid da transação pendente */
 				await ReceivedPending.updateOne({
-					txid: document.transaction.txid
+					txid: doc.transaction.txid
 				}, {
 					$set: {
 						'transaction.opid': new ObjectId(opid)

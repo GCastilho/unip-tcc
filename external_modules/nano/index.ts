@@ -23,7 +23,7 @@ export class Nano extends Common {
 
 	initBlockchainListener = methods.nanoWebSocket
 
-	createNewAccount = this.rpc.createAccount
+	getNewAccount = this.rpc.accountCreate
 
 	withdraw = this.rpc.send
 

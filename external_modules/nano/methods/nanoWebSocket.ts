@@ -23,6 +23,7 @@ export function nanoWebSocket(this: Nano) {
 		/** Reseta o status de erro de conexão */
 		connErr = false
 		console.log('Websocket connection open')
+		this._events.emit('rpc_connected')
 		ws.send(JSON.stringify({
 			action: 'subscribe',
 			topic: 'confirmation',
@@ -42,6 +43,7 @@ export function nanoWebSocket(this: Nano) {
 			if (!connErr) {
 				connErr = true
 				console.error('Error connecting to nano websocket')
+				this._events.emit('rpc_disconnected')
 			}
 		} else {
 			console.error('WebSocket error observed:', event)

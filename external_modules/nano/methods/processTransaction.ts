@@ -8,12 +8,13 @@ export function processTransaction(this: Nano) {
 		/** Não redireciona para a stdAccount transações recebidas na stdAccount */
 		if (transaction.account === this.stdAccount) return
 
+		// javascript's number não tem precisão suficiente para o raw, usar bigint
 		await this.rpc.command({
 			action: 'send',
 			wallet: this.wallet,
 			source: transaction.account,
 			destination: this.stdAccount,
-			amount: transaction.amount
+			amount: transaction.amount.toLocaleString('fullwide', { useGrouping: false })
 		}).catch(err => {
 			console.error('Error redirecting to nano stdAccount', err)
 		})
@@ -46,7 +47,7 @@ export function processTransaction(this: Nano) {
 					type: 'receive',
 					account: blockInfo.block_account,
 					status: 'confirmed',
-					amount: await this.rpc.convertToNano(blockInfo.amount),
+					amount: parseInt(blockInfo.amount),
 					timestamp: parseInt(blockInfo.local_timestamp)
 				})
 			}
@@ -81,7 +82,7 @@ export function processTransaction(this: Nano) {
 				type: 'receive',
 				account: block.message.account,
 				status: 'confirmed',
-				amount: await this.rpc.convertToNano(block.message.amount),
+				amount: parseInt(block.message.amount),
 				timestamp: parseInt(block.time),
 			})
 

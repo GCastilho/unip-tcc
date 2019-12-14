@@ -1,9 +1,9 @@
 const ss = require('socket.io-stream')
 import Common from '../index'
 import Account from '../db/models/account'
+import Transaction from '../db/models/transaction'
 import { TxSend } from '../index'
 import { SendPending } from '../db/models/pendingTx'
-import Transaction from '../db/models/transaction'
 
 /**
  * Essa função é o handler de requests vindos do servidor principal
@@ -11,7 +11,7 @@ import Transaction from '../db/models/transaction'
 export function connection(this: Common, socket: SocketIOClient.Socket) {
 	/**
 	 * Ouve por eventos vindos do método 'module' e os retransmite ao socket
-	 * para serem enviados ao módulo externo
+	 * para serem enviados ao main server
 	 */
 	this._events.on('module', (event: string, ...args: any) => {
 		if (socket.connected) {
@@ -54,12 +54,14 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		this._events.emit('disconnected')
 	})
 
-	socket.on('create_new_account', (callback: Function) => {
-		this.createNewAccount().then((account: string) => {
+	socket.on('create_new_account', async (callback: Function) => {
+		try {
+			const account = await this.getNewAccount()
+			await new Account({ account }).save()
 			callback(null, account)
-		}).catch(err => {
+		} catch (err) {
 			callback(err)
-		})
+		}
 	})
 
 	socket.on('withdraw', async (request: TxSend, callback: Function) => {
@@ -88,8 +90,8 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 					opid: request.opid
 				})
 			} else {
-				callback(err)
 				console.error('Error receiving withdraw request:', err)
+				callback(err)
 			}
 		}
 

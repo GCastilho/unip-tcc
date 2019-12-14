@@ -1,5 +1,4 @@
 import rpc from 'node-json-rpc'
-import Account from '../../common/db/models/account'
 import { UpdtSended } from '../../common'
 import { Nano } from '../index'
 import { PSended } from '../../common/db/models/pendingTx'
@@ -24,7 +23,8 @@ export function nanoRpc(this: Nano) {
 				}
 			})
 		})
-	
+
+	/** @deprecated Não há mais a necessidade de converter unidades */
 	const convertToNano = (amount: string): Promise<number> =>
 		rpcCommand({
 			action: 'rai_from_raw',
@@ -32,7 +32,8 @@ export function nanoRpc(this: Nano) {
 		}).then(res =>
 			parseFloat(res.amount)
 		)
-	
+
+	/** @deprecated Não há mais a necessidade de converter unidades */
 	const convertToRaw = (amount: string): Promise<string> =>
 		rpcCommand({
 			action: 'rai_to_raw',
@@ -41,18 +42,14 @@ export function nanoRpc(this: Nano) {
 			res.amount
 		)
 
-	const createAccount = (): Promise<string> =>
+	const accountCreate = (): Promise<string> =>
 		rpcCommand({
 			action: 'account_create',
 			wallet: this.wallet
 		}).then(res =>
-			new Account({
-				account: res.account
-			}).save()
-		).then(res =>
 			res.account
 		)
-	
+
 	const blockInfo = (block: string): Promise<any> =>
 		rpcCommand({
 			action: 'block_info',
@@ -72,15 +69,14 @@ export function nanoRpc(this: Nano) {
 	 * @returns Um objeto UpdtSended para ser enviado ao servidor
 	 */
 	const send = async (doc: PSended): Promise<UpdtSended> => {
-		const { transaction: { opid, account } } = doc
-		const nanoAmount = await convertToRaw(doc.transaction.amount.toString())
+		const { transaction: { opid, account, amount } } = doc
 
 		const res = await rpcCommand({
 			action: 'send',
 			wallet: this.wallet,
 			source: this.stdAccount,
 			destination: account,
-			amount: nanoAmount
+			amount: amount.toLocaleString('fullwide', { useGrouping: false })
 		})
 
 		const transaction: UpdtSended = {
@@ -97,7 +93,7 @@ export function nanoRpc(this: Nano) {
 		command: rpcCommand,
 		convertToNano,
 		convertToRaw,
-		createAccount,
+		accountCreate,
 		blockInfo,
 		accountInfo,
 		send

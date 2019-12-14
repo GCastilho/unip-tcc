@@ -1,19 +1,19 @@
+import express from 'express'
+import bodyParser from 'body-parser'
 import Common from '../common'
 import * as methods from './methods'
-import express from 'express'
-const bodyParser = require('body-parser')
 
-const MAIN_SERVER_IP: string = process.env.MAIN_SERVER_IP || 'localhost'
-const MAIN_SERVER_PORT: number = parseInt(process.env.MAIN_SERVER_PORT || '8085')
+const MAIN_SERVER_IP = process.env.MAIN_SERVER_IP || 'localhost'
+const MAIN_SERVER_PORT = parseInt(process.env.MAIN_SERVER_PORT || '8085')
 
 export class Bitcoin extends Common {
 	name = 'bitcoin'
 	mainServerIp = MAIN_SERVER_IP
 	mainServerPort = MAIN_SERVER_PORT
 
-	protected rpc = methods.rpc()
+	protected rpc = methods.rpc
 
-	createNewAccount = this.rpc.createAccount
+	getNewAccount = this.rpc.getNewAddress
 
 	withdraw = this.rpc.send
 
@@ -35,7 +35,7 @@ export class Bitcoin extends Common {
 		 * Blocos novos são enviados aqui
 		 */
 		app.post('/block', (req, res) => {
-			this.processBlock(req.body)
+			this.processBlock(req.body.block)
 			res.send() // Finaliza a comunicação com o curl do BTC
 		})
 
@@ -44,9 +44,17 @@ export class Bitcoin extends Common {
 		})
 	}
 
-	constructor(bitcoinCorePort: number) {
+	constructor(bitcoinListenerPort: number) {
 		super()
-		this.port = bitcoinCorePort
+		this.port = bitcoinListenerPort
+		
+		// Monitora os eventos do rpc para manter o nodeOnline atualizado
+		this.rpc.events.on('rpc_success', () => {
+			if (!this.nodeOnline) this._events.emit('rpc_connected')
+		})
+		this.rpc.events.on('rpc_refused', () => {
+			if (this.nodeOnline) this._events.emit('rpc_disconnected')
+		})
 	}
 
 	private port: number

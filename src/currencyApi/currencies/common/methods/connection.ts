@@ -232,6 +232,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * no eventEmitter interno
 	 */
 	socket.on('update_sended_tx', (updtSended, callback) => {
+		console.log('received update_sended_tx:', updtSended)
 		this._events.emit('update_sended_tx', updtSended, callback)
 	})
 

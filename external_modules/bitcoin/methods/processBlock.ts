@@ -125,10 +125,20 @@ export function processBlock(this: Bitcoin) {
 	/**
 	 * Processa novos blocos recebidos da blockchain
 	 * 
-	 * @param body O body enviado pelo curl que o RPC do bitcoin faz
+	 * @param block O hash do bloco enviado pelo curl
 	 */
-	const _processBlock = async (body: any) => {
-		if (!body.block) return
+	const _processBlock = async (block: string) => {
+		if (typeof block != 'string') return
+
+		/**
+		 * Faz um request no rpc para saber se ele está respondendo ou não
+		 * 
+		 * O getInfo tem um handler que vai emitir 'node_connected' ou
+		 * 'node_disconnected' de acordo com a resposta recebida, que é o motivo
+		 * dessa function call estar aqui
+		 */
+		this.rpc.getRpcInfo().catch(() => {})
+
 		try {
 			/** Todas as transactions received não confirmadas no database */
 			const received: PReceived[] = await ReceivedPending.find()

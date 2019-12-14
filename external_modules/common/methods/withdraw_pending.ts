@@ -5,6 +5,12 @@ import Transaction from '../db/models/transaction'
 
 export function withdraw_pending(this: Common) {
 	/**
+	 * Executa os requests de saque pendentes ao se conectar
+	 * com o node da currency
+	 */
+	this._events.on('node_connected', () => _withdraw_pending())
+
+	/**
 	 * Atualiza uma transação enviada no database e envia-a ao main server; Se
 	 * ela estiver confirmada, deleta-a do database
 	 * 
@@ -54,6 +60,9 @@ export function withdraw_pending(this: Common) {
 	}
 
 	/**
+	 * Varre a SendPending procurando por transações com journaling 'requested',
+	 * e as executa, chamando a função de withdraw para cada uma delas
+	 * 
 	 * @todo Uma maneira de se recuperar de erros
 	 */
 	const withdraw_loop = async () => {
@@ -99,11 +108,11 @@ export function withdraw_pending(this: Common) {
 	let looping: boolean = false
 
 	/**
-	 * @todo Não rodar o loop se o node da currency estiver offline
-	 * @todo Iniciar esse loop ao se conectar com o node
+	 * Mantém uma única instância da withdraw_loop e não a inicia caso o node
+	 * esteja offline
 	 */
 	const _withdraw_pending = async () => {
-		if (looping) return
+		if (looping || !this.nodeOnline) return
 		looping = true
 		try {
 			await withdraw_loop()
