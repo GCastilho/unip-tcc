@@ -9,7 +9,7 @@ export function processTransaction(this: Nano) {
 		if (transaction.account === this.stdAccount) return
 
 		// javascript's number não tem precisão suficiente para o raw, usar bigint
-		await this.rpc.command({
+		await this.rpc.request({
 			action: 'send',
 			wallet: this.wallet,
 			source: transaction.account,

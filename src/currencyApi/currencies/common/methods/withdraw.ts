@@ -1,5 +1,5 @@
 import Checklist, { Checklist as Ck } from '../../../../db/models/checklist'
-import Transaction, { TxSend, UpdtSended } from '../../../../db/models/transaction'
+import Transaction, { TxSend, UpdtSent } from '../../../../db/models/transaction'
 import FindUser from '../../../../userApi/findUser'
 import Common from '../index'
 
@@ -29,7 +29,7 @@ export function withdraw(this: Common) {
 		looping = false
 	})
 
-	this._events.on('update_sended_tx', async (txUpdate: UpdtSended, callback: Function) => {
+	this._events.on('update_sent_tx', async (txUpdate: UpdtSent, callback: Function) => {
 		const tx = await Transaction.findById(txUpdate.opid)
 		if (!tx) return callback({
 			code: 'NotFound',
@@ -58,7 +58,8 @@ export function withdraw(this: Common) {
 		}
 
 		callback(null, `${txUpdate.opid} updated`)
-		this.events.emit('update_sended_tx', tx.user, txUpdate)
+		this.events.emit('update_sent_tx', tx.user, txUpdate)
+		/** @todo callback caso dê erro */
 	})
 
 	/**
@@ -115,10 +116,10 @@ export function withdraw(this: Common) {
 
 				const transaction: TxSend = {
 					opid:      tx._id.toHexString(),
-					status:    tx.status,
+					status:    tx.status, // necessário?
 					account:   tx.account,
 					amount:    tx.amount,
-					type:      tx.type,
+					type:      tx.type, // necessário?
 					timestamp: tx.timestamp.getTime()
 				}
 
@@ -129,11 +130,15 @@ export function withdraw(this: Common) {
 					request.status = 'completed'
 					await item.save()
 				} catch (err) {
-					if (err.code === 'OperationExists') {
+					if (err === 'SocketDisconnected') {
+						request.status = 'requested'
+						await item.save()
+					} else if (err.code === 'OperationExists') {
 						request.status = 'completed'
 						await item.save()
-					} else if (err != 'SocketDisconnected')
+					} else {
 						throw err
+					}
 				}
 			}
 		}

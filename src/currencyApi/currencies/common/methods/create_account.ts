@@ -70,8 +70,6 @@ export function create_account(this: Common) {
 
 			// item.commands.create_accounts[this.name].status = 'completed'
 			// await item.save()
-
-			if (!looping) break
 		}
 	}
 

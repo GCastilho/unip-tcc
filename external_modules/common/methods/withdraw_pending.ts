@@ -1,6 +1,6 @@
 import Common from '../index'
-import { SendPending, PSended } from '../db/models/pendingTx'
-import { UpdtSended } from '../index'
+import { SendPending, PSent } from '../db/models/pendingTx'
+import { UpdtSent } from '../index'
 import Transaction from '../db/models/transaction'
 
 export function withdraw_pending(this: Common) {
@@ -11,12 +11,51 @@ export function withdraw_pending(this: Common) {
 	this._events.on('node_connected', () => _withdraw_pending())
 
 	/**
+	 * Atualiza o main server das transações enviadas que estão pendentes
+	 */
+	this._events.on('connected', async () => {
+		const pendingTx = SendPending.find({
+			'transaction.txid': { $exists: true }
+		}).lean().cursor()
+
+		let tx: PSent
+		while ( tx = await pendingTx.next() ) {
+			if (!tx.transaction.txid || tx.transaction.status === 'processing')
+				continue
+			await updateAndSend({
+				opid: tx.transaction.opid,
+				txid: tx.transaction.txid,
+				status: tx.transaction.status,
+				timestamp: tx.transaction.timestamp
+			})
+		}
+	})
+
+	/**
+	 * Envia uma atualização de transação ao main server e deleta-a do database
+	 * em caso de sucesso e dela ter status confirmed
+	 * 
+	 * @param transaction A atualização da transação que será enviada ao main
+	 */
+	const informMainAndDelete = async (transaction: UpdtSent): Promise<void> => {
+		try {
+			await this.module('update_sent_tx', transaction)
+		} catch(err) {
+			if (err === 'SocketDisconnected') return
+			else throw err
+		}
+
+		if (transaction.status === 'confirmed')
+			await SendPending.deleteOne({ opid: transaction.opid })
+	}
+
+	/**
 	 * Atualiza uma transação enviada no database e envia-a ao main server; Se
 	 * ela estiver confirmada, deleta-a do database
 	 * 
 	 * @param transaction O objeto da UpdtSended retornado pelo withdraw
 	 */
-	const updateAndSend = async (transaction: UpdtSended) => {
+	const updateAndSend = async (transaction: UpdtSent) => {
 		try {
 			await Transaction.updateOne({
 				opid: transaction.opid
@@ -37,11 +76,7 @@ export function withdraw_pending(this: Common) {
 				}
 			})
 
-			/** @todo não tentar enviar se o socket não está conectado */
-			await this.module('update_sended_tx', transaction)
-
-			if (transaction.status === 'confirmed')
-				await SendPending.deleteOne({ opid: transaction.opid })
+			await informMainAndDelete(transaction)
 		} catch(err) {
 			console.error(`Error updating/sending txSend: ${transaction}`, err)
 		}
@@ -53,10 +88,8 @@ export function withdraw_pending(this: Common) {
 	 * 
 	 * @param transactions O array de transações executadas em batch
 	 */
-	const batchCallback = (transactions: UpdtSended[]) => {
-		transactions.forEach(transaction => {
-			updateAndSend(transaction)
-		})
+	const updateAndSendTxs = (transactions: UpdtSent[]) => {
+		transactions.forEach(updateAndSend)
 	}
 
 	/**
@@ -71,16 +104,16 @@ export function withdraw_pending(this: Common) {
 			'journaling': 'requested'
 		}).cursor()
 	
-		let doc: PSended
+		let doc: PSent
 		while( doc = await pendingTx.next() ) {
 			doc.journaling = 'picked'
 			await doc.save()
 
-			let transaction: true|UpdtSended
+			let transaction: true|UpdtSent
 			try {
-				transaction = await this.withdraw(doc, batchCallback)
+				transaction = await this.withdraw(doc, updateAndSendTxs)
 			} catch (err) {
-				if (err.code === 'NotSended') {
+				if (err.code === 'NotSent') {
 					doc.journaling = 'requested'
 					await doc.save()
 					console.error('Withdraw: Transaction was not sended', err)

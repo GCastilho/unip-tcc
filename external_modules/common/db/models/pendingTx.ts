@@ -62,7 +62,7 @@ const PendingReceivedSchema = new Schema({
 
 export const ReceivedPending = mongoose.model<PReceived>('ReceivedPendingTx', PendingReceivedSchema)
 
-export interface PSended extends Document {
+export interface PSent extends Document {
 	opid: ObjectId
 	/**
 	 * Journaling da transação, para manter registro de o que já aconteceu com ela
@@ -107,4 +107,4 @@ const PendingSendSchema = new Schema({
 	}
 })
 
-export const SendPending = mongoose.model<PSended>('SendPendingTx', PendingSendSchema)
+export const SendPending = mongoose.model<PSent>('SendPendingTx', PendingSendSchema)

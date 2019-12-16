@@ -71,9 +71,9 @@ export interface UpdtReceived {
 
 /**
  * Interface para atualização de transações enviadas utilizando
- * o evento update_sended_tx
+ * o evento update_sent_tx
  */
-export interface UpdtSended {
+export interface UpdtSent {
 	opid: TxSend['opid']
 	txid: string,
 	status: ExternalModuleTransaction['status']
@@ -108,6 +108,7 @@ interface TransactionDoc extends TransactionInternal, Document {
 	 * podendo ser negada quando isso ocorrer (e deletada do db)
 	 */
 	status: ExternalModuleTransaction['status'] | 'processing'
+	currency: 'bitcoin'|'nano'
 }
 
 /** Schema da collection de transações dos usuários */
@@ -125,6 +126,11 @@ const TransactionSchema: Schema = new Schema({
 	type: {
 		type: String,
 		enum: ['receive', 'send'],
+		required: true
+	},
+	currency: {
+		type: String,
+		enum: ['bitcoin', 'nano'],
 		required: true
 	},
 	status: {

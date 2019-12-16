@@ -1,7 +1,7 @@
 import Client from 'bitcoin-core'
 import { EventEmitter } from 'events'
-import { UpdtSended } from '../../common'
-import { PSended } from '../../common/db/models/pendingTx'
+import { UpdtSent } from '../../common'
+import { PSent } from '../../common/db/models/pendingTx'
 
 /** EventEmmiter genérico */
 class Events extends EventEmitter {}
@@ -26,7 +26,7 @@ const client = new Client({
  * dar trigger no 'rpc_success' ao iniciar o script
  */
 setTimeout(() => {
-	request('getRpcInfo').catch(() => {})
+	getRpcInfo().catch(() => {})
 }, 5000)
 
 /**
@@ -69,34 +69,26 @@ export const getRpcInfo = async (): Promise<any> =>
  * @param pSend O documento da transação pendente da collection pendingTx
  * @returns Um objeto UpdtSended para ser enviado ao main server
  */
-export async function send(pSend: PSended): Promise<UpdtSended> {
+export async function send(pSend: PSent): Promise<UpdtSent> {
 	const { transaction: { opid, account, amount } } = pSend
-	let txid: string
-	try {
-		txid = await sendToAddress(account, amount)
-	} catch(err) {
+
+	const txid = await sendToAddress(account, amount).catch(err => {
 		if (err.code === 'ECONNREFUSED') {
-			const port = err.port
-			const address = err.address
-			err = {
-				code: 'NotSended',
-				message: 'Connection refused on bitcoin node',
-				address,
-				port
-			}
+			err.code = 'NotSent'
+			err.message = 'Connection refused on bitcoin node'
 		}
 		throw err
-	}
+	})
 
 	const tInfo = await transactionInfo(txid)
-	const transaction: UpdtSended = {
+	const transaction: UpdtSent = {
 		opid,
 		txid,
 		status: 'pending',
 		confirmations: 0,
 		timestamp: tInfo.time*1000 // O timestamp do bitcoin é em segundos
 	}
-	console.log('sended new transaction', transaction)
+	console.log('sent new transaction', transaction)
 
 	return transaction
 }

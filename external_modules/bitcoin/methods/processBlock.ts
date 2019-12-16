@@ -1,6 +1,6 @@
-import { ReceivedPending, PReceived, PSended, SendPending } from '../../common/db/models/pendingTx'
+import { ReceivedPending, PReceived, PSent, SendPending } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
-import { TxSend, UpdtSended, UpdtReceived } from '../../common'
+import { TxSend, UpdtSent, UpdtReceived } from '../../common'
 
 export function processBlock(this: Bitcoin) {
 	/**
@@ -8,12 +8,12 @@ export function processBlock(this: Bitcoin) {
 	 * @param txUpdate A transação que deve ser informada ao main server
 	 * @param type Se a transação é 'receive' ou 'send'
 	 */
-	const updtMainServer = async (txUpdate: UpdtReceived|UpdtSended, type: 'receive'|'send') => {
+	const updtMainServer = async (txUpdate: UpdtReceived|UpdtSent, type: 'receive'|'send') => {
 		try {
 			if (type === 'receive') {
 				await this.module('update_received_tx', txUpdate)
 			} else {
-				await this.module('update_sended_tx', txUpdate)
+				await this.module('update_sent_tx', txUpdate)
 			}
 		} catch (err) {
 			if (err === 'SocketDisconnected') return
@@ -37,6 +37,12 @@ export function processBlock(this: Bitcoin) {
 	const processReceived = async (doc: PReceived): Promise<void> => {
 		const txInfo = await this.rpc.transactionInfo(doc.txid)
 
+		/** Atualiza o número de confirmações e o status */
+		const status: TxSend['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
+		doc.transaction.status = status
+		doc.transaction.confirmations = txInfo.confirmations
+		await doc.save()
+
 		/**
 		 * Se não tem a opid é pq o main server não foi informado
 		 * dessa transação
@@ -47,13 +53,8 @@ export function processBlock(this: Bitcoin) {
 			if (!opid) return
 
 			doc.transaction.opid = opid
+			await doc.save()
 		}
-
-		/** Atualiza o número de confirmações e o status */
-		const status: TxSend['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
-		doc.transaction.status = status
-		doc.transaction.confirmations = txInfo.confirmations
-		await doc.save()
 
 		const txUpdate: UpdtReceived = {
 			opid: doc.transaction.opid,
@@ -86,7 +87,7 @@ export function processBlock(this: Bitcoin) {
 	 * Se uma transação foi confirmada, remove-a da collection da transações
 	 * não confirmadas
 	 */
-	const processSended = async (doc: PSended) => {
+	const processSended = async (doc: PSent) => {
 		if (!doc.transaction.txid) return
 		const txInfo = await this.rpc.transactionInfo(doc.transaction.txid)
 
@@ -96,7 +97,7 @@ export function processBlock(this: Bitcoin) {
 		doc.transaction.confirmations = txInfo.confirmations
 		await doc.save()
 
-		const txUpdate: UpdtSended = {
+		const txUpdate: UpdtSent = {
 			opid: doc.transaction.opid,
 			txid: doc.transaction.txid,
 			status,
@@ -149,7 +150,7 @@ export function processBlock(this: Bitcoin) {
 			}
 			
 			/** Todas as transações ENVIADAS e não confirmadas no database */
-			const sended: PSended[] = await SendPending.find({
+			const sended: PSent[] = await SendPending.find({
 				'transaction.txid': { $exists: true }
 			})
 			if (sended.length > 0) {

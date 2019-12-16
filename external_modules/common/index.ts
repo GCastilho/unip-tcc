@@ -2,9 +2,9 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import { TxReceived, UpdtSended } from '../../src/db/models/transaction'
-export { TxReceived, TxSend, UpdtSended, UpdtReceived } from '../../src/db/models/transaction'
-import { PSended } from './db/models/pendingTx'
+import { TxReceived, UpdtSent } from '../../src/db/models/transaction'
+export { TxReceived, TxSend, UpdtSent, UpdtReceived } from '../../src/db/models/transaction'
+import { PSent } from './db/models/pendingTx'
 
 /**
  * EventEmmiter genérico
@@ -32,7 +32,7 @@ export default abstract class Common {
 	 * @returns UpdtSended object se a transação foi executada imediatamente
 	 * @returns true se a transação foi agendada para ser executada em batch
 	 */
-	abstract withdraw(pSended: PSended, callback?: (transactions: UpdtSended[]) => void): Promise<UpdtSended|true>
+	abstract withdraw(pSended: PSent, callback?: (transactions: UpdtSent[]) => void): Promise<UpdtSent|true>
 
 	/**
 	 * Inicia o listener de requests da blockchain

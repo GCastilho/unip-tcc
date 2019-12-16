@@ -81,6 +81,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				user: user.id,
 				txid,
 				type: 'receive',
+				currency: this.name,
 				status: 'processing',
 				confirmations,
 				account,
@@ -121,7 +122,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					 * Esse tipo de erro não deve ocorrer a menos que ocorra
 					 * uma falha no database (no momento específico) ou falha de
 					 * energia, slá. O q importa é que PODE ocorrer, então o
-					 * melhor é ter uma maneira de reolver
+					 * melhor é ter uma maneira de resolver
 					 */
 					try {
 						/** Tenta cancelar a operação do usuário */
@@ -231,9 +232,9 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Ouve por requests de atualização de transações enviada e os retransmite
 	 * no eventEmitter interno
 	 */
-	socket.on('update_sended_tx', (updtSended, callback) => {
-		console.log('received update_sended_tx:', updtSended)
-		this._events.emit('update_sended_tx', updtSended, callback)
+	socket.on('update_sent_tx', (updtSended, callback) => {
+		console.log('received update_sent_tx:', updtSended)
+		this._events.emit('update_sent_tx', updtSended, callback)
 	})
 
 	/**
