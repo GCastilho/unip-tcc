@@ -4,30 +4,6 @@ import { TxSend, UpdtSent, UpdtReceived } from '../../common'
 
 export function processBlock(this: Bitcoin) {
 	/**
-	 * Envia uma txUpdt ao main server
-	 * @param txUpdate A transação que deve ser informada ao main server
-	 * @param type Se a transação é 'receive' ou 'send'
-	 */
-	const updtMainServer = async (txUpdate: UpdtReceived|UpdtSent, type: 'receive'|'send') => {
-		try {
-			if (type === 'receive') {
-				await this.module('update_received_tx', txUpdate)
-			} else {
-				await this.module('update_sent_tx', txUpdate)
-			}
-		} catch (err) {
-			if (err === 'SocketDisconnected') return
-			/**
-			 * OperationNotFound significa ou que a transação não existe
-			 * no main server ou que ela foi concluída (e está inacessível
-			 * a um update), em ambos os casos o procedimento é
-			 * deletar ela daqui
-			 */
-			if (err.code != 'OperationNotFound') throw err
-		}
-	}
-
-	/**
 	 * Verifica a quantidade de confirmações de uma transação recebida e informa
 	 * o servidor principal
 	 * 
@@ -48,8 +24,7 @@ export function processBlock(this: Bitcoin) {
 		 * dessa transação
 		 */
 		if (!doc.transaction.opid) {
-			// !opid -> não foi possível enviar a tx ao main
-			const opid = await this.sendToMainServer(doc.transaction)
+			const opid = await this.informMain.newTransaction(doc.transaction)
 			if (!opid) return
 
 			doc.transaction.opid = opid
@@ -62,22 +37,7 @@ export function processBlock(this: Bitcoin) {
 			confirmations: status === 'confirmed' ? null : txInfo.confirmations
 		}
 
-		/** Envia a atualização ao servidor principal */
-		await updtMainServer(txUpdate, 'receive')
-
-		/**
-		 * Deleta a transação se conseguir informá-la ao main server e se
-		 * ela estiver confirmed
-		 */
-		if (status === 'confirmed') {
-			console.log('deleting confirmed received transaction', {
-				opid: doc.transaction.opid,
-				txid: doc.transaction.txid,
-				status,
-				confirmations: txInfo.confirmations
-			})
-			await doc.remove()
-		}
+		await this.informMain.updateReceivedTx(txUpdate)
 	}
 
 	/**
@@ -105,22 +65,7 @@ export function processBlock(this: Bitcoin) {
 			confirmations: status === 'confirmed' ? null : txInfo.confirmations
 		}
 
-		/** Envia a atualização ao servidor principal */
-		await updtMainServer(txUpdate, 'send')
-
-		/**
-		 * Deleta a transação se conseguir informá-la ao main server e se
-		 * ela estiver confirmed
-		 */
-		if (status === 'confirmed') {
-			console.log('deleting confirmed sended transaction', {
-				opid: doc.transaction.opid,
-				txid: doc.transaction.txid,
-				status,
-				confirmations: txInfo.confirmations
-			})
-			await doc.remove()
-		}
+		await this.informMain.updateWithdraw(txUpdate)
 	}
 
 	/**
@@ -140,12 +85,24 @@ export function processBlock(this: Bitcoin) {
 		 */
 		this.rpc.getRpcInfo().catch(() => {})
 
+		/**
+		 * @todo O handler de DocumentNotFoundError está aí porque ao receber
+		 * vários blocos em seguida, como, por exemplo, ao ligar o node da
+		 * bitcoin (e ele receber todos os blocos não recebidos), pode acontecer
+		 * de os blocos serem recebidos antes do bloco anterior ter sido
+		 * processado, que pode causar essa função tentar acessar uma transação
+		 * pendente que já foi removida, que vai diparar um erro no mongo;
+		 * Seria melhor encontrar uma SOLUÇÃO pra isso ao invés de um workaround
+		 * Aliás, esse workaround não impede que a tx seja informada 2x ao qdo
+		 * confirmada, que dispara um operationNotFound
+		 */
 		try {
 			/** Todas as transactions received não confirmadas no database */
 			const received: PReceived[] = await ReceivedPending.find()
 			if (received.length > 0) {
 				received.forEach(tx => processReceived(tx).catch(err => {
-					console.error('Error processing received transactions', err)
+					if (err.name != 'DocumentNotFoundError')
+						console.error('Error processing received transactions', err)
 				}))
 			}
 			
@@ -155,7 +112,8 @@ export function processBlock(this: Bitcoin) {
 			})
 			if (sended.length > 0) {
 				sended.forEach(tx => processSended(tx).catch(err => {
-					console.error('Error processing sended transactions', err)
+					if (err.name != 'DocumentNotFoundError')
+						console.error('Error processing sended transactions', err)
 				}))
 			}
 		} catch(err) {

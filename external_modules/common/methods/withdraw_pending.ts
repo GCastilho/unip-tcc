@@ -11,46 +11,7 @@ export function withdraw_pending(this: Common) {
 	this._events.on('node_connected', () => _withdraw_pending())
 
 	/**
-	 * Atualiza o main server das transações enviadas que estão pendentes
-	 */
-	this._events.on('connected', async () => {
-		const pendingTx = SendPending.find({
-			'transaction.txid': { $exists: true }
-		}).lean().cursor()
-
-		let tx: PSent
-		while ( tx = await pendingTx.next() ) {
-			if (!tx.transaction.txid || tx.transaction.status === 'processing')
-				continue
-			await updateAndSend({
-				opid: tx.transaction.opid,
-				txid: tx.transaction.txid,
-				status: tx.transaction.status,
-				timestamp: tx.transaction.timestamp
-			})
-		}
-	})
-
-	/**
-	 * Envia uma atualização de transação ao main server e deleta-a do database
-	 * em caso de sucesso e dela ter status confirmed
-	 * 
-	 * @param transaction A atualização da transação que será enviada ao main
-	 */
-	const informMainAndDelete = async (transaction: UpdtSent): Promise<void> => {
-		try {
-			await this.module('update_sent_tx', transaction)
-		} catch(err) {
-			if (err === 'SocketDisconnected') return
-			else throw err
-		}
-
-		if (transaction.status === 'confirmed')
-			await SendPending.deleteOne({ opid: transaction.opid })
-	}
-
-	/**
-	 * Atualiza uma transação enviada no database e envia-a ao main server; Se
+	 * Atualiza no database uma transação enviada a e envia ao main server; Se
 	 * ela estiver confirmada, deleta-a do database
 	 * 
 	 * @param transaction O objeto da UpdtSended retornado pelo withdraw
@@ -76,7 +37,7 @@ export function withdraw_pending(this: Common) {
 				}
 			})
 
-			await informMainAndDelete(transaction)
+			await this.informMain.updateWithdraw(transaction)
 		} catch(err) {
 			console.error(`Error updating/sending txSend: ${transaction}`, err)
 		}
@@ -116,7 +77,7 @@ export function withdraw_pending(this: Common) {
 				if (err.code === 'NotSent') {
 					doc.journaling = 'requested'
 					await doc.save()
-					console.error('Withdraw: Transaction was not sended', err)
+					console.error('Withdraw: Transaction was not sent', err)
 					break
 				}
 				throw err

@@ -180,16 +180,11 @@ export function connection(this: Common, socket: socketIO.Socket) {
 
 		console.log('received update_received_tx', txUpdate)
 
-		const { opid, status, confirmations } = txUpdate
+		/** Uma tx confirmada não deve ter campo confirmations */
+		if (txUpdate.status === 'confirmed')
+			txUpdate.confirmations = null
 
-		/**
-		 * Uma transação confirmada deve ter o campo de confirmações
-		 * definido como null
-		 */
-		if (status === 'confirmed' && confirmations != null) return callback({
-			code: 'BadRequest',
-			message: 'A confirmation update must have \'confirmations\' field set as null'
-		})
+		const { opid, status, confirmations } = txUpdate
 
 		try {
 			const res = await Tx.findOneAndUpdate({

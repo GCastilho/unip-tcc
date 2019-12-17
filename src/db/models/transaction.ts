@@ -21,7 +21,7 @@ interface Transaction {
 	 * A quantidade de confirmações que uma transação tem. Transações
 	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
 	 */
-	confirmations?: number
+	confirmations?: number|null
 }
 
 /**

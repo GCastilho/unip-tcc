@@ -43,11 +43,11 @@ export function processTransaction(this: Nano) {
 			// pega apenas blocos de received q foram confirmados
 			if (blockInfo.subtype === 'receive' && blockInfo.confirmed === 'true' ) {
 				receiveArray.push({
-					txid: blockHash,
-					type: 'receive',
-					account: blockInfo.block_account,
-					status: 'confirmed',
-					amount: parseInt(blockInfo.amount),
+					txid:      blockHash,
+					type:      'receive',
+					account:   blockInfo.block_account,
+					status:    'confirmed',
+					amount:    parseInt(blockInfo.amount),
 					timestamp: parseInt(blockInfo.local_timestamp)
 				})
 			}
@@ -64,58 +64,60 @@ export function processTransaction(this: Nano) {
 	 * @todo Common não receber string, mas any
 	 */
 	const _processTransaction = async (block: any): Promise<void> => {
+		let txArray: TxReceived[]|void
 		try {
 			/** Procura por transações que não foram computadas */
-			const txArray = await findMissingTx(block.message.account)
+			txArray = await findMissingTx(block.message.account)
 			if (!txArray) return
+		} catch(err) {
+			return console.error('Error finding missing transactions:', err)
+		}
 
-			console.log({ txArray }) // remove
+		/**
+		 * A transação mais recente deveria estar no txArray, entretanto,
+		 * graças a velocidade do sistema, esse código pode rodar
+		 * antes da atualização da blockchain ter concluído, por esse
+		 * motivo a tx é adicionada manualmente aqui
+		 */
+		txArray.push({
+			txid:      block.message.hash,
+			type:      'receive',
+			account:   block.message.account,
+			status:    'confirmed',
+			amount:    parseInt(block.message.amount),
+			timestamp: parseInt(block.time)
+		})
 
-			/**
-			 * A transação mais recente deveria estar no txArray, entretanto,
-			 * graças a velocidade do nosso sistema, esse código pode rodar
-			 * antes da atualização da blockchain ter concluido, por esse
-			 * motivo a tx é adicionada manualmente aqui
-			 */
-			txArray.push({
-				txid: block.message.hash,
-				type: 'receive',
-				account: block.message.account,
-				status: 'confirmed',
-				amount: parseInt(block.message.amount),
-				timestamp: parseInt(block.time),
-			})
-
-			txArray.forEach(transaction => {
+		for (const transaction of txArray) {
+			try {
 				/**
 				 * Uma transação duplicada irá disparar o erro 11000 do mongo,
 				 * por consequência ela não será transmitida mais de uma vez
 				 * ao main server
 				 */
-				new Transaction({
+				await new Transaction({
 					txid: transaction.txid,
 					type: 'receive',
 					account: transaction.account
-				}).save().then(() => {
-					return this.sendToMainServer(transaction)
-				}).then(() => {
-					return redirectToStd(transaction)
-				}).catch(err => {
-					if (err.code != 11000) console.error(err)
-				})
-			})
-
-			const lastTx = txArray[txArray.length - 1]
-			await Account.updateOne({
-				account: lastTx.account
-			}, {
-				$set: {
-					lastBlock: lastTx.txid
-				}
-			})
-		} catch (err) {
-			console.error(err)
+				}).save()
+				await this.informMain.newTransaction(transaction)
+				await redirectToStd(transaction)
+			} catch(err) {
+				if (err.code != 11000)
+					return console.error('Error processing txArray:', err)
+			}
 		}
+
+		const lastTx = txArray[txArray.length - 1]
+		Account.updateOne({
+			account: lastTx.account
+		}, {
+			$set: {
+				lastBlock: lastTx.txid
+			}
+		}).catch(err => {
+			console.error('Error updating lastTx of account:', err)
+		})
 	}
 
 	return _processTransaction

@@ -2,7 +2,7 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import { TxReceived, UpdtSent } from '../../src/db/models/transaction'
+import { TxReceived, UpdtSent, UpdtReceived } from '../../src/db/models/transaction'
 export { TxReceived, TxSend, UpdtSent, UpdtReceived } from '../../src/db/models/transaction'
 import { PSent } from './db/models/pendingTx'
 
@@ -53,7 +53,7 @@ export default abstract class Common {
 
 	constructor() {
 		this.connectionHandler = methods.connection
-		this.sendToMainServer = methods.sendToMainServer.bind(this)()
+		this.informMain = methods.informMain.bind(this)()
 
 		// Monitora os eventos do rpc para manter o nodeOnline atualizado
 		this._events.on('rpc_connected', () => {
@@ -70,7 +70,7 @@ export default abstract class Common {
 
 	async init() {
 		await mongoose.init(`exchange-${this.name}`)
-		await this.connectToMainServer()
+		this.connectToMainServer()
 		this.initBlockchainListener()
 	}
 
@@ -82,7 +82,7 @@ export default abstract class Common {
 	/**
 	 * Conecta com o servidor principal
 	 */
-	private connectToMainServer = async () => {
+	private connectToMainServer = () => {
 		/**
 		 * Socket de conexão com o servidor principal
 		 */
@@ -108,15 +108,30 @@ export default abstract class Common {
 	protected withdraw_pending = methods.withdraw_pending.bind(this)()
 
 	/**
-	 * Envia uma transação ao servidor principal e atualiza seu opid no
-	 * database
-	 * 
-	 * @param transaction A transação que será enviada ao servidor
-	 * 
-	 * @returns opid se o envio foi bem-sucedido
-	 * @returns void se a transação não foi enviada
+	 * Contém métodos para atualizar o main server a respeito de transações
 	 */
-	protected sendToMainServer: (transaction: TxReceived) => Promise<string|void>
+	informMain: {
+		/**
+		 * Envia uma transação ao servidor principal e atualiza o opid dela no
+		 * database
+		 * 
+		 * @param transaction A transação que será enviada ao servidor
+		 * 
+		 * @returns opid se o envio foi bem-sucedido e a transação está pendente
+		 * @returns void se a transação não foi enviada ou se estava confirmada
+		 */
+		newTransaction (transaction: TxReceived): Promise<string|void>
+		/**
+		 * Atualiza uma transação recebida previamente informada ao main server
+		 * @param txUpdate A atualização da atualização recebida
+		 */
+		updateReceivedTx (txUpdate: UpdtReceived): Promise<void>
+		/**
+		 * Atualiza um request de withdraw recebido do main server
+		 * @param transaction A atualização da transação enviada
+		 */
+		updateWithdraw (transaction: UpdtSent): Promise<void>
+	}
 
 	/**
 	 * Wrapper de comunicação com o socket do servidor principal. Essa função

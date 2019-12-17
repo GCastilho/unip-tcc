@@ -36,30 +36,41 @@ export function withdraw(this: Common) {
 			message: '\'opid\' not found'
 		})
 
-		/**
-		 * Uma transação confirmada deve ter o campo de confirmações
-		 * definido como null
-		 */
-		if (txUpdate.status === 'confirmed' && txUpdate.confirmations != null) return callback({
-			code: 'BadRequest',
-			message: 'A confirmation update must have \'confirmations\' field set as null'
-		})
+		/** Uma tx confirmada não deve ter campo confirmations */
+		if (txUpdate.status === 'confirmed')
+			txUpdate.confirmations = null
 
 		// Atualiza a transação no database
 		tx.txid = txUpdate.txid
 		tx.status = txUpdate.status
 		tx.timestamp = new Date(txUpdate.timestamp)
 		tx.confirmations = txUpdate.confirmations ? txUpdate.confirmations : undefined
-		await tx.save()
+		try {
+			await tx.save()
+		} catch(err) {
+			callback({ code: 'InternalServerError' })
+			throw err
+		}
 
 		if (txUpdate.status === 'confirmed') {
-			const user = await findUser.byId(tx.user)
-			await user.balanceOps.complete(this.name, tx._id)
+			try {
+				const user = await findUser.byId(tx.user)
+				await user.balanceOps.complete(this.name, tx._id)
+			} catch(err) {
+				if (err === 'OperationNotFound') {
+					return callback({
+						code: 'OperationNotFound',
+						message: `UserApi could not find operation ${tx._id}`
+					})
+				} else {
+					callback({ code: 'InternalServerError' })
+					throw err
+				}
+			}
 		}
 
 		callback(null, `${txUpdate.opid} updated`)
 		this.events.emit('update_sent_tx', tx.user, txUpdate)
-		/** @todo callback caso dê erro */
 	})
 
 	/**

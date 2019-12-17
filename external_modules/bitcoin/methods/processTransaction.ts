@@ -81,7 +81,7 @@ export async function processTransaction(this: Bitcoin, txid: TxReceived['txid']
 		 * opid vai ser undefined caso a transação não tenha sido enviada ao
 		 * main, nesse caso não há mais nada o que fazer aqui
 		 */
-		const opid = await this.sendToMainServer(transaction)
+		const opid = await this.informMain.newTransaction(transaction)
 		if (!opid) return
 
 		await ReceivedPending.updateOne({
