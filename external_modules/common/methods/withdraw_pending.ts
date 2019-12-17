@@ -77,7 +77,8 @@ export function withdraw_pending(this: Common) {
 				if (err.code === 'NotSent') {
 					doc.journaling = 'requested'
 					await doc.save()
-					console.error('Withdraw: Transaction was not sent', err)
+					const message = err.message ? err.message : err
+					console.error('Withdraw: Transaction was not sent:', message)
 					break
 				}
 				throw err

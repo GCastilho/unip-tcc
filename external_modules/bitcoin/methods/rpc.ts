@@ -76,6 +76,9 @@ export async function send(pSend: PSent): Promise<UpdtSent> {
 		if (err.code === 'ECONNREFUSED') {
 			err.code = 'NotSent'
 			err.message = 'Connection refused on bitcoin node'
+		} else if (err.code === -6) {
+			// Insuficient funds on wallet
+			err.code = 'NotSent'
 		}
 		throw err
 	})
