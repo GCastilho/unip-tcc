@@ -10,8 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "mongoose": "^5.7.11",
-    "socket.io": "^2.3.0",
-    "socket.io-client": "^2.3.0"
+    "bson": "^4.0.2",
+    "mongoose": "^5.8.1",
+    "socket.io-client": "^2.3.0",
+    "socket.io-stream": "^0.9.1"
   }
 }
