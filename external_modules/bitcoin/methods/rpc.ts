@@ -72,6 +72,7 @@ export const getRpcInfo = async (): Promise<any> =>
 export async function send(pSend: PSent): Promise<UpdtSent> {
 	const { transaction: { opid, account, amount } } = pSend
 
+	// TODO: Melhorar o handler desses error codes
 	const txid = await sendToAddress(account, amount).catch(err => {
 		if (err.code === 'ECONNREFUSED') {
 			err.code = 'NotSent'
@@ -79,7 +80,11 @@ export async function send(pSend: PSent): Promise<UpdtSent> {
 		} else if (err.code === -6) {
 			// Insuficient funds on wallet
 			err.code = 'NotSent'
+		} else if (err.code === -3) {
+			// Invalid amount for send
+			err.code = 'NotSent'
 		}
+			
 		throw err
 	})
 

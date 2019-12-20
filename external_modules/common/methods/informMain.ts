@@ -45,7 +45,7 @@ export function informMain(this: Common) {
 					txid: doc.transaction.txid
 				}, {
 					$set: {
-						'transaction.opid': new ObjectId(opid)
+						'transaction.opid': opid
 					}
 				})
 			}
@@ -63,13 +63,10 @@ export function informMain(this: Common) {
 
 		let doc: PSent
 		while( doc = await transactions.next() ) {
-			if (!doc.transaction.txid || doc.transaction.status === 'processing') continue
-			const txUpdate: UpdtSent = {
-				opid: doc.transaction.opid,
-				txid: doc.transaction.txid,
-				status: doc.transaction.status,
-				timestamp: doc.transaction.timestamp
-			}
+			const { txid, status, timestamp, opid } = doc.transaction
+			/** Checa se a transação foi enviada e salva sem erros */
+			if (!txid || !status || !timestamp) continue
+			const txUpdate: UpdtSent = { opid, txid, status, timestamp }
 			await updateWithdraw(txUpdate)
 		}
 	}

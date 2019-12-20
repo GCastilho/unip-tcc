@@ -1,39 +1,16 @@
 import mongoose, { Schema, Document } from 'mongoose'
 import { ObjectId } from 'bson'
 import { Person } from './person/interface'
+import { SuportedCurrencies } from '../../currencyApi/currencyApi'
 
 /** Interface base de uma transaction */
 interface Transaction {
 	/** Identificador único dessa transação */
-	txid?: string
+	txid: string
 	/** Account de destino da transação */
 	account: string
 	/** Amount da transação */
-	amount: number
-	/** Tipo dessa transação */
-	type: 'receive' | 'send',
-	/**
-	 * Timestamp da transação, o servidor principal usa Date, os módulos
-	 * externos transmitem o timestamp como um number
-	 */
-	timestamp: number | Date
-	/**
-	 * A quantidade de confirmações que uma transação tem. Transações
-	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
-	 */
-	confirmations?: number|null
-}
-
-/**
- * Interface base para interfaces de comunicação entre o módulo externo
- * e o main server
- */
-interface ExternalModuleTransaction extends Transaction {
-	/**
-	 * Identificador da operação na collection de transactions do
-	 * servidor principal, enviado na forma de string ao passar pelo socket
-	 */
-	opid?: string
+	amount: number|bigint|string
 	/**
 	 * Status da transação
 	 * 
@@ -42,21 +19,50 @@ interface ExternalModuleTransaction extends Transaction {
 	 * confirmed: A transação foi confirmada pela rede e é considerada
 	 * irreversível
 	 */
-	status: 'pending' | 'confirmed'
-	/** Timestamp deve ser transmitida em number e em milisegundos */
+	status: 'pending'|'confirmed'
+	/**
+	 * A quantidade de confirmações que uma transação tem. Transações
+	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
+	 */
+	confirmations?: number|null
+	/**
+	 * Timestamp da transação, o servidor principal usa Date, os módulos
+	 * externos transmitem o timestamp em milisegundos como um number
+	 */
+	timestamp: number|Date
+}
+
+/**
+ * Interface base para interfaces de comunicação entre o módulo externo
+ * e o main server
+ */
+interface ExternalModuleTransaction extends Transaction {
+	amount: number
 	timestamp: number
-}
-
-/** Interface para transações recebidas */
-export interface TxReceived extends ExternalModuleTransaction {
-	txid: string
-}
-
-/** Interface para ordem de envio de transações */
-export interface TxSend extends Transaction {
+	/** Identificador da operação da transação no servidor principal */
 	opid: string
-	status: TransactionDoc['status']
+}
+
+/** Interface de uma transação recebida */
+export interface TxReceived extends Transaction {
+	/**
+	 * Identificador da operação da transação no servidor principal; O servidor
+	 * principal irá retornar uma TxReceived com opid caso o módulo externo
+	 * esteja informando uma traqnsação já computada
+	 */
+	opid?: ExternalModuleTransaction['opid']
 	timestamp: ExternalModuleTransaction['timestamp']
+	amount: ExternalModuleTransaction['amount']
+}
+
+/** Interface para ordens de envio de transações */
+export interface TxSend {
+	/** Identificador da operação da transação no servidor principal */
+	opid: ExternalModuleTransaction['opid']
+	/** Account de destino da transação */
+	account: ExternalModuleTransaction['account']
+	/** Amount da transação na unidade base da moeda */
+	amount: ExternalModuleTransaction['amount']
 }
 
 /**
@@ -64,9 +70,21 @@ export interface TxSend extends Transaction {
  * o evento update_received_tx
  */
 export interface UpdtReceived {
-	opid: string
+	/** Identificador da operação da transação no servidor principal */
+	opid: ExternalModuleTransaction['opid']
+	/**
+	 * Status da transação
+	 * 
+	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
+	 * 
+	 * confirmed: A transação foi confirmada pela rede e é considerada irreversível
+	 */
 	status: ExternalModuleTransaction['status']
-	confirmations: Transaction['confirmations']
+	/**
+	 * A quantidade de confirmações que uma transação tem. Transações
+	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
+	 */
+	confirmations?: ExternalModuleTransaction['confirmations']
 }
 
 /**
@@ -74,10 +92,24 @@ export interface UpdtReceived {
  * o evento update_sent_tx
  */
 export interface UpdtSent {
-	opid: TxSend['opid']
-	txid: string,
+	/** Identificador da operação da transação no servidor principal */
+	opid: ExternalModuleTransaction['opid']
+	/** Identificador da transação na rede da moeda */
+	txid: ExternalModuleTransaction['txid']
+	/**
+	 * Status da transação
+	 * 
+	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
+	 * 
+	 * confirmed: A transação foi confirmada pela rede e é considerada irreversível
+	 */
 	status: ExternalModuleTransaction['status']
-	confirmations?: Transaction['confirmations']
+	/**
+	 * A quantidade de confirmações que uma transação tem. Transações
+	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
+	 */
+	confirmations?: ExternalModuleTransaction['confirmations']
+	/** O timestamp da transação na rede da moeda */
 	timestamp: ExternalModuleTransaction['timestamp']
 }
 
@@ -86,13 +118,15 @@ export interface UpdtSent {
  * entre seus módulos internos
  */
 export interface TransactionInternal extends Transaction {
+	amount: number|bigint
 	timestamp: Date
+	/** Tipo dessa transação */
+	type: 'receive'|'send'
 }
 
 /** A interface dessa collection */
-interface TransactionDoc extends TransactionInternal, Document {
-	txid: string
-	_id: ObjectId,
+interface TransactionDoc extends Document {
+	_id: ObjectId
 	/** Referência ao usuário dono dessa transação */
 	user: Person['_id'],
 	/**
@@ -107,8 +141,24 @@ interface TransactionDoc extends TransactionInternal, Document {
 	 * processing: A transação ainda não foi processada no saldo do usuário,
 	 * podendo ser negada quando isso ocorrer (e deletada do db)
 	 */
-	status: ExternalModuleTransaction['status'] | 'processing'
-	currency: 'bitcoin'|'nano'
+	status: ExternalModuleTransaction['status']|'processing'
+	/** De qual currency essa transação se refere */
+	currency: SuportedCurrencies
+	/** Identificador da transação na rede da moeda */
+	txid: TransactionInternal['txid']
+	/** Account de destino da transação */
+	account: TransactionInternal['account']
+	/** Amount da transação */
+	amount: number // Deveria ser Decimal128
+	/** Tipo dessa transação */
+	type: TransactionInternal['type']
+	/**
+	 * A quantidade de confirmações que uma transação tem. Transações
+	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
+	 */
+	confirmations?: TransactionInternal['confirmations']
+	/** O timestamp da transação na rede da moeda */
+	timestamp: TransactionInternal['timestamp']
 }
 
 /** Schema da collection de transações dos usuários */

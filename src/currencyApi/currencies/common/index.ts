@@ -11,25 +11,25 @@ import { EventEmitter } from 'events'
 class Events extends EventEmitter {}
 
 export default abstract class Common {
+	/** O nome da currency que esta classe se comunica */
 	abstract name: 'bitcoin'|'nano'
+
+	/** O código da currency */
 	abstract code: string
 
-	/**
-	 * EventEmmiter para eventos internos
-	 */
+	/** A quantidade de casas decimais que esta currency tem */
+	public decimals: number = 8
+
+	/** A quantidade de casas decimais desta currency que o sistema opera */
+	public supportedDecimals: number = 8
+
+	/** EventEmmiter para eventos internos */
 	protected _events = new Events()
 
 	/** Indica se o módulo externo está online ou não */
 	protected isOnline: boolean = false
 
-	/**
-	 * Handler da conexão com o módulo externo
-	 */
-	protected connection = methods.connection
-
-	/**
-	 * Limpa os itens com todos os comandos completos da checklist
-	 */
+	/** Limpa os itens com todos os comandos completos da checklist */
 	protected garbage_collector: (command: string) => Promise<void>
 
 	/**
@@ -52,20 +52,17 @@ export default abstract class Common {
 		})
 	}
 
-	/**
-	 * EventEmmiter para eventos públicos
-	 */
-	events = new Events()
+	/** EventEmmiter para eventos públicos */
+	public events = new Events()
 
-	/**
-	 * Varre a checklist e executa as ordens de create_accounts agendadas
-	 */
-	create_account: () => Promise<void>
+	/** Handler da conexão com o módulo externo */
+	public connection = methods.connection
 
-	/**
-	 * Varre a checklist e executa as ordens de withdraw agendadas
-	 */
-	withdraw: () => Promise<void>
+	/** Varre a checklist e executa as ordens de create_accounts agendadas */
+	public create_account: () => Promise<void>
+
+	/** Varre a checklist e executa as ordens de withdraw agendadas */
+	public withdraw: () => Promise<void>
 
 	constructor() {
 		this.create_account = methods.create_account.bind(this)()

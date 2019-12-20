@@ -149,7 +149,6 @@ export function connection(this: Common, socket: socketIO.Socket) {
 						txid:          tx.txid,
 						account:       tx.account,
 						amount:        tx.amount,
-						type:          tx.type,
 						status:        tx.status,
 						confirmations: tx.confirmations,
 						timestamp:     tx.timestamp.getTime()

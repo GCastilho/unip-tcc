@@ -1,47 +1,25 @@
 import mongoose, { Schema, Document } from 'mongoose'
-import { TxReceived, TxSend } from '../../../common'
+import { UpdtSent } from '../../../common'
 import { ObjectId } from 'bson'
-
-const TxBaseSchema = new Schema({
-	opid: {
-		type: ObjectId,
-		required: false,
-		unique: true,
-		sparse: true
-	},
-	txid: {
-		type: String,
-		required: false,
-		unique: true,
-		sparse: true
-	},
-	account: {
-		type: String,
-		required: true
-	},
-	amount: {
-		type: Number,
-		required: true
-	},
-	status: {
-		type: String,
-		enum: [ 'processing', 'pending', 'confirmed' ],
-		required: true
-	},
-	confirmations: {
-		type: Number,
-		min: 0,
-		required: false
-	},
-	timestamp: {
-		type: Number,
-		required: true
-	}
-})
 
 export interface PReceived extends Document {
 	txid: string
-	transaction: TxReceived
+	transaction: {
+		/** Identificador da transação no servidor principal */
+		opid?: string
+		/** Identificador da transação na rede da moeda */
+		txid: string
+		/** Account do usuário que recebeu a transação */
+		account: string
+		/** Amount recebido pelo usuário na transação */
+		amount: number
+		/** Status da transação, de acordo com a rede da moeda */
+		status: 'pending'|'confirmed'
+		/** Quantidade de confirmações que essa transação tem, caso tenha */
+		confirmations?: number
+		/** Timestamp de execução da transação, de acordo com a rede da moeda */
+		timestamp: number
+	}
 }
 
 const PendingReceivedSchema = new Schema({
@@ -51,11 +29,38 @@ const PendingReceivedSchema = new Schema({
 		required: true
 	},
 	transaction: {
-		...TxBaseSchema.obj,
+		opid: {
+			type: String,
+			required: false,
+			unique: true,
+			sparse: true
+		},
 		txid: {
 			type: String,
 			required: true,
 			unique: true
+		},
+		account: {
+			type: String,
+			required: true
+		},
+		amount: {
+			type: Number,
+			required: true
+		},
+		status: {
+			type: String,
+			enum: [ 'pending', 'confirmed' ],
+			required: true
+		},
+		confirmations: {
+			type: Number,
+			min: 0,
+			required: false
+		},
+		timestamp: {
+			type: Number,
+			required: true
 		}
 	}
 })
@@ -63,6 +68,7 @@ const PendingReceivedSchema = new Schema({
 export const ReceivedPending = mongoose.model<PReceived>('ReceivedPendingTx', PendingReceivedSchema, 'pendingReceived')
 
 export interface PSent extends Document {
+	/** Identificador da transação no servidor principal */
 	opid: ObjectId
 	/**
 	 * Journaling da transação, para manter registro de o que já aconteceu com ela
@@ -80,11 +86,24 @@ export interface PSent extends Document {
 	 * pending: A transação foi enviada e sabe-se que ela está pendente
 	 * 
 	 * confirmed: A transação foi enviada e sabe-se que ela está confirmada
-	 * 
-	 * processing: Usado apenas pelo main
 	 */
-	journaling: TxSend['status']|'requested'|'picked'|'sended'|'batched'
-	transaction: TxSend
+	journaling: UpdtSent['status']|'requested'|'picked'|'sended'|'batched'
+	transaction: {
+		/** Identificador da transação no servidor principal */
+		opid: string
+		/** Identificador da transação na rede da moeda, quando ela é executada */
+		txid?: string
+		/** account de destino da transação */
+		account: string
+		/** amount que deve ser enviado ao destino */
+		amount: number
+		/** Status da transação, uma vez que ela é executada */
+		status?: 'pending'|'confirmed'
+		/** Confirmações que a transação tem, caso necessário */
+		confirmations?: number
+		/** Timestamp da transação de acordo com a rede da moeda */
+		timestamp?: number
+	}
 }
 
 const PendingSendSchema = new Schema({
@@ -98,11 +117,38 @@ const PendingSendSchema = new Schema({
 		default: 'requested'
 	},
 	transaction: {
-		...TxBaseSchema.obj,
 		opid: {
-			type: ObjectId,
+			type: String,
 			required: true,
 			unique: true
+		},
+		txid: {
+			type: String,
+			required: false,
+			unique: true,
+			sparse: true
+		},
+		account: {
+			type: String,
+			required: true
+		},
+		amount: {
+			type: Number,
+			required: true
+		},
+		status: {
+			type: String,
+			enum: [ 'pending', 'confirmed' ],
+			required: false
+		},
+		confirmations: {
+			type: Number,
+			min: 0,
+			required: false
+		},
+		timestamp: {
+			type: Number,
+			required: false
 		}
 	}
 })

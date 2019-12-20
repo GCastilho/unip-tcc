@@ -3,44 +3,64 @@ import { EventEmitter } from 'events'
 import * as currencies from './currencies'
 import * as self from './self'
 import User from '../userApi/user'
+import Common from './currencies/common'
 import { TransactionInternal as Tx } from '../db/models/transaction'
 
-/**
- * EventEmmiter genérico
- */
+/** EventEmmiter genérico */
 class Events extends EventEmitter {}
+
+/** Tipo para variáveis/argumentos que precisam ser uma currency suportada */
+export type SuportedCurrencies = Common['name']
 
 export class CurrencyApi {
 	// Módulos das currencies individuais (devem extender a common)
-	protected _currencies: any = {
+	protected _currencies = {
 		nano: new currencies.Nano(),
 		bitcoin: new currencies.Bitcoin()
 	}
 
-	/**
-	 * Lista das currencies suportadas pela currencyApi
-	 */
-	public currencies = (() => {
-		const __currencies: string[] = []
-		Object.keys(this._currencies).forEach(currency => {
-			__currencies.push(currency)
-		})
-		return __currencies
-	})()
+	/** Lista das currencies suportadas pela currencyApi */
+	public currencies = Object.values(this._currencies).map(currency => currency.name)
 
 	/**
-	 * EventEmmiter para eventos internos
+	 * Um array de objetos com informações detalhadas sobre as currencies
+	 * suportadas pela api
+	 * 
+	 * O objeto contém as propriedades 'name', 'code', 'decimals'
+	 * e 'supportedDecimals'
 	 */
+	public currenciesDetailed = Object.values(this._currencies).map(currency => {
+		const { name, code, decimals, supportedDecimals } = currency
+		return { name, code, decimals, supportedDecimals }
+	})
+
+	/** EventEmmiter para eventos internos */
 	// private _events = new Events()
 
-	/**
-	 * EventEmmiter para eventos públicos
-	 */
-	events = new Events()
+	/** EventEmmiter para eventos públicos */
+	public events = new Events()
 
 	/**
-	 * Listener da currencyApi, para comunicação com os módulos externos
+	 * Adiciona o request de criar accounts na checklist e chama o método
+	 * create_account das currencies solicitadas. Se nenhum account for
+	 * especificada, será criado uma account de cada currency
+	 * 
+	 * @param userId O ObjectId do usuário
+	 * @param currencies As currencies que devem ser criadas accounts
 	 */
+	public create_accounts = self.create_accounts
+
+	/**
+	 * Adiciona o request de withdraw na checklist e chama o withdraw loop
+	 * 
+	 * @param email O email do usuário que a currency será retirada
+	 * @param currency A currency que será retirada
+	 * @param address O address de destino do saque
+	 * @param amount A quantidade que será sacada
+	 */
+	public withdraw = self.withdraw
+
+	/** Listener da currencyApi, para comunicação com os módulos externos */
 	private __listener(port: number) {
 		const io = socketIO(port)
 		console.log('CurrencyApi listener is up on port', port)
@@ -64,49 +84,11 @@ export class CurrencyApi {
 	private __new_transaction() {
 		this.currencies.forEach(currency => {
 			this._currencies[currency].events
-				.on('new_transaction', (userId: User['id'], transaction: Tx ) => {
+				.on('new_transaction', (userId: User['id'], transaction: Tx) => {
 					this.events.emit('new_transaction', userId, currency, transaction)
 			})
 		})
 	}
-
-	/**
-	 * Um array de objetos com informações detalhadas sobre as currencies
-	 * suportadas pela api
-	 * 
-	 * O objeto contém as propriedades 'name' e 'code'
-	 */
-	currenciesDetailed: Object[] = (() => {
-		const __currencies: Object[] = []
-		this.currencies.forEach(currency => {
-			const { name, code } = this._currencies[currency]
-			__currencies.push({
-				name,
-				code
-			})
-		})
-		return __currencies
-	})()
-
-	/**
-	 * Adiciona o request de criar accounts na checklist e chama o método
-	 * create_account das currencies solicitadas. Se nenhum account for
-	 * especificada, será criado uma account de cada currency
-	 * 
-	 * @param userId O ObjectId do usuário
-	 * @param currencies As currencies que devem ser criadas accounts
-	 */
-	create_accounts = self.create_accounts
-
-	/**
-	 * Adiciona o request de withdraw na checklist e chama o withdraw loop
-	 * 
-	 * @param email O email do usuário que a currency será retirada
-	 * @param currency A currency que será retirada
-	 * @param address O address de destino do saque
-	 * @param amount A quantidade que será sacada
-	 */
-	withdraw = self.withdraw
 
 	constructor() {
 		// Inicia o listener

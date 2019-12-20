@@ -127,11 +127,8 @@ export function withdraw(this: Common) {
 
 				const transaction: TxSend = {
 					opid:      tx._id.toHexString(),
-					status:    tx.status, // necessário?
 					account:   tx.account,
-					amount:    tx.amount,
-					type:      tx.type, // necessário?
-					timestamp: tx.timestamp.getTime()
+					amount:    tx.amount
 				}
 
 				try {

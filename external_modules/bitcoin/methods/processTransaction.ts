@@ -1,9 +1,9 @@
+import { ObjectId } from 'bson'
 import Account from '../../common/db/models/account'
 import Transaction from '../../common/db/models/transaction'
 import { ReceivedPending } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
 import { TxReceived } from '../../common'
-import { ObjectId } from 'bson'
 
 /**
  * Recebe um txid e uma função para pegar informações brutas dessa transação
@@ -41,7 +41,6 @@ export async function formatTransaction(txid: string, getInfo: Function): Promis
 
 	const formattedTransaction: TxReceived = {
 		txid:          txInfo.txid,
-		type:          'receive',
 		status:        'pending',
 		confirmations: txInfo.confirmations,
 		account:       address,

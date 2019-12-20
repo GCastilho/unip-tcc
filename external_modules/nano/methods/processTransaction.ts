@@ -44,7 +44,6 @@ export function processTransaction(this: Nano) {
 			if (blockInfo.subtype === 'receive' && blockInfo.confirmed === 'true' ) {
 				receiveArray.push({
 					txid:      blockHash,
-					type:      'receive',
 					account:   blockInfo.block_account,
 					status:    'confirmed',
 					amount:    parseInt(blockInfo.amount),
@@ -81,7 +80,6 @@ export function processTransaction(this: Nano) {
 		 */
 		txArray.push({
 			txid:      block.message.hash,
-			type:      'receive',
 			account:   block.message.account,
 			status:    'confirmed',
 			amount:    parseInt(block.message.amount),

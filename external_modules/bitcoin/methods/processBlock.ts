@@ -1,6 +1,6 @@
 import { ReceivedPending, PReceived, PSent, SendPending } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
-import { TxSend, UpdtSent, UpdtReceived } from '../../common'
+import { UpdtSent, UpdtReceived } from '../../common'
 
 export function processBlock(this: Bitcoin) {
 	/**
@@ -14,7 +14,7 @@ export function processBlock(this: Bitcoin) {
 		const txInfo = await this.rpc.transactionInfo(doc.txid)
 
 		/** Atualiza o número de confirmações e o status */
-		const status: TxSend['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
+		const status: UpdtSent['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
 		doc.transaction.status = status
 		doc.transaction.confirmations = txInfo.confirmations
 		await doc.save()
@@ -48,11 +48,11 @@ export function processBlock(this: Bitcoin) {
 	 * não confirmadas
 	 */
 	const processSended = async (doc: PSent) => {
-		if (!doc.transaction.txid) return
+		if (!doc.transaction.txid || !doc.transaction.timestamp) return
 		const txInfo = await this.rpc.transactionInfo(doc.transaction.txid)
 
 		/** Atualiza o número de confirmações e o status */
-		const status: TxSend['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
+		const status: UpdtSent['status'] = txInfo.confirmations >= 6 ? 'confirmed' : 'pending'
 		doc.transaction.status = status
 		doc.transaction.confirmations = txInfo.confirmations
 		await doc.save()
