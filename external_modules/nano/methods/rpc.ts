@@ -72,12 +72,13 @@ export function nanoRpc(this: Nano) {
 	const send = async (doc: PSent): Promise<UpdtSent> => {
 		const { transaction: { opid, account, amount } } = doc
 
+		// NOTA: doc.amount está em NANO
 		const res = await request({
 			action: 'send',
 			wallet: this.wallet,
 			source: this.stdAccount,
 			destination: account,
-			amount: amount.toLocaleString('fullwide', { useGrouping: false })
+			amount
 		}).catch(err => {
 			if (err.code = 'ECONNREFUSED') {
 				err.code = 'NotSent'

@@ -148,7 +148,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 						opid:          tx._id.toHexString(),
 						txid:          tx.txid,
 						account:       tx.account,
-						amount:        tx.amount,
+						amount:        tx.amount.toFullString(),
 						status:        tx.status,
 						confirmations: tx.confirmations,
 						timestamp:     tx.timestamp.getTime()

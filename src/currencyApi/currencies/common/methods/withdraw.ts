@@ -128,7 +128,7 @@ export function withdraw(this: Common) {
 				const transaction: TxSend = {
 					opid:      tx._id.toHexString(),
 					account:   tx.account,
-					amount:    tx.amount
+					amount:    tx.amount.toFullString()
 				}
 
 				try {

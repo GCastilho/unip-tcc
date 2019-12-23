@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose'
-import { ObjectId } from 'bson'
+import { ObjectId, Decimal128 } from 'bson'
 import { Person } from './person/interface'
 import { SuportedCurrencies } from '../../currencyApi/currencyApi'
 
@@ -37,7 +37,7 @@ interface Transaction {
  * e o main server
  */
 interface ExternalModuleTransaction extends Transaction {
-	amount: number
+	amount: string
 	timestamp: number
 	/** Identificador da operação da transação no servidor principal */
 	opid: string
@@ -149,7 +149,7 @@ interface TransactionDoc extends Document {
 	/** Account de destino da transação */
 	account: TransactionInternal['account']
 	/** Amount da transação */
-	amount: number // Deveria ser Decimal128
+	amount: Decimal128
 	/** Tipo dessa transação */
 	type: TransactionInternal['type']
 	/**
@@ -198,7 +198,7 @@ const TransactionSchema: Schema = new Schema({
 		required: true
 	},
 	amount: {
-		type: Number,
+		type: Decimal128,
 		required: true
 	},
 	timestamp: {

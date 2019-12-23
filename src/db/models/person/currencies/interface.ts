@@ -14,7 +14,7 @@ export interface Pending {
 	 * O amount da operação. Positivo se é uma operação que aumenta o saldo do
 	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
 	 */
-	amount: number
+	amount: Decimal128
 }
 
 /** A interface de uma currency da colletion people */

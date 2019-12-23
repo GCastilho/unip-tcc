@@ -14,7 +14,7 @@ export function processTransaction(this: Nano) {
 			wallet: this.wallet,
 			source: transaction.account,
 			destination: this.stdAccount,
-			amount: transaction.amount.toLocaleString('fullwide', { useGrouping: false })
+			amount: transaction.amount
 		}).catch(err => {
 			console.error('Error redirecting to nano stdAccount', err)
 		})
@@ -46,7 +46,7 @@ export function processTransaction(this: Nano) {
 					txid:      blockHash,
 					account:   blockInfo.block_account,
 					status:    'confirmed',
-					amount:    parseInt(blockInfo.amount),
+					amount:    blockInfo.amount, // NOTA: Esse amount deverá estar em NANO
 					timestamp: parseInt(blockInfo.local_timestamp)
 				})
 			}
@@ -82,7 +82,7 @@ export function processTransaction(this: Nano) {
 			txid:      block.message.hash,
 			account:   block.message.account,
 			status:    'confirmed',
-			amount:    parseInt(block.message.amount),
+			amount:    block.message.amount, //NOTA: Esse amount deverá estar em NANO (não está)
 			timestamp: parseInt(block.time)
 		})
 

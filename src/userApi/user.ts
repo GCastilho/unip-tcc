@@ -1,7 +1,59 @@
-import { ObjectId } from 'bson'
+import { ObjectId, Decimal128 } from 'bson'
 import { sha512 } from 'js-sha512'
 import { Person } from '../db/models/person/interface'
 import { Pending } from '../db/models/person/currencies/interface'
+import { SuportedCurrencies as SC } from '../currencyApi/currencyApi'
+
+/**
+ * Workaraound da dependência circular com a currencyApi, em que esse módulo
+ * precisa da _instância_ da currencyApi e a currencyApi precisa desse módulo
+ * 
+ * Poderá ser facilmente substituído pelo statment abaixo uma vez que ele for
+ * implementado no typescript na versão 3.8
+ * 
+ * @see https://github.com/tc39/proposal-top-level-await
+ * @see https://github.com/microsoft/TypeScript/issues/25988
+ */
+// const currencyApi = await import('../currencyApi')
+let currencyApi
+setImmediate(async () => {
+	currencyApi = await import('../currencyApi')
+	currenciesInfo = (() =>
+		currencyApi.currenciesDetailed.reduce((acc, cur) => ({
+			...acc,
+			[cur.name]: {
+				decimals: cur.decimals
+			}
+		}), {} as currenciesInfo)
+	)()
+})
+// import currencyApi from '../currencyApi'
+
+let currenciesInfo: currenciesInfo
+type currenciesInfo = {
+	[key in SC]: {
+		decimals: number
+	}
+}
+
+/**
+ * Interface utilizada pela balanceOps para operações de manipulação de saldo
+ */
+interface PendingOp {
+	/**
+	 * Referencia ao objectId da operação em sua respectiva collection
+	 */
+	opid: ObjectId,
+	/**
+	 * O tipo da operação, para identificar em qual collection ela está
+	 */
+	type: string,
+	/**
+	 * O amount da operação. Positivo se é uma operação que aumenta o saldo do
+	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
+	 */
+	amount: number|string
+}
 
 export default class User {
 	/**
@@ -12,6 +64,9 @@ export default class User {
 			.update(this.person.credentials.salt)
 			.update(password)
 			.hex()
+
+	// Add decription; change name? Nota: O typescript não checa o retorno disso
+	private _currenciesInfo: currenciesInfo = currenciesInfo
 
 	constructor(person: Person) {
 		this.person = person
@@ -84,23 +139,29 @@ export default class User {
 		 * @throws NotEnoughFunds Caso não haja saldo disponível (o campo
 		 * 'available' do balance) para executar a operação
 		 */
-		const add = async (currency: string, op: Pending): Promise<void> => {
+		const add = async (currency: SC, op: PendingOp): Promise<void> => {
 			const balanceObj = `currencies.${currency}.balance`
-	
+
+			const pending: Pending = {
+				opid: op.opid,
+				type: op.type,
+				amount: Decimal128.fromNumeric(op.amount, this._currenciesInfo[currency].decimals)
+			}
+
 			const response = await this.person.collection.findOneAndUpdate({
 				_id: this.person._id,
 				$expr: {
 					$gte: [
-						{ $add: [`$${balanceObj}.available`, op.amount] }, 0
+						{ $add: [`$${balanceObj}.available`, pending.amount] }, 0
 					]
 				}
 			}, {
 				$inc: {
-					[`${balanceObj}.locked`]: Math.abs(op.amount),
-					[`${balanceObj}.available`]: op.amount < 0 ? op.amount : 0
+					[`${balanceObj}.locked`]: pending.amount.abs(),
+					[`${balanceObj}.available`]: op.amount < 0 ? pending.amount : 0
 				},
 				$push: {
-					[`currencies.${currency}.pending`]: op
+					[`currencies.${currency}.pending`]: pending
 				}
 			})
 
@@ -141,7 +202,7 @@ export default class User {
 					}
 				}
 			]).toArray()
-			if (!operations[0] || typeof operations[0].amount != 'number')
+			if (!operations[0] || !(operations[0].amount instanceof Decimal128))
 				throw 'OperationNotFound'
 
 			return operations[0]
@@ -156,8 +217,8 @@ export default class User {
 		 * 
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
-		const _getOpAmount = async (currency: string, opid: ObjectId)
-		:Promise<number> => {
+		const _getOpAmount = async (currency: SC, opid: ObjectId)
+		:Promise<Decimal128> => {
 			const operation = await get(currency, opid)
 			return operation.amount
 		}
@@ -179,8 +240,8 @@ export default class User {
 		const _removeOperation = async(
 			currency: string,
 			opid: ObjectId,
-			opAmount: number,
-			changeInAvailable: number
+			opAmount: Decimal128,
+			changeInAvailable: Decimal128
 		): Promise<void> => {
 			const balanceObj = `currencies.${currency}.balance`
 
@@ -189,7 +250,7 @@ export default class User {
 				[`currencies.${currency}.pending.opid`]: opid
 			}, {
 				$inc: {
-					[`${balanceObj}.locked`]: - Math.abs(opAmount),
+					[`${balanceObj}.locked`]: - opAmount.abs(),
 					[`${balanceObj}.available`]: changeInAvailable
 				},
 				$pull: {
@@ -214,7 +275,7 @@ export default class User {
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
 		const cancel = async (
-			currency: string,
+			currency: SC,
 			opid: ObjectId
 		): Promise<void> => {
 			/**
@@ -225,8 +286,10 @@ export default class User {
 			/**
 			 * Calcula o quanto o campo 'available' deverá ser alterado para
 			 * retornar os saldos ao estado original
+			 * 
+			 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
 			 */
-			const changeInAvailable = amount < 0 ? Math.abs(amount) : 0
+			const changeInAvailable = +amount < 0 ? amount.abs() : Decimal128.fromNumeric(0)
 
 			/**
 			 * Remove a operação pendente e volta os saldos ao estado original
@@ -247,7 +310,7 @@ export default class User {
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
 		const complete = async (
-			currency: string,
+			currency: SC,
 			opid: ObjectId
 		): Promise<void> => {
 			/**
@@ -258,8 +321,10 @@ export default class User {
 			/**
 			 * Calcula o quanto o campo 'available' deverá ser alterado para
 			 * completar a operação
+			 * 
+			 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
 			 */
-			const changeInAvailable = amount < 0 ? 0 : amount
+			const changeInAvailable = +amount < 0 ? Decimal128.fromNumeric(0) : amount
 
 			/**
 			 * Remove a operação pendente e atualiza os saldos

@@ -2,7 +2,7 @@ import { ObjectId } from 'bson'
 import Checklist from '../../db/models/checklist'
 import Transaction from '../../db/models/transaction'
 import User from '../../userApi/user'
-import { CurrencyApi } from '../currencyApi'
+import { CurrencyApi, SuportedCurrencies as SC } from '../currencyApi'
 
 /**
  * Adiciona o request de withdraw na checklist, a operação na transaction,
@@ -15,7 +15,7 @@ import { CurrencyApi } from '../currencyApi'
  */
 export async function withdraw(this: CurrencyApi,
 		user: User,
-		currency: string,
+		currency: SC,
 		account: string,
 		amount: number
 	): Promise<ObjectId> {

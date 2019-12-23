@@ -73,7 +73,8 @@ export async function send(pSend: PSent): Promise<UpdtSent> {
 	const { transaction: { opid, account, amount } } = pSend
 
 	// TODO: Melhorar o handler desses error codes
-	const txid = await sendToAddress(account, amount).catch(err => {
+	// TODO: Garantir que o cast to number do amount não dá problema com rounding
+	const txid = await sendToAddress(account, +amount).catch(err => {
 		if (err.code === 'ECONNREFUSED') {
 			err.code = 'NotSent'
 			err.message = 'Connection refused on bitcoin node'

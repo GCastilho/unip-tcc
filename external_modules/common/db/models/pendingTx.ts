@@ -12,7 +12,7 @@ export interface PReceived extends Document {
 		/** Account do usuário que recebeu a transação */
 		account: string
 		/** Amount recebido pelo usuário na transação */
-		amount: number
+		amount: string
 		/** Status da transação, de acordo com a rede da moeda */
 		status: 'pending'|'confirmed'
 		/** Quantidade de confirmações que essa transação tem, caso tenha */
@@ -45,7 +45,7 @@ const PendingReceivedSchema = new Schema({
 			required: true
 		},
 		amount: {
-			type: Number,
+			type: String,
 			required: true
 		},
 		status: {
@@ -96,7 +96,7 @@ export interface PSent extends Document {
 		/** account de destino da transação */
 		account: string
 		/** amount que deve ser enviado ao destino */
-		amount: number
+		amount: string
 		/** Status da transação, uma vez que ela é executada */
 		status?: 'pending'|'confirmed'
 		/** Confirmações que a transação tem, caso necessário */
@@ -133,7 +133,7 @@ const PendingSendSchema = new Schema({
 			required: true
 		},
 		amount: {
-			type: Number,
+			type: String,
 			required: true
 		},
 		status: {

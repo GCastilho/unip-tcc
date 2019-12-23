@@ -26,12 +26,11 @@ export class CurrencyApi {
 	 * Um array de objetos com informações detalhadas sobre as currencies
 	 * suportadas pela api
 	 * 
-	 * O objeto contém as propriedades 'name', 'code', 'decimals'
-	 * e 'supportedDecimals'
+	 * O objeto contém as propriedades 'name', 'code' e 'decimals'
 	 */
 	public currenciesDetailed = Object.values(this._currencies).map(currency => {
 		const { name, code, decimals, supportedDecimals } = currency
-		return { name, code, decimals, supportedDecimals }
+		return { name, code, decimals: Math.min(decimals, supportedDecimals) }
 	})
 
 	/** EventEmmiter para eventos internos */

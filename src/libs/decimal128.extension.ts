@@ -24,7 +24,7 @@ declare module 'bson' {
 		 * @param value a number or numeric string representation
 		 * @param decimals the maximum number of significant decimal places
 		 */
-		export function truncate(value: string|number, decimals?: number): Decimal128
+		export function fromNumeric(value: string|number, decimals?: number): Decimal128
 	}
 }
 
@@ -105,7 +105,7 @@ Decimal128.prototype.abs = function abs() {
  * @param value O valor que será convertido
  * @param decimals Um valor opcional de casas decimais para truncar
  */
-Decimal128.truncate = function toDecimal128(value, decimals = 0) {
+Decimal128.fromNumeric = function toDecimal128(value, decimals = 0) {
 	let _value = value.toString()
 	// Corta as casas que vão alem da quantidade de decimais estabelecidos
 	if (decimals) {
