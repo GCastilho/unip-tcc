@@ -4,7 +4,7 @@
 
 import { Schema } from 'mongoose'
 import * as validators from './validators'
-import { Decimal128 } from 'bson'
+import { Decimal128 } from 'mongodb'
 
 /**
  * Schema das operações (que involvem alteração de saldo) pendentes desse

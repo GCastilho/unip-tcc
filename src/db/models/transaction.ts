@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose'
-import { ObjectId, Decimal128 } from 'bson'
+import { ObjectId, Decimal128 } from 'mongodb'
 import { Person } from './person/interface'
 import { SuportedCurrencies } from '../../currencyApi/currencyApi'
 

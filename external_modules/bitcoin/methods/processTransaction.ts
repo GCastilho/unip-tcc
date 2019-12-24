@@ -1,4 +1,4 @@
-import { ObjectId } from 'bson'
+import { ObjectId } from 'mongodb'
 import Account from '../../common/db/models/account'
 import Transaction from '../../common/db/models/transaction'
 import { ReceivedPending } from '../../common/db/models/pendingTx'

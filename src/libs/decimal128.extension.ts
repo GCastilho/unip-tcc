@@ -1,7 +1,7 @@
-import { Decimal128 } from 'bson'
+import { Decimal128 } from 'mongodb'
 
-declare module 'bson' {
-	// Extends the bson.Decimal128's prototype
+declare module 'mongodb' {
+	// Extends the mongodb.Decimal128's prototype
 	interface Decimal128 {
 		/**
 		 * Returns a string representation of the decimal128 with the
@@ -15,7 +15,7 @@ declare module 'bson' {
 		 */
 		abs(): Decimal128
 	}
-	// Extends the bson.Decimal128 object
+	// Extends the mongodb.Decimal128 object
 	namespace Decimal128 {
 		/**
 		 * Create a Decimal128 instance from a number or numeric string with the

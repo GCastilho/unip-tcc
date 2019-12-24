@@ -1,4 +1,4 @@
-import { ObjectId } from 'bson'
+import { ObjectId } from 'mongodb'
 import Checklist from '../../db/models/checklist'
 import Transaction from '../../db/models/transaction'
 import User from '../../userApi/user'

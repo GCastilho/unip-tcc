@@ -1,4 +1,4 @@
-import { ObjectId, Decimal128 } from 'bson'
+import { ObjectId, Decimal128 } from 'mongodb'
 import { sha512 } from 'js-sha512'
 import { Person } from '../db/models/person/interface'
 import { Pending } from '../db/models/person/currencies/interface'

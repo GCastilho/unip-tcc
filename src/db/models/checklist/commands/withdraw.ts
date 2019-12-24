@@ -1,5 +1,5 @@
 import { Schema } from 'mongoose'
-import { ObjectId } from 'bson'
+import { ObjectId } from 'mongodb'
 
 export interface WithdrawInterface {
 	status: 'preparing'|'requested'|'completed',

@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
-import { ObjectId } from 'bson'
+import { ObjectId } from 'mongodb'
 
 export interface Transaction extends Document {
 	opid: ObjectId,

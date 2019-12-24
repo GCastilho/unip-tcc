@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose'
 import { UpdtSent } from '../../../common'
-import { ObjectId } from 'bson'
+import { ObjectId } from 'mongodb'
 
 export interface PReceived extends Document {
 	txid: string

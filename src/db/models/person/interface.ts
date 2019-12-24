@@ -1,5 +1,5 @@
 import { Document } from 'mongoose'
-import { ObjectId } from 'bson'
+import { ObjectId } from 'mongodb'
 import { Currencies } from './currencies/interface'
 
 export interface Person extends Document {

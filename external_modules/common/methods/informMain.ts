@@ -1,4 +1,4 @@
-import { ObjectId } from 'bson'
+import { ObjectId } from 'mongodb'
 import Account from '../db/models/account'
 import Transaction from '../db/models/transaction'
 import Common, { TxReceived, UpdtReceived } from '../index'

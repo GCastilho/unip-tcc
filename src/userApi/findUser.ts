@@ -1,7 +1,7 @@
 import Person from '../db/models/person'
 import Cookie from '../db/models/cookie'
 import User from './user'
-import { ObjectId } from 'bson'
+import { ObjectId } from 'mongodb'
 
 export default class FindUser {
 	/**

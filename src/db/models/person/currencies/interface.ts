@@ -1,4 +1,4 @@
-import { Decimal128, ObjectId } from 'bson'
+import { Decimal128, ObjectId } from 'mongodb'
 
 /** A interface de operações de alteração de saldo pendentes*/
 export interface Pending {

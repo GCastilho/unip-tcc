@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose'
-import { ObjectId } from 'bson'
+import { ObjectId } from 'mongodb'
 import { CreateAccountsSchema, CreateAccountsInterface } from './commands/create_accounts'
 import { WithdrawSchema, WithdrawInterface } from './commands/withdraw'
 

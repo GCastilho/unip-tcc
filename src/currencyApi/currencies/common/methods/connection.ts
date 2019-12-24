@@ -1,6 +1,6 @@
 import socketIO = require('socket.io')
 import ss = require('socket.io-stream')
-import { ObjectId } from 'bson'
+import { ObjectId } from 'mongodb'
 import Common from '../index'
 import Person from '../../../../db/models/person'
 import FindUser from '../../../../userApi/findUser'
