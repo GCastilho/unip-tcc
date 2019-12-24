@@ -1,4 +1,4 @@
-import socketIO = require('socket.io')
+import socketIO from 'socket.io'
 import ss = require('socket.io-stream')
 import { ObjectId } from 'mongodb'
 import Common from '../index'
@@ -159,8 +159,14 @@ export function connection(this: Common, socket: socketIO.Socket) {
 						if (err != 'OperationNotFound') throw err
 					})
 				}
+			} else if (err.name === 'ValidationError') {
+				callback({
+					code: 'ValidationError',
+					message: 'Mongoose failed to validate the document',
+					details: err
+				})
 			} else {
-				console.error('Error processing new_transaction', err)
+				console.error('Error processing new_transaction:', err)
 				callback({ code: 'InternalServerError' })
 				await user.balanceOps.cancel(this.name, opid)
 			}
@@ -179,34 +185,30 @@ export function connection(this: Common, socket: socketIO.Socket) {
 
 		console.log('received update_received_tx', txUpdate)
 
-		/** Uma tx confirmada não deve ter campo confirmations */
-		if (txUpdate.status === 'confirmed')
-			txUpdate.confirmations = null
-
 		const { opid, status, confirmations } = txUpdate
 
 		try {
-			const res = await Tx.findOneAndUpdate({
+			const tx = await Tx.findOne({
 				_id: opid,
 				status: 'pending'
-			}, {
-				$set: {
-					status,
-					confirmations
-				}
 			})
-			if (!res) return callback({
+			if (!tx) return callback({
 				code: 'OperationNotFound',
 				message: `No pending transaction with id: '${opid}' found`
 			})
 
+			tx.status = status
+			tx.confirmations = txUpdate.status === 'confirmed' ? undefined : confirmations
+			await tx.validate()
+
 			if (status === 'confirmed') {
-				const user = await findUser.byId(res.user)
+				const user = await findUser.byId(tx.user)
 				await user.balanceOps.complete(this.name, new ObjectId(opid))
 			}
 
+			await tx.save()
 			callback(null, `${txUpdate.opid} updated`)
-			this.events.emit('update_received_tx', res.user, txUpdate)
+			this.events.emit('update_received_tx', tx.user, txUpdate)
 		} catch(err) {
 			if (err === 'UserNotFound') {
 				callback({ code: 'UserNotFound' })
@@ -214,6 +216,12 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				callback({
 					code: 'OperationNotFound',
 					message: 'userApi could not find the requested operation'
+				})
+			} else if (err.name === 'ValidationError') {
+				callback({
+					code: 'ValidationError',
+					message: 'Mongoose failed to validate the document after the update',
+					details: err
 				})
 			} else {
 				console.error('Error processing update_received_tx', err)

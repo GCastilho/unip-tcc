@@ -1,9 +1,9 @@
 import randomstring from 'randomstring'
 import { sha512 } from 'js-sha512'
-import PersonModel from '../db/models/person'
-import currencyApi from '../currencyApi'
-import { Person } from '../db/models/person/interface'
 import FindUser from './findUser'
+import currencyApi from '../currencyApi'
+import PersonModel from '../db/models/person'
+import { Person } from '../db/models/person/interface'
 
 class UserApi {
 	/**

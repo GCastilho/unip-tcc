@@ -65,6 +65,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 	})
 
 	socket.on('withdraw', async (request: TxSend, callback: Function) => {
+		console.log('received withdraw request', request)
 		/**
 		 * Salva na pending e retorna um callback dando ciência do recebimento
 		 * ou da falha

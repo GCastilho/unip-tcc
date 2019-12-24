@@ -2,19 +2,19 @@ import Transaction from '../../common/db/models/transaction'
 import Account from '../../common/db/models/account'
 import { Nano } from '../index'
 import { TxReceived } from '../../common'
+import { fromRawToNano, fromNanoToRaw } from '../utils/unitConverter'
 
 export function processTransaction(this: Nano) {
 	const redirectToStd = async (transaction: TxReceived): Promise<void> => {
 		/** Não redireciona para a stdAccount transações recebidas na stdAccount */
 		if (transaction.account === this.stdAccount) return
 
-		// javascript's number não tem precisão suficiente para o raw, usar bigint
 		await this.rpc.request({
 			action: 'send',
 			wallet: this.wallet,
 			source: transaction.account,
 			destination: this.stdAccount,
-			amount: transaction.amount
+			amount: fromNanoToRaw(transaction.amount.toString())
 		}).catch(err => {
 			console.error('Error redirecting to nano stdAccount', err)
 		})
@@ -46,7 +46,7 @@ export function processTransaction(this: Nano) {
 					txid:      blockHash,
 					account:   blockInfo.block_account,
 					status:    'confirmed',
-					amount:    blockInfo.amount, // NOTA: Esse amount deverá estar em NANO
+					amount:    fromRawToNano(blockInfo.amount),
 					timestamp: parseInt(blockInfo.local_timestamp)
 				})
 			}
@@ -82,7 +82,7 @@ export function processTransaction(this: Nano) {
 			txid:      block.message.hash,
 			account:   block.message.account,
 			status:    'confirmed',
-			amount:    block.message.amount, //NOTA: Esse amount deverá estar em NANO (não está)
+			amount:    fromRawToNano(block.message.amount),
 			timestamp: parseInt(block.time)
 		})
 

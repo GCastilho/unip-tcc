@@ -14,8 +14,8 @@ export function informMain(this: Common) {
 	 * transações pendentes
 	 */
 	this._events.on('connected', () => {
-		const promises = [ _updateAllReceived, _updateAllsended ]
-		promises.map(item => item())
+		const operations = [ _updateAllReceived, _updateAllsended ]
+		const promises = operations.map(op => op())
 		Promise.all(promises).catch(err => {
 			console.error('Error on informMain:', err)
 		})
@@ -172,7 +172,11 @@ export function informMain(this: Common) {
 			}
 		} catch(err) {
 			if (err === 'SocketDisconnected') return
-			else throw err
+			if (err.code === 'OperationNotFound') {
+				console.error('Deleting non-existent withdraw transaction', txUpdate)
+				await SendPending.deleteOne({ opid: txUpdate.opid })
+			} else
+				throw err
 		}
 	}
 

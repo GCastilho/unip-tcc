@@ -24,7 +24,7 @@ interface Transaction {
 	 * A quantidade de confirmações que uma transação tem. Transações
 	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
 	 */
-	confirmations?: number|null
+	confirmations?: number
 	/**
 	 * Timestamp da transação, o servidor principal usa Date, os módulos
 	 * externos transmitem o timestamp em milisegundos como um number
@@ -52,7 +52,7 @@ export interface TxReceived extends Transaction {
 	 */
 	opid?: ExternalModuleTransaction['opid']
 	timestamp: ExternalModuleTransaction['timestamp']
-	amount: ExternalModuleTransaction['amount']
+	amount: ExternalModuleTransaction['amount']|number
 }
 
 /** Interface para ordens de envio de transações */

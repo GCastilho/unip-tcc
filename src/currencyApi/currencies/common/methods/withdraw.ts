@@ -32,24 +32,28 @@ export function withdraw(this: Common) {
 	this._events.on('update_sent_tx', async (txUpdate: UpdtSent, callback: Function) => {
 		const tx = await Transaction.findById(txUpdate.opid)
 		if (!tx) return callback({
-			code: 'NotFound',
-			message: '\'opid\' not found'
+			code: 'OperationNotFound',
+			message: `No pending transaction with id: '${txUpdate.opid}' found`
 		})
-
-		/** Uma tx confirmada não deve ter campo confirmations */
-		if (txUpdate.status === 'confirmed')
-			txUpdate.confirmations = null
 
 		// Atualiza a transação no database
 		tx.txid = txUpdate.txid
 		tx.status = txUpdate.status
 		tx.timestamp = new Date(txUpdate.timestamp)
-		tx.confirmations = txUpdate.confirmations ? txUpdate.confirmations : undefined
+		tx.confirmations = txUpdate.status === 'confirmed' ? undefined : txUpdate.confirmations
 		try {
 			await tx.save()
 		} catch(err) {
-			callback({ code: 'InternalServerError' })
-			throw err
+			if (err.name === 'ValidationError') {
+				return callback({
+					code: 'ValidationError',
+					message: 'Mongoose failed to validate the document after the update',
+					details: err
+				})
+			} else {
+				callback({ code: 'InternalServerError' })
+				throw err
+			}
 		}
 
 		if (txUpdate.status === 'confirmed') {

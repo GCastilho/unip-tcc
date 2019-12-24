@@ -69,25 +69,20 @@ Decimal128.prototype.toFullString = function decimal128ToString() {
 
 	let numero = inteiro.concat(casas)
 
-	// Remove os zeros extras
-	let index = 0
+	// Remove os zeros extras do começo
 	while (
-		numero.length > index
-		&& numero.charAt(index) === '0'
-		&& numero.charAt(index+1) != '.'
+		numero.charAt(0) === '0' &&
+		numero.charAt(1) !== '.'
 	) {
-		numero = numero.substr(0, index) + '' + numero.substr(index + 1)
-		index++
+		numero = numero.substr(1)
 	}
 
-	index = numero.length - 1
+	// Remove os zeros extras do fim
 	while (
-		index >= 0
-		&& numero.charAt(index) === '0'
-		&& numero.charAt(index-1) != '.'
+		numero.charAt(numero.length - 1) === '0' &&
+		numero.charAt(numero.length - 2) !== '.'
 	) {
-		numero = numero.substr(0, index) + '' + numero.substr(index + 1)
-		index--
+		numero = numero.substr(0, numero.length - 1)
 	}
 
 	return numero
@@ -111,7 +106,7 @@ Decimal128.fromNumeric = function toDecimal128(value, decimals = 0) {
 	if (decimals) {
 		let [inteiro, casas] = _value.split('.')
 		casas = casas.slice(0, decimals)
-		value = inteiro.concat('.').concat(casas)
+		_value = inteiro.concat('.').concat(casas)
 	}
 	return Decimal128.fromString(_value)
 }

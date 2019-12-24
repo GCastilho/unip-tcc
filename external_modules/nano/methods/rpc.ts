@@ -2,6 +2,7 @@ import axios from 'axios'
 import { Nano } from '../index'
 import { UpdtSent } from '../../common'
 import { PSent } from '../../common/db/models/pendingTx'
+import { fromNanoToRaw } from '../utils/unitConverter'
 
 export function nanoRpc(this: Nano) {
 	const request = async (command: any): Promise<any> => {
@@ -24,24 +25,6 @@ export function nanoRpc(this: Nano) {
 			} else throw err
 		}
 	}
-
-	/** @deprecated Não há mais a necessidade de converter unidades */
-	const convertToNano = (amount: string): Promise<number> =>
-		request({
-			action: 'rai_from_raw',
-			amount: amount
-		}).then(res =>
-			parseFloat(res.amount)
-		)
-
-	/** @deprecated Não há mais a necessidade de converter unidades */
-	const convertToRaw = (amount: string): Promise<string> =>
-		request({
-			action: 'rai_to_raw',
-			amount: amount
-		}).then(res =>
-			res.amount
-		)
 
 	const accountCreate = (): Promise<string> =>
 		request({
@@ -72,13 +55,12 @@ export function nanoRpc(this: Nano) {
 	const send = async (doc: PSent): Promise<UpdtSent> => {
 		const { transaction: { opid, account, amount } } = doc
 
-		// NOTA: doc.amount está em NANO
 		const res = await request({
 			action: 'send',
 			wallet: this.wallet,
 			source: this.stdAccount,
 			destination: account,
-			amount
+			amount: fromNanoToRaw(amount)
 		}).catch(err => {
 			if (err.code = 'ECONNREFUSED') {
 				err.code = 'NotSent'
@@ -99,8 +81,6 @@ export function nanoRpc(this: Nano) {
 
 	return {
 		request,
-		convertToNano,
-		convertToRaw,
 		accountCreate,
 		blockInfo,
 		accountInfo,

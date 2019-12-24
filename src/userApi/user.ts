@@ -18,6 +18,8 @@ import { SuportedCurrencies as SC } from '../currencyApi/currencyApi'
 let currencyApi
 setImmediate(async () => {
 	currencyApi = await import('../currencyApi')
+
+	/** Nota: O typescript não checa direito se a estrutura segue a interface */
 	currenciesInfo = (() =>
 		currencyApi.currenciesDetailed.reduce((acc, cur) => ({
 			...acc,
@@ -27,7 +29,6 @@ setImmediate(async () => {
 		}), {} as currenciesInfo)
 	)()
 })
-// import currencyApi from '../currencyApi'
 
 let currenciesInfo: currenciesInfo
 type currenciesInfo = {
@@ -65,7 +66,9 @@ export default class User {
 			.update(password)
 			.hex()
 
-	// Add decription; change name? Nota: O typescript não checa o retorno disso
+	/**
+	 * Um objeto com informações necessárias à User sobre as currencies
+	 */
 	private _currenciesInfo: currenciesInfo = currenciesInfo
 
 	constructor(person: Person) {
@@ -86,12 +89,12 @@ export default class User {
 	/**
 	 * Retorna o saldo de um usuário para determinada currency
 	 */
-	getBalance = (currency: string): number => this.person.currencies[currency].balance.available
+	getBalance = (currency: SC): Decimal128 => this.person.currencies[currency].balance.available
 
 	/**
 	 * Retorna as accounts de um usuário para determinada currency
 	 */
-	getAccounts = (currency: string): string[] => this.person.currencies[currency].accounts
+	getAccounts = (currency: SC): string[] => this.person.currencies[currency].accounts
 
 	/**
 	 * Retorna 'void' se o password informado é o password correto do usuário
@@ -233,15 +236,16 @@ export default class User {
 		 * respectiva collection
 		 * @param opAmount O amount bruto da operação
 		 * @param changeInAvailable O valor que o campo available deve ser
-		 * incrementado
+		 * incrementado; Embora suporte, esteja ciênte que a precisão do number
+		 * é extremamente limitada, use com cautela
 		 * 
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
 		const _removeOperation = async(
-			currency: string,
+			currency: SC,
 			opid: ObjectId,
 			opAmount: Decimal128,
-			changeInAvailable: Decimal128
+			changeInAvailable: number|Decimal128
 		): Promise<void> => {
 			const balanceObj = `currencies.${currency}.balance`
 
@@ -289,7 +293,7 @@ export default class User {
 			 * 
 			 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
 			 */
-			const changeInAvailable = +amount < 0 ? amount.abs() : Decimal128.fromNumeric(0)
+			const changeInAvailable = +amount < 0 ? amount.abs() : 0
 
 			/**
 			 * Remove a operação pendente e volta os saldos ao estado original
@@ -324,7 +328,7 @@ export default class User {
 			 * 
 			 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
 			 */
-			const changeInAvailable = +amount < 0 ? Decimal128.fromNumeric(0) : amount
+			const changeInAvailable = +amount < 0 ? 0 : amount
 
 			/**
 			 * Remove a operação pendente e atualiza os saldos

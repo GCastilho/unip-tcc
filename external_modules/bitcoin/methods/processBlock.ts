@@ -100,10 +100,11 @@ export function processBlock(this: Bitcoin) {
 			/** Todas as transactions received não confirmadas no database */
 			const received: PReceived[] = await ReceivedPending.find()
 			if (received.length > 0) {
-				received.forEach(tx => processReceived(tx).catch(err => {
+				const promises = received.map(tx => processReceived(tx))
+				Promise.all(promises).catch(err => {
 					if (err.name != 'DocumentNotFoundError')
 						console.error('Error processing received transactions', err)
-				}))
+				})
 			}
 			
 			/** Todas as transações ENVIADAS e não confirmadas no database */
@@ -111,10 +112,11 @@ export function processBlock(this: Bitcoin) {
 				'transaction.txid': { $exists: true }
 			})
 			if (sended.length > 0) {
-				sended.forEach(tx => processSended(tx).catch(err => {
+				const promises = sended.map(tx => processSended(tx))
+				Promise.all(promises).catch(err => {
 					if (err.name != 'DocumentNotFoundError')
 						console.error('Error processing sended transactions', err)
-				}))
+				})
 			}
 		} catch(err) {
 			console.error('Error fetching unconfirmed transactions', err)
