@@ -1,8 +1,13 @@
-import socketIO = require('socket.io')
+import socketIO from 'socket.io'
 import ss = require('socket.io-stream')
+import { ObjectId } from 'mongodb'
 import Common from '../index'
 import Person from '../../../../db/models/person'
-import { Transaction } from '../../../../db/models/currencies/common'
+import FindUser from '../../../../userApi/findUser'
+import User from '../../../../userApi/user'
+import { default as Tx, TxReceived, UpdtReceived } from '../../../../db/models/transaction'
+
+const findUser = new FindUser()
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*
@@ -44,20 +49,194 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Processa novas transações desta currency, atualizando o balanço do
 	 * usuário e emitindo um evento de 'new_transaction' no EventEmitter público
 	 */
-	socket.on('new_transaction', async (transaction: Transaction, callback: Function) => {
+	socket.on('new_transaction', async (transaction: TxReceived, callback: Function) => {
 		console.log('received new transaction', transaction)
-		const person = await Person.findOneAndUpdate({
-			[`currencies.${this.name}.accounts`]: transaction.account
-		}, {
-			$push: { [`currencies.${this.name}.received`]: transaction },
-			$inc: { [`currencies.${this.name}.balance`]: transaction.amount }
+
+		const { txid, account, amount, status, confirmations } = transaction
+		const timestamp = new Date(transaction.timestamp)
+
+		let user: User
+		try {
+			user = await findUser.byAccount(this.name, account)
+		} catch (err) {
+			if (err === 'UserNotFound') {
+				return callback({
+					code: 'UserNotFound',
+					message: 'No user found for this account'
+				})
+			} else {
+				return console.error('Error identifying user while processing new_transaction', err)
+			}
+		}
+
+		/**
+		 * ObjectId dessa transação na collection de transactions e
+		 * identificador dessa operação para o resto do sistema
+		 */
+		const opid = new ObjectId()
+
+		try {
+			const tx = await new Tx({
+				_id: opid,
+				user: user.id,
+				txid,
+				type: 'receive',
+				currency: this.name,
+				status: 'processing',
+				confirmations,
+				account,
+				amount,
+				timestamp
+			}).save()
+
+			await user.balanceOps.add(this.name, {
+				opid,
+				type: 'transaction',
+				amount
+			})
+
+			tx.status = status
+			await tx.save()
+
+			/**
+			 * TODO: balanceOp.add ter um argumento opcional
+			 * 'status' = 'pending' | 'complete', que se for o segundo adiciona
+			 * uma operação confirmada
+			 */
+			if (status === 'confirmed')
+				await user.balanceOps.complete(this.name, opid)
+
+			this.events.emit('new_transaction', user.id, transaction)
+			callback(null, opid)
+		} catch(err) {
+			if (err.code === 11000 && err.keyPattern.txid) {
+				// A transação já existe
+				const tx = await Tx.findOne({ txid })
+				if (!tx) {
+					throw `Error finding transaction '${txid}' that SHOULD exist`
+				} else if (tx.status === 'processing') {
+					/*
+					 * Houve um erro entre adicionar a tx e a update do status,
+					 * restaurar o database para status inicial e tentar de novo
+					 * 
+					 * Esse tipo de erro não deve ocorrer a menos que ocorra
+					 * uma falha no database (no momento específico) ou falha de
+					 * energia, slá. O q importa é que PODE ocorrer, então o
+					 * melhor é ter uma maneira de resolver
+					 */
+					try {
+						/** Tenta cancelar a operação do usuário */
+						await user.balanceOps.cancel(this.name, tx._id)
+					} catch(err) {
+						if (err != 'OperationNotFound')
+							throw err
+					}
+					/** Remove a transação do database */
+					await tx.remove()
+					/**
+					 * Chama essa função novamente com os mesmos parâmetros
+					 * 
+					 * Ao emitir o evento no socket ele também será
+					 * transmitido ao módulo externo, mas, como o módulo externo
+					 * não tem (não devería ter) um handler para um evento de
+					 * socket que ele mesmo emite, não deve dar problema
+					 */
+					socket.emit('new_transaction', transaction, callback)
+				} else {
+					// A transação já existe, retornar ela ao módulo externo
+					const transaction: TxReceived = {
+						opid:          tx._id.toHexString(),
+						txid:          tx.txid,
+						account:       tx.account,
+						amount:        tx.amount.toFullString(),
+						status:        tx.status,
+						confirmations: tx.confirmations,
+						timestamp:     tx.timestamp.getTime()
+					}
+					console.log('Rejecting existing transaction:', transaction)
+					callback({ code: 'TransactionExists', transaction })
+					await user.balanceOps.cancel(this.name, opid).catch(err => {
+						if (err != 'OperationNotFound') throw err
+					})
+				}
+			} else if (err.name === 'ValidationError') {
+				callback({
+					code: 'ValidationError',
+					message: 'Mongoose failed to validate the document',
+					details: err
+				})
+			} else {
+				console.error('Error processing new_transaction:', err)
+				callback({ code: 'InternalServerError' })
+				await user.balanceOps.cancel(this.name, opid)
+			}
+		}
+	})
+
+	/**
+	 * Processa requests de atualização de transações PENDENTES existentes
+	 * Os únicos campos que serão atualizados são o status e o confirmations
+	 */
+	socket.on('update_received_tx', async (txUpdate: UpdtReceived, callback: Function) => {
+		if (!txUpdate.opid) return callback({
+			code: 'BadRequest',
+			message: '\'opid\' needs to be informed to update a transaction'
 		})
 
-		if (!person) return callback('No user found for this account')
+		console.log('received update_received_tx', txUpdate)
 
-		this.events.emit('new_transaction', person.email, transaction)
+		const { opid, status, confirmations } = txUpdate
 
-		callback(null, 'received')
+		try {
+			const tx = await Tx.findOne({
+				_id: opid,
+				status: 'pending'
+			})
+			if (!tx) return callback({
+				code: 'OperationNotFound',
+				message: `No pending transaction with id: '${opid}' found`
+			})
+
+			tx.status = status
+			tx.confirmations = txUpdate.status === 'confirmed' ? undefined : confirmations
+			await tx.validate()
+
+			if (status === 'confirmed') {
+				const user = await findUser.byId(tx.user)
+				await user.balanceOps.complete(this.name, new ObjectId(opid))
+			}
+
+			await tx.save()
+			callback(null, `${txUpdate.opid} updated`)
+			this.events.emit('update_received_tx', tx.user, txUpdate)
+		} catch(err) {
+			if (err === 'UserNotFound') {
+				callback({ code: 'UserNotFound' })
+			} else if (err === 'OperationNotFound') {
+				callback({
+					code: 'OperationNotFound',
+					message: 'userApi could not find the requested operation'
+				})
+			} else if (err.name === 'ValidationError') {
+				callback({
+					code: 'ValidationError',
+					message: 'Mongoose failed to validate the document after the update',
+					details: err
+				})
+			} else {
+				console.error('Error processing update_received_tx', err)
+				callback({ code: 'InternalServerError' })
+			}
+		}
+	})
+
+	/**
+	 * Ouve por requests de atualização de transações enviada e os retransmite
+	 * no eventEmitter interno
+	 */
+	socket.on('update_sent_tx', (updtSended, callback) => {
+		console.log('received update_sent_tx:', updtSended)
+		this._events.emit('update_sent_tx', updtSended, callback)
 	})
 
 	/**
@@ -71,7 +250,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 		} else {
 			/** O último argumento é o callback do evento */
 			const callback: Function = args[args.length - 1]
-			callback('Socket disconnected')
+			callback('SocketDisconnected')
 		}
 	})
 }

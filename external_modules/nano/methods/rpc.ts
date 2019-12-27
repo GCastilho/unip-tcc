@@ -1,95 +1,87 @@
-import rpc from 'node-json-rpc'
-import Account from '../../common/db/models/account'
-import { Transaction } from '../../common'
+import axios from 'axios'
 import { Nano } from '../index'
+import { UpdtSent } from '../../common'
+import { PSent } from '../../common/db/models/pendingTx'
+import { fromNanoToRaw } from '../utils/unitConverter'
 
 export function nanoRpc(this: Nano) {
-	const client = new rpc.Client({
-		port: 55000,
-		host: '::1',
-		path: '/',
-		strict: false // turn rpc checks off, default true
-	})
-
-	const rpcCommand = (command: any): Promise<any> =>
-		new Promise((resolve, reject) => {
-			client.call(command, (err, res) => {
-				if (!err && !res.error) {
-					resolve(res)
-				} else {
-					const error = err ? err : res.error
-					console.error(error)
-					reject(error)
+	const request = async (command: any): Promise<any> => {
+		try {
+			const res = await axios.post('http://[::1]:55000', command)
+			if (res.data.error)
+				throw res.data.error
+			return res.data
+		} catch(err) {
+			if (err.isAxiosError) {
+				throw {
+					errno:        err.errno,
+					code:         err.code,
+					syscall:      err.syscall,
+					address:      err.address,
+					port:         err.port,
+					url:          err.config.url,
+					isAxiosError: err.isAxiosError
 				}
-			})
-		})
-	
-	const convertToNano = (amount: string): Promise<string> =>
-		rpcCommand({
-			action: 'rai_from_raw',
-			amount: amount
-		}).then(res =>
-			res.amount
-		)
-	
-	const convertToRaw = (amount: string): Promise<string> =>
-		rpcCommand({
-			action: 'rai_to_raw',
-			amount: amount
-		}).then(res =>
-			res.amount
-		)
+			} else throw err
+		}
+	}
 
-	const createAccount = (): Promise<string> =>
-		rpcCommand({
+	const accountCreate = (): Promise<string> =>
+		request({
 			action: 'account_create',
 			wallet: this.wallet
 		}).then(res =>
-			new Account({
-				account: res.account
-			}).save()
-		).then(res =>
 			res.account
 		)
-	
+
 	const blockInfo = (block: string): Promise<any> =>
-		rpcCommand({
+		request({
 			action: 'block_info',
 			json_block: 'true',
 			hash: block
 		})
 
 	const accountInfo = (account: string): Promise<any> =>
-		rpcCommand({
+		request({
 			action: 'account_info',
 			account: account
 		})
 
-	const send = (destination: string , nanoAmount: number): Promise<Transaction> =>
-		convertToRaw(nanoAmount.toString()).then(amount =>
-			rpcCommand({
-				action: 'send',
-				wallet: this.wallet,
-				source: this.stdAccount,
-				destination: destination,
-				amount: amount
-			})
-		).then(res => {
-			const transaction: Transaction = {
-				txid: res.block,
-				timestamp: Date.now(), /**@todo Utilizar o timestamp do bloco */
-				account: destination,
-				amount: nanoAmount
+	/**
+	 * Executa uma transação na rede da nano
+	 * @param doc O documento da transação pendente da collection pendingTx
+	 * @returns Um objeto UpdtSended para ser enviado ao servidor
+	 */
+	const send = async (doc: PSent): Promise<UpdtSent> => {
+		const { transaction: { opid, account, amount } } = doc
+
+		const res = await request({
+			action: 'send',
+			wallet: this.wallet,
+			source: this.stdAccount,
+			destination: account,
+			amount: fromNanoToRaw(amount)
+		}).catch(err => {
+			if (err.code = 'ECONNREFUSED') {
+				err.code = 'NotSent'
+				err.message = 'Connection refused on nano node'
 			}
-			console.log('sended new transction:', transaction)
-			return transaction
+			throw err
 		})
 
+		const transaction: UpdtSent = {
+			opid,
+			txid: res.block,
+			status: 'confirmed',
+			timestamp: Date.now(), /**@todo Utilizar o timestamp do bloco */
+		}
+
+		return transaction
+	}
+
 	return {
-		command: rpcCommand,
-		convertToNano,
-		convertToRaw,
-		createAccount,
+		request,
+		accountCreate,
 		blockInfo,
 		accountInfo,
 		send

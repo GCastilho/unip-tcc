@@ -2,17 +2,9 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import { Transaction as MST } from '../../src/db/models/currencies/common'
-
-/**
- * Modelo de transaction que o servidor principal aceita
- */
-export interface Transaction {
-	txid: MST['txid']
-	account: MST['account']
-	amount: MST['amount']
-	timestamp: number
-}
+import { TxReceived, UpdtSent, UpdtReceived } from '../../src/db/models/transaction'
+export { TxReceived, TxSend, UpdtSent, UpdtReceived } from '../../src/db/models/transaction'
+import { PSent } from './db/models/pendingTx'
 
 /**
  * EventEmmiter genérico
@@ -25,14 +17,22 @@ export default abstract class Common {
 	abstract mainServerPort: number
 
 	/**
-	 * Cria uma nova account para essa currency
+	 * Pede uma nova account para o node dessa currency e a retorna
 	 */
-	abstract createNewAccount(): Promise<string>
+	abstract getNewAccount(): Promise<string>
 
 	/**
 	 * Executa o request de saque de uma currency em sua blockchain
+	 * 
+	 * @param pSended O documento dessa operação pendente na collection
+	 * @param callback Caso transações foram agendadas para ser executadas em
+	 * batch, o callback deve ser chamado com elas para informar que elas foram
+	 * executadas
+	 * 
+	 * @returns UpdtSended object se a transação foi executada imediatamente
+	 * @returns true se a transação foi agendada para ser executada em batch
 	 */
-	abstract withdraw(address: string, ammount: number): Promise<Transaction>
+	abstract withdraw(pSended: PSent, callback?: (transactions: UpdtSent[]) => void): Promise<UpdtSent|true>
 
 	/**
 	 * Inicia o listener de requests da blockchain
@@ -44,15 +44,33 @@ export default abstract class Common {
 	 * 
 	 * @param txid O txid da transação recém recebida
 	 */
-	abstract processTransaction(txid: Transaction['txid']): Promise<void>
+	abstract processTransaction(txid: TxReceived['txid']): Promise<void>
+
+	/**
+	 * EventEmitter para eventos internos
+	 */
+	protected _events = new Events()
 
 	constructor() {
 		this.connectionHandler = methods.connection
+		this.informMain = methods.informMain.bind(this)()
+
+		// Monitora os eventos do rpc para manter o nodeOnline atualizado
+		this._events.on('rpc_connected', () => {
+			if (this.nodeOnline) return
+			this.nodeOnline = true
+			this._events.emit('node_connected')
+		})
+		this._events.on('rpc_disconnected', () => {
+			if (!this.nodeOnline) return
+			this.nodeOnline = false
+			this._events.emit('node_disconnected')
+		})
 	}
 
 	async init() {
 		await mongoose.init(`exchange-${this.name}`)
-		await this.connectToMainServer()
+		this.connectToMainServer()
 		this.initBlockchainListener()
 	}
 
@@ -64,7 +82,7 @@ export default abstract class Common {
 	/**
 	 * Conecta com o servidor principal
 	 */
-	private connectToMainServer = async () => {
+	private connectToMainServer = () => {
 		/**
 		 * Socket de conexão com o servidor principal
 		 */
@@ -73,12 +91,52 @@ export default abstract class Common {
 	}
 
 	/**
-	 * EventEmitter para eventos internos
+	 * Indica se o node da currency está online ou não
+	 * 
+	 * Os eventos 'node_connected' e 'node_disconnected' devem ser disparados
+	 * no event emitter interno para manter essa váriável atualizada e outras
+	 * partes do sistema que dependem desses eventos, funcionando
+	 * 
+	 * NÃO MODIFICAR MANUALMENTE
 	 */
-	protected _events = new Events()
+	protected nodeOnline: boolean = false
 
 	/**
-	 * Wrapper de comunicação com o socket do servidor principal
+	 * Vasculha a collection 'pendingTx' em busca de transações não enviadas
+	 * e chama a função de withdraw para cara um delas
+	 */
+	protected withdraw_pending = methods.withdraw_pending.bind(this)()
+
+	/**
+	 * Contém métodos para atualizar o main server a respeito de transações
+	 */
+	informMain: {
+		/**
+		 * Envia uma transação ao servidor principal e atualiza o opid dela no
+		 * database
+		 * 
+		 * @param transaction A transação que será enviada ao servidor
+		 * 
+		 * @returns opid se o envio foi bem-sucedido e a transação está pendente
+		 * @returns void se a transação não foi enviada ou se estava confirmada
+		 */
+		newTransaction (transaction: TxReceived): Promise<string|void>
+		/**
+		 * Atualiza uma transação recebida previamente informada ao main server
+		 * @param txUpdate A atualização da atualização recebida
+		 */
+		updateReceivedTx (txUpdate: UpdtReceived): Promise<void>
+		/**
+		 * Atualiza um request de withdraw recebido do main server
+		 * @param transaction A atualização da transação enviada
+		 */
+		updateWithdraw (transaction: UpdtSent): Promise<void>
+	}
+
+	/**
+	 * Wrapper de comunicação com o socket do servidor principal. Essa função
+	 * resolve ou rejeita uma promessa AO RECEBER UMA RESPOSTA do main server,
+	 * até lá ela ficará pendente
 	 * 
 	 * @param event O evento que será enviado ao socket
 	 * @param args Os argumentos desse evento
@@ -87,10 +145,13 @@ export default abstract class Common {
 		return new Promise((resolve, reject) => {
 			console.log(`transmitting socket event '${event}':`, ...args)
 			this._events.emit('module', event, ...args, ((error, response) => {
-				if (error)
+				if (error) {
+					console.error('Received socket error:', error)
 					reject(error)
-				else
+				} else {
+					console.log('Received socket response:', response)
 					resolve(response)
+				}
 			}))
 		})
 	}

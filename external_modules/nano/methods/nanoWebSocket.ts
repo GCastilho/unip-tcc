@@ -3,9 +3,6 @@ import { Nano } from '../index'
 const ReconnectingWebSocket = require('reconnecting-websocket')
 
 export function nanoWebSocket(this: Nano) {
-	/** Keep track if there was a conn error to prevent error span */
-	let connErr = false
-	
 	/**
 	 * Create a reconnecting WebSocket. In this example, we wait a maximum of
 	 * 2 seconds before retrying
@@ -20,9 +17,9 @@ export function nanoWebSocket(this: Nano) {
 	
 	/** As soon as we connect, subscribe to block confirmations */
 	ws.onopen = () => {
-		/** Reseta o status de erro de conexão */
-		connErr = false
 		console.log('Websocket connection open')
+		firstConnection = false
+		this._events.emit('rpc_connected')
 		ws.send(JSON.stringify({
 			action: 'subscribe',
 			topic: 'confirmation',
@@ -34,14 +31,23 @@ export function nanoWebSocket(this: Nano) {
 		}))
 	}
 	
-	ws.onerror = function(event: any) {
+	/** Keep track if the is the first websocket connection */
+	let firstConnection = true
+
+	ws.onerror = (event: any) => {
 		if (event.error.code === 'ECONNREFUSED' ||
 			event.error.code === 'ECONNRESET'
 		) {
-			/** Faz com que a mensagem de erro de conexão apareça apenas uma vez */
-			if (!connErr) {
-				connErr = true
+			if (firstConnection) {
+				/**
+				 * Não emite rpc_disconnected caso seja a primeira conexão
+				 * com o websocket
+				 */
+				firstConnection = false
 				console.error('Error connecting to nano websocket')
+			} else if (this.nodeOnline) {
+				console.error('Disconnected from nano websocket')
+				this._events.emit('rpc_disconnected')
 			}
 		} else {
 			console.error('WebSocket error observed:', event)
@@ -54,7 +60,7 @@ export function nanoWebSocket(this: Nano) {
 	 * @todo Tratar os dados e enviar para o servidor e banco de dados
 	 */
 	ws.onmessage = async msg => {
-		const data = JSON.parse(msg.data)
+		const data: Nano.WebSocket = JSON.parse(msg.data)
 		if (data.message.block.subtype != 'receive') return
 
 		try {

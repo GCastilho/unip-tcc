@@ -1,16 +1,15 @@
-/**
- * src/db/models/cookie.js
- * 
- * @description Model da collection de cookie de autenticação
+/*
+ * Model da collection de cookie de autenticação
  */
 
 const mongoose = require('mongoose')
 
 module.exports = mongoose.model('Cookie', {
-	email: {
-		type: String,
+	userId : {
+		type: mongoose.Schema.Types.ObjectId,
 		required: true,
-		unique: true
+		unique: true,
+		ref: 'Person'
 	},
 	sessionID: {
 		type: String,

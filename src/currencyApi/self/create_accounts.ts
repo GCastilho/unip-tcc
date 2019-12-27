@@ -1,6 +1,6 @@
-import Checklist = require('../../db/models/checklist')
+import Checklist from '../../db/models/checklist'
 import { CurrencyApi } from '../currencyApi'
-import { Schema } from 'mongoose'
+import { Person } from '../../db/models/person/interface'
 
 /**
  * Cria as accounts (requisitadas) para o usuário com o userId informado. Essa
@@ -11,10 +11,9 @@ import { Schema } from 'mongoose'
  * @param currencies As currencies que devem ser criadas accounts
  */
 export async function create_accounts(this: CurrencyApi,
-		userId: Schema.Types.ObjectId,
-		currencies?: string[]
+		userId: Person['_id'],
+		currencies: string[] = this.currencies
 	) {
-	if (!currencies) currencies = this.currencies
 
 	/**
 	 * O objeto 'create_accounts' que será salvo na checklist do database
@@ -25,13 +24,13 @@ export async function create_accounts(this: CurrencyApi,
 		create_accounts[currency].status = 'requested'
 	}
 
-	/**
-	 * @todo se uma pessoa com esse userId exitir, atualizar
-	 */
-	await new Checklist({
-		userId,
+	await Checklist.findOneAndUpdate({
+		userId
+	}, {
 		commands: { create_accounts }
-	}).save()
+	}, {
+		upsert: true
+	})
 
 	/**
 	 * Chama create_account de cada currency que precisa ser criada uma account

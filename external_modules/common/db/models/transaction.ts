@@ -1,19 +1,33 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { ObjectId } from 'mongodb'
 
 export interface Transaction extends Document {
-	tx: string,
-	info: any
+	opid: ObjectId,
+	txid: string,
+	account: string,
+	type: 'send'|'receive'
 }
 
 const TransactionSchema = new Schema({
+	opid: {
+		type: ObjectId,
+		unique: true,
+		required: false,
+	},
 	txid: {
 		type: String,
-		trim: true,
 		unique: true,
+		sparse: true,
+		required: false
+	},
+	account: {
+		type: String,
 		required: true
 	},
-	info: {
-		type: Object
+	type: {
+		type: String,
+		enum: ['send', 'receive'],
+		required: true
 	}
 })
 
