@@ -13,6 +13,13 @@ import BalancesTableItem from "../../components/BalancesTableItem/BalancesTableI
 import ReactLoading from "react-loading";
 
 const socket = socketIOClient({
+    transportOptions: {
+        polling: {
+            extraHeaders: {
+                'path': window.location.pathname
+            }
+        }
+    },
     endpoint: 'http://'+window.location.host,
     response: false
 });
@@ -78,6 +85,7 @@ export default props => {
          */
         socket.on('api', setBalance);
         return () => socket.off('api', setBalance);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     },[props, socketConnect]);
 
     function setBalance(data) {
