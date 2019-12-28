@@ -16,7 +16,8 @@ const socket = socketIOClient({
     transportOptions: {
         polling: {
             extraHeaders: {
-                'path': window.location.pathname
+                path: window.location.pathname,
+                Authentication: document.cookie.replace(/(?:(?:^|.*;\s*)sessionID\s*\=\s*([^;]*).*$)|^.*$/, "$1")
             }
         }
     },

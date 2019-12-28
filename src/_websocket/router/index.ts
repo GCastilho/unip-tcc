@@ -6,8 +6,6 @@ const router = routes()
 router.addRoute('/balances', balances)
 
 export function use(path: string, socket: SocketIO.Socket) {
-	console.log('router executed, Path is:', path)
-
 	/** Remove os listeners do path antigo */
 	socket.removeAllListeners()
 
@@ -19,5 +17,5 @@ export function use(path: string, socket: SocketIO.Socket) {
 
 	const match = router.match(path)
 	if (typeof match?.fn === 'function')
-		match.fn(...match.splats, socket)
+		match.fn(socket, ...match.splats)
 }
