@@ -1,5 +1,6 @@
 import socket from 'socket.io'
 import userApi from '../userApi'
+import * as connectedUsers from './connectedUsers'
 import * as Router from './router'
 
 export = function(server) {
@@ -14,12 +15,9 @@ export = function(server) {
 	io.use(async (socket, next) => {
 		const sessionId = socket.handshake.headers.authentication
 		try {
-			/**
-			 * @todo Adicionar o usuário a um Map de usuários conectados
-			 * (identificá-lo por User.id, que é o _id do doc dele)
-			 */
 			const user = await userApi.findUser.byCookie(sessionId)
 			socket.user = user
+			connectedUsers.add(socket)
 		} catch(err) {
 			if (err !== 'CookieNotFound' && err !== 'UserNotFound') throw err
 		}
@@ -33,6 +31,18 @@ export = function(server) {
 		console.log('Incoming connection at path:', socket.handshake.headers.path)
 
 		socket.emit('connected', { status: 'online' })
-		Router.use(socket.handshake.headers.path, socket)
+		Router.use(socket.handshake.headers.path, socket, generalListenersSetup)
+	})
+}
+
+/**
+ * Coloca no socket listeners que de gerenciamento que devem existir em todas
+ * as conexões (eles são removidos junto com todos os outros na mudança de path)
+ * @param socket O socket de conexão (não precisa ser de um usuário autenticado)
+ */
+function generalListenersSetup(socket: SocketIO.Socket) {
+	socket.on('disconnect', (reason) => {
+		console.log('Socket disconnected:', reason)
+		connectedUsers.remove(socket.user?.id)
 	})
 }
