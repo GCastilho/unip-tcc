@@ -14,12 +14,13 @@ export default function b(socket: SocketIO.Socket) {
 	 */
 	socket.on('list', (callback: (list: any[]) => void) => {
 		console.log('requested balance list')
-		const list = currencyApi.currenciesDetailed.map(currency => {
-			const { code, name, decimals } = currency
-			const accounts = socket.user?.getAccounts(name)
-			const balance = socket.user?.getBalance(name).toFullString()
-			return { code, name, decimals, accounts, balance}
-		})
+		const list = currencyApi.currenciesDetailed.map(currency => ({
+			code:     currency.code,
+			name:     currency.name,
+			decimals: currency.decimals,
+			accounts: socket.user?.getAccounts(currency.name),
+			balance:  socket.user?.getBalance(currency.name).toFullString()
+		}))
 		callback(list)
 	})
 }

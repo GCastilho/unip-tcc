@@ -42,12 +42,13 @@ export default props => {
     // socket.on('reconnect_failed', () => { });
     // socket.on('reconnect_error', () => { });
 
-    socket.on("connected", () => {
+    socket.on("connect", () => {
         socket.emit('list', updateBalances)
     })
 
     React.useEffect(() => {
-        // socket.emit('_path', window.location.pathname)
+        socket.emit('authenticate', document.cookie.replace(/(?:(?:^|.*;\s*)sessionID\s*=\s*([^;]*).*$)|^.*$/, "$1"))
+        socket.emit('_path', window.location.pathname)
         socket.emit('list', updateBalances)
         socket.on('new_transaction', data => {
             console.log('new_transaction:', data);
