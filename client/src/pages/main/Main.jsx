@@ -5,21 +5,10 @@
  */
 
 import React from 'react';
-import socketIOClient from "socket.io-client";
 
 // Assets
 import './Main.css';
 import imgTest from '../../assets/img/imagemTeste.jpg';
-
-const socket = socketIOClient({
-	transportOptions: {
-		polling: {
-			extraHeaders: {
-				'path': window.location.pathname
-			}
-		}
-	}
-});
 
 export default () => (
     <div className='main-container'>
