@@ -2,27 +2,61 @@ import routes from 'routes'
 import balances from './balances'
 
 const router = routes()
-
 router.addRoute('/balances', balances)
 
-export function use(
-	path: string,
-	socket: SocketIO.Socket,
-	generalListenersSetup: (socket: SocketIO.Socket) => void
-) {
-	/** Remove os listeners do path antigo */
-	socket.removeAllListeners()
+export function use(path: string, socket: SocketIO.Socket) {
+	/** Adiciona os listeners globais */
+	GlobalListeners.getListeners().forEach(([event, fn]) => socket.on(event, fn))
 
-	/** Configura os listeners gerais */
-	generalListenersSetup(socket)
+	route(socket, path)
+}
 
-	/** Re-executa essa função no evento '_path' */
-	socket.on('_path', (newPath) => {
-		socket.handshake.headers.path = newPath || '/'
-		use(socket.handshake.headers.path, socket, generalListenersSetup)
-	})
-
+function route(socket: SocketIO.Socket, path: string) {
+	/** Remove todos os eventos não globais */
+	GlobalListeners.getListenersNames()
+		.filter(i => !socket.eventNames().includes(i))
+		.forEach(event => socket.removeAllListeners(event))
+	
+	/**
+	 * Checa se existe match para o path dado e em caso afirmativo chama o
+	 * handler para ele
+	 */
 	const match = router.match(path)
 	if (typeof match?.fn === 'function')
 		match.fn(socket, ...match.splats)
 }
+
+export class GlobalListeners {
+	/**
+	 * Um array de touples [ eventName, eventHandler ] de todos os eventos
+	 * globais
+	 */
+	private static listeners: [string, (...args: any[]) => void][] = []
+
+	/**
+	 * Adiciona um evento global estático, que são eventos que nunca serão
+	 * removidos ou modificados
+	 * @param event O nome do evento
+	 * @param fn A função callback desse evento
+	 */
+	static add(event: string, fn: (...args: any[]) => void): void {
+		if (typeof event !== 'string' || typeof fn !== 'function')
+			throw new Error('IllegalInput')
+		this.listeners.push([event, fn])
+	}
+
+	/** Retorna uma touple [ eventName, EventHandler ] de cada evento global */
+	static getListeners() {
+		return this.listeners
+	}
+
+	/** Retorna os nomes de todos os eventos globais */
+	static getListenersNames() {
+		return this.listeners.map(([eventName]) => eventName)
+	}
+}
+
+/** Handler de re-routeamento */
+GlobalListeners.add('_path', function (this: SocketIO.Socket, newPath?: string) {
+	route(this, newPath || '/')
+})
