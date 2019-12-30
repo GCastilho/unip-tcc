@@ -23,4 +23,25 @@ export default function balance(socket: SocketIO.Socket) {
 		}))
 		callback(list)
 	})
+
+	/**
+	 * Executa um request de saque de uma moeda; Retorna o opid da transação
+	 * através de um callback no caso de sucesso
+	 * 
+	 * @todo request ser uma interface, com tipos definidos e padronizados
+	 */
+	socket.on('withdraw', async (request, callback: (err: any, res?: string) => void) => {
+		if (!socket.user) return callback('NotLoggedIn')
+		try {
+			const { currency, destination, amount } = request
+			const opid = await currencyApi.withdraw(socket.user, currency, destination, amount)
+			callback(null, opid.toHexString())
+		} catch(err) {
+			if (err === 'NotEnoughFunds') {
+				callback('NotEnoughFunds')
+			} else {
+				callback('InternalServerError')
+			}
+		}
+	})
 }

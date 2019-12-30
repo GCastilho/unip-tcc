@@ -59,8 +59,17 @@ export default props => {
     /**
      * Função de saque da pagina
      */
-    function withdraw(currency, address, amount) {
-        socket.emit('api', { route: 'api/v1.0/balances/withdraw', data: { address: address, amount: amount, currency: currency, email: props.email } })
+    function withdraw(currency, destination, amount) {
+        socket.emit('withdraw', { currency, destination, amount }, (err, opid) => {
+            if (err) {
+                console.error('Error on withdraw request:', err)
+            } else {
+                console.log('Withdraw executed, opid is:', opid)
+                setTimeout(() => {
+                    socket.emit('list', updateBalances)
+                }, 5000)
+            }
+        })
     }
 
     return (
