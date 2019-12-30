@@ -105,8 +105,8 @@ Decimal128.fromNumeric = function toDecimal128(value, decimals = 0) {
 	// Corta as casas que vão alem da quantidade de decimais estabelecidos
 	if (decimals) {
 		let [inteiro, casas] = _value.split('.')
-		casas = casas.slice(0, decimals)
-		_value = inteiro.concat('.').concat(casas)
+		casas = casas?.slice(0, decimals)
+		_value = inteiro.concat('.').concat(casas || '')
 	}
 	return Decimal128.fromString(_value)
 }

@@ -40,6 +40,7 @@ export default function balance(socket: SocketIO.Socket) {
 			if (err === 'NotEnoughFunds') {
 				callback('NotEnoughFunds')
 			} else {
+				console.error('Error on socket withdraw:', err)
 				callback('InternalServerError')
 			}
 		}

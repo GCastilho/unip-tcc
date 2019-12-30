@@ -4,9 +4,7 @@ import { Server } from 'http'
 import * as connectedUsers from './connectedUsers'
 import * as Router from './router'
 
-/*
- * Confirgura os listeners globais
- */
+// Configura os listeners globais
 Router.GlobalListeners.add('disconnect', function (this: SocketIO.Socket, reason) {
 	console.log('Socket disconnected:', reason)
 	connectedUsers.remove(this.user?.id)

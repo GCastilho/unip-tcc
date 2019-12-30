@@ -10,8 +10,7 @@ require('./db/mongoose')
 require('./currencyApi')
 
 /** Load Websocket */
-// require('./websocket/socket')(server)
-require('./_websocket')(server)
+require('./websocket')(server)
 
 /** Setup path for react production build and static files */
 app.use(express.static(path.join(__dirname, '../public')))
