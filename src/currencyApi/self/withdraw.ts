@@ -17,7 +17,7 @@ export async function withdraw(this: CurrencyApi,
 		user: User,
 		currency: SC,
 		account: string,
-		amount: string
+		amount: number
 	): Promise<ObjectId> {
 
 	/** O identificador único dessa operação */
@@ -54,7 +54,7 @@ export async function withdraw(this: CurrencyApi,
 		await user.balanceOps.add(currency, {
 			opid,
 			type: 'transaction',
-			amount: - amount.replace(/^-/, '') // Garante que o amount será negativo
+			amount: - Math.abs(amount) // Garante que o amount será negativo
 		})
 	} catch(err) {
 		if (err === 'NotEnoughFunds') {

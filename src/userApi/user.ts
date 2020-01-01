@@ -48,7 +48,7 @@ interface PendingOp {
 	/**
 	 * O tipo da operação, para identificar em qual collection ela está
 	 */
-	type: string,
+	type: Pending['type'],
 	/**
 	 * O amount da operação. Positivo se é uma operação que aumenta o saldo do
 	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
