@@ -13,96 +13,63 @@ import BalancesTableItem from "../../components/BalancesTableItem/BalancesTableI
 import ReactLoading from "react-loading";
 
 const socket = socketIOClient({
-    endpoint: 'http://'+window.location.host,
-    response: false
-});
-
-let socketConnect = false;
-
-/* call de uma rota de teste da API v1.0
- * OBS: o call precisa ser feito posterior a declaração do handler do retorno
- * OBS2: necessario verificar estado da connexão do socket antes do envio ou tratar a exception
- */
-socket.emit("api", { route: "api/v1.0/test/ping", data: { status: "ping" } });
-
-export default props => {
-
-    const [balances, updateBalances] = React.useState([]);
-    const [focus, updateFocus] = React.useState(false);
-    const [cookies] = useCookies(['sessionID']);
-
-    socket.on('disconnect', () => { console.log('Socket desconectado') });
-
-    //handlers de falhas de conexão e reconexão ao servidor
-    socket.on('connect_failed', () => { });
-    socket.on('connect_error', () => { });
-    socket.on('reconnect_failed', () => { });
-    socket.on('reconnect_error', () => { });
-
-
-
-
-    React.useEffect(() => {
-        if (socketConnect) {
-            socket.emit('api', { route: 'api/v1.0/balances/list', data: { email: props.email } });
-        }
-        socket.on("connected", data => {
-            console.log(data);
-            if (data.status === 'online') {
-                /**
-                 * Rota de request da lista de balances
-                 *
-                 * Ex Retorno:
-                 * {route: "api/v1.0/balances/list", status:"success", data:[
-                 *  	{ code: "ETH", name: "Etherium", value: "0.00000000", address: "" }
-                 * ]}
-                 */
-                socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}});
-                socketConnect = true;
+    transportOptions: {
+        polling: {
+            extraHeaders: {
+                path: window.location.pathname,
+                Authentication: document.cookie.replace(/(?:(?:^|.*;\s*)sessionID\s*=\s*([^;]*).*$)|^.*$/, "$1")
             }
-        });
-        socket.on('new_transaction', data => {
-            console.log(data);
-            if (data.email === props.email) {
-                socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}});
-            }
-        });
-
-        /**
-         * handler de retorno de resposta da api
-         * estrutura do JSON:
-         * {route:"api/v1.0/...", data:{...}}
-         * "route" sendo a rota de chamamento
-         * "data" os dados de retorno da api
-         * "status" string contendo o status do chamado "success" ou "error"
-         */
-        socket.on('api', setBalance);
-        return () => socket.off('api', setBalance);
-    },[props, socketConnect]);
-
-    function setBalance(data) {
-        if (data.route === 'api/v1.0/balances/list') {
-            console.log(data);
-            setTimeout((() => updateBalances(data.data)),5000);
-        }
-        if (data.route === 'api/v1.0/balances/withdraw') {
-            console.log(data);
-            socket.emit('api', {route: 'api/v1.0/balances/list', data: {email: props.email}})
         }
     }
+});
 
+export default props => {
+    /**
+     * Estado e atualização do saldo
+     */
+    const [balances, updateBalances] = React.useState([]);
     /**
      * Função para abrir e fechar as abas
      */
-    function setFocus(focus) {
-        updateFocus(focus);
-    }
+    const [focus, updateFocus] = React.useState(false);
+    const [cookies] = useCookies(['sessionID']);
+
+    // socket.on('disconnect', () => { console.log('Socket desconectado') });
+
+    //handlers de falhas de conexão e reconexão ao servidor
+    // socket.on('connect_failed', () => { });
+    // socket.on('connect_error', () => { });
+    // socket.on('reconnect_failed', () => { });
+    // socket.on('reconnect_error', () => { });
+
+    socket.on("connect", () => {
+        socket.emit('list', updateBalances)
+    })
+
+    React.useEffect(() => {
+        socket.emit('authentication', document.cookie.replace(/(?:(?:^|.*;\s*)sessionID\s*=\s*([^;]*).*$)|^.*$/, "$1"))
+        socket.emit('_path', window.location.pathname)
+        socket.emit('list', updateBalances)
+        socket.on('new_transaction', data => {
+            console.log('new_transaction:', data);
+            socket.emit('list', updateBalances);
+        });
+    }, [updateBalances])
 
     /**
      * Função de saque da pagina
      */
-    function withdraw(currency, address, amount) {
-        socket.emit('api', { route: 'api/v1.0/balances/withdraw', data: { address: address, amount: amount, currency: currency, email: props.email } })
+    function withdraw(currency, destination, amount) {
+        socket.emit('withdraw', { currency, destination, amount }, (err, opid) => {
+            if (err) {
+                console.error('Error on withdraw request:', err)
+            } else {
+                console.log('Withdraw executed, opid is:', opid)
+                setTimeout(() => {
+                    socket.emit('list', updateBalances)
+                }, 5000)
+            }
+        })
     }
 
     return (
@@ -124,10 +91,10 @@ export default props => {
                             name={bal.name}
                             code={bal.code}
                             value={bal.balance}
-                            address={bal.address[0]}
+                            address={bal.accounts[0]}
                             withdraw={withdraw}
                             focus={focus}
-                            setFocus={setFocus}
+                            setFocus={updateFocus}
                         />
                     ))}
                 </div>
