@@ -7,7 +7,7 @@
     "start": "node build/main_server/index.js",
     "start:nano": "npm start --prefix ./build/external_modules/nano",
     "start:bitcoin": "npm start --prefix ./build/external_modules/bitcoin",
-    "dev": "npm run eslint && concurrently --kill-others-on-fail \"npm run dev-server\" \"npm run dev-client\"",
+    "dev": "npm run eslint && concurrently --kill-others-on-fail \"env PORT=3001 npm run dev-server\" \"npm run dev-client\"",
     "build": "npm run build:clean; npm run build:server && npm run build:react && npm run build:restruct && npm run build:config && npm run build:install-dep",
     "eslint": "eslint .",
     "eslint-fix": "eslint --fix .",
@@ -18,7 +18,9 @@
     "build:react": "npm run build --prefix ./client",
     "build:restruct": "mv ./build/src ./build/main_server && mv ./public ./build",
     "build:config": "cpy external_modules '!**/node_modules' '!**/*.js' '!**/*.ts' build --parents",
-    "build:install-dep": "npm install --prefix ./build/external_modules/bitcoin && npm install --prefix ./build/external_modules/common && npm install --prefix ./build/external_modules/nano"
+    "build:install-dep": "npm install --prefix ./build/external_modules/bitcoin && npm install --prefix ./build/external_modules/common && npm install --prefix ./build/external_modules/nano",
+    "sapper": "npm run dev --prefix ./sapper",
+    "dev-svelte": "concurrently --kill-others-on-fail \"env PORT=3001 npm run dev-server\" \"npm run sapper\""
   },
   "author": "",
   "license": "ISC",
