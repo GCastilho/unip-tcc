@@ -4,3 +4,5 @@ build/
 node_modules/
 public/
 cfg/**
+sapper/__sapper__/
+sapper/cypress/
