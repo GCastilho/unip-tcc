@@ -11,7 +11,11 @@ const server_port = SERVER_PORT || 3001
 express()
 	.use(
 		proxy(`http://127.0.0.1:${server_port}`, {
-			filter: req => req.method !== 'GET'
+			/**
+			 * métodos GET são enviados ao sapper
+			 * socket.io nosso tem um header 'path' !undefined
+			 */
+			filter: req => req.method !== 'GET' || req.headers.path
 		}),
 		compression({ threshold: 0 }),
 		sirv('static', { dev }),
