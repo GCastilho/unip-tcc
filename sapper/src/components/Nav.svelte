@@ -56,5 +56,10 @@
 		<!-- for the blog link, we're using rel=prefetch so that Sapper prefetches
 		     the blog data when we hover over the link or tap it on a touchscreen -->
 		<li><a rel=prefetch class:selected='{segment === "blog"}' href='blog'>blog</a></li>
+
+		<div style="float: right">
+			<li><a class:selected='{segment === "login"}' href="login">login</a></li>
+			<li><a class:selected='{segment === "register"}' href="register">register</a></li>
+		</div>
 	</ul>
 </nav>
