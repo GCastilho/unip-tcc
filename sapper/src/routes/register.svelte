@@ -1,20 +1,41 @@
 <script>
+	import axios from 'axios'
 	import FancyInput from '../components/FancyInput.svelte'
 	import FancyButton from '../components/FancyButton.svelte'
+	import FormErrorMessage from '../components/FormErrorMessage.svelte'
 
-	function handleSubmit(event) {
-		console.log(event.target.email.value)
-		console.log(event.target.password.value)
-		console.log(event.target.conf_password.value)
+	/** true se o usuário completou o cadastro */
+	let registered = false
+	let email = undefined
+	let errorMessage = undefined
+
+	// TODO: Redirecionar para a home caso o usuário já esteja logado
+
+	async function handleSubmit(event) {
+		email = event.target.email.value
+		const password = event.target.password.value
+		if (password !== event.target.conf_password.value)
+			return alert('Confirmation pasword mismatch password')
+
+		try {
+			await axios.post(window.location, { email, password })
+			registered = true
+		} catch(err) {
+			if (err.response.status === 409) {
+				errorMessage = 'Já existe um usuário cadastrado com o e-mail informado'
+			} else {
+				errorMessage = err.response.statusText
+			}
+		}
 	}
 </script>
 
 <style>
-	h1 {
+	h1, h2, p {
 		text-align: center;
 	}
 
-	form {
+	form, div {
 		width: 350px;
 		height: 100%;
 		border: 1px solid lightgray;
@@ -26,14 +47,30 @@
 		box-shadow: 0px 5px 50px 0px rgba(18, 89, 93, 0.15);
 		line-height: 50px;
 	}
+
+	div {
+		width: 400px;
+	}
 </style>
 
-<h1>Register</h1>
+{#if registered}
+	<div>
+		<h2>Confirme o email</h2>
+		<p>
+			Enviamos um email de confirmação de cadastro para <b>{email}</b>, para ativar sua conta por favor siga as instruções informadas no email
+		</p>
+		<FancyButton>Confirmar e-mail</FancyButton> <!-- {/*função ainda precisa ser implementada*/} -->
+	</div>
+{:else}
+	<h1>Register</h1>
+	<form on:submit|preventDefault={handleSubmit}>
+		{#if errorMessage}
+			<FormErrorMessage>{errorMessage}</FormErrorMessage>
+		{/if}
+		<FancyInput id="email" type="email">Email</FancyInput>
+		<FancyInput id="password" type="password">Password</FancyInput>
+		<FancyInput id="conf_password" type="password">Confirm password</FancyInput>
 
-<form on:submit|preventDefault={handleSubmit}>
-	<FancyInput id="email" type="email">Email</FancyInput>
-	<FancyInput id="password" type="password">Password</FancyInput>
-	<FancyInput id="conf_password" type="password">Confirm password</FancyInput>
-
-	<FancyButton type="submit">Register</FancyButton>
-</form>
+		<FancyButton type="submit">Register</FancyButton>
+	</form>
+{/if}
