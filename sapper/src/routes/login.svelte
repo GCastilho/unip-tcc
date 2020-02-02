@@ -1,5 +1,6 @@
 <script>
 	import axios from 'axios'
+	import { goto } from '@sapper/app'
 	import FancyInput from '../components/FancyInput.svelte'
 	import FancyButton from '../components/FancyButton.svelte'
 	import FormErrorMessage from '../components/FormErrorMessage.svelte'
@@ -11,11 +12,12 @@
 		const password = event.target.password.value
 
 		try {
-			const res = await axios.post(window.location, { email, password })
+			await axios.post(window.location, { email, password })
 			const sessionID = document.cookie.replace(/(?:(?:^|.*;\s*)sessionID\s*=\s*([^;]*).*$)|^.*$/, "$1")
 			//TODO: autenticar o socket
 
-			location.replace(res.request.responseURL)
+			/** Manualmente redireciona para home */
+			goto('/')
 		} catch(err) {
 			if (err.response.status === 401) {
 				errorMessage = 'Invalid email or password'

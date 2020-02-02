@@ -12,10 +12,9 @@ express()
 	.use(
 		proxy(`http://127.0.0.1:${server_port}`, {
 			/**
-			 * métodos GET são enviados ao sapper
-			 * socket.io nosso tem um header 'path' !undefined
+			 * nosso socket.io tem um header 'path' !undefined
 			 */
-			filter: req => req.method !== 'GET' || req.headers.path
+			filter: req => req.headers.path
 		}),
 		compression({ threshold: 0 }),
 		sirv('static', { dev }),
