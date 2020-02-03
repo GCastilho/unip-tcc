@@ -1,14 +1,6 @@
 import socketIOClient from 'socket.io-client'
 
-const socket = socketIOClient({
-	transportOptions: {
-		polling: {
-			extraHeaders: {
-				path: window.location.pathname
-			}
-		}
-	}
-})
+const socket = socketIOClient()
 
 socket.on('connect', () => {
 	console.log('Connected to the socket')

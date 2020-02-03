@@ -1,15 +1,11 @@
 <script>
-	import { onMount } from 'svelte'
 	import { stores } from '@sapper/app'
+	import { route } from '../websocket.js'
 	export let segment
 
+	// Roteia o websocket a cada atualização do path da página
 	const { page } = stores()
-
-	onMount(async () => {
-		// Roteia o websocket a cada atualização do path da página
-		const websocket = await import('../websocket.js')
-		page.subscribe(value => websocket.route(value.path))
-	})
+	page.subscribe(value => route(value.path))
 </script>
 
 <style>

@@ -12,9 +12,9 @@ express()
 	.use(
 		proxy(`http://127.0.0.1:${server_port}`, {
 			/**
-			 * nosso socket.io tem um header 'path' !undefined
+			 * O request que retorna true é redirecionado ao main server
 			 */
-			filter: req => req.headers.path
+			filter: req => req.url.startsWith('/socket.io') && !req.url.includes('websocket')
 		}),
 		compression({ threshold: 0 }),
 		sirv('static', { dev }),
