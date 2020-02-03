@@ -1,11 +1,18 @@
 <script>
 	import axios from 'axios'
+	import { onMount } from 'svelte'
 	import { goto } from '@sapper/app'
+	import * as auth from '../stores/auth.js'
 	import FancyInput from '../components/FancyInput.svelte'
 	import FancyButton from '../components/FancyButton.svelte'
 	import FormErrorMessage from '../components/FormErrorMessage.svelte'
 
 	let errorMessage = undefined
+
+	onMount(() => {
+		// Redireciona para home caso esteja autenticado
+		if ($auth) goto('/')
+	})
 
 	async function handleSubmit(event) {
 		const email = event.target.email.value
@@ -14,9 +21,13 @@
 		try {
 			await axios.post(window.location, { email, password })
 			const sessionID = document.cookie.replace(/(?:(?:^|.*;\s*)sessionID\s*=\s*([^;]*).*$)|^.*$/, "$1")
-			//TODO: autenticar o socket
+			/**
+			 * @todo Adicionar handlers para os erros vindos do sistema
+			 * de autenticação do websocket
+			 */
+			await auth.authenticate(sessionID)
 
-			/** Manualmente redireciona para home */
+			/** Redireciona o usuário para a home */
 			goto('/')
 		} catch(err) {
 			if (err.response.status === 401) {

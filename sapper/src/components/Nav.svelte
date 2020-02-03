@@ -1,6 +1,7 @@
 <script>
 	import { stores } from '@sapper/app'
 	import { route } from '../websocket.js'
+	import * as auth from '../stores/auth.js'
 	export let segment
 
 	// Roteia o websocket a cada atualização do path da página
@@ -64,8 +65,12 @@
 		<li><a rel=prefetch class:selected='{segment === "blog"}' href='blog'>blog</a></li>
 
 		<div style="float: right">
-			<li><a class:selected='{segment === "login"}' href="login">login</a></li>
-			<li><a class:selected='{segment === "register"}' href="register">register</a></li>
+			{#if $auth}
+				<li><a on:click={auth.deauthenticate} href="/">logout</a></li>
+			{:else}
+				<li><a class:selected='{segment === "login"}' href="login">login</a></li>
+				<li><a class:selected='{segment === "register"}' href="register">register</a></li>
+			{/if}
 		</div>
 	</ul>
 </nav>

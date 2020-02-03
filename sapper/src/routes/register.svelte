@@ -1,5 +1,8 @@
 <script>
 	import axios from 'axios'
+	import { onMount } from 'svelte'
+	import { goto } from '@sapper/app'
+	import * as auth from '../stores/auth.js'
 	import FancyInput from '../components/FancyInput.svelte'
 	import FancyButton from '../components/FancyButton.svelte'
 	import FormErrorMessage from '../components/FormErrorMessage.svelte'
@@ -9,7 +12,10 @@
 	let email = undefined
 	let errorMessage = undefined
 
-	// TODO: Redirecionar para a home caso o usuário já esteja logado
+	onMount(() => {
+		// Redireciona para home caso esteja autenticado
+		if ($auth) goto('/')
+	})
 
 	async function handleSubmit(event) {
 		email = event.target.email.value
