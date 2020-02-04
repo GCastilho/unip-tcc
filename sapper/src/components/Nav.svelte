@@ -66,6 +66,7 @@
 
 		<div style="float: right">
 			{#if $auth}
+				<li><a class:selected='{segment === "balances"}' href="balances">balances</a></li>
 				<li><a on:click={auth.deauthenticate} href="/">logout</a></li>
 			{:else}
 				<li><a class:selected='{segment === "login"}' href="login">login</a></li>

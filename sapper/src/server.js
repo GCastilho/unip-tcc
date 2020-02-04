@@ -14,7 +14,9 @@ express()
 			/**
 			 * O request que retorna true é redirecionado ao main server
 			 */
-			filter: req => req.url.startsWith('/socket.io') && !req.url.includes('websocket')
+			filter: req => req.url.startsWith('/socket.io')
+			&& !req.url.includes('websocket')
+			|| req.method !== 'GET'
 		}),
 		compression({ threshold: 0 }),
 		sirv('static', { dev }),
