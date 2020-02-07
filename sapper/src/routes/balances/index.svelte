@@ -1,8 +1,9 @@
 <script>
 	import { onMount, onDestroy } from 'svelte'
 	import { goto } from '@sapper/app'
-	import * as auth from '../stores/auth.js'
-	import * as socket from '../websocket.js'
+	import TableRow from './_tableRow.svelte'
+	import * as auth from '../../stores/auth.js'
+	import * as socket from '../../websocket.js'
 
 	onMount(async () => {
 		// Redireciona para login caso não autenticado
@@ -65,40 +66,6 @@
 	th:first-child {
 		border-left: 0;
 	}
-
-	tr {
-		border-bottom: 1px solid var(--table-borders);
-	}
-
-	tr:nth-child(even) {
-		background-color: #FFF7F3
-	}
-
-	button {
-		background-color: transparent;
-		border: 0;
-		text-transform: uppercase;
-		cursor: pointer;
-	}
-
-	.balance-cell {
-		/* Mantém as cadas decimais alinhadas */
-		text-align: right;
-	}
-
-	.coin-cell {
-		text-transform: uppercase;
-	}
-
-	.name-cell {
-		text-transform: capitalize;
-	}
-
-	.teste {
-		height: 100px;
-		border: 1px solid red;
-		column-span: all;
-	}
 </style>
 
 {#await list()}
@@ -111,29 +78,8 @@
 		<!-- <th>accounts</th> -->
 		<th>Balance</th>
 		<th>Actions</th>
-		{#each currenciesList as currency}
-			<tr>
-				<td class="coin-cell">{currency.code}</td>
-				<td class="name-cell">{currency.name}</td>
-				<!-- <td>{currency.accounts}</td> -->
-				<td class="balance-cell">{currency.balance}</td>
-				<td>
-					<button>Deposit</button>
-					<button>Withdraw</button>
-				</td>
-			</tr>
-			<!--
-			<tr>
-				<td colspan="4">
-					Deposit row
-				</td>
-			</tr>
-			<tr>
-				<td colspan="4">
-					Withdraw row
-				</td>
-			</tr>
-			-->
+		{#each currenciesList as {code, name, balance}}
+			<TableRow {code} {name} {balance} />
 		{/each}
 	</table>
 {:catch err}
