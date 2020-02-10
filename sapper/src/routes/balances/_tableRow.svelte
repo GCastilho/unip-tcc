@@ -3,20 +3,32 @@
 </script>
 
 <script>
+	import QRious from 'qrious'
 	import { onMount } from 'svelte'
 
 	export let code
 	export let name
 	export let balance
+	export let accounts = []
 
-	let selectedAction = ''
 	let hidden = true
+	let selectedAction = ''
+	let selectedAccount = ''
+
+	// Qr Code stuff
+	let qrious
+	let canvas
 
 	onMount(() => {
-		rows.add(closeActionCell)
+		// Seleciona a primeira account do usuário
+		selectedAccount = accounts[0]
 
+		rows.add(closeActionCell)
 		return () => rows.delete(closeActionCell)
 	})
+
+	/** Atualiza o valor do qr code com o selectedAccount */
+	const setQrCode = () => qrious.set({ value: `${name}:${selectedAccount}` })
 
 	/** Fecha a aba de actions da linha atual */
 	const closeActionCell = () => hidden = true
@@ -32,11 +44,42 @@
 			closeAllCells()
 			selectedAction = cell.target.name
 			hidden = false
+
+			// Renderiza o qr code depois de montar o componente
+			if (selectedAction === 'deposit') {
+				setTimeout(() => {
+					qrious = new QRious({
+						element: canvas,
+						value: `${name}:${selectedAccount}`
+					})
+				})
+			}
 		}
 	}
 </script>
 
 <style>
+	button {
+		background-color: transparent;
+		border: 0;
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+
+	canvas {
+		display: block;
+	}
+
+	h4 {
+		font-weight: bold;
+	}
+
+	li {
+		list-style-type: none;
+		padding: 3px;
+		cursor: pointer;
+	}
+
 	tr {
 		border-bottom: 1px solid var(--table-borders);
 	}
@@ -45,24 +88,26 @@
 		background-color: #FFF7F3
 	}
 
-	button {
-		background-color: transparent;
-		border: 0;
-		text-transform: uppercase;
-		cursor: pointer;
+	ul {
+		padding: 0;
+	}
+
+	.action-cell {
+		display: flex;
+		justify-content: center;
+	}
+
+	.action-cell > * {
+		margin-left: auto;
+		margin-right: auto;
 	}
 
 	.action-row {
 		border-top: 2px solid transparent;
 	}
 
-	.action-cell {
-		height: 100px;
-		border: 1px solid red;
-	}
-
 	.balance-cell {
-		/* Mantém as cadas decimais alinhadas */
+		/* Mantém as casas decimais alinhadas */
 		text-align: right;
 	}
 
@@ -74,15 +119,30 @@
 		display: none;
 	}
 
+	.list-active-item {
+		border: 1px solid var(--table-borders);
+		border-radius: 3px;
+		background-color: white;
+	}
+
 	.name-cell {
 		text-transform: capitalize;
+	}
+
+	.qr-container {
+		border: 1px solid var(--table-borders);
+		height: 100%;
+		margin-top: 15px;
+		margin-bottom: 15px;
+		padding: 10px;
+		border-radius: 10px;
+		background-color: white;
 	}
 </style>
 
 <tr>
 	<td class="coin-cell">{code}</td>
 	<td class="name-cell">{name}</td>
-	<!-- <td>{accounts}</td> -->
 	<td class="balance-cell">{balance}</td>
 	<td>
 		<button name="deposit" on:click={openActionCell}>Deposit</button>
@@ -93,7 +153,19 @@
 	<td colspan="4">
 		<div class="action-cell">
 			{#if selectedAction === 'deposit'}
-				deposit
+				<ul>
+					<h4>Select deposit address</h4>
+					{#each accounts as account}
+						<li
+							class:list-active-item="{selectedAccount === account}"
+							on:click="{() => selectedAccount = account}"
+							on:click="{setQrCode}"
+						>{account}</li>
+					{/each}
+				</ul>
+				<div class="qr-container">
+					<canvas bind:this={canvas}></canvas>
+				</div>
 			{:else if selectedAction === 'withdraw'}
 				withdraw
 			{/if}

@@ -78,8 +78,8 @@
 		<!-- <th>accounts</th> -->
 		<th>Balance</th>
 		<th>Actions</th>
-		{#each currenciesList as {code, name, balance}}
-			<TableRow {code} {name} {balance} />
+		{#each currenciesList as {code, name, balance, accounts}}
+			<TableRow {code} {name} {balance} {accounts} />
 		{/each}
 	</table>
 {:catch err}
