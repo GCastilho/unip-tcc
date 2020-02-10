@@ -1,7 +1,7 @@
 <script>
 	import { onMount, onDestroy } from 'svelte'
 	import { goto } from '@sapper/app'
-	import TableRow from './_tableRow.svelte'
+	import TableRow from './_tableRow/index.svelte'
 	import * as auth from '../../stores/auth.js'
 	import * as socket from '../../websocket.js'
 
