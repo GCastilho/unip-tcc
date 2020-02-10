@@ -5,6 +5,7 @@
 <script>
 	import QRious from 'qrious'
 	import { onMount } from 'svelte'
+	import { emit } from '../../websocket.js'
 
 	export let code
 	export let name
@@ -14,6 +15,7 @@
 	let hidden = true
 	let selectedAction = ''
 	let selectedAccount = ''
+	let withdrawAmount
 
 	// Qr Code stuff
 	let qrious
@@ -36,6 +38,9 @@
 	/** Fecha as abas de actions de todas as linhas */
 	const closeAllCells = () => rows.forEach(closeFunction => closeFunction())
 
+	/** Impede que o valor digitado do amount seja maior que o saldo disponível */
+	const filterAmount = () => withdrawAmount = withdrawAmount > balance ? balance : withdrawAmount
+
 	/** Fecha todas as abas, troca o conteúdo, depois abre a atual */
 	function openActionCell(cell) {
 		if (!hidden && selectedAction === cell.target.name) {
@@ -56,22 +61,35 @@
 			}
 		}
 	}
+
+	async function handleWithdraw(event) {
+		const destination = event.target.destination.value
+		const amount = event.target.amount.value
+
+		try {
+			const opid = await emit('withdraw', {
+				currency: name,
+				destination,
+				amount
+			})
+			console.log('Withdraw executed, opid is:', opid)
+
+			// Atualiza o balance
+			balance -= amount
+		} catch(err) {
+			console.error('Error on withdraw request:', err)
+		}
+	}
 </script>
 
 <style>
-	button {
-		background-color: transparent;
-		border: 0;
-		text-transform: uppercase;
-		cursor: pointer;
-	}
-
 	canvas {
 		display: block;
 	}
 
 	h4 {
 		font-weight: bold;
+		text-align: center;
 	}
 
 	li {
@@ -88,8 +106,57 @@
 		background-color: #FFF7F3
 	}
 
+	td > button {
+		background-color: transparent;
+		border: 0;
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+
 	ul {
 		padding: 0;
+	}
+
+	form {
+		margin: auto;
+		margin-top: 15px;
+		margin-bottom: 15px;
+		text-align: right;
+		width: 85%;
+	}
+
+	form > button {
+		border: 0;
+		border-radius: 10px;
+		padding: 15px;
+		cursor: pointer;
+		background-color: #F0AE98;
+	}
+
+	form > div {
+		border: 1px solid var(--table-borders);
+		border-radius: 10px;
+		padding: 20px;
+		margin-bottom: 5px;
+		background-color: white;
+	}
+
+	form > div > input {
+		margin: 2px;
+		width: 85%;
+		text-align: right;
+	}
+
+	/* Remove arrow do type number */
+	form > div > input::-webkit-outer-spin-button,
+	form > div > input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
+	/* Remove arrow do type number no firefox */
+	form > div > input[type=number] {
+		-moz-appearance:textfield;
 	}
 
 	.action-cell {
@@ -167,7 +234,23 @@
 					<canvas bind:this={canvas}></canvas>
 				</div>
 			{:else if selectedAction === 'withdraw'}
-				withdraw
+				<form on:submit|preventDefault={handleWithdraw}>
+					<h4>Withdraw {name.toUpperCase()}</h4>
+					<div>
+						<label for="destination">Destination:</label>
+						<input type="text" id="destination" required>
+						<br/>
+	
+						<label for="amount">Amount:</label>
+						<input
+							type="number" id="amount" required
+							bind:value={withdrawAmount}
+							on:input="{filterAmount}"
+						>
+					</div>
+
+					<button type="submit">Withdraw</button>
+				</form>
 			{/if}
 		</div>
 	</td>
