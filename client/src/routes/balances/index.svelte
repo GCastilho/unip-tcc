@@ -12,16 +12,14 @@
 
 	function list() {
 		return new Promise((resolve, reject) => {
-			setTimeout(async () => {
-				let list
-				try {
-					await socket.emit('list')
-				} catch(err) {
-					list = err
-				}
-				console.log('list:', list)
-				resolve(list)
-			}, 2000);
+			if (typeof window === 'undefined') resolve()
+			setTimeout(() => {
+				socket.emit('list').then(list => {
+					resolve(list)
+				}).catch(err => {
+					reject(err)
+				})
+			}, 1000);
 		})
 	}
 
@@ -68,7 +66,6 @@
 	<table>
 		<th>Coin</th>
 		<th>Name</th>
-		<!-- <th>accounts</th> -->
 		<th>Balance</th>
 		<th>Actions</th>
 		{#each currenciesList as {code, name, balance, accounts}}
@@ -76,5 +73,5 @@
 		{/each}
 	</table>
 {:catch err}
-	<h2>Error: {err}</h2>
+	<h1>Error: {err}</h1>
 {/await}

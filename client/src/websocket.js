@@ -14,7 +14,7 @@ socket.on('disconnect', reason => {
  * Re-roteia o websocket para um novo path
  * @param {string} path O novo path do websocket
  */
-export function route(path = '/') {
+export function route(path) {
 	socket.emit('_path', path)
 }
 
@@ -49,8 +49,8 @@ export function addSocketListener(event, fn) {
 
 /**
  * Remove uma função específica do array de listeners de um evento
- * @param {*} event O nome do evento que estava sendo ouvido
- * @param {*} fn A função que deverá ser removida do listener
+ * @param {string} event O nome do evento que estava sendo ouvido
+ * @param {function} fn A função que deverá ser removida do listener
  */
 export function removeSocketListner(event, fn) {
 	socket.removeListener(event, fn)

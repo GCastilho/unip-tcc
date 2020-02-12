@@ -4,14 +4,14 @@ import balances from './balances'
 const router = routes()
 router.addRoute('/balances', balances)
 
-export function use(path: string, socket: SocketIO.Socket) {
+export function use(socket: SocketIO.Socket) {
 	/** Adiciona os listeners globais */
 	GlobalListeners.getListeners().forEach(([event, fn]) => socket.on(event, fn))
 
-	route(socket, path)
+	route(socket)
 }
 
-function route(socket: SocketIO.Socket, path: string) {
+function route(socket: SocketIO.Socket, path = '/') {
 	/** Remove todos os eventos não globais */
 	GlobalListeners.getListenersNames()
 		.filter(i => !socket.eventNames().includes(i))
@@ -58,5 +58,5 @@ export class GlobalListeners {
 
 /** Handler de re-routeamento */
 GlobalListeners.add('_path', function (this: SocketIO.Socket, newPath?: string) {
-	route(this, newPath || '/')
+	route(this, newPath)
 })
