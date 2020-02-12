@@ -1,6 +1,6 @@
 import socketIOClient from 'socket.io-client'
 
-export const socket = socketIOClient()
+const socket = socketIOClient()
 
 socket.on('connect', () => {
 	console.log('Connected to the socket')
