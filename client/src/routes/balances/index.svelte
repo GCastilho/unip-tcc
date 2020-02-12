@@ -7,7 +7,7 @@
 
 	onMount(async () => {
 		// Redireciona para login caso não autenticado
-		// if (!$auth) goto('/login')
+		if (!$auth) goto('/login')
 
 		// remove
 		setTimeout(async () => {

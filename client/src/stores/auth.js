@@ -1,9 +1,25 @@
 import { writable } from 'svelte/store'
 import { emit } from '../websocket'
 
-// TODO: Salvar o token pela sessão (localstorage, sessionstorage, etc) para possibilitar a reautenticação enquanto o token for válido
-// TODO: Mudar pra readable store para não ter que exportar set
+/**
+ * Store que armazena se o socket está autenticado ou não
+ */
 const { subscribe, set } = writable(false)
+
+/**
+ * Caso exista um token salvo, presume que está autenticado (mesmo que
+ * desconectado) até o socket emitir um evento de falha de conexão ou de
+ * autenticação
+ */
+if (typeof window !== 'undefined' && window.localStorage) {
+	if (localStorage.getItem('socket-auth-token')) set(true)
+}
+
+/**
+ * Ao usar a store como $auth, o compilador reclama que o método 'set' não
+ * existe. Isso é resolvível usando uma readable ou derived, que é uma melhor
+ * alternativa do que deixar como está
+ */
 export { subscribe, set }
 
 /**
@@ -16,6 +32,7 @@ export { subscribe, set }
  */
 export async function authenticate(token) {
 	emit('authentication', token)
+	localStorage.setItem('socket-auth-token', token)
 	console.log('Authentication successful')
 	set(true)
 }
@@ -29,6 +46,7 @@ export async function authenticate(token) {
  */
 export async function deauthenticate() {
 	emit('authentication')
+	localStorage.removeItem('socket-auth-token')
 	console.log('Deauthentication successful')
 	set(false)
 }
