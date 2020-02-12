@@ -1,5 +1,13 @@
 import { writable } from 'svelte/store'
-import { emit } from '../websocket'
+import { emit, socket } from '../websocket'
+
+/**
+ * Tenta autenticar o socket assim que conectado
+ */
+socket.on('connect', () => {
+	const token = localStorage.getItem('socket-auth-token')
+	if (typeof token === 'string') authenticate(token)
+})
 
 /**
  * Store que armazena se o socket está autenticado ou não
@@ -25,28 +33,30 @@ export { subscribe, set }
 /**
  * Autentica uma conexão com o websocket usando o token fornecido
  * @param {string} token O token de autenticação com o websocket
- * 
- * @todo Como o sistema de autenticação não retorna um sucesso, essa função
- * irá sempre presumir que a autenticação foi bem sucedida até que o sistema
- * de autenticação seja refeito
  */
 export async function authenticate(token) {
-	emit('authentication', token)
-	localStorage.setItem('socket-auth-token', token)
-	console.log('Authentication successful')
-	set(true)
+	try {
+		await emit('authenticate', token)
+		localStorage.setItem('socket-auth-token', token)
+		console.log('Authentication successful')
+		set(true)
+	} catch(err) {
+		console.error('autentication error', err)
+		set(false)
+	}
 }
 
 /**
  * Desautentica uma conexão com o websocket
- * 
- * @todo Como o sistema de autenticação não retorna um sucesso, essa função
- * irá sempre presumir que a desautenticação foi bem sucedida até que o sistema
- * de autenticação seja refeito
  */
 export async function deauthenticate() {
-	emit('authentication')
-	localStorage.removeItem('socket-auth-token')
-	console.log('Deauthentication successful')
-	set(false)
+	try {
+		await emit('deauthenticate')
+		localStorage.removeItem('socket-auth-token')
+		console.log('Deauthentication successful')
+		set(false)
+	} catch(err) {
+		console.error('Deauthentication error:', err)
+		set(false)
+	}
 }

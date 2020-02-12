@@ -1,12 +1,12 @@
 import socketIOClient from 'socket.io-client'
 
-const socket = socketIOClient()
+export const socket = socketIOClient()
 
 socket.on('connect', () => {
 	console.log('Connected to the socket')
 })
 
-socket.on('disconnect', (reason) => {
+socket.on('disconnect', reason => {
 	console.log('Disconnected from the socket:', reason)
 })
 

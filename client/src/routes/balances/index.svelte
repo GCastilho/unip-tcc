@@ -8,13 +8,6 @@
 	onMount(async () => {
 		// Redireciona para login caso não autenticado
 		if (!$auth) goto('/login')
-
-		// remove
-		setTimeout(async () => {
-			const sessionID = document.cookie.replace(/(?:(?:^|.*;\s*)sessionID\s*=\s*([^;]*).*$)|^.*$/, "$1")
-			await auth.authenticate(sessionID)
-			socket.route('/balances')
-		}, 1000);
 	})
 
 	function list() {

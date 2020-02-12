@@ -5,38 +5,55 @@ import * as connectedUsers from './connectedUsers'
 import * as Router from './router'
 
 // Configura os listeners globais
-Router.GlobalListeners.add('disconnect', function (this: SocketIO.Socket, reason) {
+Router.GlobalListeners.add('disconnect', function(this: SocketIO.Socket, reason) {
 	console.log('Socket disconnected:', reason)
 	connectedUsers.remove(this.user?.id)
 })
 
-Router.GlobalListeners.add('authentication', function (this: SocketIO.Socket, sessionId?: string) {
-	if (typeof sessionId === 'string') {
-		autenticateUser(this, sessionId)
+/**
+ * Autentica a conexão de um socket conectado, inserindo referência à Users no
+ * socket e atualizando a connectedUsers
+ * @param sessionID O token de autenticação desse usuário
+ * @param callback O callback de retorno ao cliente
+ */
+Router.GlobalListeners.add('authenticate', async function(this: SocketIO.Socket,
+		sessionID: string,
+		callback: (err: null|string, response?: string) => void
+	) {
+	if (typeof sessionID === 'string') {
+		try {
+			const user = await userApi.findUser.byCookie(sessionID)
+			this.user = user
+			connectedUsers.add(this)
+			callback(null, 'authenticated')
+		} catch(err) {
+			this.user = undefined
+			if (err === 'CookieNotFound' || err === 'UserNotFound') {
+				callback('TokenNotFound')
+			} else {
+				console.error('Error while authenticating user:', err)
+				callback('InternalServerError')
+			}
+		}
 	} else {
 		connectedUsers.remove(this.user?.id)
 		this.user = undefined
+		callback('TokenNotProvided')
 	}
 })
 
 /**
- * Autentica um socket caso ela seja de um usuário válido, inserindo referência
- * à Users no socket e atualizando a connectedUsers
- * @param socket O socket da conexão que tentará ser autenticada
- * @param sessionId O sessionId do usuário
+ * Desautentica uma conexão de um socket conectado, removendo a referência à
+ * Users no socket e atualizando a connectedUsers
+ * @param callback O callback de retorno ao cliente
  */
-async function autenticateUser(socket: SocketIO.Socket, sessionId?: string) {
-	if (!sessionId) return
-	try {
-		const user = await userApi.findUser.byCookie(sessionId)
-		socket.user = user
-		connectedUsers.add(socket)
-	} catch(err) {
-		socket.user = undefined
-		if (err !== 'CookieNotFound' && err !== 'UserNotFound')
-			console.error('Error while authenticating user:', err)
-	}
-}
+Router.GlobalListeners.add('deauthenticate', function(this: SocketIO.Socket,
+		callback: (err: null, response?: string) => void
+	) {
+		connectedUsers.remove(this.user?.id)
+		this.user = undefined
+		callback(null, 'deauthenticated')
+})
 
 /**
  * Função de inicialização do websocket
@@ -45,17 +62,11 @@ export = function(server: Server) {
 	const io = socket(server)
 
 	/**
-	 * Autentica o usuário antes de continuar
-	 * 
-	 * Se a autenticação for bem sucedida, haverá uma referência à classe User
-	 * em socket.user, em caso de falha essa propriedade terá valor undefined
+	 * Não se usa mais o path no header para o roteamento inicial, mas o
+	 * roteador teria que ser refatorado para receber um header sem path
 	 */
-	io.use(async (socket, next) => {
-		const sessionId = socket.handshake.headers.authentication
-		await autenticateUser(socket, sessionId)
-
-		if (!socket.handshake.headers.path)
-			socket.handshake.headers.path = '/'
+	io.use((socket, next) => {
+		socket.handshake.headers.path = '/'
 		next()
 	})
 
