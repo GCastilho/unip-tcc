@@ -19,7 +19,9 @@ export class Nano extends Common {
 
 	protected rpc = methods.nanoRpc.bind(this)()
 
-	processTransaction = methods.processTransaction.bind(this)()
+	processTransaction=methods.processTransaction.bind(this)()
+	
+	rewindTransactions=methods.rewindTransactions.bind(this)()
 
 	initBlockchainListener = methods.nanoWebSocket
 

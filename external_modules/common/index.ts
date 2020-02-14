@@ -59,6 +59,7 @@ export default abstract class Common {
 		this._events.on('rpc_connected', () => {
 			if (this.nodeOnline) return
 			this.nodeOnline = true
+			//TODO rewind de TODAS as accounts
 			this._events.emit('node_connected')
 		})
 		this._events.on('rpc_disconnected', () => {

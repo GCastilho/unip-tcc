@@ -19,42 +19,6 @@ export function processTransaction(this: Nano) {
 			console.error('Error redirecting to nano stdAccount', err)
 		})
 	}
-
-	/**
-	 * Procura por transações não computadas até a última transação salva no db
-	 * e as retorna em um array de Tx
-	 * 
-	 * @param account A account para checar o histórico de transações
-	 */
-	const findMissingTx = async (account: string): Promise<TxReceived[] | undefined> => {
-		/** Verifica se a account pertence a um usuário */
-		const savedAccount = await Account.findOne({ account })
-		if (!savedAccount) return
-		
-		const accountInfo = await this.rpc.accountInfo(account)
-		const lastKnownBlock = savedAccount.lastBlock ? savedAccount.lastBlock : accountInfo.open_block
-
-		const receiveArray: TxReceived[] = []
-		let blockHash = accountInfo.frontier
-	
-		/** Segue a blockchain da nano até encontrar o lastKnownBlock */
-		while (blockHash != lastKnownBlock) {
-			const blockInfo = await this.rpc.blockInfo(blockHash)
-			// pega apenas blocos de received q foram confirmados
-			if (blockInfo.subtype === 'receive' && blockInfo.confirmed === 'true' ) {
-				receiveArray.push({
-					txid:      blockHash,
-					account:   blockInfo.block_account,
-					status:    'confirmed',
-					amount:    fromRawToNano(blockInfo.amount),
-					timestamp: parseInt(blockInfo.local_timestamp)
-				})
-			}
-			blockHash = blockInfo.contents.previous
-		}
-		return receiveArray.reverse()
-	}
-
 	/**
 	 * Processa blocos de receive da nano
 	 * 
@@ -65,8 +29,8 @@ export function processTransaction(this: Nano) {
 	const _processTransaction = async (block: any): Promise<void> => {
 		let txArray: TxReceived[]|void
 		try {
-			/** Procura por transações que não foram computadas */
-			txArray = await findMissingTx(block.message.account)
+		/** Procura por transações que não foram computadas */
+			txArray=await this.rewindTransactions.findMissingTx(block.message.account)
 			if (!txArray) return
 		} catch(err) {
 			return console.error('Error finding missing transactions:', err)
