@@ -1,9 +1,19 @@
 import userApi from '../userApi'
-import User from '../userApi/user'
 import currencyApi from '../currencyApi'
 import * as connectedUsers from './connectedUsers'
 import { GlobalListeners } from './router'
-import { CurrencyApi } from '../currencyApi/currencyApi'
+import { SuportedCurrencies as SC } from '../currencyApi/currencyApi'
+import { Person } from '../db/models/person/interface'
+
+/** O Objeto 'balance' do usuário com os saldos em string */
+type StringifiedBalanceObject = {
+	[key in keyof Person['currencies'][SC]['balance']]: number
+};
+
+/** Interface do retorno do socket ao receber 'fetch_balances' */
+export type FetchBalances = {
+	[key in SC]: StringifiedBalanceObject
+};
 
 GlobalListeners.add('disconnect', function(this: SocketIO.Socket, reason) {
 	console.log('Socket disconnected:', reason)
@@ -55,29 +65,25 @@ GlobalListeners.add('deauthenticate', function(this: SocketIO.Socket,
 	callback(null, 'deauthenticated')
 })
 
-/** Interface do retorno do socket ao receber 'list' */
-export interface List {
-	code: CurrencyApi['currenciesDetailed'][number]['code']
-	name: CurrencyApi['currenciesDetailed'][number]['name']
-	decimals: CurrencyApi['currenciesDetailed'][number]['decimals']
-	accounts: ReturnType<User['getAccounts']>|undefined
-	balance: string|undefined
-}
-
 /**
- * Retorna um array com a lista das currencies, as accounts e o saldo de
- * cada currency
+ * Retorna um objeto em que as chaves são os nomes das currencies e os valores
+ * são os saldos do usuários para as respectivas currencies
  */
-GlobalListeners.add('list', function(this: SocketIO.Socket,
-	callback: (err: any, list: List[]) => void
+GlobalListeners.add('fetch_balances', function(this: SocketIO.Socket,
+	callback: (err: any, balances?: FetchBalances) => void
 ) {
-	console.log('requested balance list')
-	const list = currencyApi.currenciesDetailed.map(currency => ({
-		code:     currency.code,
-		name:     currency.name,
-		decimals: currency.decimals,
-		accounts: this.user?.getAccounts(currency.name),
-		balance:  this.user?.getBalance(currency.name).toFullString()
-	}))
-	callback(null, list)
+	if (!this.user) return callback('NotLoggedIn')
+	console.log('requested balance fetch')
+
+	const balances = {} as FetchBalances
+	for (let currency of currencyApi.currencies) {
+		const balanceObj = Object.entries(this.user.getBalance(currency))
+			.reduce((acc, [key, value]) => ({
+				...acc, [key]: +value.toFullString()
+			}), {} as StringifiedBalanceObject)
+
+		balances[currency] = balanceObj
+	}
+
+	callback(null, balances)
 })

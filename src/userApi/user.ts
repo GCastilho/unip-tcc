@@ -87,9 +87,12 @@ export default class User {
 	id: Person['_id']
 
 	/**
-	 * Retorna o saldo de um usuário para determinada currency
+	 * Retorna os saldos de um usuário para determinada currency
 	 */
-	getBalance = (currency: SC): Decimal128 => this.person.currencies[currency].balance.available
+	getBalance = (currency: SC) => {
+		const { available, locked } = this.person.currencies[currency].balance
+		return { available, locked }
+	}
 
 	/**
 	 * Retorna as accounts de um usuário para determinada currency
