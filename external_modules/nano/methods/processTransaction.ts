@@ -30,7 +30,11 @@ export function processTransaction(this: Nano) {
 		let txArray: TxReceived[]|void
 		try {
 		/** Procura por transações que não foram computadas */
-			txArray=await this.rewindTransactions.findMissingTx(block.message.account)
+			//const account=block.message.accountt;
+			const savedAccount=await Account.findOne({account : block.message.account});
+			if (!savedAccount) return;
+			
+			txArray=await this.rewindTransactions.findMissingTx(savedAccount.account, savedAccount.lastBlock)
 			if (!txArray) return
 		} catch(err) {
 			return console.error('Error finding missing transactions:', err)
