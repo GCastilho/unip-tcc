@@ -4,16 +4,27 @@
 
 <script>
 	import { onMount } from 'svelte'
+	import * as balances from '../../../stores/balances.js'
 	import DepositCell from './depositCell.svelte'
 	import WithdrawCell from './withdrawCell.svelte'
 
 	export let code
 	export let name
-	export let balance
 	export let accounts = []
 
 	let hidden = true
 	let selectedAction = ''
+
+	/** Variáveis do destruct do saldo da store de balances */
+	let available, locked
+
+	/**
+	 * Checa se existe uma prop na store com o nome dessa currency e, se sim,
+	 * seta available e locked para os valores da store
+	 */
+	$: if ($balances[name]) {
+		({ available, locked } = $balances[name])
+	}
 
 	onMount(() => {
 		rows.add(closeActionCell)
@@ -28,11 +39,11 @@
 
 	/** Fecha todas as abas, troca o conteúdo, depois abre a atual */
 	function openActionCell(cell) {
-		if (!hidden && selectedAction === cell.target.name) {
+		if (!hidden && selectedAction === cell) {
 			hidden = true
 		} else {
 			closeAllCells()
-			selectedAction = cell.target.name
+			selectedAction = cell
 			hidden = false
 		}
 	}
@@ -84,10 +95,10 @@
 <tr>
 	<td class="coin-cell">{code}</td>
 	<td class="name-cell">{name}</td>
-	<td class="balance-cell">{balance}</td>
+	<td class="balance-cell">{available.toFixed(8) || 'Loading...'}</td>
 	<td>
-		<button name="deposit" on:click={openActionCell}>Deposit</button>
-		<button name="withdraw" on:click={openActionCell}>Withdraw</button>
+		<button on:click="{() => openActionCell('deposit')}">Deposit</button>
+		<button on:click="{() => openActionCell('withdraw')}">Withdraw</button>
 	</td>
 </tr>
 <tr class="action-row" class:hidden>
@@ -96,7 +107,7 @@
 			{#if selectedAction === 'deposit'}
 				<DepositCell {accounts} />
 			{:else if selectedAction === 'withdraw'}
-				<WithdrawCell {name} {balance} />
+				<WithdrawCell {name} />
 			{/if}
 		</div>
 	</td>

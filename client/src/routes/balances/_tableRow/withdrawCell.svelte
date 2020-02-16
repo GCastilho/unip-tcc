@@ -1,8 +1,8 @@
 <script>
 	import { emit } from '../../../websocket.js'
+	import * as balances from '../../../stores/balances.js'
 
 	export let name
-	export let balance
 	let withdrawAmount
 
 	/** Impede que o valor digitado do amount seja maior que o saldo disponível */
@@ -21,7 +21,8 @@
 			console.log('Withdraw executed, opid is:', opid)
 
 			// Atualiza o balance
-			balance -= amount
+			$balances[name].available -= amount
+			$balances[name].locked += amount
 		} catch(err) {
 			console.error('Error on withdraw request:', err)
 		}

@@ -30,7 +30,7 @@ const removeToken = () => localStorage.removeItem('socket-auth-token')
  */
 const initialState = typeof window !== 'undefined'
 	&& window.localStorage
-	&& getToken()
+	&& !!getToken()
 
 /**
  * Store que armazena se o socket está autenticado ou não
