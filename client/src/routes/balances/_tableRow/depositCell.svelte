@@ -2,6 +2,7 @@
 	import QRious from 'qrious'
 	import { onMount } from 'svelte'
 
+	export let name
 	export let accounts = []
 
 	let selectedAccount = ''

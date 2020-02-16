@@ -106,7 +106,7 @@
 	<td colspan="4">
 		<div>
 			{#if selectedAction === 'deposit'}
-				<DepositCell {accounts} />
+				<DepositCell {name} {accounts} />
 			{:else if selectedAction === 'withdraw'}
 				<WithdrawCell {name} />
 			{/if}
