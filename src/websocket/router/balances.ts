@@ -29,7 +29,7 @@ export default function balances(socket: SocketIO.Socket) {
 	socket.on('list', function(callback: (err: any, list?: List[]) => void) {
 		if (!socket.user) return callback('NotLoggedIn')
 
-		console.log('requested balance list')
+		console.log('requested list')
 		const list = currencyApi.currenciesDetailed.map(currency => ({
 			code:     currency.code,
 			name:     currency.name,

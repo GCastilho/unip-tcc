@@ -1,30 +1,22 @@
 <script>
 	import { onMount, onDestroy } from 'svelte'
 	import { goto } from '@sapper/app'
-	import TableRow from './_tableRow/index.svelte'
-	import * as auth from '../../stores/auth.js'
+	import { subscribe } from '../../stores/auth.js'
 	import * as socket from '../../websocket.js'
+	import TableRow from './_tableRow/index.svelte'
 
-	onMount(async () => {
+	/** Referência à subscription da store de auth */
+	let unsubscribeAuth
+
+	onMount(() => {
 		// Redireciona para login caso não autenticado
-		if (!$auth) goto('/login')
+		unsubscribeAuth = subscribe(auth => {
+			if (!auth) goto('/login')
+		})
 	})
 
-	function list() {
-		return new Promise((resolve, reject) => {
-			if (typeof window === 'undefined') resolve()
-			setTimeout(() => {
-				socket.emit('list').then(list => {
-					resolve(list)
-				}).catch(err => {
-					reject(err)
-				})
-			}, 1000);
-		})
-	}
-
 	onDestroy(() => {
-
+		if (typeof unsubscribeAuth === 'function') unsubscribeAuth()
 	})
 </script>
 
@@ -59,7 +51,11 @@
 	}
 </style>
 
-{#await list()}
+<svelte:head>
+	<title>Balances page</title>
+</svelte:head>
+
+{#await socket.emit('list')}
 	<h1>Fetching data...</h1>
 {:then currenciesList}
 	<h1>Balances</h1>

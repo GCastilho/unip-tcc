@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store'
-import { emit } from '../websocket'
 import * as auth from '../stores/auth'
+import { emit } from '../websocket'
 
 const { subscribe, set, update } = writable({})
 

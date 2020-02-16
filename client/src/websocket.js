@@ -19,7 +19,7 @@ export function route(path) {
 }
 
 /**
- * Checa a conexão; A promessa retornada por essa função será resolvida caso
+ * Checa a conexão; A promessa retornada por essa função só será resolvida caso
  * o socket esteja conectado ou uma vez que ele se conectar
  */
 function checkConnection() {

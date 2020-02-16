@@ -1,4 +1,5 @@
 <script context="module">
+	/** Set com referência a todas as rows da tabela dessa currency */
 	const rows = new Set()
 </script>
 
