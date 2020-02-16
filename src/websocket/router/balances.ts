@@ -2,6 +2,14 @@ import { SuportedCurrencies as SC, CurrencyApi } from '../../currencyApi/currenc
 import currencyApi from '../../currencyApi'
 import User from '../../userApi/user'
 
+/** Interface do retorno do socket ao receber 'list' */
+export interface List {
+	code: CurrencyApi['currenciesDetailed'][number]['code']
+	name: CurrencyApi['currenciesDetailed'][number]['name']
+	decimals: CurrencyApi['currenciesDetailed'][number]['decimals']
+	accounts: ReturnType<User['getAccounts']>|undefined
+}
+
 /** Interface do objeto experado nos requests de withdraw */
 export interface Withdraw {
 	currency: SC
@@ -9,34 +17,26 @@ export interface Withdraw {
 	amount: string|number
 }
 
-/** Interface do retorno do socket ao receber 'list' */
-export interface List {
-	code: CurrencyApi['currenciesDetailed'][any]['code']
-	name: CurrencyApi['currenciesDetailed'][any]['name']
-	decimals: CurrencyApi['currenciesDetailed'][any]['decimals']
-	accounts: ReturnType<User['getAccounts']>|undefined
-	balance: string|undefined
-}
-
-export default function balance(socket: SocketIO.Socket) {
+export default function balances(socket: SocketIO.Socket) {
 	console.log('balances endpoint')
 	console.log(`the user is ${socket.user ? '' : 'NOT '}authenticated`)
 	if (!socket.user) return
 
 	/**
-	 * Retorna um array com a lista das currencies, as accounts e o saldo de
-	 * cada currency
+	 * Retorna um array com a lista dos códigos, nomes, decimais e accounts de
+	 * todas as currencies
 	 */
-	socket.on('list', (callback: (list: List[]) => void) => {
-		console.log('requested balance list')
+	socket.on('list', function(callback: (err: any, list?: List[]) => void) {
+		if (!socket.user) return callback('NotLoggedIn')
+
+		console.log('requested list')
 		const list = currencyApi.currenciesDetailed.map(currency => ({
 			code:     currency.code,
 			name:     currency.name,
 			decimals: currency.decimals,
 			accounts: socket.user?.getAccounts(currency.name),
-			balance:  socket.user?.getBalance(currency.name).toFullString()
 		}))
-		callback(list)
+		callback(null, list)
 	})
 
 	/**
