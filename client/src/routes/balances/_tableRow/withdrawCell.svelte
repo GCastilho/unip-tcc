@@ -6,7 +6,7 @@
 	let withdrawAmount
 
 	/** Impede que o valor digitado do amount seja maior que o saldo disponível */
-	const filterAmount = () => withdrawAmount = withdrawAmount > balance ? balance : withdrawAmount
+	const filterAmount = () => withdrawAmount = withdrawAmount > $balances[name].available ? $balances[name].available : withdrawAmount
 
 	async function handleWithdraw(event) {
 		const destination = event.target.destination.value
