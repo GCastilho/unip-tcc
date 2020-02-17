@@ -62,7 +62,8 @@
 	<table>
 		<th>Coin</th>
 		<th>Name</th>
-		<th>Balance</th>
+		<th>Balance Available</th>
+		<th>Balance Locked</th>
 		<th>Actions</th>
 		{#each currenciesList as {code, name, accounts}}
 			<TableRow {code} {name} {accounts} />
