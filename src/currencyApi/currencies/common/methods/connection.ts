@@ -168,7 +168,23 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			} else {
 				console.error('Error processing new_transaction:', err)
 				callback({ code: 'InternalServerError' })
-				await user.balanceOps.cancel(this.name, opid)
+				/**
+				 * Restaura o database ao estado original
+				 * 
+				 * Não se sabe em que estágio ocorreu um erro para cair aqui,
+				 * então a operação pode ou não ter sido criada, por esse motivo
+				 * o erro de 'OperationNotFound' está sendo ignorando
+				 * 
+				 * Entretando, um outro erro é um erro de fato e deve terminar
+				 * a execução do programa para evitar potencial dano
+				 */
+				try {
+					await Tx.findByIdAndDelete(opid)
+					await user.balanceOps.cancel(this.name, opid)
+				} catch(err) {
+					if (err != 'OperationNotFound')
+						throw err
+				}
 			}
 		}
 	})
