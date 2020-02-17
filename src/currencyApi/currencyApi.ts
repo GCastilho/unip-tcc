@@ -4,7 +4,7 @@ import * as currencies from './currencies'
 import * as self from './self'
 import User from '../userApi/user'
 import Common from './currencies/common'
-import { TransactionInternal as Tx } from '../db/models/transaction'
+import { TxReceived, UpdtReceived } from '../db/models/transaction'
 
 /** EventEmmiter genérico */
 class Events extends EventEmitter {}
@@ -76,24 +76,22 @@ export class CurrencyApi {
 		})
 	}
 
-	/**
-	 * Monitora os eventEmitters dos módulos individuais por eventos de
-	 * 'new_transaction' e reemite-os no eventEmitter público da currencyApi
-	 */
-	private __new_transaction() {
-		this.currencies.forEach(currency => {
-			this._currencies[currency].events
-				.on('new_transaction', (userId: User['id'], transaction: Tx) => {
-					this.events.emit('new_transaction', userId, currency, transaction)
-			})
-		})
-	}
-
 	constructor() {
 		// Inicia o listener
 		this.__listener(8085)
 		
-		// Inicializa o monitor de transações recebidas
-		this.__new_transaction()
+		/**
+		 * Monitora os eventEmitters dos módulos individuais por certos eventos
+		 * e reemite-os no eventEmitter público da currencyApi
+		 */
+		this.currencies.forEach(currency => {
+			this._currencies[currency].events
+				.on('new_transaction', (userId: User['id'], transaction: TxReceived) => {
+					this.events.emit('new_transaction', userId, currency, transaction)
+				})
+				.on('update_received_tx', (userId: User['id'], updtReceived: UpdtReceived) => {
+					this.events.emit('update_received_tx', userId, currency, updtReceived)
+				})
+		})
 	}
 }
