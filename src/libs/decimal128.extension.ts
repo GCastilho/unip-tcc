@@ -106,7 +106,7 @@ Decimal128.fromNumeric = function toDecimal128(value, decimals = 0) {
 	if (decimals) {
 		let [inteiro, casas] = _value.split('.')
 		casas = casas?.slice(0, decimals)
-		_value = inteiro.concat('.').concat(casas || '')
+		_value = casas ? inteiro.concat('.').concat(casas || '') : inteiro
 	}
 	return Decimal128.fromString(_value)
 }
