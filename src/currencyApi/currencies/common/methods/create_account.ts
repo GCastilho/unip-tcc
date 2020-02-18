@@ -43,7 +43,7 @@ export function create_account(this: Common) {
 		// Nenhum create_account foi deletado
 		if (!res.nModified) return
 
-		await this.garbage_collector('create_accounts')
+		await this.checklistCleaner('create_accounts')
 	}
 
 	const create_account_loop = async () => {

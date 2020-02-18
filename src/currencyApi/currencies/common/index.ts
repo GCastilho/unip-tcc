@@ -2,6 +2,7 @@
  * Classe abstrata dos módulos comuns de todas as currencyModules
  */
 
+import Checklist from '../../../db/models/checklist'
 import * as methods from './methods'
 import { EventEmitter } from 'events'
 
@@ -29,8 +30,25 @@ export default abstract class Common {
 	/** Indica se o módulo externo está online ou não */
 	protected isOnline: boolean = false
 
-	/** Limpa os itens com todos os comandos completos da checklist */
-	protected garbage_collector: (command: string) => Promise<void>
+	/** Limpa da checklist itens com todos os comandos completos */
+	protected checklistCleaner = async (command: string): Promise<void> => {
+		/**
+		 * Limpa os comandos que são objetos vazios da checklist
+		 */
+		const res = await Checklist.updateMany({
+			[`commands.${command}`]: {}
+		}, {
+			$unset: {
+				[`commands.${command}`]: true
+			}
+		})
+
+		/**
+		 * Limpa os itens da checklist em que a prop 'commands' está vazia
+		 */
+		if (res.deletedCount && res.deletedCount > 0)
+			await Checklist.deleteMany({ 'commands': null })
+	}
 
 	/**
 	 * Wrapper de comunicação com o socket do módulo externo
@@ -66,7 +84,6 @@ export default abstract class Common {
 
 	constructor() {
 		this.create_account = methods.create_account.bind(this)()
-		this.garbage_collector = methods.garbage_collector.bind(this)()
 		this.withdraw = methods.withdraw.bind(this)()
 	}
 }

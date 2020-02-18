@@ -105,7 +105,7 @@ export function withdraw(this: Common) {
 		// Nenhum array de withdraw foi deletado
 		if (!resWithdraw.nModified) return
 
-		await this.garbage_collector('withdraw')
+		await this.checklistCleaner('withdraw')
 	}
 
 	/**
