@@ -21,8 +21,8 @@
 			console.log('Withdraw executed, opid is:', opid)
 
 			// Atualiza o balance
-			$balances[name].available -= amount
-			$balances[name].locked += amount
+			$balances[name].available -= +amount
+			$balances[name].locked += +amount
 		} catch(err) {
 			console.error('Error on withdraw request:', err)
 		}

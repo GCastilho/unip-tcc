@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store'
 import * as auth from '../stores/auth'
-import { emit } from '../websocket'
+import { emit, addSocketListener } from '../websocket'
 
 const { subscribe, set, update } = writable({})
 
@@ -20,4 +20,15 @@ auth.subscribe(async auth => {
 	} catch(err) {
 		console.error('Error while fething balances:', err)
 	}
+})
+
+/**
+ * Todo: testar se o evento esta funcionando
+ */
+addSocketListener('new_transaction', (res) => {
+	console.log(res)
+})
+
+addSocketListener('update_received_tx', (res) => {
+	console.log(res)
 })
