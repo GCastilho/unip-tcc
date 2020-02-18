@@ -1,7 +1,6 @@
 import randomstring from 'randomstring'
-import { sha512 } from 'js-sha512'
 import { ObjectId } from 'mongodb'
-import User from './user'
+import User, { hashPassword } from './user'
 import Cookie from '../db/models/cookie'
 import currencyApi from '../currencyApi'
 import PersonModel from '../db/models/person'
@@ -20,11 +19,8 @@ export = class UserApi {
 	 */
 	static async createUser(email: string, password: string): Promise<Person> {
 		const salt = randomstring.generate({ length: 32 })
-		const password_hash = sha512.create()
-			.update(salt)
-			.update(password)
-			.hex()
-		
+		const password_hash = hashPassword(salt, password)
+
 		const person = await new PersonModel({
 			email,
 			credentials: {
@@ -58,7 +54,7 @@ export = class UserApi {
 			if (!person) throw 'UserNotFound'
 			return new User(person)
 		}
-	
+
 		/**
 		 * Procura por um usuário usando o ID informado
 		 * 
@@ -70,7 +66,7 @@ export = class UserApi {
 			if (!person) throw 'UserNotFound'
 			return new User(person)
 		}
-	
+
 		/**
 		 * Procura por um usuário usando o cookie de sessionID informado
 		 * 
@@ -84,7 +80,7 @@ export = class UserApi {
 			if (!cookie) throw 'CookieNotFound'
 			return this.byId(cookie.userId)
 		}
-	
+
 		/**
 		 * Procura por um usuário usando uma account informada
 		 * 

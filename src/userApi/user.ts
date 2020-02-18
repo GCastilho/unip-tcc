@@ -56,15 +56,25 @@ interface PendingOp {
 	amount: number|string
 }
 
+/**
+ * Função para fazer o hash do password de um usuário
+ * 
+ * @param salt O salt desse usuário
+ * @param password O password desse usuário
+ * @returns sha512 do salt + password
+ */
+export const hashPassword = (salt: string, password: string) =>
+	sha512.create()
+		.update(salt)
+		.update(password)
+		.hex()
+
 export default class User {
 	/**
-	 * Cria o sha512 do salt com o password, seguindo o padrão do createUser
+	 * Retorna o sha512 do salt com o password desse usuário
 	 */
 	private _hashPassword = (password: string): string =>
-		sha512.create()
-			.update(this.person.credentials.salt)
-			.update(password)
-			.hex()
+		hashPassword(this.person.credentials.salt, password)
 
 	/**
 	 * Um objeto com informações necessárias à User sobre as currencies
