@@ -166,23 +166,6 @@ export class CurrencyApi {
 		return opid
 	}
 
-	/** Listener da currencyApi, para comunicação com os módulos externos */
-	private __listener(port: number) {
-		const io = socketIO(port)
-		console.log('CurrencyApi listener is up on port', port)
-
-		/**
-		 * Ao receber uma conexão em '/<currency>' do socket, chama a função
-		 * connection do módulo desta currency
-		 */
-		this.currencies.forEach(currency => {
-			io.of(currency).on('connection', (socket: socketIO.Socket) => {
-				console.log(`Connected to the '${currency}' module`)
-				this._currencies[currency].connection(socket)
-			})
-		})
-	}
-
 	/**
 	 * Monitora os eventEmitters dos módulos individuais por eventos de
 	 * 'new_transaction' e reemite-os no eventEmitter público da currencyApi
@@ -197,8 +180,23 @@ export class CurrencyApi {
 	}
 
 	constructor() {
-		// Inicia o listener
-		this.__listener(8085)
+		// Inicia o listener da currencyApi
+		const port = 8085
+		const io = socketIO(port)
+		console.log('CurrencyApi listener is up on port', port)
+
+		/**
+		 * Listener da currencyApi, para comunicação com os módulos externos
+		 * 
+		 * Ao receber uma conexão em '/<currency>' do socket, chama a função
+		 * connection do módulo desta currency
+		 */
+		this.currencies.forEach(currency => {
+			io.of(currency).on('connection', (socket: socketIO.Socket) => {
+				console.log(`Connected to the '${currency}' module`)
+				this._currencies[currency].connection(socket)
+			})
+		})
 		
 		// Inicializa o monitor de transações recebidas
 		this.__new_transaction()
