@@ -10,7 +10,7 @@ export default class FindUser {
 	 * @returns A User class instance with the found user
 	 * @throws 'UserNotFound'
 	 */
-	byEmail = async (email: string): Promise<User> => {
+	static async byEmail(email: string): Promise<User> {
 		const person = await Person.findOne({ email })
 		if (!person) throw 'UserNotFound'
 		return new User(person)
@@ -22,7 +22,7 @@ export default class FindUser {
 	 * @returns A User class instance with the found user
 	 * @throws 'UserNotFound'
 	 */
-	byId = async (id: ObjectId): Promise<User> => {
+	static async byId(id: ObjectId): Promise<User> {
 		const person = await Person.findById(id)
 		if (!person) throw 'UserNotFound'
 		return new User(person)
@@ -36,7 +36,7 @@ export default class FindUser {
 	 * @throws 'UserNotFound'
 	 * @todo Checar se o Cookie não expirou antes de continuar
 	 */
-	byCookie = async (sessionID: string): Promise<User> => {
+	static async byCookie(sessionID: string): Promise<User> {
 		const cookie = await Cookie.findOne({ sessionID })
 		if (!cookie) throw 'CookieNotFound'
 		return this.byId(cookie.userId)
@@ -50,7 +50,7 @@ export default class FindUser {
 	 * @returns A User class instance with the found user
 	 * @throws 'UserNotFound'
 	 */
-	byAccount = async (currency: string, account: string): Promise<User> => {
+	static async byAccount(currency: string, account: string): Promise<User> {
 		const person = await Person.findOne({
 			[`currencies.${currency}.accounts`]: account
 		})

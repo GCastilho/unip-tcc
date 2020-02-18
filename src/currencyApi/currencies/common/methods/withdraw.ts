@@ -1,9 +1,7 @@
 import Checklist, { Checklist as Ck } from '../../../../db/models/checklist'
 import Transaction, { TxSend, UpdtSent } from '../../../../db/models/transaction'
-import FindUser from '../../../../userApi/findUser'
+import userApi from '../../../../userApi'
 import Common from '../index'
-
-const findUser = new FindUser()
 
 /**
  * Retorna uma função que varre a collection da checklist procurando por
@@ -58,7 +56,7 @@ export function withdraw(this: Common) {
 
 		if (txUpdate.status === 'confirmed') {
 			try {
-				const user = await findUser.byId(tx.user)
+				const user = await userApi.findUser.byId(tx.user)
 				await user.balanceOps.complete(this.name, tx._id)
 			} catch(err) {
 				if (err === 'OperationNotFound') {

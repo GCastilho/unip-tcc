@@ -5,12 +5,16 @@ import currencyApi from '../currencyApi'
 import PersonModel from '../db/models/person'
 import { Person } from '../db/models/person/interface'
 
-class UserApi {
+/**
+ * Api para métodos diretamente relacionadas a informações de um usuário salvas
+ * no banco de dados, como balance, accounts, password, etc
+ */
+export = class UserApi {
 	/**
 	 * Expõe vários métodos para procurar por um usuário e retornar uma
 	 * instância da classe User com ele
 	 */
-	findUser = new FindUser()
+	static findUser = FindUser
 
 	/**
 	 * Cria um novo usuário no database com as credenciais informadas
@@ -18,7 +22,7 @@ class UserApi {
 	 * @throws ValidationError from mongoose.Error if document validation fails
 	 * @returns The newly created document
 	 */
-	async createUser (email: string, password: string): Promise<Person> {
+	static async createUser(email: string, password: string): Promise<Person> {
 		const salt = randomstring.generate({ length: 32 })
 		const password_hash = sha512.create()
 			.update(salt)
@@ -42,10 +46,3 @@ class UserApi {
 		return person
 	}
 }
-
-/**
- * Api para métodos diretamente relacionadas a informações de um usuário salvas
- * no banco de dados, como balance, accounts, password, etc
- */
-const userApi = new UserApi()
-export = userApi
