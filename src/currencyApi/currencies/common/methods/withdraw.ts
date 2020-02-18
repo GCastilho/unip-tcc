@@ -134,7 +134,7 @@ export function withdraw(this: Common) {
 				}
 
 				try {
-					await this.module('withdraw', transaction)
+					await this.emit('withdraw', transaction)
 					console.log('sent withdraw request', transaction)
 
 					request.status = 'completed'

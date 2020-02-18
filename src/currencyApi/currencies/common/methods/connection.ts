@@ -257,7 +257,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Ouve por eventos vindos do método 'module' e os retransmite ao socket
 	 * para serem enviados ao módulo externo
 	 */
-	this._events.on('module', (event: string, ...args: any) => {
+	this._events.on('emit', (event: string, ...args: any) => {
 		console.log('event', event)
 		if (this.isOnline) {
 			socket.emit(event, ...args)

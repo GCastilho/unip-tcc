@@ -58,10 +58,10 @@ export default abstract class Common {
 	 * 
 	 * @throws SocketDisconnected if socket is disconnected
 	 */
-	protected module(event: string, ...args: any): Promise<any> {
+	protected emit(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {
 			if (!this.isOnline) reject('Module is offline')
-			this._events.emit('module', event, ...args, ((error, response) => {
+			this._events.emit('emit', event, ...args, ((error, response) => {
 				if (error)
 					reject(error)
 				else

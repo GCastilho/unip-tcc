@@ -53,7 +53,7 @@ export function create_account(this: Common) {
 
 		let item: Ck
 		while (( looping && (item = await checklist.next()) )) {
-			const account: string = await this.module('create_new_account')
+			const account: string = await this.emit('create_new_account')
 			await Person.findByIdAndUpdate(item.userId, {
 				$push: {
 					[`currencies.${this.name}.accounts`]: account
