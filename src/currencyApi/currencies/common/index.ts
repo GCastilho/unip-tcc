@@ -60,7 +60,7 @@ export default abstract class Common {
 	 */
 	protected emit(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {
-			if (!this.isOnline) reject('Module is offline')
+			if (!this.isOnline) reject('SocketDisconnected')
 			this._events.emit('emit', event, ...args, ((error, response) => {
 				if (error)
 					reject(error)
@@ -85,5 +85,9 @@ export default abstract class Common {
 	constructor() {
 		this.create_account = methods.create_account.bind(this)()
 		this.withdraw = methods.withdraw.bind(this)()
+
+		this._events.on('connected', () => {
+			this.create_account()
+		})
 	}
 }
