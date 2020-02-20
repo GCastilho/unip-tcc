@@ -1,7 +1,4 @@
-/*
- * Classe abstrata dos módulos comuns de todas as currencyModules
- */
-
+import Checklist from '../../../db/models/checklist'
 import * as methods from './methods'
 import { EventEmitter } from 'events'
 
@@ -10,6 +7,9 @@ import { EventEmitter } from 'events'
  */
 class Events extends EventEmitter {}
 
+/**
+ * Classe abstrata dos módulos comuns de todas as currencyModules
+ */
 export default abstract class Common {
 	/** O nome da currency que esta classe se comunica */
 	abstract name: 'bitcoin'|'nano'
@@ -29,8 +29,25 @@ export default abstract class Common {
 	/** Indica se o módulo externo está online ou não */
 	protected isOnline: boolean = false
 
-	/** Limpa os itens com todos os comandos completos da checklist */
-	protected garbage_collector: (command: string) => Promise<void>
+	/** Limpa da checklist itens com todos os comandos completos */
+	protected checklistCleaner = async (command: string): Promise<void> => {
+		/**
+		 * Limpa os comandos que são objetos vazios da checklist
+		 */
+		const res = await Checklist.updateMany({
+			[`commands.${command}`]: {}
+		}, {
+			$unset: {
+				[`commands.${command}`]: true
+			}
+		})
+
+		/**
+		 * Limpa os itens da checklist em que a prop 'commands' está vazia
+		 */
+		if (res.deletedCount && res.deletedCount > 0)
+			await Checklist.deleteMany({ 'commands': null })
+	}
 
 	/**
 	 * Wrapper de comunicação com o socket do módulo externo
@@ -40,10 +57,10 @@ export default abstract class Common {
 	 * 
 	 * @throws SocketDisconnected if socket is disconnected
 	 */
-	protected module(event: string, ...args: any): Promise<any> {
+	protected emit(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {
-			if (!this.isOnline) reject('Module is offline')
-			this._events.emit('module', event, ...args, ((error, response) => {
+			if (!this.isOnline) reject('SocketDisconnected')
+			this._events.emit('emit', event, ...args, ((error, response) => {
 				if (error)
 					reject(error)
 				else
@@ -66,7 +83,11 @@ export default abstract class Common {
 
 	constructor() {
 		this.create_account = methods.create_account.bind(this)()
-		this.garbage_collector = methods.garbage_collector.bind(this)()
 		this.withdraw = methods.withdraw.bind(this)()
+
+		this._events.on('connected', () => {
+			this.create_account()
+			this.withdraw()
+		})
 	}
 }
