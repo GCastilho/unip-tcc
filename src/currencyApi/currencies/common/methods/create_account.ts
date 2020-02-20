@@ -6,7 +6,7 @@ import Common from '../index'
  * Retorna uma função que varre a collection checklist procurando por accounts
  * para criar
  * 
- * Após isso a função executa o checklistCleaner, para limpar o comando
+ * Após isso a função executa seu checklistCleaner, para limpar o comando
  * 'create_account' da checklist. Ao terminar ela chama o checklistCleaner da
  * classe
  * 

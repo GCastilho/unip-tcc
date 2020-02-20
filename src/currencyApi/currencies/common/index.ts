@@ -1,7 +1,3 @@
-/*
- * Classe abstrata dos módulos comuns de todas as currencyModules
- */
-
 import Checklist from '../../../db/models/checklist'
 import * as methods from './methods'
 import { EventEmitter } from 'events'
@@ -11,6 +7,9 @@ import { EventEmitter } from 'events'
  */
 class Events extends EventEmitter {}
 
+/**
+ * Classe abstrata dos módulos comuns de todas as currencyModules
+ */
 export default abstract class Common {
 	/** O nome da currency que esta classe se comunica */
 	abstract name: 'bitcoin'|'nano'
@@ -88,6 +87,7 @@ export default abstract class Common {
 
 		this._events.on('connected', () => {
 			this.create_account()
+			this.withdraw()
 		})
 	}
 }
