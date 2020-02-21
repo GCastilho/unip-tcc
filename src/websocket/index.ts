@@ -2,6 +2,7 @@ import socket from 'socket.io'
 import { Server } from 'http'
 import * as Router from './router'
 import './globalListeners'
+import './emitters'
 
 /**
  * Função de inicialização do websocket
