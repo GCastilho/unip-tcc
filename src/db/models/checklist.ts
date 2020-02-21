@@ -1,6 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose'
 import { ObjectId } from 'mongodb'
 
+/**
+ * Checklist collection's interface
+ */
 export interface Checklist extends Document {
 	opid: ObjectId,
 	userId: ObjectId,
