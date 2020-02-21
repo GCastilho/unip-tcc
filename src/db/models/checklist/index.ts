@@ -1,37 +1,38 @@
 import mongoose, { Schema, Document } from 'mongoose'
 import { ObjectId } from 'mongodb'
-import { CreateAccountsSchema, CreateAccountsInterface } from './commands/create_accounts'
-import { WithdrawSchema, WithdrawInterface } from './commands/withdraw'
 
 export interface Checklist extends Document {
+	opid: ObjectId,
 	userId: ObjectId,
-	commands: {
-		create_accounts: {
-			bitcoin: CreateAccountsInterface,
-			nano: CreateAccountsInterface
-		},
-		withdraw: {
-			bitcoin: WithdrawInterface[],
-			nano: WithdrawInterface[]
-		}
-	}
+	currency: 'nano'|'bitcoin',
+	status: 'preparing'|'requested'|'completed',
+	command: 'create_accounts'|'withdraw',
 }
 
 const ChecklistSchema = new Schema({
+	opid: {
+		type: ObjectId,
+		unique: true,
+		required: true
+	},
 	userId: {
 		type: ObjectId,
-		required: true,
-		unique: true
+		required: true
 	},
-	commands: {
-		create_accounts: {
-			bitcoin: CreateAccountsSchema,
-			nano: CreateAccountsSchema
-		},
-		withdraw: {
-			bitcoin: [WithdrawSchema],
-			nano: [WithdrawSchema]
-		}
+	currency: {
+		type: String,
+		enum: [ 'nano', 'bitcoin' ],
+		required: true
+	},
+	status: {
+		type: String,
+		enum: [ 'preparing', 'requested', 'completed' ],
+		required: true
+	},
+	command: {
+		type: String,
+		enum: [ 'create_accounts', 'withdraw' ],
+		required: true
 	}
 })
 
