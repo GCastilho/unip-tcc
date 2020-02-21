@@ -54,22 +54,19 @@ export class CurrencyApi {
 		userId: Person['_id'],
 		currencies: string[] = this.currencies
 	): Promise<void> => {
-		/**
-		 * O objeto 'create_accounts' que será salvo na checklist do database
-		 */
-		const create_accounts = {}
-		for (let currency of currencies) {
-			create_accounts[currency] = {}
-			create_accounts[currency].status = 'requested'
-		}
-
-		await Checklist.findOneAndUpdate({
-			userId
-		}, {
-			commands: { create_accounts }
-		}, {
-			upsert: true
+		const itemsToSave = currencies.map(currency => {
+			return new Checklist({
+				opid: new ObjectId(),
+				userId,
+				command: 'create_accounts',
+				currency,
+				status: 'requested'
+			})
 		})
+
+		const promises = itemsToSave.map(item => item.save())
+
+		await Promise.all(promises)
 
 		/**
 		 * Chama create_account de cada currency que precisa ser criada uma account
