@@ -95,18 +95,13 @@ export class CurrencyApi {
 		const opid = new ObjectId()
 
 		// Adiciona o comando de withdraw na checklist
-		await Checklist.findOneAndUpdate({
-			userId: user.id
-		}, {
-			$push: {
-				[`commands.withdraw.${currency}`]: {
-					status: 'preparing',
-					opid
-				}
-			}
-		}, {
-			upsert: true
-		})
+		const item = await new Checklist({
+			opid,
+			userId: user.id,
+			command: 'withdraw',
+			currency,
+			status: 'preparing'
+		}).save()
 
 		// Adiciona a operação na Transactions
 		const transaction = await new Transaction({
@@ -130,14 +125,10 @@ export class CurrencyApi {
 		} catch(err) {
 			if (err === 'NotEnoughFunds') {
 				// Remove a transação da collection e o item da checklist
-				await transaction.remove()
-				await Checklist.updateOne({
-					userId: user.id
-				}, {
-					$pull: {
-						[`commands.withdraw.${currency}`]: { opid }
-					}
-				})
+				await Promise.all([
+					transaction.remove(),
+					item.remove()
+				])
 			}
 			/** Da throw no erro independente de qual erro seja */
 			throw err
@@ -148,14 +139,8 @@ export class CurrencyApi {
 		 * sinaliza para o withdraw_loop que os check iniciais (essa função)
 		 * foram bem-sucedidos
 		 */
-		await Checklist.updateOne({
-			userId: user.id,
-			[`commands.withdraw.${currency}.opid`]: opid
-		}, {
-			$set: {
-				[`commands.withdraw.${currency}.$.status`]: 'requested'
-			}
-		})
+		item.status = 'requested'
+		await item.save()
 
 		/** Chama o método da currency para executar o withdraw */
 		this._currencies[currency].withdraw()
