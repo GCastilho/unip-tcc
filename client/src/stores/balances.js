@@ -17,18 +17,26 @@ auth.subscribe(async auth => {
 	try {
 		const balances = await emit('fetch_balances')
 		set(balances)
+		console.log(balances)
 	} catch(err) {
 		console.error('Error while fething balances:', err)
 	}
 })
 
 /**
- * Todo: testar se o evento esta funcionando
+ * Atualiza o Balance Locked ao receber uma nova transaction
  */
-addSocketListener('new_transaction', (res) => {
-	console.log(res)
+addSocketListener('new_transaction', (name, transaction) => {
+	console.log(transaction)
+	update(balances => {
+		let { available, locked } = balances[name]
+		locked += transaction.amount
+		balances[name] = {available, locked }
+		return balances
+	})
 })
 
-addSocketListener('update_received_tx', (res) => {
-	console.log(res)
+addSocketListener('update_received_tx', (name, txUpdate) => {
+	console.log(name)
+	console.log(txUpdate)
 })
