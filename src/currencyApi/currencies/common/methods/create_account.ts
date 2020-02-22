@@ -4,19 +4,13 @@ import Common from '../index'
 
 /**
  * Retorna uma função que varre a collection checklist procurando por accounts
- * para criar
+ * para criar e depois executa o checklistCleaner
  * 
- * Após isso a função executa seu checklistCleaner, para limpar o comando
- * 'create_account' da checklist. Ao terminar ela chama o checklistCleaner da
- * classe
- * 
- * Essa função também garante uma única instância por curency varrendo a
- * checklist para criar accounts para impedir problemas de race condition
+ * Essa função também garante uma única instância do loop por curency para
+ * impedir problemas de race condition
  */
 export function create_account(this: Common) {
-	/**
-	 * Controla as instâncias da create_account
-	 */
+	/** Varíavel de contole das instâncias da create_account */
 	let looping: boolean = false
 
 	const _create_account = async () => {
@@ -25,7 +19,9 @@ export function create_account(this: Common) {
 		try {
 			/** Cursor com os itens create_accounts 'requested' da checklist */
 			const checklist = Checklist.find({
-				[`commands.create_accounts.${this.name}.status`]: 'requested'
+				currency: this.name,
+				command: 'create_account',
+				status: 'requested',
 			}).cursor()
 	
 			let item: Ck
@@ -36,32 +32,12 @@ export function create_account(this: Common) {
 						[`currencies.${this.name}.accounts`]: account
 					}
 				})
-	
-				await Checklist.updateOne({
-					userId: item.userId
-				}, {
-					$set: {
-						[`commands.create_accounts.${this.name}.status`]: 'completed'
-					}
-				})
+
+				item.status = 'completed'
+				await item.save()
 			}
 
-			/**
-			 * Limpa da commands.create_accounts os requests de currencies
-			 * com status 'completed'
-			 */
-			const res = await Checklist.updateMany({
-				[`commands.create_accounts.${this.name}.status`]: 'completed'
-			}, {
-				$unset: {
-					[`commands.create_accounts.${this.name}`]: true
-				}
-			})
-	
-			// Nenhum create_account foi deletado
-			if (!res.nModified) return
-	
-			await this.checklistCleaner('create_accounts')
+			await this.checklistCleaner()
 		} catch(err) {
 			console.error('Error on create_account_loop:', err)
 		}
