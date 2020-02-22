@@ -4,19 +4,14 @@ import userApi from '../../../../userApi'
 import Common from '../index'
 
 /**
- * Retorna uma função que varre a collection da checklist procurando por
- * comandos de withdraw que foram requisitados
+ * Retorna uma função que varre a collection da checklist e executa os requests
+ * de saque requisitados, depois disso executa o checklistCleaner
  * 
- * Após isso a função executa seu checklistCleaner para limpar o command
- * 'withdraw' da checklist
- * 
- * Essa função também garante que haverá uma única instância varrendo a
- * collection (por instância da classe) para evitar problemas de race condition
+ * Essa função também garante uma única instância do loop por curency para
+ * impedir problemas de race condition
  */
 export function withdraw(this: Common) {
-	/**
-	 * Controla as instâncias do withdraw_loop
-	 */
+	/** Varíavel de contole das instâncias da withdraw */
 	let looping: boolean = false
 
 	this._events.on('update_sent_tx', async (txUpdate: UpdtSent, callback: Function) => {
@@ -56,6 +51,11 @@ export function withdraw(this: Common) {
 						code: 'OperationNotFound',
 						message: `UserApi could not find operation ${tx._id}`
 					})
+				} else if (err === 'UserNotFound') {
+					return callback({
+						code: 'UserNotFound',
+						message: `UserApi could not find user ${tx.user}`
+					})
 				} else {
 					callback({ code: 'InternalServerError' })
 					throw err
@@ -73,70 +73,42 @@ export function withdraw(this: Common) {
 		try {
 			/** Cursor com os itens withdraw 'requested' da checklist */
 			const checklist = Checklist.find({
-				[`commands.withdraw.${this.name}`]: { $exists: true }
+				currency: this.name,
+				command: 'withdraw',
+				status: 'requested'
 			}).cursor()
 	
 			let item: Ck
 			while (this.isOnline && (item = await checklist.next())) {
-				const { commands: { withdraw } } = item
-	
-				for (const request of withdraw[this.name]) {
-					if (request.status != 'requested') continue
-	
-					const tx = await Transaction.findById(request.opid)
-					if (!tx) throw `Withdraw error: Transaction ${request.opid} not found!`
-	
-					const transaction: TxSend = {
-						opid:      tx._id.toHexString(),
-						account:   tx.account,
-						amount:    tx.amount.toFullString()
-					}
-	
-					try {
-						await this.emit('withdraw', transaction)
-						console.log('sent withdraw request', transaction)
-	
-						request.status = 'completed'
+				const tx = await Transaction.findById(item.opid)
+				if (!tx) throw `Withdraw error: Transaction ${item.opid} not found!`
+
+				const transaction: TxSend = {
+					opid:    tx._id.toHexString(),
+					account: tx.account,
+					amount:  tx.amount.toFullString()
+				}
+
+				try {
+					await this.emit('withdraw', transaction)
+					console.log('sent withdraw request', transaction)
+
+					item.status = 'completed'
+					await item.save()
+				} catch (err) {
+					if (err === 'SocketDisconnected') {
+						item.status = 'requested'
 						await item.save()
-					} catch (err) {
-						if (err === 'SocketDisconnected') {
-							request.status = 'requested'
-							await item.save()
-						} else if (err.code === 'OperationExists') {
-							request.status = 'completed'
-							await item.save()
-						} else {
-							throw err
-						}
+					} else if (err.code === 'OperationExists') {
+						item.status = 'completed'
+						await item.save()
+					} else {
+						throw err
 					}
 				}
 			}
 
-			// Remove os itens do array de withdraw que tem status 'completed'
-			const resArray = await Checklist.updateMany({
-				[`commands.withdraw.${this.name}`]: { $exists: true }
-			}, {
-				$pull: {
-					[`commands.withdraw.${this.name}`]: { status: 'completed' }
-				}
-			})
-
-			// Nenhum item foi removido de nenhum array
-			if (!resArray.nModified) return
-
-			// Procura por arrays de withdraw vazios e os deleta
-			const resWithdraw = await Checklist.updateMany({
-				[`commands.withdraw.${this.name}`]: { $size: 0 }
-			}, {
-				$unset: {
-					[`commands.withdraw.${this.name}`]: true
-				}
-			})
-
-			// Nenhum array de withdraw foi deletado
-			if (!resWithdraw.nModified) return
-
-			await this.checklistCleaner('withdraw')
+			await this.checklistCleaner()
 		} catch(err) {
 			console.error('Error on withdraw_loop', err)
 		}
