@@ -4,6 +4,13 @@ import { Person } from '../db/models/person/interface'
 import { Pending } from '../db/models/person/currencies/interface'
 import { SuportedCurrencies as SC } from '../currencyApi/currencyApi'
 
+type currenciesInfo = {
+	[key in SC]: {
+		decimals: number
+	}
+}
+let currenciesInfo: currenciesInfo
+
 /**
  * Workaraound da dependência circular com a currencyApi, em que esse módulo
  * precisa da _instância_ da currencyApi e a currencyApi precisa desse módulo
@@ -30,13 +37,6 @@ setImmediate(async () => {
 	)()
 })
 
-let currenciesInfo: currenciesInfo
-type currenciesInfo = {
-	[key in SC]: {
-		decimals: number
-	}
-}
-
 /**
  * Interface utilizada pela balanceOps para operações de manipulação de saldo
  */
@@ -44,11 +44,11 @@ interface PendingOp {
 	/**
 	 * Referencia ao objectId da operação em sua respectiva collection
 	 */
-	opid: ObjectId,
+	opid: ObjectId
 	/**
 	 * O tipo da operação, para identificar em qual collection ela está
 	 */
-	type: Pending['type'],
+	type: Pending['type']
 	/**
 	 * O amount da operação. Positivo se é uma operação que aumenta o saldo do
 	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
@@ -211,7 +211,7 @@ export default class User {
 								input: `$currencies.${currency}.pending`,
 								as: 'operations',
 								cond: {
-									$eq: [ `$$operations.opid`, opid ]
+									$eq: [ '$$operations.opid', opid ]
 								}
 							}
 						}
@@ -233,8 +233,7 @@ export default class User {
 		 * 
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
-		const _getOpAmount = async (currency: SC, opid: ObjectId)
-		:Promise<Decimal128> => {
+		const _getOpAmount = async (currency: SC, opid: ObjectId): Promise<Decimal128> => {
 			const operation = await get(currency, opid)
 			return operation.amount
 		}

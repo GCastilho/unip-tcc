@@ -5,11 +5,11 @@ import { ObjectId } from 'mongodb'
  * Checklist collection's interface
  */
 export interface Checklist extends Document {
-	opid: ObjectId,
-	userId: ObjectId,
+	opid: ObjectId
+	userId: ObjectId
 	command: 'create_account'|'withdraw'
-	currency: 'nano'|'bitcoin',
-	status: 'preparing'|'requested'|'completed',
+	currency: 'nano'|'bitcoin'
+	status: 'preparing'|'requested'|'completed'
 }
 
 const ChecklistSchema = new Schema({

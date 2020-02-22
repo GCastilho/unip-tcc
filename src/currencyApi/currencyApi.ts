@@ -157,7 +157,7 @@ export class CurrencyApi {
 			this._currencies[currency].events
 				.on('new_transaction', (userId: User['id'], transaction: Tx) => {
 					this.events.emit('new_transaction', userId, currency, transaction)
-			})
+				})
 		})
 	}
 

@@ -76,7 +76,7 @@ GlobalListeners.add('fetch_balances', function(this: SocketIO.Socket,
 	console.log('requested balance fetch')
 
 	const balances = {} as FetchBalances
-	for (let currency of currencyApi.currencies) {
+	for (const currency of currencyApi.currencies) {
 		const balanceObj = Object.entries(this.user.getBalance(currency))
 			.reduce((acc, [key, value]) => ({
 				...acc, [key]: +value.toFullString()

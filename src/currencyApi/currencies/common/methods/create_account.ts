@@ -11,7 +11,7 @@ import Common from '../index'
  */
 export function create_account(this: Common) {
 	/** Varíavel de contole das instâncias da create_account */
-	let looping: boolean = false
+	let looping = false
 
 	const _create_account = async () => {
 		if (looping || !this.isOnline) return

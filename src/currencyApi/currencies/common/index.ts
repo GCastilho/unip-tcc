@@ -18,16 +18,16 @@ export default abstract class Common {
 	abstract code: string
 
 	/** A quantidade de casas decimais que esta currency tem */
-	public decimals: number = 8
+	public decimals = 8
 
 	/** A quantidade de casas decimais desta currency que o sistema opera */
-	public supportedDecimals: number = 8
+	public supportedDecimals = 8
 
 	/** EventEmmiter para eventos internos */
 	protected _events = new Events()
 
 	/** Indica se o módulo externo está online ou não */
-	protected isOnline: boolean = false
+	protected isOnline = false
 
 	/** Limpa os comandos com status 'completed' da checklist */
 	protected checklistCleaner = async (): Promise<void> => {
