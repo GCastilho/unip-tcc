@@ -32,6 +32,7 @@ declare module 'mongodb' {
  * Converte um decimal128 para string expandindo a exponenciação, caso tenha
  */
 Decimal128.prototype.toFullString = function decimal128ToString() {
+	// eslint-disable-next-line
 	let [base, expoente] = this.toString().toLowerCase().split('e')
 	if (!expoente) expoente = '0'
 
@@ -104,6 +105,7 @@ Decimal128.fromNumeric = function toDecimal128(value, decimals = 0) {
 	let _value = value.toString()
 	// Corta as casas que vão alem da quantidade de decimais estabelecidos
 	if (decimals) {
+		// eslint-disable-next-line
 		let [inteiro, casas] = _value.split('.')
 		casas = casas?.slice(0, decimals)
 		_value = casas ? inteiro.concat('.').concat(casas || '') : inteiro

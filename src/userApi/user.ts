@@ -4,6 +4,13 @@ import { Person } from '../db/models/person/interface'
 import { Pending } from '../db/models/person/currencies/interface'
 import { SuportedCurrencies as SC } from '../currencyApi/currencyApi'
 
+type currenciesInfo = {
+	[key in SC]: {
+		decimals: number
+	}
+}
+let currenciesInfo: currenciesInfo
+
 /**
  * Workaraound da dependência circular com a currencyApi, em que esse módulo
  * precisa da _instância_ da currencyApi e a currencyApi precisa desse módulo
@@ -29,13 +36,6 @@ setImmediate(async () => {
 		}), {} as currenciesInfo)
 	)()
 })
-
-let currenciesInfo: currenciesInfo
-type currenciesInfo = {
-	[key in SC]: {
-		decimals: number
-	}
-}
 
 /**
  * Interface utilizada pela balanceOps para operações de manipulação de saldo

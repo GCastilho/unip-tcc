@@ -5,12 +5,6 @@ import Transaction from '../db/models/transaction'
 
 export function withdraw_pending(this: Common) {
 	/**
-	 * Executa os requests de saque pendentes ao se conectar
-	 * com o node da currency
-	 */
-	this._events.on('node_connected', () => _withdraw_pending())
-
-	/**
 	 * Atualiza no database uma transação enviada a e envia ao main server; Se
 	 * ela estiver confirmada, deleta-a do database
 	 * 
@@ -66,7 +60,7 @@ export function withdraw_pending(this: Common) {
 		}).cursor()
 	
 		let doc: PSent
-		while( doc = await pendingTx.next() ) {
+		while((doc = await pendingTx.next())) {
 			doc.journaling = 'picked'
 			await doc.save()
 
@@ -116,6 +110,12 @@ export function withdraw_pending(this: Common) {
 		}
 		looping = false
 	}
+
+	/**
+	 * Executa os requests de saque pendentes ao se conectar
+	 * com o node da currency
+	 */
+	this._events.on('node_connected', () => _withdraw_pending())
 
 	return _withdraw_pending
 }

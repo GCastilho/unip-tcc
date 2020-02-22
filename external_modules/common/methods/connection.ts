@@ -1,3 +1,4 @@
+// eslint-disable-next-line
 const ss = require('socket.io-stream')
 import Common from '../index'
 import Account from '../db/models/account'
