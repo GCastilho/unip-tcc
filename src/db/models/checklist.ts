@@ -7,7 +7,7 @@ import { ObjectId } from 'mongodb'
 export interface Checklist extends Document {
 	opid: ObjectId,
 	userId: ObjectId,
-	command: 'create_accounts'|'withdraw'
+	command: 'create_account'|'withdraw'
 	currency: 'nano'|'bitcoin',
 	status: 'preparing'|'requested'|'completed',
 }
@@ -24,7 +24,7 @@ const ChecklistSchema = new Schema({
 	},
 	command: {
 		type: String,
-		enum: [ 'create_accounts', 'withdraw' ],
+		enum: [ 'create_account', 'withdraw' ],
 		required: true
 	},
 	currency: {

@@ -58,7 +58,7 @@ export class CurrencyApi {
 			return new Checklist({
 				opid: new ObjectId(),
 				userId,
-				command: 'create_accounts',
+				command: 'create_account',
 				currency,
 				status: 'requested'
 			})
