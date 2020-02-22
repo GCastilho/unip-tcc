@@ -29,24 +29,9 @@ export default abstract class Common {
 	/** Indica se o módulo externo está online ou não */
 	protected isOnline: boolean = false
 
-	/** Limpa da checklist itens com todos os comandos completos */
-	protected checklistCleaner = async (command: string): Promise<void> => {
-		/**
-		 * Limpa os comandos que são objetos vazios da checklist
-		 */
-		const res = await Checklist.updateMany({
-			[`commands.${command}`]: {}
-		}, {
-			$unset: {
-				[`commands.${command}`]: true
-			}
-		})
-
-		/**
-		 * Limpa os itens da checklist em que a prop 'commands' está vazia
-		 */
-		if (res.deletedCount && res.deletedCount > 0)
-			await Checklist.deleteMany({ 'commands': null })
+	/** Limpa os comandos com status 'completed' da checklist */
+	protected checklistCleaner = async (): Promise<void> => {
+		await Checklist.deleteMany({ status: 'completed' })
 	}
 
 	/**
