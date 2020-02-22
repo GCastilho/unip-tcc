@@ -100,7 +100,7 @@ export function withdraw_pending(this: Common) {
 	/**
 	 * Controla as instâncias do withdraw_loop
 	 */
-	let looping: boolean = false
+	let looping = false
 
 	/**
 	 * Mantém uma única instância da withdraw_loop e não a inicia caso o node

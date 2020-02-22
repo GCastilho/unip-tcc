@@ -128,7 +128,7 @@ export interface TransactionInternal extends Transaction {
 interface TransactionDoc extends Document {
 	_id: ObjectId
 	/** Referência ao usuário dono dessa transação */
-	user: Person['_id'],
+	user: Person['_id']
 	/**
 	 * Status da transação
 	 * 

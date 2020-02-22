@@ -10,9 +10,9 @@ import { fromRawToNano } from '../utils/unitConverter'
  * @param lastBlock o utimo bloco recebido na account, armazenado no database
  */
 export async function findMissingTx(this: Nano,
-		account: string,
-		lastBlock: String
-	): Promise<TxReceived[]|undefined> {
+	account: string,
+	lastBlock: string
+): Promise<TxReceived[]|undefined> {
 	const accountInfo = await this.rpc.accountInfo(account)
 	const lastKnownBlock = lastBlock ? lastBlock : accountInfo.open_block
 

@@ -12,7 +12,7 @@ import Common from '../index'
  */
 export function withdraw(this: Common) {
 	/** Varíavel de contole das instâncias da withdraw */
-	let looping: boolean = false
+	let looping = false
 
 	this._events.on('update_sent_tx', async (txUpdate: UpdtSent, callback: Function) => {
 		const tx = await Transaction.findById(txUpdate.opid)

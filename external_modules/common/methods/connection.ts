@@ -24,7 +24,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 	})
 
 	socket.on('connect', async () => {
-		console.log(`Connected to the main server`)
+		console.log('Connected to the main server')
 
 		process.stdout.write(`Requesting ${this.name} accounts...`)
 		const stream: NodeJS.ReadableStream = ss.createStream()
@@ -44,13 +44,13 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		})
 
 		stream.on('end', () => {
-			console.log(`All accounts received and imported successfuly!`)
+			console.log('All accounts received and imported successfuly!')
 			this._events.emit('connected')
 		})
 	})
 
 	socket.on('disconnect', () => {
-		console.log(`Disconnected from the main server`)
+		console.log('Disconnected from the main server')
 		this._events.emit('disconnected')
 	})
 
