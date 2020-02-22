@@ -9,7 +9,7 @@
     "start:bitcoin": "npm start --prefix ./build/external_modules/bitcoin",
     "dev": "concurrently --kill-others-on-fail \"env PORT=3001 npm run dev-server\" \"npm run dev-client\"",
     "build": "npm run build:clean && npm run build:server && npm run build:svelte && npm run build:restruct && npm run build:config",
-    "eslint": "eslint .",
+    "eslint": "eslint . --ext .js,.ts",
     "eslint-fix": "eslint --fix .",
     "dev-server": "env-cmd -f ./cfg/dev.env ts-node-dev --inspect -- src/index.js",
     "dev-client": "npm run dev --prefix ./client",
