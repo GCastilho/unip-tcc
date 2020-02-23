@@ -5,25 +5,7 @@
 import { Schema } from 'mongoose'
 import * as validators from './validators'
 import { Decimal128 } from 'mongodb'
-
-/**
- * Schema das operações (que involvem alteração de saldo) pendentes desse
- * usuário, uma vez concluídas elas devem ser removidas da collection
- */
-const PendingSchema: Schema = new Schema({
-	opid: {
-		type: Schema.Types.ObjectId,
-		required: true
-	},
-	type: {
-		type: String,
-		required: true
-	},
-	amount: {
-		type: Decimal128,
-		required: true
-	}
-})
+import { PendingSchema } from './pending'
 
 /**
  * Schema de cada uma das currencies da collection people, haverá um
