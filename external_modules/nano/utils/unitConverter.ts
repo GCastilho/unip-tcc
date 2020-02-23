@@ -29,6 +29,7 @@ export function fromNanoToRaw(amount: string): string {
 		throw new Error('IllegalInput')
 
 	// Separa o inteiro dos decimais
+	// eslint-disable-next-line
 	let [inteiro, casas] = amount.split('.')
 
 	// Preenche as casas restantes com zeros e remove zeros além da casa 30

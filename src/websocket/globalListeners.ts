@@ -1,9 +1,9 @@
-import userApi from '../userApi'
-import currencyApi from '../currencyApi'
+import * as userApi from '../userApi'
+import * as CurrencyApi from '../currencyApi'
 import * as connectedUsers from './connectedUsers'
 import { GlobalListeners } from './router'
-import { SuportedCurrencies as SC } from '../currencyApi/currencyApi'
 import { Person } from '../db/models/person/interface'
+import type { SuportedCurrencies as SC } from '../currencyApi'
 
 /** O Objeto 'balance' do usuário com os saldos em string */
 type StringifiedBalanceObject = {
@@ -76,7 +76,7 @@ GlobalListeners.add('fetch_balances', function(this: SocketIO.Socket,
 	console.log('requested balance fetch')
 
 	const balances = {} as FetchBalances
-	for (let currency of currencyApi.currencies) {
+	for (const currency of CurrencyApi.currencies) {
 		const balanceObj = Object.entries(this.user.getBalance(currency))
 			.reduce((acc, [key, value]) => ({
 				...acc, [key]: +value.toFullString()

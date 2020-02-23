@@ -1,3 +1,4 @@
+// eslint-disable-next-line
 import { timestamp, files, shell, routes } from '@sapper/service-worker'
 
 const ASSETS = `cache${timestamp}`

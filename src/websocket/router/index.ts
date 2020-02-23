@@ -1,31 +1,6 @@
 import routes from 'routes'
 import balances from './balances'
 
-const router = routes()
-router.addRoute('/balances', balances)
-
-export function use(socket: SocketIO.Socket) {
-	/** Adiciona os listeners globais */
-	GlobalListeners.getListeners().forEach(([event, fn]) => socket.on(event, fn))
-
-	route(socket)
-}
-
-function route(socket: SocketIO.Socket, path = '/') {
-	/** Remove todos os eventos não globais */
-	GlobalListeners.getListenersNames()
-		.filter(i => !socket.eventNames().includes(i))
-		.forEach(event => socket.removeAllListeners(event))
-	
-	/**
-	 * Checa se existe match para o path dado e em caso afirmativo chama o
-	 * handler para ele
-	 */
-	const match = router.match(path)
-	if (typeof match?.fn === 'function')
-		match.fn(socket, ...match.splats)
-}
-
 export class GlobalListeners {
 	/**
 	 * Um array de touples [ eventName, eventHandler ] de todos os eventos
@@ -54,6 +29,31 @@ export class GlobalListeners {
 	static getListenersNames() {
 		return this.listeners.map(([eventName]) => eventName)
 	}
+}
+
+const router = routes()
+router.addRoute('/balances', balances)
+
+function route(socket: SocketIO.Socket, path = '/') {
+	/** Remove todos os eventos não globais */
+	GlobalListeners.getListenersNames()
+		.filter(i => !socket.eventNames().includes(i))
+		.forEach(event => socket.removeAllListeners(event))
+	
+	/**
+	 * Checa se existe match para o path dado e em caso afirmativo chama o
+	 * handler para ele
+	 */
+	const match = router.match(path)
+	if (typeof match?.fn === 'function')
+		match.fn(socket, ...match.splats)
+}
+
+export function use(socket: SocketIO.Socket) {
+	/** Adiciona os listeners globais */
+	GlobalListeners.getListeners().forEach(([event, fn]) => socket.on(event, fn))
+
+	route(socket)
 }
 
 /** Handler de re-routeamento */

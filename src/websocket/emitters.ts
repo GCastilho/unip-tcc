@@ -1,8 +1,8 @@
 import User from '../userApi/user'
-import currencyApi from '../currencyApi'
+import * as currencyApi from '../currencyApi'
 import * as connectedUsers from './connectedUsers'
 import { TxReceived, UpdtReceived } from '../db/models/transaction'
-import { SuportedCurrencies as SC } from '../currencyApi/currencyApi'
+import type { SuportedCurrencies as SC } from '../currencyApi'
 
 /**
  * Ouve por eventos de new_transaction da currencyApi e os envia ao usuário,

@@ -3,11 +3,9 @@ import ss = require('socket.io-stream')
 import { ObjectId } from 'mongodb'
 import Common from '../index'
 import Person from '../../../../db/models/person'
-import FindUser from '../../../../userApi/findUser'
+import * as userApi from '../../../../userApi'
 import User from '../../../../userApi/user'
 import { default as Tx, TxReceived, UpdtReceived } from '../../../../db/models/transaction'
-
-const findUser = new FindUser()
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*
@@ -57,7 +55,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 
 		let user: User
 		try {
-			user = await findUser.byAccount(this.name, account)
+			user = await userApi.findUser.byAccount(this.name, account)
 		} catch (err) {
 			if (err === 'UserNotFound') {
 				return callback({
@@ -218,7 +216,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			await tx.validate()
 
 			if (status === 'confirmed') {
-				const user = await findUser.byId(tx.user)
+				const user = await userApi.findUser.byId(tx.user)
 				await user.balanceOps.complete(this.name, new ObjectId(opid))
 			}
 
@@ -259,7 +257,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Ouve por eventos vindos do método 'module' e os retransmite ao socket
 	 * para serem enviados ao módulo externo
 	 */
-	this._events.on('module', (event: string, ...args: any) => {
+	this._events.on('emit', (event: string, ...args: any) => {
 		console.log('event', event)
 		if (this.isOnline) {
 			socket.emit(event, ...args)

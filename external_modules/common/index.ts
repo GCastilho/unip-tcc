@@ -99,7 +99,7 @@ export default abstract class Common {
 	 * 
 	 * NÃO MODIFICAR MANUALMENTE
 	 */
-	protected nodeOnline: boolean = false
+	protected nodeOnline = false
 
 	/**
 	 * Vasculha a collection 'pendingTx' em busca de transações não enviadas
