@@ -27,9 +27,7 @@ auth.subscribe(async auth => {
  */
 addSocketListener('new_transaction', (currency, transaction) => {
 	update(balances => {
-		let { available, locked } = balances[currency]
-		locked += transaction.amount
-		balances[currency] = { available, locked }
+		balances[currency].locked += transaction.amount
 		return balances
 	})
 })
@@ -46,10 +44,8 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
 			console.log(opidInfo)
 			/** Usa dados do amount pego no 'opidInfo' para atualizar o saldo na tela */
 			update(balances => {
-				let { available, locked } = balances[currency]
-				available += opidInfo.amount
-				locked -= opidInfo.amount
-				balances[currency] = { available, locked }
+				balances[currency].available += opidInfo.amount
+				balances[currency].locked -= opidInfo.amount
 				return balances
 			})
 		} catch {
