@@ -2,7 +2,7 @@ import { ObjectId, Decimal128 } from 'mongodb'
 import { sha512 } from 'js-sha512'
 import { Person } from '../db/models/person/interface'
 import { Pending } from '../db/models/person/currencies/interface'
-import { SuportedCurrencies as SC } from '../currencyApi/currencyApi'
+import type { SuportedCurrencies as SC } from '../currencyApi'
 
 type currenciesInfo = {
 	[key in SC]: {

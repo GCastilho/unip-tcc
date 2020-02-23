@@ -2,7 +2,7 @@ import randomstring from 'randomstring'
 import { ObjectId } from 'mongodb'
 import User, { hashPassword } from './user'
 import Cookie from '../db/models/cookie'
-import currencyApi from '../currencyApi'
+import * as CurrencyApi from '../currencyApi'
 import PersonModel from '../db/models/person'
 import { Person } from '../db/models/person/interface'
 
@@ -33,7 +33,7 @@ export = class UserApi {
 		 * @todo Criar as accounts quando o e-mail for confirmado, não ao
 		 * criar o usuário
 		 */
-		currencyApi.create_accounts(person._id)
+		CurrencyApi.create_accounts(person._id)
 
 		return person
 	}

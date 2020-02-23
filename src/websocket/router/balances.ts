@@ -1,5 +1,4 @@
-import * as CurrencyApi from '../../currencyApi/currencyApi'
-import currencyApi from '../../currencyApi'
+import * as CurrencyApi from '../../currencyApi'
 import User from '../../userApi/user'
 
 /** Interface do retorno do socket ao receber 'list' */
@@ -30,7 +29,7 @@ export default function balances(socket: SocketIO.Socket) {
 		if (!socket.user) return callback('NotLoggedIn')
 
 		console.log('requested list')
-		const list = currencyApi.currenciesDetailed.map(currency => ({
+		const list = CurrencyApi.currenciesDetailed.map(currency => ({
 			code:     currency.code,
 			name:     currency.name,
 			decimals: currency.decimals,
@@ -47,7 +46,7 @@ export default function balances(socket: SocketIO.Socket) {
 		if (!socket.user) return callback('NotLoggedIn')
 		try {
 			const { currency, destination, amount } = request
-			const opid = await currencyApi.withdraw(socket.user, currency, destination, +amount)
+			const opid = await CurrencyApi.withdraw(socket.user, currency, destination, +amount)
 			callback(null, opid.toHexString())
 		} catch(err) {
 			if (err === 'NotEnoughFunds') {
