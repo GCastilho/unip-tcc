@@ -1,40 +1,16 @@
-import { ObjectId, Decimal128 } from 'mongodb'
 import { sha512 } from 'js-sha512'
+import { ObjectId, Decimal128 } from 'mongodb'
+import * as currencyApi from '../currencyApi'
 import { Person } from '../db/models/person/interface'
 import { Pending } from '../db/models/person/currencies/interface'
 import type { SuportedCurrencies as SC } from '../currencyApi'
 
-type currenciesInfo = {
-	[key in SC]: {
-		decimals: number
-	}
-}
-let currenciesInfo: currenciesInfo
-
 /**
- * Workaraound da dependência circular com a currencyApi, em que esse módulo
- * precisa da _instância_ da currencyApi e a currencyApi precisa desse módulo
- * 
- * Poderá ser facilmente substituído pelo statment abaixo uma vez que ele for
- * implementado no typescript na versão 3.8
- * 
- * @see https://github.com/tc39/proposal-top-level-await
- * @see https://github.com/microsoft/TypeScript/issues/25988
+ * Um map com as casas decimais de cada uma das currencies suportadas
  */
-// const currencyApi = await import('../currencyApi')
-let currencyApi
-setImmediate(async () => {
-	currencyApi = await import('../currencyApi')
-
-	/** Nota: O typescript não checa direito se a estrutura segue a interface */
-	currenciesInfo = (() =>
-		currencyApi.currenciesDetailed.reduce((acc, cur) => ({
-			...acc,
-			[cur.name]: {
-				decimals: cur.decimals
-			}
-		}), {} as currenciesInfo)
-	)()
+const decimals = new Map<SC, number>()
+currencyApi.currenciesDetailed.forEach(currency => {
+	decimals.set(currency.name, currency.decimals)
 })
 
 /**
@@ -75,11 +51,6 @@ export default class User {
 	 */
 	private _hashPassword = (password: string): string =>
 		hashPassword(this.person.credentials.salt, password)
-
-	/**
-	 * Um objeto com informações necessárias à User sobre as currencies
-	 */
-	private _currenciesInfo: currenciesInfo = currenciesInfo
 
 	constructor(person: Person) {
 		this.person = person
@@ -161,7 +132,7 @@ export default class User {
 			const pending: Pending = {
 				opid: op.opid,
 				type: op.type,
-				amount: Decimal128.fromNumeric(op.amount, this._currenciesInfo[currency].decimals)
+				amount: Decimal128.fromNumeric(op.amount, decimals.get(currency) || 8)
 			}
 
 			const response = await this.person.collection.findOneAndUpdate({
