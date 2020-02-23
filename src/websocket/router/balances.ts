@@ -1,18 +1,18 @@
-import { SuportedCurrencies as SC, CurrencyApi } from '../../currencyApi/currencyApi'
+import * as CurrencyApi from '../../currencyApi/currencyApi'
 import currencyApi from '../../currencyApi'
 import User from '../../userApi/user'
 
 /** Interface do retorno do socket ao receber 'list' */
 export interface List {
-	code: CurrencyApi['currenciesDetailed'][number]['code']
-	name: CurrencyApi['currenciesDetailed'][number]['name']
-	decimals: CurrencyApi['currenciesDetailed'][number]['decimals']
+	code: typeof CurrencyApi['currenciesDetailed'][number]['code']
+	name: typeof CurrencyApi['currenciesDetailed'][number]['name']
+	decimals: typeof CurrencyApi['currenciesDetailed'][number]['decimals']
 	accounts: ReturnType<User['getAccounts']>|undefined
 }
 
 /** Interface do objeto experado nos requests de withdraw */
 export interface Withdraw {
-	currency: SC
+	currency: CurrencyApi.SuportedCurrencies
 	destination: string
 	amount: string|number
 }

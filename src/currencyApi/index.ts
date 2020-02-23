@@ -1,4 +1,4 @@
-import { CurrencyApi } from './currencyApi'
+import * as CurrencyApi from './currencyApi'
 
-const singleton = new CurrencyApi()
-export = singleton
+export default CurrencyApi
+export * from './currencyApi'
