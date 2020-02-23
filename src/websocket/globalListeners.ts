@@ -1,4 +1,4 @@
-import userApi from '../userApi'
+import * as userApi from '../userApi'
 import * as CurrencyApi from '../currencyApi'
 import * as connectedUsers from './connectedUsers'
 import { GlobalListeners } from './router'

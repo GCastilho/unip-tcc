@@ -9,8 +9,15 @@ import type { SuportedCurrencies as SC } from '../currencyApi'
  * Um map com as casas decimais de cada uma das currencies suportadas
  */
 const decimals = new Map<SC, number>()
-currencyApi.currenciesDetailed.forEach(currency => {
-	decimals.set(currency.name, currency.decimals)
+
+/**
+ * Acessa a CurrencyApi no próximo tick para garantir que ela estará
+ * completamente carregada (UserApi e CurrencyApi tem dependência circular)
+ */
+setImmediate(() => {
+	currencyApi.currenciesDetailed.forEach(currency => {
+		decimals.set(currency.name, currency.decimals)
+	})
 })
 
 /**
