@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose'
 import { ObjectId, Decimal128 } from 'mongodb'
-import { Person } from './person/interface'
+import type { Person } from './person'
 import type { SuportedCurrencies } from '../../currencyApi'
 
 /** Interface base de uma transaction */

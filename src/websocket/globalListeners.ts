@@ -2,7 +2,7 @@ import * as userApi from '../userApi'
 import * as CurrencyApi from '../currencyApi'
 import * as connectedUsers from './connectedUsers'
 import { GlobalListeners } from './router'
-import { Person } from '../db/models/person/interface'
+import type { Person } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../currencyApi'
 
 /** O Objeto 'balance' do usuário com os saldos em string */

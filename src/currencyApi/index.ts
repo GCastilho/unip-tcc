@@ -6,8 +6,8 @@ import User from '../userApi/user'
 import Common from './currencies/common'
 import Checklist from '../db/models/checklist'
 import Transaction from '../db/models/transaction'
-import { TransactionInternal as Tx } from '../db/models/transaction'
-import { Person } from '../db/models/person/interface'
+import type { TransactionInternal as Tx } from '../db/models/transaction'
+import type { Person } from '../db/models/person'
 
 /** Tipo para variáveis/argumentos que precisam ser uma currency suportada */
 export type SuportedCurrencies = Common['name']

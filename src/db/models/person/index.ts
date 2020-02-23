@@ -1,6 +1,20 @@
-import mongoose, { Schema } from 'mongoose'
+import { ObjectId } from 'mongodb'
+import mongoose, { Document, Schema } from 'mongoose'
 import currenciesSchema from './currencies'
-import type { Person } from './interface'
+import type { Currencies } from './currencies/interface'
+
+export interface Person extends Document {
+	_id: ObjectId
+	/** O email do usuário */
+	email: string
+	credentials: {
+		/** O salt usado para fazer o hash do password */
+		salt: string
+		/** Hash do salt + password */
+		password_hash: string
+	}
+	currencies: Currencies
+}
 
 /**
  * Schema da collection de usuários (people)
