@@ -2,7 +2,9 @@ import * as userApi from '../userApi'
 import * as CurrencyApi from '../currencyApi'
 import * as connectedUsers from './connectedUsers'
 import { GlobalListeners } from './router'
-import { Person } from '../db/models/person/interface'
+import Transaction from '../db/models/transaction'
+import type { TxInfo } from '../db/models/transaction'
+import type { Person } from '../db/models/person/interface'
 import type { SuportedCurrencies as SC } from '../currencyApi'
 
 /** O Objeto 'balance' do usuário com os saldos em string */
@@ -86,4 +88,27 @@ GlobalListeners.add('fetch_balances', function(this: SocketIO.Socket,
 	}
 
 	callback(null, balances)
+})
+
+/**
+ * Retorna informações de uma transação requisitada
+ */
+GlobalListeners.add('get_tx_info', async function(this: SocketIO.Socket,
+	opid: string,
+	callback: (err: null|string, response?: TxInfo) => void
+) {
+	if (!this.user) return callback('NotLoggedIn')
+	const tx = await Transaction.findById(opid)
+	if (tx?.user !== this.user.id) return callback('NotAuthorized')
+
+	callback(null, {
+		status:        tx.status,
+		currency:      tx.currency,
+		txid:          tx.txid,
+		account:       tx.account,
+		amount:        tx.amount,
+		type:          tx.type,
+		confirmations: tx.confirmations,
+		timestamp:     tx.timestamp
+	})
 })

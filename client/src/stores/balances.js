@@ -40,7 +40,7 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
 	if (txUpdate.status === 'confirmed') {
 		try {
 			/** Pega os dados da transação pelo opid */
-			const opidInfo = await emit('get_opid_info', txUpdate.opid)
+			const opidInfo = await emit('get_tx_info', txUpdate.opid)
 			console.log(opidInfo)
 			/** Usa dados do amount pego no 'opidInfo' para atualizar o saldo na tela */
 			update(balances => {
