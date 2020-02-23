@@ -17,7 +17,6 @@ auth.subscribe(async auth => {
 	try {
 		const balances = await emit('fetch_balances')
 		set(balances)
-		console.log(balances)
 	} catch(err) {
 		console.error('Error while fething balances:', err)
 	}
@@ -26,17 +25,35 @@ auth.subscribe(async auth => {
 /**
  * Atualiza o Balance Locked ao receber uma nova transaction
  */
-addSocketListener('new_transaction', (name, transaction) => {
-	console.log(transaction)
+addSocketListener('new_transaction', (currency, transaction) => {
 	update(balances => {
-		let { available, locked } = balances[name]
+		let { available, locked } = balances[currency]
 		locked += transaction.amount
-		balances[name] = {available, locked }
+		balances[currency] = { available, locked }
 		return balances
 	})
 })
 
-addSocketListener('update_received_tx', (name, txUpdate) => {
-	console.log(name)
+/**
+ * Após receber a confirmação da transação ele atualiza o Balance Available
+ */
+addSocketListener('update_received_tx', async (currency, txUpdate) => {
 	console.log(txUpdate)
+	if (txUpdate.status === 'confirmed') {
+		try {
+			/** Pega os dados da transação pelo opid */
+			const opidInfo = await emit('get_opid_info', txUpdate.opid)
+			console.log(opidInfo)
+			/** Usa dados do amount pego no 'opidInfo' para atualizar o saldo na tela */
+			update(balances => {
+				let { available, locked } = balances[currency]
+				available += opidInfo.amount
+				locked -= opidInfo.amount
+				balances[currency] = { available, locked }
+				return balances
+			})
+		} catch {
+			console.error('Error while getting opid info:', err)
+		}
+	}
 })
