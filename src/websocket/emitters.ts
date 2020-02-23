@@ -1,5 +1,5 @@
 import User from '../userApi/user'
-import currencyApi from '../currencyApi'
+import * as currencyApi from '../currencyApi'
 import * as connectedUsers from './connectedUsers'
 import { TransactionInternal as Tx } from '../db/models/transaction'
 

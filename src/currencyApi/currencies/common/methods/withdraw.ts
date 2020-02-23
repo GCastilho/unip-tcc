@@ -1,6 +1,6 @@
 import Checklist, { Checklist as Ck } from '../../../../db/models/checklist'
 import Transaction, { TxSend, UpdtSent } from '../../../../db/models/transaction'
-import userApi from '../../../../userApi'
+import * as userApi from '../../../../userApi'
 import Common from '../index'
 
 /**
