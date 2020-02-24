@@ -1,10 +1,11 @@
-import * as WAValidator from 'multicoin-address-validator'
-
 /**
  * Cada objeto é um objeto 'validator' do mongoose
  * 
  * @see https://mongoosejs.com/docs/api.html#schematype_SchemaType-validate
  */
+
+import * as WAValidator from 'multicoin-address-validator'
+
 export const bitcoin = {
 	validator: function bitcoin_account_validator(accounts: string[]) {
 		return accounts.every((account) => WAValidator.validate(account, 'bitcoin', 'testnet'))

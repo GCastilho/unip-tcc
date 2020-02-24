@@ -4,7 +4,7 @@ import User, { hashPassword } from './user'
 import Cookie from '../db/models/cookie'
 import * as CurrencyApi from '../currencyApi'
 import PersonModel from '../db/models/person'
-import { Person } from '../db/models/person/interface'
+import type { Person } from '../db/models/person'
 
 /**
  * Cria um novo usuário no database com as credenciais informadas
