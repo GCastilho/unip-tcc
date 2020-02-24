@@ -1,8 +1,12 @@
 import { ObjectId } from 'mongodb'
 import mongoose, { Document, Schema } from 'mongoose'
 import currenciesSchema from './currencies'
-import type { Currencies } from './currencies/interface'
+import type { Currencies } from './currencies'
 
+/**
+ * Interface do documento 'person', da collection 'people', que contém
+ * informações relacionadas ao usuários
+ */
 export interface Person extends Document {
 	_id: ObjectId
 	/** O email do usuário */
