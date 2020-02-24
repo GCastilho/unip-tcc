@@ -9,8 +9,18 @@ import { CurrencySchema } from './generic'
 /*
  * Adiciona a função de validação de address na currency e monta o novo schema
  */
-CurrencySchema.obj.accounts.validade = validators.bitcoin
-export const Bitcoin: Schema = new Schema(CurrencySchema.obj)
+export const Bitcoin: Schema = new Schema({
+	...CurrencySchema.obj,
+	accounts: {
+		...CurrencySchema.obj.accounts,
+		validate: validators.bitcoin
+	}
+})
 
-CurrencySchema.obj.accounts.validade = validators.nano
-export const Nano: Schema = new Schema(CurrencySchema.obj)
+export const Nano: Schema = new Schema({
+	...CurrencySchema.obj,
+	accounts: {
+		...CurrencySchema.obj.accounts,
+		validate: validators.nano
+	}
+})
