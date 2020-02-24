@@ -4,6 +4,8 @@ import { emit, addSocketListener } from '../websocket'
 
 const { subscribe, set, update } = writable({})
 
+let transactions = []
+
 /**
  * Exporta a store para permitir modificação do saldo de fora
  */
@@ -26,8 +28,13 @@ auth.subscribe(async auth => {
  * Atualiza o Balance Locked ao receber uma nova transaction
  */
 addSocketListener('new_transaction', (currency, transaction) => {
+	transactions.push(transaction)
 	update(balances => {
-		balances[currency].locked += transaction.amount
+		if (transaction.status === 'confirmed') {
+			balances[currency].available += transaction.amount
+		} else {
+			balances[currency].locked += transaction.amount
+		}
 		return balances
 	})
 })
@@ -38,18 +45,27 @@ addSocketListener('new_transaction', (currency, transaction) => {
 addSocketListener('update_received_tx', async (currency, txUpdate) => {
 	console.log(txUpdate)
 	if (txUpdate.status === 'confirmed') {
-		try {
-			/** Pega os dados da transação pelo opid */
-			const opidInfo = await emit('get_tx_info', txUpdate.opid)
-			console.log(opidInfo)
-			/** Usa dados do amount pego no 'opidInfo' para atualizar o saldo na tela */
+		if (transactions.some(transaction => transaction.opid === txUpdate.opid)) {
 			update(balances => {
-				balances[currency].available += opidInfo.amount
-				balances[currency].locked -= opidInfo.amount
+				const txInfo = transactions.filter(transaction => transaction.opid === txUpdate.opid)
+				balances[currency].available += txInfo[0].amount
+				balances[currency].locked -= txInfo[0].amount
 				return balances
 			})
-		} catch {
-			console.error('Error while getting opid info:', err)
+		} else {
+			try {
+				/** Pega os dados da transação pelo opid */
+				const txInfo = await emit('get_tx_info', txUpdate.opid)
+				console.log(txInfo)
+				/** Usa dados do amount pego no 'txInfo' para atualizar o saldo na tela */
+				update(balances => {
+					balances[currency].available += txInfo.amount
+					balances[currency].locked -= txInfo.amount
+					return balances
+				})
+			} catch(err) {
+				console.error('Error while getting transaction info:', err)
+			}
 		}
 	}
 })
