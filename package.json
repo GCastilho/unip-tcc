@@ -17,8 +17,8 @@
     "build:server": "tsc --build",
     "build:svelte": "npm run export --prefix ./client",
     "build:restruct": "mv ./build/src ./build/main_server && mv ./public ./build",
-    "build:config": "cpy external_modules '!**/node_modules' '!**/*.js' '!**/*.ts' build --parents",
-    "build:dep-install": "npm install --prefix ./build/external_modules/bitcoin && npm install --prefix ./build/external_modules/common && npm install --prefix ./build/external_modules/nano",
+    "build:config": "copyfiles -E external_modules/** -e '**/node_modules/**' -e '**/*.js' -e '**/*.ts' build/ && copyfiles -E package* build/main_server/",
+    "build:dep-install": "npm-recursive-install --rootDir=build --production",
     "dep-install": "npm run dep-install:main && npm run dep-install:client && npm run dep-install:common && npm run dep-install:nano && npm run dep-install:bitcoin",
     "dep-install:main": "npm install",
     "dep-install:client": "npm install --prefix ./client",
@@ -49,8 +49,9 @@
     "@typescript-eslint/eslint-plugin": "^2.20.0",
     "@typescript-eslint/parser": "^2.20.0",
     "concurrently": "^5.1.0",
-    "cpy-cli": "2.0.0",
+    "copyfiles": "^2.2.0",
     "eslint": "^6.8.0",
+    "recursive-install": "^1.4.0",
     "ts-node-dev": "^1.0.0-pre.44",
     "typescript": "^3.8.2"
   }
