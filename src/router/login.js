@@ -6,7 +6,7 @@ const Router = require('express').Router()
 const bodyParser = require('body-parser')
 const randomstring = require('randomstring')
 
-const Cookie = require('../db/models/cookie')
+const Session = require('../db/models/session')
 const userApi = require('../userApi')
 
 /**
@@ -15,7 +15,7 @@ const userApi = require('../userApi')
  */
 Router.use(bodyParser.json({ extended: true }))
 
-Router.post('/', function(req, res) {
+Router.post('/', function (req, res) {
 	if (!req.body.email || !req.body.password)
 		return res.status(400).send({ error: 'Bad request' })
 
@@ -24,7 +24,7 @@ Router.post('/', function(req, res) {
 	).then(user => {
 		user.checkPassword(req.body.password)
 
-		return Cookie.findOneAndUpdate({
+		return Session.findOneAndUpdate({
 			userId: user.id
 		}, {
 			sessionID: randomstring.generate(128),

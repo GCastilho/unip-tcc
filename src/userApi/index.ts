@@ -1,9 +1,9 @@
 import randomstring from 'randomstring'
 import { ObjectId } from 'mongodb'
-import User, { hashPassword } from './user'
-import Cookie from '../db/models/cookie'
-import * as CurrencyApi from '../currencyApi'
+import Session from '../db/models/session'
 import PersonModel from '../db/models/person'
+import * as CurrencyApi from '../currencyApi'
+import User, { hashPassword } from './user'
 import type { Person } from '../db/models/person'
 
 /**
@@ -71,7 +71,7 @@ export const findUser = {
 	 * @todo Checar se o Cookie não expirou antes de continuar
 	 */
 	async byCookie(sessionID: string): Promise<User> {
-		const cookie = await Cookie.findOne({ sessionID })
+		const cookie = await Session.findOne({ sessionID })
 		if (!cookie) throw 'CookieNotFound'
 		return this.byId(cookie.userId)
 	},

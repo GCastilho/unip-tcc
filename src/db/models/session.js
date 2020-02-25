@@ -1,11 +1,11 @@
 /*
- * Model da collection de cookie de autenticação
+ * Model da collection de autenticação
  */
 
 const mongoose = require('mongoose')
 
 module.exports = mongoose.model('Cookie', {
-	userId : {
+	userId: {
 		type: mongoose.Schema.Types.ObjectId,
 		required: true,
 		unique: true,
