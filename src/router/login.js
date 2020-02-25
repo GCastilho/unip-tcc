@@ -6,7 +6,7 @@ const Router = require('express').Router()
 const bodyParser = require('body-parser')
 const randomstring = require('randomstring')
 
-const Session = require('../db/models/session')
+import Session from '../db/models/session'
 const userApi = require('../userApi')
 
 /**

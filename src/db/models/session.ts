@@ -1,10 +1,6 @@
-/*
- * Model da collection de autenticação
- */
+import mongoose from 'mongoose'
 
-const mongoose = require('mongoose')
-
-module.exports = mongoose.model('Cookie', {
+const SessionSchema = new mongoose.Schema({
 	userId: {
 		type: mongoose.Schema.Types.ObjectId,
 		required: true,
@@ -21,3 +17,8 @@ module.exports = mongoose.model('Cookie', {
 		required: true
 	}
 })
+
+/**
+ * Model da collection de dados de autenticação
+ */
+export default mongoose.model<any>('Cookie', SessionSchema)
