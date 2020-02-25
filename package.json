@@ -14,10 +14,10 @@
     "eslint": "eslint . --ext .js,.ts",
     "eslint-fix": "eslint --fix . --ext .js,.ts",
     "build": "npm run eslint && npm run build:clean && npm run build:server && npm run build:svelte && npm run build:restruct && npm run build:config",
-    "build:clean": "rm -rf ./public && rm -rf ./build",
+    "build:clean": "del-cli ./public && del-cli ./build",
     "build:server": "tsc --build",
     "build:svelte": "npm run export --prefix ./client",
-    "build:restruct": "mv ./build/src ./build/main_server && mv ./public ./build",
+    "build:restruct": "move-cli ./build/src ./build/main_server && move-cli ./public ./build/public",
     "build:config": "copyfiles -E external_modules/** -e '**/node_modules/**' -e '**/*.js' -e '**/*.ts' build/ && copyfiles -E package* build/main_server/",
     "build:dep-install": "npm-recursive-install --rootDir=build --production"
   },
@@ -45,7 +45,9 @@
     "@typescript-eslint/parser": "^2.20.0",
     "concurrently": "^5.1.0",
     "copyfiles": "^2.2.0",
+    "del-cli": "^3.0.0",
     "eslint": "^6.8.0",
+    "move-cli": "^1.2.1",
     "recursive-install": "^1.4.0",
     "ts-node-dev": "^1.0.0-pre.44",
     "typescript": "^3.8.2"
