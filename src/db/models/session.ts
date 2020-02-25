@@ -1,13 +1,23 @@
-import mongoose from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose'
+import type { ObjectId } from 'mongodb'
 
-const SessionSchema = new mongoose.Schema({
+/**
+ * Interface da collection de sessões de autenticação
+ */
+export interface Session extends Document {
+	userId: ObjectId
+	sessionId: string
+	date: Date
+}
+
+const SessionSchema = new Schema({
 	userId: {
 		type: mongoose.Schema.Types.ObjectId,
 		required: true,
 		unique: true,
 		ref: 'Person'
 	},
-	sessionID: {
+	sessionId: {
 		type: String,
 		required: true,
 		unique: true
@@ -21,4 +31,4 @@ const SessionSchema = new mongoose.Schema({
 /**
  * Model da collection de dados de autenticação
  */
-export default mongoose.model<any>('Cookie', SessionSchema)
+export default mongoose.model<Session>('Session', SessionSchema)

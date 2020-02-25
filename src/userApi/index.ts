@@ -70,8 +70,8 @@ export const findUser = {
 	 * @throws 'UserNotFound'
 	 * @todo Checar se o Cookie não expirou antes de continuar
 	 */
-	async byCookie(sessionID: string): Promise<User> {
-		const cookie = await Session.findOne({ sessionID })
+	async byCookie(sessionId: string): Promise<User> {
+		const cookie = await Session.findOne({ sessionId })
 		if (!cookie) throw 'CookieNotFound'
 		return this.byId(cookie.userId)
 	},

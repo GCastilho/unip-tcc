@@ -27,7 +27,7 @@ Router.post('/', function (req, res) {
 		return Session.findOneAndUpdate({
 			userId: user.id
 		}, {
-			sessionID: randomstring.generate(128),
+			sessionId: randomstring.generate(128),
 			date: new Date()
 		}, {
 			new: true,
@@ -42,7 +42,7 @@ Router.post('/', function (req, res) {
 		 * 
 		 * @todo cookie ter tempo de expiração
 		 */
-		res.cookie('sessionID', cookie.sessionID)
+		res.cookie('sessionID', cookie.sessionId)
 		res.redirect(303, '/')
 	}).catch(err => {
 		if (err === 'UserNotFound' || err === 'InvalidPassword') {
