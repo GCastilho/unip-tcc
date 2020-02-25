@@ -1,7 +1,20 @@
 {
 	"typescript.tsdk": "node_modules\\typescript\\lib",
+	"files.insertFinalNewline": true,
+	"editor.defaultFormatter": "vscode.typescript-language-features",
+	"editor.formatOnSave": true,
+	"editor.codeLens": true,
+	"editor.wordWrap": "on",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": true
+	},
 	"eslint.validate": [
 		"javascript",
 		"typescript",
-	]
+	],
+	"typescript.updateImportsOnFileMove.enabled": "prompt",
+	"editor.rulers": [
+		80
+	],
+	"git.autofetch": true
 }

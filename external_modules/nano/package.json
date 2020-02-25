@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "env-cmd -f ./environment.env node index.js",
-    "dev": "env-cmd -f ./environment.env ts-node-dev index.ts",
+    "start": "env-cmd -f ../../../cfg/nano-dev.env node index.js",
+    "dev": "env-cmd -f ../../cfg/nano-dev.env ts-node-dev index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -13,10 +13,13 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.19.2",
+    "env-cmd": "^10.1.0",
     "reconnecting-websocket": "^4.4.0",
     "ws": "^7.2.1"
   },
   "devDependencies": {
-    "@types/ws": "^7.2.1"
+    "@types/ws": "^7.2.1",
+    "ts-node-dev": "^1.0.0-pre.44",
+    "typescript": "^3.8.2"
   }
 }
