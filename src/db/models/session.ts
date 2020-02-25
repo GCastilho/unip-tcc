@@ -5,8 +5,13 @@ import type { ObjectId } from 'mongodb'
  * Interface da collection de sessões de autenticação
  */
 export interface Session extends Document {
+	/** Identificador único do usuário dessa sessão */
 	userId: ObjectId
+	/** O cookie 'sessionId' desse usuário */
 	sessionId: string
+	/** O token de autenticação com o websocket */
+	token: string
+	/** O timestamp que o usuário se conectou */
 	date: Date
 }
 
@@ -20,6 +25,11 @@ const SessionSchema = new Schema({
 	sessionId: {
 		type: String,
 		required: true,
+		unique: true
+	},
+	token: {
+		type: String,
+		required: false,
 		unique: true
 	},
 	date: {
