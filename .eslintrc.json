@@ -32,7 +32,13 @@
         ],
         "no-undef": [
             "off"
-        ]
+        ],
+        "space-before-function-paren": ["error", {
+            "anonymous": "never",
+            "named": "never",
+            "asyncArrow": "always"
+        }],
+        "space-infix-ops": "error"
     },
     "overrides": [{
         "files": [ "**/*.ts" ],
