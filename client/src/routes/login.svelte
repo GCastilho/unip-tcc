@@ -64,7 +64,7 @@
 </style>
 
 <h1>Login</h1>
-<form on:submit|preventDefault={handleSubmit}>
+<form method="POST" on:submit|preventDefault={handleSubmit}>
 	{#if errorMessage}
 		<FormErrorMessage>{errorMessage}</FormErrorMessage>
 	{/if}
