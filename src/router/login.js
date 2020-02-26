@@ -28,22 +28,22 @@ Router.post('/', function (req, res) {
 			userId: user.id
 		}, {
 			sessionId: randomstring.generate(128),
+			token: randomstring.generate(128),
 			date: new Date()
 		}, {
 			new: true,
 			upsert: true,
 			useFindAndModify: false
 		})
-	}).then(cookie => {
+	}).then(session => {
 		/**
-		 * Se a autenticação, a criação e o salvamento do cookie foram bem
-		 * sucedidas, redireciona o usuário para a home com o
-		 * cookie de autenticação
+		 * Se a autenticação, a criação e o salvamento da sessão forem bem
+		 * sucedidas, seta o cookie no header e retorna o token
 		 * 
 		 * @todo cookie ter tempo de expiração
 		 */
-		res.cookie('sessionID', cookie.sessionId)
-		res.redirect(303, '/')
+		res.cookie('sessionId', session.sessionId, { httpOnly: true })
+		res.send({ token: session.token })
 	}).catch(err => {
 		if (err === 'UserNotFound' || err === 'InvalidPassword') {
 			/**
