@@ -10,7 +10,7 @@ import './emitters'
 export = function(server: Server) {
 	const io = socket(server)
 
-	io.on('connection', function (socket) {
+	io.on('connection', function(socket) {
 		console.log('Incoming socket connection')
 
 		Router.use(socket)

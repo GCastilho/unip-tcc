@@ -231,7 +231,7 @@ export default class User {
 		 * 
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
-		const _removeOperation = async(
+		const _removeOperation = async (
 			currency: SC,
 			opid: ObjectId,
 			opAmount: Decimal128,

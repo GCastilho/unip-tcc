@@ -15,7 +15,7 @@ const userApi = require('../userApi')
  */
 Router.use(bodyParser.json({ extended: true }))
 
-Router.post('/', function (req, res) {
+Router.post('/', function(req, res) {
 	if (!req.body.email || !req.body.password)
 		return res.status(400).send({ error: 'Bad request' })
 

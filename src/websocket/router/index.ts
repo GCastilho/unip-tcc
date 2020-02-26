@@ -57,6 +57,6 @@ export function use(socket: SocketIO.Socket) {
 }
 
 /** Handler de re-routeamento */
-GlobalListeners.add('_path', function (this: SocketIO.Socket, newPath?: string) {
+GlobalListeners.add('_path', function(this: SocketIO.Socket, newPath?: string) {
 	route(this, newPath)
 })
