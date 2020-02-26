@@ -15,7 +15,7 @@ export type FetchBalances = {
 	[key in SC]: StringifiedBalanceObject
 };
 
-GlobalListeners.add('disconnect', function(this: SocketIO.Socket, reason) {
+GlobalListeners.add('disconnect', function (this: SocketIO.Socket, reason) {
 	console.log('Socket disconnected:', reason)
 	connectedUsers.remove(this.user?.id)
 })
@@ -23,22 +23,21 @@ GlobalListeners.add('disconnect', function(this: SocketIO.Socket, reason) {
 /**
  * Autentica a conexão de um socket conectado, inserindo referência à Users no
  * socket e atualizando a connectedUsers
- * @param sessionID O token de autenticação desse usuário
+ * @param token O token de autenticação desse usuário
  * @param callback O callback de retorno ao cliente
  */
-GlobalListeners.add('authenticate', async function(this: SocketIO.Socket,
-	sessionID: string,
-	callback: (err: null|string, response?: string) => void
+GlobalListeners.add('authenticate', async function (this: SocketIO.Socket,
+	token: string,
+	callback: (err: null | string, response?: string) => void
 ) {
-	if (typeof sessionID === 'string') {
+	if (typeof token === 'string') {
 		try {
-			const user = await userApi.findUser.byCookie(sessionID)
-			this.user = user
+			this.user = await userApi.findUser.byToken(token)
 			connectedUsers.add(this)
 			callback(null, 'authenticated')
-		} catch(err) {
+		} catch (err) {
 			this.user = undefined
-			if (err === 'CookieNotFound' || err === 'UserNotFound') {
+			if (err === 'TokenNotFound' || err === 'UserNotFound') {
 				callback('TokenNotFound')
 			} else {
 				console.error('Error while authenticating user:', err)
@@ -48,7 +47,7 @@ GlobalListeners.add('authenticate', async function(this: SocketIO.Socket,
 	} else {
 		connectedUsers.remove(this.user?.id)
 		this.user = undefined
-		callback('TokenNotProvided')
+		callback('InvalidToken')
 	}
 })
 
@@ -57,7 +56,7 @@ GlobalListeners.add('authenticate', async function(this: SocketIO.Socket,
  * Users no socket e atualizando a connectedUsers
  * @param callback O callback de retorno ao cliente
  */
-GlobalListeners.add('deauthenticate', function(this: SocketIO.Socket,
+GlobalListeners.add('deauthenticate', function (this: SocketIO.Socket,
 	callback: (err: null, response?: string) => void
 ) {
 	connectedUsers.remove(this.user?.id)
@@ -69,7 +68,7 @@ GlobalListeners.add('deauthenticate', function(this: SocketIO.Socket,
  * Retorna um objeto em que as chaves são os nomes das currencies e os valores
  * são os saldos do usuários para as respectivas currencies
  */
-GlobalListeners.add('fetch_balances', function(this: SocketIO.Socket,
+GlobalListeners.add('fetch_balances', function (this: SocketIO.Socket,
 	callback: (err: any, balances?: FetchBalances) => void
 ) {
 	if (!this.user) return callback('NotLoggedIn')

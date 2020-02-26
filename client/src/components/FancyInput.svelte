@@ -63,7 +63,7 @@
 </style>
 
 <div>
-	<input {type} {id} {required} {placeholder} />
+	<input {type} {id} name={id} {required} {placeholder} />
 	<label for={id}>
 		<slot>empty label</slot>
 	</label>
