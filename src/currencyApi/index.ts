@@ -3,14 +3,23 @@ import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
 import { Nano, Bitcoin } from './currencies'
 import User from '../userApi/user'
-import Common from './currencies/common'
 import Checklist from '../db/models/checklist'
 import Transaction from '../db/models/transaction'
-import type { TxReceived, UpdtReceived } from '../db/models/transaction'
+import type TypedEmitter from 'typed-emitter'
+import type Common from './currencies/common'
 import type { Person } from '../db/models/person'
+import type { TxInfo, UpdtReceived } from '../db/models/transaction'
 
 /** Tipo para variáveis/argumentos que precisam ser uma currency suportada */
 export type SuportedCurrencies = Common['name']
+
+/**
+ * Interface para padronizar os eventos públicos
+ */
+interface PublicEvents {
+	new_transaction: (id: User['id'], currency: SuportedCurrencies, transaction: TxInfo) => void
+	update_received_tx: (id: User['id'], currency: SuportedCurrencies, updtReceived: UpdtReceived) => void
+}
 
 /** Módulos das currencies individuais (devem extender a common) */
 const _currencies = {
@@ -36,7 +45,7 @@ export const currenciesDetailed = Object.values(_currencies).map(currency => {
 // const _events = new EventEmitter()
 
 /** EventEmmiter para eventos públicos */
-export const events = new EventEmitter()
+export const events = new EventEmitter() as TypedEmitter<PublicEvents>
 
 /**
  * Adiciona o request de criar accounts na checklist e chama o método
@@ -168,7 +177,7 @@ currencies.forEach(currency => {
  */
 currencies.forEach(currency => {
 	_currencies[currency].events
-		.on('new_transaction', (userId: User['id'], transaction: TxReceived) => {
+		.on('new_transaction', (userId: User['id'], transaction: TxInfo) => {
 			events.emit('new_transaction', userId, currency, transaction)
 		})
 		.on('update_received_tx', (userId: User['id'], updtReceived: UpdtReceived) => {

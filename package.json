@@ -50,6 +50,7 @@
     "move-cli": "^1.2.1",
     "recursive-install": "^1.4.0",
     "ts-node-dev": "^1.0.0-pre.44",
+    "typed-emitter": "^0.2.0",
     "typescript": "^3.8.2"
   }
 }

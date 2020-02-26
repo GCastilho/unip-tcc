@@ -17,7 +17,7 @@ export type FetchBalances = {
 	[key in SC]: StringifiedBalanceObject
 };
 
-GlobalListeners.add('disconnect', function (this: SocketIO.Socket, reason) {
+GlobalListeners.add('disconnect', function(this: SocketIO.Socket, reason) {
 	console.log('Socket disconnected:', reason)
 	connectedUsers.remove(this.user?.id)
 })
@@ -28,7 +28,7 @@ GlobalListeners.add('disconnect', function (this: SocketIO.Socket, reason) {
  * @param token O token de autenticação desse usuário
  * @param callback O callback de retorno ao cliente
  */
-GlobalListeners.add('authenticate', async function (this: SocketIO.Socket,
+GlobalListeners.add('authenticate', async function(this: SocketIO.Socket,
 	token: string,
 	callback: (err: null | string, response?: string) => void
 ) {
@@ -58,7 +58,7 @@ GlobalListeners.add('authenticate', async function (this: SocketIO.Socket,
  * Users no socket e atualizando a connectedUsers
  * @param callback O callback de retorno ao cliente
  */
-GlobalListeners.add('deauthenticate', function (this: SocketIO.Socket,
+GlobalListeners.add('deauthenticate', function(this: SocketIO.Socket,
 	callback: (err: null, response?: string) => void
 ) {
 	connectedUsers.remove(this.user?.id)
@@ -70,7 +70,7 @@ GlobalListeners.add('deauthenticate', function (this: SocketIO.Socket,
  * Retorna um objeto em que as chaves são os nomes das currencies e os valores
  * são os saldos do usuários para as respectivas currencies
  */
-GlobalListeners.add('fetch_balances', function (this: SocketIO.Socket,
+GlobalListeners.add('fetch_balances', function(this: SocketIO.Socket,
 	callback: (err: any, balances?: FetchBalances) => void
 ) {
 	if (!this.user) return callback('NotLoggedIn')
@@ -92,7 +92,7 @@ GlobalListeners.add('fetch_balances', function (this: SocketIO.Socket,
 /**
  * Retorna informações de uma transação requisitada
  */
-GlobalListeners.add('get_tx_info', async function (this: SocketIO.Socket,
+GlobalListeners.add('get_tx_info', async function(this: SocketIO.Socket,
 	opid: string,
 	callback: (err: null | string, response?: TxInfo) => void
 ) {
@@ -101,13 +101,13 @@ GlobalListeners.add('get_tx_info', async function (this: SocketIO.Socket,
 	if (tx?.user.toHexString() !== this.user.id.toHexString()) return callback('NotAuthorized')
 
 	callback(null, {
-		status: tx.status,
-		currency: tx.currency,
-		txid: tx.txid,
-		account: tx.account,
-		amount: +tx.amount.toFullString(),
-		type: tx.type,
+		status:        tx.status,
+		currency:      tx.currency,
+		txid:          tx.txid,
+		account:       tx.account,
+		amount:       +tx.amount.toFullString(),
+		type:          tx.type,
 		confirmations: tx.confirmations,
-		timestamp: tx.timestamp
+		timestamp:     tx.timestamp
 	})
 })
