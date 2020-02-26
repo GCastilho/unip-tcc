@@ -1,10 +1,9 @@
 import { writable } from 'svelte/store'
 import * as auth from '../stores/auth'
+import * as transactions from '../stores/transactions'
 import { emit, addSocketListener } from '../websocket'
 
 const { subscribe, set, update } = writable({})
-
-let transactions = []
 
 /**
  * Exporta a store para permitir modificação do saldo de fora
@@ -28,7 +27,10 @@ auth.subscribe(async auth => {
  * Atualiza o Balance Locked ao receber uma nova transaction
  */
 addSocketListener('new_transaction', (currency, transaction) => {
-	transactions.push(transaction)
+	transactions.update(tx => {
+		tx.push(transaction)
+		return tx
+	})
 	update(balances => {
 		if (transaction.status === 'confirmed') {
 			balances[currency].available += transaction.amount
@@ -44,23 +46,24 @@ addSocketListener('new_transaction', (currency, transaction) => {
  */
 addSocketListener('update_received_tx', async (currency, txUpdate) => {
 	console.log(txUpdate)
+	console.log(test)
 	if (txUpdate.status === 'confirmed') {
-		if (transactions.some(transaction => transaction.opid === txUpdate.opid)) {
+		let txInfo = transactions.getTxByOpid(txUpdate.opid)
+		if (txInfo) {
 			update(balances => {
-				const txInfo = transactions.filter(transaction => transaction.opid === txUpdate.opid)
-				balances[currency].available += txInfo[0].amount
-				balances[currency].locked -= txInfo[0].amount
+				balances[currency].available += +txInfo.amount
+				balances[currency].locked -= +txInfo.amount
 				return balances
 			})
 		} else {
 			try {
 				/** Pega os dados da transação pelo opid */
-				const txInfo = await emit('get_tx_info', txUpdate.opid)
+				txInfo = await emit('get_tx_info', txUpdate.opid)
 				console.log(txInfo)
 				/** Usa dados do amount pego no 'txInfo' para atualizar o saldo na tela */
 				update(balances => {
-					balances[currency].available += txInfo.amount
-					balances[currency].locked -= txInfo.amount
+					balances[currency].available += +txInfo.amount.$numberDecimal
+					balances[currency].locked -= +txInfo.amount.$numberDecimal
 					return balances
 				})
 			} catch(err) {
