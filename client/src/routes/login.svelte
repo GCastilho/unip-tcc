@@ -1,7 +1,7 @@
 <script>
-	import axios from 'axios'
 	import { onMount } from 'svelte'
 	import { goto } from '@sapper/app'
+	import axios from '../utils/axios.js'
 	import * as auth from '../stores/auth.js'
 	import FancyInput from '../components/FancyInput.svelte'
 	import FancyButton from '../components/FancyButton.svelte'
@@ -19,13 +19,12 @@
 		const password = event.target.password.value
 
 		try {
-			await axios.post(window.location, { email, password })
-			const sessionID = document.cookie.replace(/(?:(?:^|.*;\s*)sessionID\s*=\s*([^;]*).*$)|^.*$/, "$1")
+			const { token } = await axios.post(window.location, { email, password })
 			/**
 			 * @todo Adicionar handlers para os erros vindos do sistema
 			 * de autenticação do websocket
 			 */
-			await auth.authenticate(sessionID)
+			await auth.authenticate(token)
 
 			/** Redireciona o usuário para a home */
 			goto('/')
@@ -65,7 +64,7 @@
 </style>
 
 <h1>Login</h1>
-<form on:submit|preventDefault={handleSubmit}>
+<form method="POST" on:submit|preventDefault={handleSubmit}>
 	{#if errorMessage}
 		<FormErrorMessage>{errorMessage}</FormErrorMessage>
 	{/if}

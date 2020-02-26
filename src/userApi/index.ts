@@ -1,10 +1,10 @@
 import randomstring from 'randomstring'
 import { ObjectId } from 'mongodb'
-import User, { hashPassword } from './user'
-import Cookie from '../db/models/cookie'
-import * as CurrencyApi from '../currencyApi'
+import Session from '../db/models/session'
 import PersonModel from '../db/models/person'
-import { Person } from '../db/models/person/interface'
+import * as CurrencyApi from '../currencyApi'
+import User, { hashPassword } from './user'
+import type { Person } from '../db/models/person'
 
 /**
  * Cria um novo usuário no database com as credenciais informadas
@@ -63,17 +63,35 @@ export const findUser = {
 	},
 
 	/**
-	 * Procura por um usuário usando o cookie de sessionID informado
+	 * Procura por um usuário usando o cookie de sessionId informado
+	 * @param sessionId O cookie 'sessionId' do usuário
 	 * 
 	 * @returns A User class instance with the found user
 	 * @throws 'CookieNotFound'
 	 * @throws 'UserNotFound'
+	 * 
 	 * @todo Checar se o Cookie não expirou antes de continuar
 	 */
-	async byCookie(sessionID: string): Promise<User> {
-		const cookie = await Cookie.findOne({ sessionID })
-		if (!cookie) throw 'CookieNotFound'
-		return this.byId(cookie.userId)
+	async byCookie(sessionId: string): Promise<User> {
+		const session = await Session.findOne({ sessionId })
+		if (!session) throw 'CookieNotFound'
+		return this.byId(session.userId)
+	},
+
+	/**
+	 * Procura por um usuário usando o token informado
+	 * @param token O token do usuário
+	 * 
+	 * @returns A User class instance with the found user
+	 * @throws 'TokenNotFound'
+	 * @throws 'UserNotFound'
+	 * 
+	 * @todo Checar se o Token não expirou antes de continuar
+	 */
+	async byToken(token: string): Promise<User> {
+		const session = await Session.findOne({ token })
+		if (!session) throw 'TokenNotFound'
+		return this.byId(session.userId)
 	},
 
 	/**

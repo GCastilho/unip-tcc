@@ -6,8 +6,8 @@ import User from '../userApi/user'
 import Common from './currencies/common'
 import Checklist from '../db/models/checklist'
 import Transaction from '../db/models/transaction'
-import { Person } from '../db/models/person/interface'
-import { TxReceived, UpdtReceived } from '../db/models/transaction'
+import type { TxReceived, UpdtReceived } from '../db/models/transaction'
+import type { Person } from '../db/models/person'
 
 /** Tipo para variáveis/argumentos que precisam ser uma currency suportada */
 export type SuportedCurrencies = Common['name']
@@ -118,7 +118,7 @@ export async function withdraw(
 			type: 'transaction',
 			amount: - Math.abs(amount) // Garante que o amount será negativo
 		})
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotEnoughFunds') {
 			// Remove a transação da collection e o item da checklist
 			await Promise.all([

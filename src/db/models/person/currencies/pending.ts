@@ -1,3 +1,4 @@
+import { Schema } from 'mongoose'
 import { Decimal128, ObjectId } from 'mongodb'
 
 /** A interface de operações de alteração de saldo pendentes*/
@@ -17,24 +18,21 @@ export interface Pending {
 	amount: Decimal128
 }
 
-/** A interface de uma currency da colletion people */
-interface Currency {
-	balance: {
-		/** Saldo disponível para operações */
-		available: Decimal128
-		/** Saldo bloqueado em operações */
-		locked: Decimal128
-	}
-	/** Array de accounts de <currency> do usuário */
-	accounts: string[]
-	/** Operações pendentes que involvem alteração de saldo */
-	pending: Pending[]
-}
-
 /**
- * A interface do sub-documento 'currencies' da collection people
+ * Schema das operações (que involvem alteração de saldo) pendentes desse
+ * usuário, uma vez concluídas elas devem ser removidas da collection
  */
-export interface Currencies {
-	bitcoin: Currency
-	nano: Currency
-}
+export const PendingSchema: Schema = new Schema({
+	opid: {
+		type: Schema.Types.ObjectId,
+		required: true
+	},
+	type: {
+		type: String,
+		required: true
+	},
+	amount: {
+		type: Decimal128,
+		required: true
+	}
+})
