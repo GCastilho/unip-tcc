@@ -46,7 +46,6 @@ addSocketListener('new_transaction', (currency, transaction) => {
  */
 addSocketListener('update_received_tx', async (currency, txUpdate) => {
 	console.log(txUpdate)
-	console.log(test)
 	if (txUpdate.status === 'confirmed') {
 		let txInfo = transactions.getTxByOpid(txUpdate.opid)
 		if (txInfo) {
