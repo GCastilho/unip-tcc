@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte'
 	import { goto } from '@sapper/app'
 	import { subscribe } from '../../stores/auth.js'
-	import * as socket from '../../websocket.js'
+	import * as socket from '../../utils/websocket.js'
 	import TableRow from './_tableRow/index.svelte'
 
 	/** Referência à subscription da store de auth */

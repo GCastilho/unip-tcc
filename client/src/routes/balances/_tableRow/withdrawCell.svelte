@@ -1,5 +1,5 @@
 <script>
-	import { emit } from '../../../websocket.js'
+	import { emit } from '../../../utils/websocket.js'
 	import * as balances from '../../../stores/balances.js'
 
 	export let name

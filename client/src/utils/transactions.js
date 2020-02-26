@@ -1,4 +1,4 @@
-import { addSocketListener } from '../websocket'
+import { addSocketListener } from './websocket'
 
 /**
  * Map das transações armazenadas no cliente, a chave é o opid

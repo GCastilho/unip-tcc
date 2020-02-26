@@ -1,6 +1,6 @@
 <script>
 	import { stores } from '@sapper/app'
-	import { route } from '../websocket.js'
+	import { route } from '../utils/websocket.js'
 	import * as auth from '../stores/auth.js'
 	import '../stores/balances.js' // Inicializa a store de balances
 

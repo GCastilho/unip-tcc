@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store'
 import * as auth from '../stores/auth'
 import * as transactions from '../utils/transactions'
-import { emit, addSocketListener } from '../websocket'
+import { emit, addSocketListener } from '../utils/websocket'
 
 const { subscribe, set, update } = writable({})
 
@@ -38,10 +38,10 @@ addSocketListener('new_transaction', (currency, transaction) => {
 })
 
 /**
- * Atualiza o balance availabe ao receber confirmação da transação
+ * Atualiza o balance availabe ao receber confirmação de transação recebida
  */
 addSocketListener('update_received_tx', async (currency, txUpdate) => {
-	console.log(txUpdate)
+	console.log('Received event to update received transaction', currency, txUpdate)
 	if (txUpdate.status !== 'confirmed') return
 	try {
 		const txInfo = await transactions.getByOpid(txUpdate.opid)
