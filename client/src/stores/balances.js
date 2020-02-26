@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store'
 import * as auth from '../stores/auth'
-import * as transactions from '../stores/transactions'
+import * as transactions from '../utils/transactions'
 import { emit, addSocketListener } from '../websocket'
 
 const { subscribe, set, update } = writable({})
@@ -19,18 +19,14 @@ auth.subscribe(async auth => {
 		const balances = await emit('fetch_balances')
 		set(balances)
 	} catch(err) {
-		console.error('Error while fething balances:', err)
+		console.error('Error while fetching balances:', err)
 	}
 })
 
 /**
- * Atualiza o Balance Locked ao receber uma nova transaction
+ * Atualiza o balance locked ao receber uma nova transação
  */
 addSocketListener('new_transaction', (currency, transaction) => {
-	transactions.update(tx => {
-		tx.push(transaction)
-		return tx
-	})
 	update(balances => {
 		if (transaction.status === 'confirmed') {
 			balances[currency].available += transaction.amount
@@ -42,18 +38,19 @@ addSocketListener('new_transaction', (currency, transaction) => {
 })
 
 /**
- * Após receber a confirmação da transação ele atualiza o Balance Available
+ * Atualiza o balance availabe ao receber confirmação da transação
  */
 addSocketListener('update_received_tx', async (currency, txUpdate) => {
 	console.log(txUpdate)
-	if (txUpdate.status === 'confirmed') {
-		let txInfo = transactions.getTxByOpid(txUpdate.opid)
-		if (txInfo) {
-			update(balances => {
-				balances[currency].available += +txInfo.amount
-				balances[currency].locked -= +txInfo.amount
-				return balances
-			})
-		}
+	if (txUpdate.status !== 'confirmed') return
+	try {
+		const txInfo = await transactions.getByOpid(txUpdate.opid)
+		update(balances => {
+			balances[currency].available += +txInfo.amount
+			balances[currency].locked -= +txInfo.amount
+			return balances
+		})
+	} catch(err) {
+		console.error('Error fetching tx_info:', err)
 	}
 })
