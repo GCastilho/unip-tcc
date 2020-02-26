@@ -106,7 +106,7 @@ GlobalListeners.add('get_tx_info', async function(this: SocketIO.Socket,
 		currency:      tx.currency,
 		txid:          tx.txid,
 		account:       tx.account,
-		amount:        tx.amount,
+		amount:       +tx.amount.toFullString(),
 		type:          tx.type,
 		confirmations: tx.confirmations,
 		timestamp:     tx.timestamp

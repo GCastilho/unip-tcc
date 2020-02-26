@@ -133,7 +133,7 @@ export interface TxInfo {
 	currency: TransactionDoc['currency']
 	txid: TransactionDoc['txid']
 	account: TransactionDoc['account']
-	amount: TransactionDoc['amount']
+	amount: number
 	type: TransactionDoc['type']
 	confirmations: TransactionDoc['confirmations']
 	timestamp: TransactionDoc['timestamp']
