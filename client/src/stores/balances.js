@@ -54,20 +54,6 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
 				balances[currency].locked -= +txInfo.amount
 				return balances
 			})
-		} else {
-			try {
-				/** Pega os dados da transação pelo opid */
-				txInfo = await emit('get_tx_info', txUpdate.opid)
-				console.log(txInfo)
-				/** Usa dados do amount pego no 'txInfo' para atualizar o saldo na tela */
-				update(balances => {
-					balances[currency].available += +txInfo.amount.$numberDecimal
-					balances[currency].locked -= +txInfo.amount.$numberDecimal
-					return balances
-				})
-			} catch(err) {
-				console.error('Error while getting transaction info:', err)
-			}
 		}
 	}
 })
