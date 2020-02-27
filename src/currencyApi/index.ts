@@ -8,7 +8,7 @@ import Transaction from '../db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
 import type Common from './currencies/common'
 import type { Person } from '../db/models/person'
-import type { TxInfo, UpdtReceived } from '../db/models/transaction'
+import type { TxInfo, UpdtReceived, UpdtSent } from '../db/models/transaction'
 
 /** Tipo para variáveis/argumentos que precisam ser uma currency suportada */
 export type SuportedCurrencies = Common['name']
@@ -19,6 +19,7 @@ export type SuportedCurrencies = Common['name']
 interface PublicEvents {
 	new_transaction: (id: User['id'], currency: SuportedCurrencies, transaction: TxInfo) => void
 	update_received_tx: (id: User['id'], currency: SuportedCurrencies, updtReceived: UpdtReceived) => void
+	update_sent_tx: (id: User['id'], currency: SuportedCurrencies, updtSent: UpdtSent) => void
 }
 
 /** Módulos das currencies individuais (devem extender a common) */
@@ -177,10 +178,13 @@ currencies.forEach(currency => {
  */
 currencies.forEach(currency => {
 	_currencies[currency].events
-		.on('new_transaction', (userId: User['id'], transaction: TxInfo) => {
+		.on('new_transaction', (userId, transaction) => {
 			events.emit('new_transaction', userId, currency, transaction)
 		})
-		.on('update_received_tx', (userId: User['id'], updtReceived: UpdtReceived) => {
+		.on('update_received_tx', (userId, updtReceived) => {
 			events.emit('update_received_tx', userId, currency, updtReceived)
+		})
+		.on('update_sent_tx', (userId, updtSent) => {
+			events.emit('update_sent_tx', userId, currency, updtSent)
 		})
 })

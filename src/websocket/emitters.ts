@@ -1,25 +1,25 @@
-import User from '../userApi/user'
+/*
+ * Ouve por eventos em módulos internos e os envia ao usuário relevante, caso
+ * este esteja conectado
+ */
+
 import * as currencyApi from '../currencyApi'
 import * as connectedUsers from './connectedUsers'
-import { UpdtReceived, TxInfo } from '../db/models/transaction'
-import type { SuportedCurrencies as SC } from '../currencyApi'
 
-/**
- * Ouve por eventos de new_transaction da currencyApi e os envia ao usuário,
- * caso ele esteja conectado
- */
-currencyApi.events.on('new_transaction', (userId: User['id'], currency: SC, transaction: TxInfo) => {
+currencyApi.events.on('new_transaction', (userId, currency, transaction) => {
 	const socket = connectedUsers.get(userId)
 	if (!socket) return // User is offline
 	socket.emit('new_transaction', currency, transaction)
 })
 
-/**
- * Ouve por eventos de update_received_tx da currencyApi e os envia ao usuário,
- * caso ele esteja conectado
- */
-currencyApi.events.on('update_received_tx', (userId: User['id'], currency: SC, txUpdate: UpdtReceived) => {
+currencyApi.events.on('update_received_tx', (userId, currency, txUpdate) => {
 	const socket = connectedUsers.get(userId)
 	if (!socket) return // User is offline
 	socket.emit('update_received_tx', currency, txUpdate)
+})
+
+currencyApi.events.on('update_sent_tx', (userId, currency, txUpdate) => {
+	const socket = connectedUsers.get(userId)
+	if (!socket) return // User is offline
+	socket.emit('update_sent_tx', currency, txUpdate)
 })
