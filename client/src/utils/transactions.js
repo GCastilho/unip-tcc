@@ -11,13 +11,6 @@ import { emit, addSocketListener } from './websocket'
 const transactions = new Map()
 
 /**
- * Adiciona ao map uma nova transação recebida
- */
-addSocketListener('new_transaction', (currency, transaction) => {
-	transactions.set(transaction.opid, transaction)
-})
-
-/**
  * Retorna uma transação pelo seu opid
  * @param {string} opid O identificador dessa transação
  */
@@ -29,3 +22,32 @@ export async function getByOpid(opid) {
 	}
 	return txInfo
 }
+
+/**
+ * Adiciona ao map uma nova transação recebida
+ */
+addSocketListener('new_transaction', (currency, transaction) => {
+	transactions.set(transaction.opid, transaction)
+})
+
+/**
+ * Atualiza uma transação recebida
+ */
+addSocketListener('update_received_tx', async (currency, updtReceived) => {
+	const txInfo = await getByOpid(updtReceived.opid)
+	txInfo.status = updtReceived.status
+	txInfo.confirmations = updtReceived.status === 'confirmed' ? undefined : updtReceived.confirmations
+	transactions.set(updtReceived.opid, txInfo)
+})
+
+/**
+ * Atualiza uma transação enviada
+ */
+addSocketListener('update_sent_tx', async (currency, updtSent) => {
+	const txInfo = await getByOpid(updtSent.opid)
+	txInfo.txid = updtSent.txid
+	txInfo.status = updtSent.status
+	txInfo.confirmations = updtSent.status === 'confirmed' ? undefined : updtSent.confirmations
+	txInfo.timestamp = updtSent.timestamp
+	transactions.set(updtSent.opid, txInfo)
+})

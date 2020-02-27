@@ -10,7 +10,7 @@
 
 	async function handleWithdraw(event) {
 		const destination = event.target.destination.value
-		const amount = event.target.amount.value
+		const amount = +event.target.amount.value
 
 		try {
 			const opid = await emit('withdraw', {
@@ -21,8 +21,8 @@
 			console.log('Withdraw executed, opid is:', opid)
 
 			// Atualiza o balance
-			$balances[name].available -= +amount
-			$balances[name].locked += +amount
+			$balances[name].available -= amount
+			$balances[name].locked += amount
 		} catch(err) {
 			console.error('Error on withdraw request:', err)
 		}

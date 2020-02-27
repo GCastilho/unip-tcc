@@ -41,12 +41,12 @@ addSocketListener('new_transaction', (currency, transaction) => {
  * Atualiza o balance availabe ao receber confirmação de transação recebida
  */
 addSocketListener('update_received_tx', async (currency, txUpdate) => {
-	console.log('Received event to update received transaction', currency, txUpdate)
+	console.log('update_received_tx:', currency, txUpdate)
 	if (txUpdate.status !== 'confirmed') return
 	try {
 		const txInfo = await transactions.getByOpid(txUpdate.opid)
 		update(balances => {
-			balances[currency].available += +txInfo.amount
+			balances[currency].available += txInfo.amount
 			balances[currency].locked -= txInfo.amount
 			return balances
 		})
@@ -59,7 +59,7 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
  * Atualiza o balance locked ao confirmar envio da transação
  */
 addSocketListener('update_sent_tx', async (currency, txSent) => {
-	console.log('Event to update sent', currency, txSent)
+	console.log('update_sent_tx:', currency, txSent)
 	if (txSent.status !== 'confirmed') return
 	try {
 		const txInfo = await transactions.getByOpid(txSent.opid)
