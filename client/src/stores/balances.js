@@ -54,3 +54,20 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
 		console.error('Error fetching tx_info:', err)
 	}
 })
+
+/** 
+ * Atualiza o balance locked ao confirmar envio da transação
+ */
+addSocketListener('update_sent_tx', async (currency, txSent) => {
+	console.log(txSent)
+	if (txSent.status !== 'confirmed') return
+	try {
+		const txInfo = await transactions.getByOpid(txSent.opid)
+		update(balances => {
+			balances[currency].locked -= +txInfo.amount
+			return balances
+		})
+	} catch(err) {
+		console.error('Error fetching tx_info:', err)
+	}
+})
