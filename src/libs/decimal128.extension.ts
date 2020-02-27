@@ -44,7 +44,7 @@ Decimal128.prototype.toFullString = function decimal128ToString() {
 	// Expande a exponenciação
 	if (+expoente > 0) {
 		// Garante a quantidade mínima de casas do expoente
-		casas = casas.padEnd(+expoente+1, '0')
+		casas = casas.padEnd(+expoente + 1, '0')
 
 		// Separa 'casas' no expoente; _a é antes, _b é depois
 		const _a = casas.slice(0, +expoente)
@@ -55,10 +55,10 @@ Decimal128.prototype.toFullString = function decimal128ToString() {
 		// Garante a quantidade mínima de casas do expoente
 		if (inteiro.charAt(0) === '-') {
 			inteiro = inteiro.slice(1)
-			inteiro = inteiro.padStart(-1*+expoente+1, '0')
+			inteiro = inteiro.padStart(-1 * +expoente + 1, '0')
 			inteiro = '-'.concat(inteiro)
 		} else {
-			inteiro = inteiro.padStart(-1*+expoente+1, '0')
+			inteiro = inteiro.padStart(-1 * +expoente + 1, '0')
 		}
 
 		// Separa o inteiro no expoente

@@ -1,5 +1,5 @@
 <script>
-	import { emit } from '../../../websocket.js'
+	import { emit } from '../../../utils/websocket.js'
 	import * as balances from '../../../stores/balances.js'
 
 	export let name
@@ -10,7 +10,7 @@
 
 	async function handleWithdraw(event) {
 		const destination = event.target.destination.value
-		const amount = event.target.amount.value
+		const amount = +event.target.amount.value
 
 		try {
 			const opid = await emit('withdraw', {

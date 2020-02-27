@@ -12,7 +12,7 @@ const connectedUsers = new Map()
  */
 export function add(socket: SocketIO.Socket) {
 	if (!socket.user) throw new Error('Socket must be from an authenticated user')
-	connectedUsers.set(socket.user.id, socket)
+	connectedUsers.set(socket.user.id.toHexString(), socket)
 }
 
 /**
@@ -23,7 +23,7 @@ export function add(socket: SocketIO.Socket) {
  * @returns undefined - caso o usuário NÃO esteja conectado
  */
 export function get(id: User['id']): SocketIO.Socket|undefined {
-	return connectedUsers.get(id)
+	return connectedUsers.get(id.toHexString())
 }
 
 /**

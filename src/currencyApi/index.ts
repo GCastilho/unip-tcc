@@ -3,14 +3,24 @@ import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
 import { Nano, Bitcoin } from './currencies'
 import User from '../userApi/user'
-import Common from './currencies/common'
 import Checklist from '../db/models/checklist'
 import Transaction from '../db/models/transaction'
-import type { TransactionInternal as Tx } from '../db/models/transaction'
+import type TypedEmitter from 'typed-emitter'
+import type Common from './currencies/common'
 import type { Person } from '../db/models/person'
+import type { TxInfo, UpdtReceived, UpdtSent } from '../db/models/transaction'
 
 /** Tipo para variáveis/argumentos que precisam ser uma currency suportada */
 export type SuportedCurrencies = Common['name']
+
+/**
+ * Interface para padronizar os eventos públicos
+ */
+interface PublicEvents {
+	new_transaction: (id: User['id'], currency: SuportedCurrencies, transaction: TxInfo) => void
+	update_received_tx: (id: User['id'], currency: SuportedCurrencies, updtReceived: UpdtReceived) => void
+	update_sent_tx: (id: User['id'], currency: SuportedCurrencies, updtSent: UpdtSent) => void
+}
 
 /** Módulos das currencies individuais (devem extender a common) */
 const _currencies = {
@@ -36,7 +46,7 @@ export const currenciesDetailed = Object.values(_currencies).map(currency => {
 // const _events = new EventEmitter()
 
 /** EventEmmiter para eventos públicos */
-export const events = new EventEmitter()
+export const events = new EventEmitter() as TypedEmitter<PublicEvents>
 
 /**
  * Adiciona o request de criar accounts na checklist e chama o método
@@ -118,7 +128,7 @@ export async function withdraw(
 			type: 'transaction',
 			amount: - Math.abs(amount) // Garante que o amount será negativo
 		})
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotEnoughFunds') {
 			// Remove a transação da collection e o item da checklist
 			await Promise.all([
@@ -168,7 +178,13 @@ currencies.forEach(currency => {
  */
 currencies.forEach(currency => {
 	_currencies[currency].events
-		.on('new_transaction', (userId: User['id'], transaction: Tx) => {
+		.on('new_transaction', (userId, transaction) => {
 			events.emit('new_transaction', userId, currency, transaction)
+		})
+		.on('update_received_tx', (userId, updtReceived) => {
+			events.emit('update_received_tx', userId, currency, updtReceived)
+		})
+		.on('update_sent_tx', (userId, updtSent) => {
+			events.emit('update_sent_tx', userId, currency, updtSent)
 		})
 })

@@ -1,18 +1,25 @@
+import { EventEmitter } from 'events'
 import Checklist from '../../../db/models/checklist'
 import * as methods from './methods'
-import { EventEmitter } from 'events'
+import type TypedEmitter from 'typed-emitter'
+import type { TxInfo, UpdtReceived, UpdtSent } from '../../../db/models/transaction'
+import type User from '../../../userApi/user'
 
 /**
- * EventEmmiter genérico
+ * Interface para padronizar os eventos públicos
  */
-class Events extends EventEmitter {}
+interface PublicEvents {
+	new_transaction: (id: User['id'], transaction: TxInfo) => void
+	update_received_tx: (id: User['id'], txUpdate: UpdtReceived) => void
+	update_sent_tx: (id: User['id'], txUpdate: UpdtSent) => void
+}
 
 /**
  * Classe abstrata dos módulos comuns de todas as currencyModules
  */
 export default abstract class Common {
 	/** O nome da currency que esta classe se comunica */
-	abstract name: 'bitcoin'|'nano'
+	abstract name: 'bitcoin' | 'nano'
 
 	/** O código da currency */
 	abstract code: string
@@ -24,7 +31,7 @@ export default abstract class Common {
 	public supportedDecimals = 8
 
 	/** EventEmmiter para eventos internos */
-	protected _events = new Events()
+	protected _events = new EventEmitter()
 
 	/** Indica se o módulo externo está online ou não */
 	protected isOnline = false
@@ -55,7 +62,7 @@ export default abstract class Common {
 	}
 
 	/** EventEmmiter para eventos públicos */
-	public events = new Events()
+	public events = new EventEmitter() as TypedEmitter<PublicEvents>
 
 	/** Handler da conexão com o módulo externo */
 	public connection = methods.connection

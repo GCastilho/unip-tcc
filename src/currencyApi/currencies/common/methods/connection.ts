@@ -39,7 +39,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				stream.write(account)
 			})
 		})
-	
+
 		person.on('end', () => stream.end())
 	})
 
@@ -104,9 +104,18 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			if (status === 'confirmed')
 				await user.balanceOps.complete(this.name, opid)
 
-			this.events.emit('new_transaction', user.id, transaction)
+			this.events.emit('new_transaction', user.id, {
+				status:        tx.status,
+				currency:      tx.currency,
+				txid:          tx.txid,
+				account:       tx.account,
+				amount:       +tx.amount.toFullString(),
+				type:          tx.type,
+				confirmations: tx.confirmations,
+				timestamp:     tx.timestamp
+			})
 			callback(null, opid)
-		} catch(err) {
+		} catch (err) {
 			if (err.code === 11000 && err.keyPattern.txid) {
 				// A transação já existe
 				const tx = await Tx.findOne({ txid })
@@ -125,7 +134,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					try {
 						/** Tenta cancelar a operação do usuário */
 						await user.balanceOps.cancel(this.name, tx._id)
-					} catch(err) {
+					} catch (err) {
 						if (err != 'OperationNotFound')
 							throw err
 					}
@@ -179,7 +188,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				try {
 					await Tx.findByIdAndDelete(opid)
 					await user.balanceOps.cancel(this.name, opid)
-				} catch(err) {
+				} catch (err) {
 					if (err != 'OperationNotFound')
 						throw err
 				}
@@ -223,7 +232,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			await tx.save()
 			callback(null, `${txUpdate.opid} updated`)
 			this.events.emit('update_received_tx', tx.user, txUpdate)
-		} catch(err) {
+		} catch (err) {
 			if (err === 'UserNotFound') {
 				callback({ code: 'UserNotFound' })
 			} else if (err === 'OperationNotFound') {

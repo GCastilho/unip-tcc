@@ -97,13 +97,14 @@
 	<td class="coin-cell">{code}</td>
 	<td class="name-cell">{name}</td>
 	<td class="balance-cell">{available.toFixed(8) || 'Loading...'}</td>
+	<td class="balance-cell">{locked.toFixed(8) || 'Loading...'}</td>
 	<td>
 		<button on:click="{() => openActionCell('deposit')}">Deposit</button>
 		<button on:click="{() => openActionCell('withdraw')}">Withdraw</button>
 	</td>
 </tr>
 <tr class="action-row" class:hidden>
-	<td colspan="4">
+	<td colspan="5">
 		<div>
 			{#if selectedAction === 'deposit'}
 				<DepositCell {name} {accounts} />

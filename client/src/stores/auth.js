@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import { emit, addSocketListener } from '../websocket'
+import { emit, addSocketListener } from '../utils/websocket'
 
 /**
  * Função helper para retornar o token do localStorage

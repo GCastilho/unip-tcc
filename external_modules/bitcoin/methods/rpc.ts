@@ -87,7 +87,7 @@ export async function send(pSend: PSent): Promise<UpdtSent> {
 		txid,
 		status: 'pending',
 		confirmations: 0,
-		timestamp: tInfo.time*1000 // O timestamp do bitcoin é em segundos
+		timestamp: tInfo.time * 1000 // O timestamp do bitcoin é em segundos
 	}
 	console.log('sent new transaction', transaction)
 

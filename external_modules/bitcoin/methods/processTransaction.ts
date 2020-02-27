@@ -45,7 +45,7 @@ export async function formatTransaction(txid: string, getInfo: Function): Promis
 		confirmations: txInfo.confirmations,
 		account:       address,
 		amount:        received.amount,
-		timestamp:     txInfo.time*1000 // O timestamp do bitcoin é em segundos
+		timestamp:     txInfo.time * 1000 // O timestamp do bitcoin é em segundos
 	}
 
 	return formattedTransaction
