@@ -47,7 +47,7 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
 		const txInfo = await transactions.getByOpid(txUpdate.opid)
 		update(balances => {
 			balances[currency].available += +txInfo.amount
-			balances[currency].locked -= +txInfo.amount
+			balances[currency].locked -= txInfo.amount
 			return balances
 		})
 	} catch(err) {
@@ -59,12 +59,12 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
  * Atualiza o balance locked ao confirmar envio da transação
  */
 addSocketListener('update_sent_tx', async (currency, txSent) => {
-	console.log(txSent)
+	console.log('Event to update sent', currency, txSent)
 	if (txSent.status !== 'confirmed') return
 	try {
 		const txInfo = await transactions.getByOpid(txSent.opid)
 		update(balances => {
-			balances[currency].locked -= +txInfo.amount
+			balances[currency].locked -= txInfo.amount
 			return balances
 		})
 	} catch(err) {
