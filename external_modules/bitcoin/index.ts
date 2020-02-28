@@ -10,8 +10,10 @@ export class Bitcoin extends Common {
 	name = 'bitcoin'
 	mainServerIp = MAIN_SERVER_IP
 	mainServerPort = MAIN_SERVER_PORT
-
+	blockHeight = 20000000;
 	protected rpc = methods.rpc
+
+	rewindTransactions = methods.rewindTransactions
 
 	getNewAccount = this.rpc.getNewAddress
 
@@ -21,8 +23,8 @@ export class Bitcoin extends Common {
 
 	initBlockchainListener() {
 		const app = express()
-		app.use(bodyParser.urlencoded({ extended: true }))
-
+		app.use(bodyParser.urlencoded({extended: true}))
+		
 		/**
 		 * Novas transações são enviadas aqui
 		 */
@@ -38,10 +40,14 @@ export class Bitcoin extends Common {
 			this.processBlock(req.body.block)
 			res.send() // Finaliza a comunicação com o curl do BTC
 		})
-
-		app.listen(this.port, () => {
+		require('axios').get('https://api.blockcypher.com/v1/btc/test3').then(blockInfo => {
+			this.blockHeight = (blockInfo.data.height)
+			console.log({'current block height': this.blockHeight})
+			app.listen(this.port, () => {
 			console.log('Bitcoin blockchain listener is up on port', this.port)
+			})
 		})
+		
 	}
 
 	constructor(bitcoinListenerPort: number) {

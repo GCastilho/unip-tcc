@@ -55,6 +55,9 @@ const sendToAddress = async (account: string, amount: number): Promise<string> =
 export const transactionInfo = async (txid: string): Promise<any> =>
 	await request('getTransaction', txid)
 
+export const listSinceBlock = async (block: string): Promise<any> =>
+	await request('listSinceBlock', block)
+
 export const blockInfo = async (block): Promise<any> =>
 	await request('getBlock', block)
 
@@ -63,6 +66,9 @@ export const getNewAddress = async (): Promise<string> =>
 
 export const getRpcInfo = async (): Promise<any> =>
 	await request('getRpcInfo')
+
+export const getBlockCount = async (): Promise<any> =>
+	await request('getBlockCount')
 
 /**
  * Executa uma transação na rede da bitcoin
