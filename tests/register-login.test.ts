@@ -2,8 +2,10 @@ import '../src/libs'
 import '../src/db/mongoose'
 import request from 'supertest'
 import { expect } from 'chai'
+import cookieparser from 'cookieparser'
 import Person from '../src/db/models/person'
 import Checklist from '../src/db/models/checklist'
+import Session from '../src/db/models/session'
 import * as CurrencyApi from '../src/currencyApi'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const app = require('../src/server')
@@ -11,6 +13,7 @@ const app = require('../src/server')
 before(async () => {
 	await Person.deleteMany({})
 	await Checklist.deleteMany({})
+	await Session.deleteMany({})
 })
 
 describe('User register and login tests', function() {
@@ -80,6 +83,103 @@ describe('User register and login tests', function() {
 					`not found request for ${currency}`
 				).to.be.true
 			})
+		})
+	})
+
+	describe('Login request', () => {
+		it('Should fail if sending empty object', async () => {
+			await request(app).post('/login').send({}).expect(400)
+		})
+
+		it('Should fail if email is null', async () => {
+			await request(app).post('/login').send({
+				password: 'null_email'
+			}).expect(400)
+				.expect((res) => {
+					expect(res.header['set-cookie']).to.be.undefined
+					expect(res.body)
+						.to.be.an('object')
+						.to.haveOwnProperty('error')
+				})
+		})
+
+		it('Should fail if password is null', async () => {
+			await request(app).post('/login').send({
+				email: 'null_password@example.com'
+			}).expect(400)
+				.expect(res => {
+					expect(res.header['set-cookie']).to.be.undefined
+					expect(res.body)
+						.to.be.an('object')
+						.to.haveOwnProperty('error')
+				})
+		})
+
+		it('Should fail if email and password are null', async () => {
+			await request(app).post('/login').send({
+				email: '',
+				password: ''
+			}).expect(400)
+				.expect(res => {
+					expect(res.header['set-cookie']).to.be.undefined
+					expect(res.body)
+						.to.be.an('object')
+						.to.haveOwnProperty('error')
+				})
+		})
+
+		it('Should fail if non-existent user', async () => {
+			await request(app).post('/login').send({
+				email: 'undefined@example.com',
+				password: 'undefined_pass'
+			}).expect(401)
+				.expect(res => {
+					expect(res.header['set-cookie']).to.be.undefined
+					expect(res.body)
+						.to.be.an('object')
+						.to.haveOwnProperty('error')
+				})
+		})
+
+		it('Should fail if user with wrong password', async () => {
+			await request(app).post('/login').send({
+				email: user.email,
+				password: 'not_user.password'
+			}).expect(401)
+				.expect(res => {
+					expect(res.header['set-cookie']).to.be.undefined
+					expect(res.body)
+						.to.be.an('object')
+						.to.haveOwnProperty('error')
+				})
+		})
+
+		it('Should fail if valid password but wrong user', async () => {
+			await request(app).post('/login').send({
+				email: 'undefined@example.com',
+				password: user.password
+			}).expect(401)
+				.expect(res => {
+					expect(res.header['set-cookie']).to.be.undefined
+					expect(res.body)
+						.to.be.an('object')
+						.to.haveOwnProperty('error')
+				})
+		})
+
+		it('Should login existing users', async () => {
+			const res = await request(app).post('/login').send(user)
+				.expect(200)
+			expect(res.header['set-cookie']).not.to.be.undefined
+
+			const cookies: any[] = res.header['set-cookie']
+				.map(cookieparser.parse)
+				.filter(cookie => cookie.sessionId)
+			expect(cookies.length).to.equal(1)
+
+			const { _id } = await Person.findOne({ email: user.email })
+			const cookie = await Session.findOne({ userId: _id })
+			expect(cookies[0].sessionId).to.be.equal(cookie.sessionId)
 		})
 	})
 })
