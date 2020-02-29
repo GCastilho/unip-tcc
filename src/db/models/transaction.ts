@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose'
 import { ObjectId, Decimal128 } from 'mongodb'
-import { Person } from './person/interface'
-import { SuportedCurrencies } from '../../currencyApi/currencyApi'
+import type { Person } from './person'
+import type { SuportedCurrencies } from '../../currencyApi'
 
 /** Interface base de uma transaction */
 interface Transaction {
@@ -124,11 +124,26 @@ export interface TransactionInternal extends Transaction {
 	type: 'receive'|'send'
 }
 
+/**
+ * Objeto retornado pelo servidor ao cliente quando é requisitado informações
+ * de uma transação
+ */
+export interface TxInfo {
+	status: TransactionDoc['status']
+	currency: TransactionDoc['currency']
+	txid: TransactionDoc['txid']
+	account: TransactionDoc['account']
+	amount: number
+	type: TransactionDoc['type']
+	confirmations: TransactionDoc['confirmations']
+	timestamp: TransactionDoc['timestamp']
+}
+
 /** A interface dessa collection */
 interface TransactionDoc extends Document {
 	_id: ObjectId
 	/** Referência ao usuário dono dessa transação */
-	user: Person['_id'],
+	user: Person['_id']
 	/**
 	 * Status da transação
 	 * 

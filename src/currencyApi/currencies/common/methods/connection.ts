@@ -3,11 +3,9 @@ import ss = require('socket.io-stream')
 import { ObjectId } from 'mongodb'
 import Common from '../index'
 import Person from '../../../../db/models/person'
-import FindUser from '../../../../userApi/findUser'
+import * as userApi from '../../../../userApi'
 import User from '../../../../userApi/user'
 import { default as Tx, TxReceived, UpdtReceived } from '../../../../db/models/transaction'
-
-const findUser = new FindUser()
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*
@@ -41,7 +39,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				stream.write(account)
 			})
 		})
-	
+
 		person.on('end', () => stream.end())
 	})
 
@@ -57,7 +55,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 
 		let user: User
 		try {
-			user = await findUser.byAccount(this.name, account)
+			user = await userApi.findUser.byAccount(this.name, account)
 		} catch (err) {
 			if (err === 'UserNotFound') {
 				return callback({
@@ -106,9 +104,18 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			if (status === 'confirmed')
 				await user.balanceOps.complete(this.name, opid)
 
-			this.events.emit('new_transaction', user.id, transaction)
+			this.events.emit('new_transaction', user.id, {
+				status:        tx.status,
+				currency:      tx.currency,
+				txid:          tx.txid,
+				account:       tx.account,
+				amount:       +tx.amount.toFullString(),
+				type:          tx.type,
+				confirmations: tx.confirmations,
+				timestamp:     tx.timestamp
+			})
 			callback(null, opid)
-		} catch(err) {
+		} catch (err) {
 			if (err.code === 11000 && err.keyPattern.txid) {
 				// A transação já existe
 				const tx = await Tx.findOne({ txid })
@@ -127,7 +134,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					try {
 						/** Tenta cancelar a operação do usuário */
 						await user.balanceOps.cancel(this.name, tx._id)
-					} catch(err) {
+					} catch (err) {
 						if (err != 'OperationNotFound')
 							throw err
 					}
@@ -168,7 +175,23 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			} else {
 				console.error('Error processing new_transaction:', err)
 				callback({ code: 'InternalServerError' })
-				await user.balanceOps.cancel(this.name, opid)
+				/**
+				 * Restaura o database ao estado original
+				 * 
+				 * Não se sabe em que estágio ocorreu um erro para cair aqui,
+				 * então a operação pode ou não ter sido criada, por esse motivo
+				 * o erro de 'OperationNotFound' está sendo ignorando
+				 * 
+				 * Entretando, um outro erro é um erro de fato e deve terminar
+				 * a execução do programa para evitar potencial dano
+				 */
+				try {
+					await Tx.findByIdAndDelete(opid)
+					await user.balanceOps.cancel(this.name, opid)
+				} catch (err) {
+					if (err != 'OperationNotFound')
+						throw err
+				}
 			}
 		}
 	})
@@ -202,14 +225,14 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			await tx.validate()
 
 			if (status === 'confirmed') {
-				const user = await findUser.byId(tx.user)
+				const user = await userApi.findUser.byId(tx.user)
 				await user.balanceOps.complete(this.name, new ObjectId(opid))
 			}
 
 			await tx.save()
 			callback(null, `${txUpdate.opid} updated`)
 			this.events.emit('update_received_tx', tx.user, txUpdate)
-		} catch(err) {
+		} catch (err) {
 			if (err === 'UserNotFound') {
 				callback({ code: 'UserNotFound' })
 			} else if (err === 'OperationNotFound') {
@@ -243,7 +266,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Ouve por eventos vindos do método 'module' e os retransmite ao socket
 	 * para serem enviados ao módulo externo
 	 */
-	this._events.on('module', (event: string, ...args: any) => {
+	this._events.on('emit', (event: string, ...args: any) => {
 		console.log('event', event)
 		if (this.isOnline) {
 			socket.emit(event, ...args)

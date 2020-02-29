@@ -1,42 +1,41 @@
 {
-  "name": "client",
-  "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "axios": "^0.19.0",
-    "enzyme": "^3.10.0",
-    "enzyme-adapter-react-16": "^1.14.0",
-    "jest-enzyme": "^7.1.1",
-    "prop-types": "^15.7.2",
-    "qrcode.react": "^0.9.3",
-    "react": "^16.9.0",
-    "react-cookie": "^4.0.1",
-    "react-dom": "^16.9.0",
-    "react-loading": "^2.0.3",
-    "react-router-dom": "^5.0.1",
-    "react-scripts": "3.1.1",
-    "react-test-renderer": "^16.10.2"
-  },
+  "name": "sapper",
+  "description": "Sapper frontend",
+  "version": "0.0.1",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build && mv build ../public",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "dev": "sapper dev",
+    "build": "sapper build",
+    "export": "sapper export && move-cli __sapper__/export ../public",
+    "start": "node __sapper__/build",
+    "cy:run": "cypress run",
+    "cy:open": "cypress open",
+    "test": "run-p --race dev cy:run"
   },
-  "proxy": "http://localhost:3001",
-  "eslintConfig": {
-    "extends": "react-app"
+  "dependencies": {
+    "axios": "^0.19.2",
+    "compression": "^1.7.1",
+    "express": "^4.17.1",
+    "qrious": "^4.0.2",
+    "sirv": "^0.4.0",
+    "socket.io-client": "^2.3.0"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "devDependencies": {
+    "@babel/core": "^7.8.4",
+    "@babel/plugin-syntax-dynamic-import": "^7.0.0",
+    "@babel/plugin-transform-runtime": "^7.0.0",
+    "@babel/preset-env": "^7.8.4",
+    "@babel/runtime": "^7.8.4",
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
+    "@rollup/plugin-replace": "^2.3.1",
+    "express-http-proxy": "^1.6.0",
+    "move-cli": "^1.2.1",
+    "npm-run-all": "^4.1.5",
+    "rollup": "^1.31.1",
+    "rollup-plugin-babel": "^4.0.2",
+    "rollup-plugin-svelte": "^5.0.1",
+    "rollup-plugin-terser": "^5.2.0",
+    "sapper": "^0.27.0",
+    "svelte": "^3.18.2"
   }
 }

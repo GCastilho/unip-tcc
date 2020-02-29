@@ -4,23 +4,15 @@
         "es6": true,
         "node": true
     },
-    "extends": [
-        "eslint:recommended",
-        "plugin:react/recommended"
-    ],
+    "extends": "eslint:recommended",
     "globals": {
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly"
     },
     "parserOptions": {
-        "ecmaFeatures": {
-            "jsx": true
-        },
-        "ecmaVersion": 2018
+        "sourceType": "module",
+        "ecmaVersion": 2020
     },
-    "plugins": [
-        "react"
-    ],
     "rules": {
         "indent": [
             "error",
@@ -40,6 +32,35 @@
         ],
         "no-undef": [
             "off"
-        ]
-    }
+        ],
+        "space-before-function-paren": ["error", {
+            "anonymous": "never",
+            "named": "never",
+            "asyncArrow": "always"
+        }],
+        "space-infix-ops": "error"
+    },
+    "overrides": [{
+        "files": [ "**/*.ts" ],
+        "parser": "@typescript-eslint/parser",
+        "plugins": [
+            "@typescript-eslint"
+        ],
+        "extends": [
+            "eslint:recommended",
+            "plugin:@typescript-eslint/eslint-recommended",
+            "plugin:@typescript-eslint/recommended"
+        ],
+        "rules": {
+            "@typescript-eslint/member-delimiter-style": ["error", {
+                "multiline": {
+                    "delimiter": "none"
+                }
+            }],
+            "@typescript-eslint/explicit-function-return-type": "off",
+            "@typescript-eslint/no-explicit-any": "off",
+            "@typescript-eslint/camelcase": "off",
+            "@typescript-eslint/no-namespace": "off"
+        }
+    }]
 }

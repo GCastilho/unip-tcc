@@ -4,3 +4,5 @@ build/
 node_modules/
 public/
 cfg/**
+client/__sapper__/
+client/cypress/

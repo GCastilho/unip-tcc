@@ -1,0 +1,18 @@
+{
+	"editor.codeLens": true,
+	"editor.wordWrap": "on",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": true
+	},
+	"editor.rulers": [
+		80
+	],
+	"eslint.validate": [
+		"javascript",
+		"typescript",
+	],
+	"files.insertFinalNewline": true,
+	"git.autofetch": true,
+	"typescript.tsdk": "node_modules\\typescript\\lib",
+	"typescript.updateImportsOnFileMove.enabled": "prompt"
+}

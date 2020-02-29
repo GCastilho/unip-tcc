@@ -9,7 +9,7 @@ export function fromRawToNano(amount: string): string {
 		throw new Error('IllegalInput')
 
 	// Garante q o número tem a qtd de caracteres da qtd de casas decimais
-	const _amount = amount.padStart(30+1, '0')
+	const _amount = amount.padStart(30 + 1, '0')
 	
 	// Separa o decimal do inteiro usando o numero de casas decimais como separador
 	const inteiro = _amount.slice(0, -30)
@@ -29,6 +29,7 @@ export function fromNanoToRaw(amount: string): string {
 		throw new Error('IllegalInput')
 
 	// Separa o inteiro dos decimais
+	// eslint-disable-next-line
 	let [inteiro, casas] = amount.split('.')
 
 	// Preenche as casas restantes com zeros e remove zeros além da casa 30

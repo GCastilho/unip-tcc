@@ -1,5 +1,6 @@
 import WS from 'ws'
 import { Nano } from '../index'
+// eslint-disable-next-line
 const ReconnectingWebSocket = require('reconnecting-websocket')
 
 export function nanoWebSocket(this: Nano) {
@@ -14,7 +15,10 @@ export function nanoWebSocket(this: Nano) {
 		maxReconnectionDelay: 2000,
 		minReconnectionDelay: 10 // if not set, initial connection will take a few seconds by default
 	})
-	
+
+	/** Keep track if this is the first websocket connection */
+	let firstConnection = true
+
 	/** As soon as we connect, subscribe to block confirmations */
 	ws.onopen = () => {
 		console.log('Websocket connection open')
@@ -30,9 +34,22 @@ export function nanoWebSocket(this: Nano) {
 			}
 		}))
 	}
-	
-	/** Keep track if the is the first websocket connection */
-	let firstConnection = true
+
+	/**
+	 * The node sent us a message
+	 * 
+	 * @todo Tratar os dados e enviar para o servidor e banco de dados
+	 */
+	ws.onmessage = async msg => {
+		const data: Nano.WebSocket = JSON.parse(msg.data)
+		if (data.message.block.subtype != 'receive') return
+
+		try {
+			this.processTransaction(data)
+		} catch (err) {
+			console.error('Error while processing socket message', err)
+		}
+	}
 
 	ws.onerror = (event: any) => {
 		if (event.error.code === 'ECONNREFUSED' ||
@@ -51,22 +68,6 @@ export function nanoWebSocket(this: Nano) {
 			}
 		} else {
 			console.error('WebSocket error observed:', event)
-		}
-	}
-	
-	/**
-	 * The node sent us a message
-	 * 
-	 * @todo Tratar os dados e enviar para o servidor e banco de dados
-	 */
-	ws.onmessage = async msg => {
-		const data: Nano.WebSocket = JSON.parse(msg.data)
-		if (data.message.block.subtype != 'receive') return
-
-		try {
-			this.processTransaction(data)
-		} catch (err) {
-			console.error('Error while processing socket message', err)
 		}
 	}
 }

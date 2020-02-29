@@ -32,6 +32,7 @@ declare module 'mongodb' {
  * Converte um decimal128 para string expandindo a exponenciação, caso tenha
  */
 Decimal128.prototype.toFullString = function decimal128ToString() {
+	// eslint-disable-next-line
 	let [base, expoente] = this.toString().toLowerCase().split('e')
 	if (!expoente) expoente = '0'
 
@@ -43,7 +44,7 @@ Decimal128.prototype.toFullString = function decimal128ToString() {
 	// Expande a exponenciação
 	if (+expoente > 0) {
 		// Garante a quantidade mínima de casas do expoente
-		casas = casas.padEnd(+expoente+1, '0')
+		casas = casas.padEnd(+expoente + 1, '0')
 
 		// Separa 'casas' no expoente; _a é antes, _b é depois
 		const _a = casas.slice(0, +expoente)
@@ -54,10 +55,10 @@ Decimal128.prototype.toFullString = function decimal128ToString() {
 		// Garante a quantidade mínima de casas do expoente
 		if (inteiro.charAt(0) === '-') {
 			inteiro = inteiro.slice(1)
-			inteiro = inteiro.padStart(-1*+expoente+1, '0')
+			inteiro = inteiro.padStart(-1 * +expoente + 1, '0')
 			inteiro = '-'.concat(inteiro)
 		} else {
-			inteiro = inteiro.padStart(-1*+expoente+1, '0')
+			inteiro = inteiro.padStart(-1 * +expoente + 1, '0')
 		}
 
 		// Separa o inteiro no expoente
@@ -104,9 +105,10 @@ Decimal128.fromNumeric = function toDecimal128(value, decimals = 0) {
 	let _value = value.toString()
 	// Corta as casas que vão alem da quantidade de decimais estabelecidos
 	if (decimals) {
+		// eslint-disable-next-line
 		let [inteiro, casas] = _value.split('.')
 		casas = casas?.slice(0, decimals)
-		_value = inteiro.concat('.').concat(casas || '')
+		_value = casas ? inteiro.concat('.').concat(casas || '') : inteiro
 	}
 	return Decimal128.fromString(_value)
 }

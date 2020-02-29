@@ -85,7 +85,10 @@ export function processBlock(this: Bitcoin) {
 		 * 'node_disconnected' de acordo com a resposta recebida, que é o motivo
 		 * dessa function call estar aqui
 		 */
-		this.rpc.getRpcInfo().catch(() => {})
+		this.rpc.getRpcInfo().catch(err => {
+			if (err !== 'ECONNREFUSED')
+				console.error('Error sendig ping to bitcoin', err)
+		})
 
 		/**
 		 * @todo O handler de DocumentNotFoundError está aí porque ao receber

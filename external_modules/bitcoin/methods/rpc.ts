@@ -22,14 +22,6 @@ const client = new Client({
 })
 
 /**
- * Executa um 'ping' para saber se o bitcoin está online e
- * dar trigger no 'rpc_success' ao iniciar o script
- */
-setTimeout(() => {
-	getRpcInfo().catch(() => {})
-}, 5000)
-
-/**
  * Wrapper de request de comandos rpc da bitcoin, emite um evento 'rpc_success'
  * no rpcEvents ao executar um comando bem sucedido e 'rpc_refused' caso o
  * request retorne 'ECONNREFUSED'
@@ -101,9 +93,20 @@ export async function send(pSend: PSent): Promise<UpdtSent> {
 		txid,
 		status: 'pending',
 		confirmations: 0,
-		timestamp: tInfo.time*1000 // O timestamp do bitcoin é em segundos
+		timestamp: tInfo.time * 1000 // O timestamp do bitcoin é em segundos
 	}
 	console.log('sent new transaction', transaction)
 
 	return transaction
 }
+
+/**
+ * Executa um 'ping' para saber se o bitcoin está online e
+ * dar trigger no 'rpc_success' ao iniciar o script
+ */
+setTimeout(() => {
+	getRpcInfo().catch(err => {
+		if (err !== 'ECONNREFUSED')
+			console.error('Error sendig ping to bitcoin', err)
+	})
+}, 5000)

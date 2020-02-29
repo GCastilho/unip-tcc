@@ -1,36 +1,45 @@
-/*
- * Classe abstrata dos módulos comuns de todas as currencyModules
- */
-
-import * as methods from './methods'
 import { EventEmitter } from 'events'
+import Checklist from '../../../db/models/checklist'
+import * as methods from './methods'
+import type TypedEmitter from 'typed-emitter'
+import type { TxInfo, UpdtReceived, UpdtSent } from '../../../db/models/transaction'
+import type User from '../../../userApi/user'
 
 /**
- * EventEmmiter genérico
+ * Interface para padronizar os eventos públicos
  */
-class Events extends EventEmitter {}
+interface PublicEvents {
+	new_transaction: (id: User['id'], transaction: TxInfo) => void
+	update_received_tx: (id: User['id'], txUpdate: UpdtReceived) => void
+	update_sent_tx: (id: User['id'], txUpdate: UpdtSent) => void
+}
 
+/**
+ * Classe abstrata dos módulos comuns de todas as currencyModules
+ */
 export default abstract class Common {
 	/** O nome da currency que esta classe se comunica */
-	abstract name: 'bitcoin'|'nano'
+	abstract name: 'bitcoin' | 'nano'
 
 	/** O código da currency */
 	abstract code: string
 
 	/** A quantidade de casas decimais que esta currency tem */
-	public decimals: number = 8
+	public decimals = 8
 
 	/** A quantidade de casas decimais desta currency que o sistema opera */
-	public supportedDecimals: number = 8
+	public supportedDecimals = 8
 
 	/** EventEmmiter para eventos internos */
-	protected _events = new Events()
+	protected _events = new EventEmitter()
 
 	/** Indica se o módulo externo está online ou não */
-	protected isOnline: boolean = false
+	protected isOnline = false
 
-	/** Limpa os itens com todos os comandos completos da checklist */
-	protected garbage_collector: (command: string) => Promise<void>
+	/** Limpa os comandos com status 'completed' da checklist */
+	protected checklistCleaner = async (): Promise<void> => {
+		await Checklist.deleteMany({ status: 'completed' })
+	}
 
 	/**
 	 * Wrapper de comunicação com o socket do módulo externo
@@ -40,10 +49,10 @@ export default abstract class Common {
 	 * 
 	 * @throws SocketDisconnected if socket is disconnected
 	 */
-	protected module(event: string, ...args: any): Promise<any> {
+	protected emit(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {
-			if (!this.isOnline) reject('Module is offline')
-			this._events.emit('module', event, ...args, ((error, response) => {
+			if (!this.isOnline) reject('SocketDisconnected')
+			this._events.emit('emit', event, ...args, ((error, response) => {
 				if (error)
 					reject(error)
 				else
@@ -53,7 +62,7 @@ export default abstract class Common {
 	}
 
 	/** EventEmmiter para eventos públicos */
-	public events = new Events()
+	public events = new EventEmitter() as TypedEmitter<PublicEvents>
 
 	/** Handler da conexão com o módulo externo */
 	public connection = methods.connection
@@ -66,7 +75,11 @@ export default abstract class Common {
 
 	constructor() {
 		this.create_account = methods.create_account.bind(this)()
-		this.garbage_collector = methods.garbage_collector.bind(this)()
 		this.withdraw = methods.withdraw.bind(this)()
+
+		this._events.on('connected', () => {
+			this.create_account()
+			this.withdraw()
+		})
 	}
 }

@@ -6,7 +6,7 @@ const Router = require('express').Router()
 const bodyParser = require('body-parser')
 const randomstring = require('randomstring')
 
-const Cookie = require('../db/models/cookie')
+import Session from '../db/models/session'
 const userApi = require('../userApi')
 
 /**
@@ -24,26 +24,26 @@ Router.post('/', function(req, res) {
 	).then(user => {
 		user.checkPassword(req.body.password)
 
-		return Cookie.findOneAndUpdate({
+		return Session.findOneAndUpdate({
 			userId: user.id
 		}, {
-			sessionID: randomstring.generate(128),
+			sessionId: randomstring.generate(128),
+			token: randomstring.generate(128),
 			date: new Date()
 		}, {
 			new: true,
 			upsert: true,
 			useFindAndModify: false
 		})
-	}).then(cookie => {
+	}).then(session => {
 		/**
-		 * Se a autenticação, a criação e o salvamento do cookie foram bem
-		 * sucedidas, redireciona o usuário para a home com o
-		 * cookie de autenticação
+		 * Se a autenticação, a criação e o salvamento da sessão forem bem
+		 * sucedidas, seta o cookie no header e retorna o token
 		 * 
 		 * @todo cookie ter tempo de expiração
 		 */
-		res.cookie('sessionID', cookie.sessionID)
-		res.redirect(303, '/')
+		res.cookie('sessionId', session.sessionId, { httpOnly: true })
+		res.send({ token: session.token })
 	}).catch(err => {
 		if (err === 'UserNotFound' || err === 'InvalidPassword') {
 			/**

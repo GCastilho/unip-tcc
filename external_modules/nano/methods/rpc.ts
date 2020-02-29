@@ -62,7 +62,7 @@ export function nanoRpc(this: Nano) {
 			destination: account,
 			amount: fromNanoToRaw(amount)
 		}).catch(err => {
-			if (err.code = 'ECONNREFUSED') {
+			if (err.code === 'ECONNREFUSED') {
 				err.code = 'NotSent'
 				err.message = 'Connection refused on nano node'
 			}

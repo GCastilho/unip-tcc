@@ -10,68 +10,6 @@ import { ReceivedPending, PReceived, PSent, SendPending } from '../db/models/pen
  */
 export function informMain(this: Common) {
 	/**
-	 * Atualzia o main server de todas as transações nas collections de
-	 * transações pendentes
-	 */
-	this._events.on('connected', () => {
-		const operations = [ _updateAllReceived, _updateAllsended ]
-		const promises = operations.map(op => op())
-		Promise.all(promises).catch(err => {
-			console.error('Error on informMain:', err)
-		})
-	})
-
-	/**
-	 * Atualiza o servidor de todas das transações pendentes salvas na
-	 * collection de ReceivedPending
-	 */
-	const _updateAllReceived = async () => {
-		const transactions = ReceivedPending.find().cursor()
-
-		let doc: PReceived
-		while ( doc = await transactions.next() ) {
-			if (doc.transaction.opid) {
-				const txUpdate: UpdtReceived = {
-					opid:          doc.transaction.opid,
-					status:        doc.transaction.status,
-					confirmations: doc.transaction.confirmations
-				}
-				await updateReceivedTx(txUpdate)
-			} else {
-				const opid = await newTransaction(doc.transaction)
-				if (!opid) continue
-				/** Atualiza o opid da transação pendente */
-				await ReceivedPending.updateOne({
-					txid: doc.transaction.txid
-				}, {
-					$set: {
-						'transaction.opid': opid
-					}
-				})
-			}
-		}
-	}
-
-	/**
-	 * Atualiza o servidor de todas das transações pendentes ENVIADAS salvas na
-	 * collection de SendPending
-	 */
-	const _updateAllsended = async () => {
-		const transactions = SendPending.find({
-			'transaction.txid': { $exists: true }
-		}).cursor()
-
-		let doc: PSent
-		while( doc = await transactions.next() ) {
-			const { txid, status, timestamp, opid } = doc.transaction
-			/** Checa se a transação foi enviada e salva sem erros */
-			if (!txid || !status || !timestamp) continue
-			const txUpdate: UpdtSent = { opid, txid, status, timestamp }
-			await updateWithdraw(txUpdate)
-		}
-	}
-
-	/**
 	 * Envia uma transação ao servidor principal e atualiza o opid dela no
 	 * database
 	 * 
@@ -179,6 +117,68 @@ export function informMain(this: Common) {
 				throw err
 		}
 	}
+
+	/**
+	 * Atualiza o servidor de todas das transações pendentes salvas na
+	 * collection de ReceivedPending
+	 */
+	const _updateAllReceived = async () => {
+		const transactions = ReceivedPending.find().cursor()
+
+		let doc: PReceived
+		while ((doc = await transactions.next())) {
+			if (doc.transaction.opid) {
+				const txUpdate: UpdtReceived = {
+					opid:          doc.transaction.opid,
+					status:        doc.transaction.status,
+					confirmations: doc.transaction.confirmations
+				}
+				await updateReceivedTx(txUpdate)
+			} else {
+				const opid = await newTransaction(doc.transaction)
+				if (!opid) continue
+				/** Atualiza o opid da transação pendente */
+				await ReceivedPending.updateOne({
+					txid: doc.transaction.txid
+				}, {
+					$set: {
+						'transaction.opid': opid
+					}
+				})
+			}
+		}
+	}
+
+	/**
+	 * Atualiza o servidor de todas das transações pendentes ENVIADAS salvas na
+	 * collection de SendPending
+	 */
+	const _updateAllsended = async () => {
+		const transactions = SendPending.find({
+			'transaction.txid': { $exists: true }
+		}).cursor()
+
+		let doc: PSent
+		while((doc = await transactions.next())) {
+			const { txid, status, timestamp, opid } = doc.transaction
+			/** Checa se a transação foi enviada e salva sem erros */
+			if (!txid || !status || !timestamp) continue
+			const txUpdate: UpdtSent = { opid, txid, status, timestamp }
+			await updateWithdraw(txUpdate)
+		}
+	}
+
+	/**
+	 * Atualzia o main server de todas as transações nas collections de
+	 * transações pendentes
+	 */
+	this._events.on('connected', () => {
+		const operations = [ _updateAllReceived, _updateAllsended ]
+		const promises = operations.map(op => op())
+		Promise.all(promises).catch(err => {
+			console.error('Error on informMain:', err)
+		})
+	})
 
 	return {
 		newTransaction,
