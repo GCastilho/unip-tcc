@@ -4,15 +4,14 @@ import Session from '../db/models/session'
 import PersonModel from '../db/models/person'
 import * as CurrencyApi from '../currencyApi'
 import User, { hashPassword } from './user'
-import type { Person } from '../db/models/person'
 
 /**
  * Cria um novo usuário no database com as credenciais informadas
  * 
  * @throws ValidationError from mongoose.Error if document validation fails
- * @returns The newly created document
+ * @returns The User class instance of the new User
  */
-export async function createUser(email: string, password: string): Promise<Person> {
+export async function createUser(email: string, password: string): Promise<User> {
 	const salt = randomstring.generate({ length: 32 })
 	const password_hash = hashPassword(salt, password)
 
@@ -30,7 +29,7 @@ export async function createUser(email: string, password: string): Promise<Perso
 	 */
 	CurrencyApi.create_accounts(person._id)
 
-	return person
+	return new User(person)
 }
 
 /**

@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document } from 'mongoose'
 import { ObjectId, Decimal128 } from 'mongodb'
+import mongoose, { Schema, Document } from '../mongoose'
 import type { Person } from './person'
 import type { SuportedCurrencies } from '../../currencyApi'
 
