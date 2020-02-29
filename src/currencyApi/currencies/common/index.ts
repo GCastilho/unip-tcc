@@ -51,13 +51,16 @@ export default abstract class Common {
 	 */
 	protected emit(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {
-			if (!this.isOnline) reject('SocketDisconnected')
+			let gotResponse = false
+			if (!this.isOnline) return reject('SocketDisconnected')
 			this._events.emit('emit', event, ...args, ((error, response) => {
-				if (error)
-					reject(error)
-				else
-					resolve(response)
+				gotResponse = true
+				if (error) return reject(error)
+				resolve(response)
 			}))
+			setTimeout(() => {
+				if (!gotResponse) reject('RequestTimeout')
+			}, 1000)
 		})
 	}
 

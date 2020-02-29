@@ -155,7 +155,7 @@ export async function withdraw(
 }
 
 // Inicia o listener da currencyApi
-const port = 8085
+const port = process.env.CURRENCY_API_PORT || 8085
 const io = socketIO(port)
 console.log('CurrencyApi listener is up on port', port)
 

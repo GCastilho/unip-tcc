@@ -1,5 +1,4 @@
 import '../src/libs'
-import '../src/db/mongoose'
 import request from 'supertest'
 import { expect } from 'chai'
 import cookieparser from 'cookieparser'
@@ -10,13 +9,13 @@ import * as CurrencyApi from '../src/currencyApi'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const app = require('../src/server')
 
-before(async () => {
-	await Person.deleteMany({})
-	await Checklist.deleteMany({})
-	await Session.deleteMany({})
-})
+describe('User register and login tests', () => {
+	before(async () => {
+		await Person.deleteMany({})
+		await Checklist.deleteMany({})
+		await Session.deleteMany({})
+	})
 
-describe('User register and login tests', function() {
 	const user = {
 		email: 'cadastro_login@example.com',
 		password: 'userP@ss'
