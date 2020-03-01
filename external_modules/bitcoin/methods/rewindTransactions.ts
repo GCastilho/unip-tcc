@@ -1,8 +1,34 @@
-
-import {Bitcoin} from '../index';
+import {Bitcoin} from '../index'
 import meta from '../../common/db/models/meta'
+import {ObjectId} from 'mongodb'	
+import Account from '../../common/db/models/account'	
+import Transaction from '../../common/db/models/transaction'	
+import {ReceivedPending} from '../../common/db/models/pendingTx'
+import {TxReceived} from '../../common'
 
-export async function rewindTransactions(this: Bitcoin,newBlockhash : string) {
+async function formatTransaction(txInfo: any): Promise<TxReceived|void> {
+	if(txInfo.category != 'receive') return
+	
+	const address: TxReceived['account'] = txInfo.address
+	
+	/** Verifica se a transação é nossa */
+	const account = await Account.findOne({ account: address })
+	if (!account) return
+
+	const formattedTransaction: TxReceived = {
+		txid:          txInfo.txid,
+		status:        'pending',
+		confirmations: txInfo.confirmations,
+		account:       address,
+		amount:        txInfo.amount,
+		timestamp:     txInfo.time * 1000 // O timestamp do bitcoin é em segundos
+	}
+
+	return formattedTransaction
+}
+
+
+export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
 
 	let blockhash = (await meta.findOne({info: 'lastSyncBlock'}))?.details
 
@@ -11,24 +37,67 @@ export async function rewindTransactions(this: Bitcoin,newBlockhash : string) {
 		if (!blockhash)
 			return
 		
-		meta.updateOne({
+		await meta.updateOne({
 			info: 'lastSyncBlock',
-			details: blockhash
-		}, {}, {
+		}, {details: blockhash}, {
 			upsert: true
-		}).exec()
+		})
 	}
-	console.log(blockhash);
-	const {transactions}: any = await this.rpc.listSinceBlock(blockhash);
+	console.log(blockhash)
+	const {transactions}: any = await this.rpc.listSinceBlock(blockhash)
 	
+
 	transactions.forEach(async transaction => {
-		await this.processTransaction(transaction.txid);
-	});
-	meta.updateOne({
-		info: 'lastSyncBlock',
+		try {
+			transaction = await formatTransaction(transaction)
+			console.log(transaction)
+			if (!transaction) return
+			console.log('received transaction', transaction) //remove
+	
+			/** Salva a nova transação no database */
+			await new Transaction({
+				txid : transaction.txid,
+				type: 'receive',
+				account: transaction.account
+			}).save()
+	
+			/** Salva a nova transação na collection de Tx pendente */
+			await new ReceivedPending({
+				txid: transaction.txid,
+				transaction
+			}).save()
+	
+			/**
+			 * opid vai ser undefined caso a transação não tenha sido enviada ao
+			 * main, nesse caso não há mais nada o que fazer aqui
+			 */
+			const opid = await this.informMain.newTransaction(transaction)
+			if (!opid) return
+			
+			await ReceivedPending.updateOne({
+				txid : transaction.txid
+			}, {
+				$set: {
+					'transaction.opid': new ObjectId(opid)
+				}
+			})
+		} catch (err) {
+			/**
+			 * O evento de transação recebida acontece quando a transação é
+			 * recebida e quando ela recebe a primeira confimação, o que causa um
+			 * erro 11000
+			 */
+			if (err.code != 11000)
+				console.error('Transaction processing error:', err)
+		}
+	})
+	await meta.updateOne({info: 'lastSyncBlock',
+	}, {
 		details: newBlockhash
-	}, {}, {
+	}, {
 		upsert: true
-	}).exec()
+	})
 
 }
+
+

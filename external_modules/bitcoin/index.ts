@@ -2,6 +2,7 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import Common from '../common'
 import * as methods from './methods'
+import axios from 'axios'
 
 const MAIN_SERVER_IP = process.env.MAIN_SERVER_IP || 'localhost'
 const MAIN_SERVER_PORT = parseInt(process.env.MAIN_SERVER_PORT || '8085')
@@ -40,12 +41,16 @@ export class Bitcoin extends Common {
 			this.processBlock(req.body.block)
 			res.send() // Finaliza a comunicação com o curl do BTC
 		})
-		require('axios').get('https://api.blockcypher.com/v1/btc/test3').then(blockInfo => {
+		axios.get('https://api.blockcypher.com/v1/btc/test3').then(blockInfo => {
 			this.blockHeight = (blockInfo.data.height)
-			console.log({'current block height': this.blockHeight})
+			console.log('current block height :' + this.blockHeight)
+		
 			app.listen(this.port, () => {
-			console.log('Bitcoin blockchain listener is up on port', this.port)
+				console.log('Bitcoin blockchain listener is up on port', this.port)
 			})
+		}).catch(err => {
+			console.error('Error', err)
+			process.exit(1)
 		})
 		
 	}
