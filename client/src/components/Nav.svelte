@@ -55,6 +55,10 @@
 		padding: 1em 0.5em;
 		display: block;
 	}
+    img{
+        height:30px;
+        width:30px;
+    }
 </style>
 
 <nav>
@@ -64,6 +68,7 @@
 
 		<div style="float:right">
 			{#if $auth}
+                <li><a class:selected={segment === 'user'} href="user"><img alt="User" src="./user-icon.png" /></a></li>
 				<li><a class:selected='{segment === "balances"}' href="balances">balances</a></li>
 				<li><a on:click={auth.deauthenticate} href="/">logout</a></li>
 			{:else}
