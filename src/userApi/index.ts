@@ -27,7 +27,7 @@ export async function createUser(email: string, password: string): Promise<User>
 	 * @todo Criar as accounts quando o e-mail for confirmado, não ao
 	 * criar o usuário
 	 */
-	CurrencyApi.create_accounts(person._id)
+	await CurrencyApi.create_accounts(person._id)
 
 	return new User(person)
 }

@@ -28,7 +28,7 @@ export default abstract class Common {
 	public decimals = 8
 
 	/** A quantidade de casas decimais desta currency que o sistema opera */
-	public supportedDecimals = 8
+	public supportedDecimals = Math.min(this.decimals, 8)
 
 	/** EventEmmiter para eventos internos */
 	protected _events = new EventEmitter()

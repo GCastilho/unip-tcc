@@ -9,14 +9,14 @@ import * as UserApi from '../../src/userApi'
 import type User from '../../src/userApi/user'
 import type { TxSend } from '../../src/db/models/transaction'
 
-describe('Testing if CurrencyApi is making requests to the websocket', function() {
+describe('Testing if CurrencyApi is making requests to the websocket', () => {
 	let user: User
 
 	before(async () => {
 		await Person.deleteMany({})
 		await Checklist.deleteMany({})
 	
-		user = await UserApi.createUser('message_test@example.com', 'userP@ss')
+		user = await UserApi.createUser('sending_request@example.com', 'userP@ss')
 	
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of CurrencyApi.currencies) {
@@ -25,19 +25,23 @@ describe('Testing if CurrencyApi is making requests to the websocket', function(
 		await user.person.save()
 	})
 
+	afterEach(done => {
+		// Garante que a CurrencyApi terminou de processar o request
+		setTimeout(done, 50)
+	})
+
 	const url = `http://127.0.0.1:${process.env.CURRENCY_API_PORT}`
-	describe('Once the socket connects', async function() {
+	describe('Once the socket connects', () => {
 		for (const currency of CurrencyApi.currencies) {
 			describe(currency, () => {
 				let client: SocketIOClient.Socket
 
-				beforeEach(async () => {
+				before(async () => {
 					await Checklist.deleteMany({})
 				})
 
-				afterEach(done => {
+				afterEach(() => {
 					client.disconnect()
-					setTimeout(done, 1000)
 				})
 
 				it('Sould receive a create_account request', done => {

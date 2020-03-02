@@ -36,10 +36,12 @@ export const currencies = Object.values(_currencies).map(currency => currency.na
  * suportadas pela api
  * 
  * O objeto contém as propriedades 'name', 'code' e 'decimals'
+ * 
+ * @todo Isso não ser um array
  */
 export const currenciesDetailed = Object.values(_currencies).map(currency => {
-	const { name, code, decimals, supportedDecimals } = currency
-	return { name, code, decimals: Math.min(decimals, supportedDecimals) }
+	const { name, code, supportedDecimals } = currency
+	return { name, code, decimals: supportedDecimals }
 })
 
 /** EventEmmiter para eventos internos */
@@ -58,7 +60,7 @@ export const events = new EventEmitter() as TypedEmitter<PublicEvents>
  */
 export async function create_accounts(
 	userId: Person['_id'],
-	currenciesToCreate: string[] = currencies
+	currenciesToCreate: SuportedCurrencies[] = currencies
 ): Promise<void> {
 	const itemsToSave = currenciesToCreate.map(currency => {
 		return new Checklist({
@@ -77,7 +79,12 @@ export async function create_accounts(
 	/**
 	 * Chama create_account de cada currency que precisa ser criada uma account
 	 */
-	currenciesToCreate.forEach(currency => _currencies[currency].create_account())
+	const createAccounts = currenciesToCreate.map(currency => _currencies[currency].create_account())
+
+	/** Se múltiplas forem rejeitadas só irá mostrar o valor da primeira */
+	Promise.all(createAccounts).catch(err => {
+		console.error('Error running create_account', err)
+	})
 }
 
 /**

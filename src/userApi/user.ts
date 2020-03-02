@@ -139,7 +139,7 @@ export default class User {
 			const pending: Pending = {
 				opid: op.opid,
 				type: op.type,
-				amount: Decimal128.fromNumeric(op.amount, decimals.get(currency) || 8)
+				amount: Decimal128.fromNumeric(op.amount, decimals.get(currency))
 			}
 
 			const response = await this.person.collection.findOneAndUpdate({

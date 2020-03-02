@@ -1,6 +1,6 @@
 import socketIO from 'socket.io'
 import ss = require('socket.io-stream')
-import { ObjectId } from 'mongodb'
+import { ObjectId, Decimal128 } from 'mongodb'
 import Common from '../index'
 import Person from '../../../../db/models/person'
 import * as userApi from '../../../../userApi'
@@ -21,6 +21,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	socket.on('disconnect', () => {
 		console.log(`Disconnected from the '${this.name}' module`)
 		this.isOnline = false
+		this._events.removeAllListeners('emit')
 		this._events.emit('disconnected')
 	})
 
@@ -47,11 +48,21 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Processa novas transações desta currency, atualizando o balanço do
 	 * usuário e emitindo um evento de 'new_transaction' no EventEmitter público
 	 */
-	socket.on('new_transaction', async (transaction: TxReceived, callback: Function) => {
+	socket.on('new_transaction', async (transaction: TxReceived, callback: (err: any, opid?: string) => void) => {
 		console.log('received new transaction', transaction)
 
 		const { txid, account, amount, status, confirmations } = transaction
 		const timestamp = new Date(transaction.timestamp)
+
+		if (Number.isNaN(+amount)) return callback({
+			code: 'BadRequest',
+			message: 'Amount is not numeric'
+		})
+
+		if (+amount < 0) return callback({
+			code: 'BadRequest',
+			message: 'Amount can not be a negative number'
+		})
 
 		let user: User
 		try {
@@ -83,7 +94,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				status: 'processing',
 				confirmations,
 				account,
-				amount,
+				amount: Decimal128.fromNumeric(amount, this.supportedDecimals),
 				timestamp
 			}).save()
 
@@ -114,7 +125,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				confirmations: tx.confirmations,
 				timestamp:     tx.timestamp
 			})
-			callback(null, opid)
+			callback(null, opid.toHexString())
 		} catch (err) {
 			if (err.code === 11000 && err.keyPattern.txid) {
 				// A transação já existe

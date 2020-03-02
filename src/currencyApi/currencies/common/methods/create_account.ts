@@ -23,7 +23,7 @@ export function create_account(this: Common) {
 				command: 'create_account',
 				status: 'requested',
 			}).cursor()
-	
+
 			let item: Ck
 			while (this.isOnline && (item = await checklist.next())) {
 				const account: string = await this.emit('create_new_account')
