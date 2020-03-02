@@ -54,7 +54,7 @@
 		background-color: #F0AE98;
 	}
 
-	.withdraw-input {
+	form > div {
 		border: 1px solid var(--table-borders);
 		border-radius: 10px;
 		padding: 20px;
@@ -62,7 +62,7 @@
 		background-color: white;
 	}
 
-	.withdraw-input > div {
+	.withdraw-info {
 		display: flex;
 		flex-direction: row;
 		justify-content: flex-end;
@@ -89,12 +89,12 @@
 
 <form on:submit|preventDefault={handleWithdraw}>
 	<h4>Withdraw {name.toUpperCase()}</h4>
-	<div class="withdraw-input">
-		<div>
+	<div>
+		<div class="withdraw-info">
 			<label for="destination">Destination:</label>
 			<input type="text" id="destination" required>
 		</div>
-		<div>
+		<div class="withdraw-info">
 			<label for="amount">Amount:</label>
 			<input
 				type="number" id="amount" step="0.00000001" required
