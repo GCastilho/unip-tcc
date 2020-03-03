@@ -1,21 +1,15 @@
 import '../../src/libs'
 import io from 'socket.io-client'
 import { expect } from 'chai'
-import { Decimal128 } from 'mongodb'
+import { callbackify } from 'util'
+import { Decimal128, ObjectId } from 'mongodb'
 import Person from '../../src/db/models/person'
 import Checklist from '../../src/db/models/checklist'
-import Transaction from '../../src/db/models/transaction'
+import Transaction, { TxSend, UpdtSent } from '../../src/db/models/transaction'
 import * as CurrencyApi from '../../src/currencyApi'
 import * as UserApi from '../../src/userApi'
 import type User from '../../src/userApi/user'
-import type { TxReceived } from '../../src/db/models/transaction'
-
-/**
- * Testar os eventos new_transaction, update_received_tx, update_sent_tx
- * Testar se eles estão atualizando corretamente o db
- * Testar se eles estão sendo corretamente emitidos pelo EE público
- * Testar correção de erros (forçar erros ocorrerem)
- */
+import type { TxReceived, UpdtReceived } from '../../src/db/models/transaction'
 
 describe('Testing the receival of events on the CurrencyApi', () => {
 	let user: User
@@ -222,8 +216,6 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					})
 				})
 
-				it('Should clean the database in case of error') // Forçar erros (usar describe?)
-
 				describe('And sending invalid data', () => {
 					const transaction: TxReceived = {
 						txid: 'randomTxidValidationError',
@@ -314,6 +306,509 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						client.emit('new_transaction', invalidTimestamp, (err: any, opid?: string) => {
 							expect(err.code).to.equals('ValidationError')
 							expect(opid).to.be.undefined
+							done()
+						})
+					})
+				})
+			})
+
+			describe('When receiving update_received_tx', () => {
+				let opid: string
+
+				beforeEach(done => {
+					Transaction.deleteMany({}).then(() => {
+						return Person.findByIdAndUpdate(user.id, {
+							$set: {
+								[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(0),
+								[`currencies.${currency}.balance.locked`]: Decimal128.fromNumeric(0)
+							}
+						})
+					}).then(() => {
+						const transaction: TxReceived = {
+							txid: 'randomTxidToUpdate',
+							status: 'pending',
+							amount: 10,
+							account: `${currency}-account`,
+							timestamp: 123456789
+						}
+						client.emit('new_transaction', transaction, (err: any, _opid?: string) => {
+							expect(err).to.be.null
+							expect(_opid).to.be.a('string')
+							opid = _opid
+							setTimeout(done, 50)
+						})
+					})
+				})
+
+				it('Sould update a pending transaction', done => {
+					const updReceived: UpdtReceived = {
+						opid,
+						status: 'pending',
+						confirmations: 6
+					}
+
+					client.emit('update_received_tx', updReceived, (err: any, res?: string) => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals(updReceived.status)
+							expect(doc.confirmations).to.equals(updReceived.confirmations)
+							done()
+						})
+					})
+				})
+
+				it('Should update a confirmed transaction', done => {
+					const updReceived: UpdtReceived = {
+						opid,
+						status: 'confirmed',
+						confirmations: 6
+					}
+
+					client.emit('update_received_tx', updReceived, (err: any, res?: string) => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals(updReceived.status)
+							expect(doc.confirmations).to.be.undefined
+							done()
+						})
+					})
+				})
+
+				it('Sould return UserNotFound if a user for existing transaction was not found', done => {
+					// Responde o evento para evitar timeout
+					client.once('create_new_account', (callback: (err: any, account: string) => void) => {
+						callback(null, `account-${currency}-newUser`)
+					})
+
+					callbackify(UserApi.createUser)('randomEmail@email.com', 'UserP@ass', (err, newUser) => {
+						expect(err).to.be.null
+						expect(newUser).to.be.an('object')
+						Person.findByIdAndUpdate(newUser.id, {
+							$push: {
+								[`currencies.${currency}.accounts`]: `${currency}-account-newUser`
+							}
+						}, () => {
+							client.emit('new_transaction', {
+								txid: 'randomTxidOfNewUser',
+								status: 'pending',
+								amount: 10,
+								account: `${currency}-account-newUser`,
+								timestamp: 123456789
+							}, (err: any, opid?: string) => {
+								expect(err).to.be.null
+								expect(opid).to.be.a('string')
+								Person.findByIdAndDelete(newUser.id, () => {
+									client.emit('update_received_tx', {
+										opid,
+										status: 'confirmed',
+										confirmations: 6
+									}, (err: any, res?: string) => {
+										expect(res).to.be.undefined
+										expect(err).to.be.an('object')
+										expect(err.code).to.equals('UserNotFound')
+										expect(err.message).to.be.a('string')
+										done()
+									})
+								})
+							})
+						})
+					})
+				})
+
+				it('Sould not update balance if status is pending', done => {
+					const updReceived: UpdtReceived = {
+						opid,
+						status: 'pending',
+						confirmations: 6
+					}
+
+					client.emit('update_received_tx', updReceived, (err: any, res?: string) => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						Person.findById(user.id, (err, doc) => {
+							expect(doc.currencies[currency].balance.locked.toFullString())
+								.to.equals('10.0')
+							expect(doc.currencies[currency].balance.available.toFullString())
+								.to.equals('0.0')
+							done()
+						})
+					})
+				})
+
+				it('Should update balance if status is confirmed', done => {
+					const updReceived: UpdtReceived = {
+						opid,
+						status: 'confirmed',
+						confirmations: 6
+					}
+
+					client.emit('update_received_tx', updReceived, (err: any, res?: string) => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						Person.findById(user.id, (err, doc) => {
+							expect(doc.currencies[currency].balance.locked.toFullString())
+								.to.equals('0.0')
+							expect(doc.currencies[currency].balance.available.toFullString())
+								.to.equals('10.0')
+							done()
+						})
+					})
+				})
+
+				it('Should not fail if confirmations was not informed', done => {
+					const updReceived: UpdtReceived = {
+						opid,
+						status: 'confirmed'
+					}
+
+					client.emit('update_received_tx', updReceived, (err: any, res?: string) => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals(updReceived.status)
+							expect(doc.confirmations).to.be.undefined
+							done()
+						})
+					})
+				})
+
+				it('Should fail if opid was not informed', done => {
+					client.emit('update_received_tx', {
+						status: 'confirmed',
+						confirmations: 6
+					}, (err: any, res?: string) => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('BadRequest')
+						expect(err.message).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals('pending')
+							done()
+						})
+					})
+				})
+
+				it('Should fail if a valid opid was not found', done => {
+					client.emit('update_received_tx', {
+						opid: '505618b81ce5e89fb0d1b05c',
+						status: 'confirmed',
+						confirmations: 6
+					}, (err: any, res?: string) => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('OperationNotFound')
+						expect(err.message).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals('pending')
+							done()
+						})
+					})
+				})
+
+				it('Should fail if invalid opid was informed', done => {
+					client.emit('update_received_tx', {
+						opid: 'invalid-opid-string',
+						status: 'confirmed',
+						confirmations: 6
+					}, (err: any, res?: string) => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('CastError')
+						expect(err.message).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals('pending')
+							done()
+						})
+					})
+				})
+
+				it('Should fail if status is invalid', done => {
+					client.emit('update_received_tx', {
+						opid,
+						status: 'invalid-status',
+						confirmations: 6
+					}, (err: any, res?: string) => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('ValidationError')
+						expect(err.message).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals('pending')
+							done()
+						})
+					})
+				})
+			})
+
+			describe('When receiving update_sent_tx', () => {
+				let opid: string
+
+				beforeEach(done => {
+					Transaction.deleteMany({}).then(() => {
+						return Person.findByIdAndUpdate(user.id, {
+							$set: {
+								[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(50),
+								[`currencies.${currency}.balance.locked`]: Decimal128.fromNumeric(0)
+							}
+						})
+					}).then(() => {
+						client.once('withdraw', (transaction: TxSend, callback: (err: null, res?: string) => void) => {
+							opid = transaction.opid
+							callback(null, 'received withdraw request for' + opid)
+							setTimeout(done, 50)
+						})
+
+						CurrencyApi.withdraw(user, currency, `${currency}_account`, 10)
+							.catch(err => done(err))
+					})
+				})
+
+				it('Should have status \'processing\' before receiving the first update', async () => {
+					const tx = await Transaction.findById(opid)
+					expect(tx.status).to.equals('processing')
+				})
+
+				it('Sould update a pending transaction', done => {
+					const updSent: UpdtSent = {
+						opid,
+						txid: 'randomTxId',
+						status: 'pending',
+						confirmations: 6,
+						timestamp: 123456789
+					}
+
+					client.emit('update_sent_tx', updSent, (err: any, res?: string) => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.txid).to.equals(updSent.txid)
+							expect(doc.status).to.equals(updSent.status)
+							expect(doc.confirmations).to.equals(updSent.confirmations)
+							expect(doc.timestamp.toString()).to.equals(new Date(updSent.timestamp).toString())
+							done()
+						})
+					})
+				})
+
+				it('Should update a confirmed transaction', done => {
+					const updSent: UpdtSent = {
+						opid,
+						txid: 'randomTxId',
+						status: 'confirmed',
+						confirmations: 6,
+						timestamp: 123456789
+					}
+
+					client.emit('update_sent_tx', updSent, (err: any, res?: string) => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.txid).to.equals(updSent.txid)
+							expect(doc.status).to.equals(updSent.status)
+							expect(doc.confirmations).to.be.undefined
+							expect(doc.timestamp.toString()).to.equals(new Date(updSent.timestamp).toString())
+							done()
+						})
+					})
+				})
+
+				it('Sould return UserNotFound if a user for existing transaction was not found', done => {
+					let _user: User
+					let _opid: ObjectId
+
+					// Responde os eventos para evitar timeout
+					client.once('create_new_account', (callback: (err: any, account: string) => void) => {
+						callback(null, `account-${currency}-newUser`)
+					})
+
+					client.once('withdraw', (request: TxSend, callback: (err: any, response?: string) => void) => {
+						callback(null, 'received withdraw request for userNotFound test')
+
+						Person.findByIdAndDelete(_user.id, () => {
+							client.emit('update_sent_tx', {
+								opid: _opid,
+								txid: 'randomTxId',
+								status: 'confirmed',
+								confirmations: 6,
+								timestamp: 123456789
+							}, (err: any, res?: string) => {
+								expect(res).to.be.undefined
+								expect(err).to.be.an('object')
+								expect(err.code).to.equals('UserNotFound')
+								expect(err.message).to.be.a('string')
+								done()
+							})
+						})
+					})
+
+					callbackify(UserApi.createUser)('randomEmail@email.com', 'UserP@ass', (err, newUser) => {
+						_user = newUser
+						expect(err).to.be.null
+						expect(newUser).to.be.an('object')
+						Person.findByIdAndUpdate(newUser.id, {
+							$set: {
+								[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(50),
+								[`currencies.${currency}.balance.locked`]: Decimal128.fromNumeric(0)
+							}
+						}, () => {
+							callbackify(CurrencyApi.withdraw)(
+								newUser, currency, 'randomAccount', 10,
+								(err, opid) => {
+									expect(err).to.be.null
+									expect(opid).to.be.an('object')
+									_opid = opid
+								})
+						})
+					})
+				})
+
+				it('Sould not update balance if status is pending', done => {
+					const updSent: UpdtSent = {
+						opid,
+						txid: 'randomTxId',
+						status: 'pending',
+						confirmations: 6,
+						timestamp: 123456789
+					}
+
+					client.emit('update_sent_tx', updSent, (err: any, res?: string) => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						Person.findById(user.id, (err, doc) => {
+							console.log('balances',
+								doc.currencies[currency].balance.locked.toFullString(),
+								doc.currencies[currency].balance.available.toFullString(),
+							)
+							expect(doc.currencies[currency].balance.locked.toFullString())
+								.to.equals('10.0')
+							expect(doc.currencies[currency].balance.available.toFullString())
+								.to.equals('40.0')
+							done()
+						})
+					})
+				})
+
+				it('Should update balance if status is confirmed', done => {
+					const updSent: UpdtSent = {
+						opid,
+						txid: 'randomTxId',
+						status: 'confirmed',
+						confirmations: 6,
+						timestamp: 123456789
+					}
+
+					client.emit('update_sent_tx', updSent, (err: any, res?: string) => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						Person.findById(user.id, (err, doc) => {
+							expect(doc.currencies[currency].balance.locked.toFullString())
+								.to.equals('0.0')
+							expect(doc.currencies[currency].balance.available.toFullString())
+								.to.equals('40.0')
+							done()
+						})
+					})
+				})
+
+				it('Should not fail if confirmations was not informed', done => {
+					const updSent: UpdtSent = {
+						opid,
+						txid: 'randomTxId',
+						status: 'pending',
+						timestamp: 123456789
+					}
+
+					client.emit('update_sent_tx', updSent, (err: any, res?: string) => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals(updSent.status)
+							expect(doc.confirmations).to.be.undefined
+							done()
+						})
+					})
+				})
+
+				it('Should fail if opid was not informed', done => {
+					client.emit('update_sent_tx', {
+						txid: 'randomTxId',
+						status: 'confirmed',
+						confirmations: 6,
+						timestamp: 123456789
+					}, (err: any, res?: string) => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('BadRequest')
+						expect(err.message).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals('processing')
+							done()
+						})
+					})
+				})
+
+				it('Should fail if a valid opid was not found', done => {
+					client.emit('update_sent_tx', {
+						opid: '505618b81ce5e89fb0d1b05c',
+						txid: 'randomTxId',
+						status: 'confirmed',
+						confirmations: 6,
+						timestamp: 123456789
+					}, (err: any, res?: string) => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('OperationNotFound')
+						expect(err.message).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals('processing')
+							done()
+						})
+					})
+				})
+
+				it('Should fail if invalid opid was informed', done => {
+					client.emit('update_sent_tx', {
+						opid: 'invalid-opid-string',
+						txid: 'randomTxId',
+						status: 'confirmed',
+						confirmations: 6,
+						timestamp: 123456789
+					}, (err: any, res?: string) => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('CastError')
+						expect(err.message).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals('processing')
+							done()
+						})
+					})
+				})
+
+				it('Should fail if status is invalid', done => {
+					client.emit('update_sent_tx', {
+						opid,
+						status: 'invalid-status',
+						txid: 'randomTxId',
+						confirmations: 6,
+						timestamp: 123456789
+					}, (err: any, res?: string) => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('ValidationError')
+						expect(err.message).to.be.a('string')
+						Transaction.findById(opid, (err, doc) => {
+							expect(doc.status).to.equals('processing')
 							done()
 						})
 					})

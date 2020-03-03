@@ -211,7 +211,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Processa requests de atualização de transações PENDENTES existentes
 	 * Os únicos campos que serão atualizados são o status e o confirmations
 	 */
-	socket.on('update_received_tx', async (txUpdate: UpdtReceived, callback: Function) => {
+	socket.on('update_received_tx', async (txUpdate: UpdtReceived, callback: (err: any, res?: string) => void) => {
 		if (!txUpdate.opid) return callback({
 			code: 'BadRequest',
 			message: '\'opid\' needs to be informed to update a transaction'
@@ -245,7 +245,10 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			this.events.emit('update_received_tx', tx.user, txUpdate)
 		} catch (err) {
 			if (err === 'UserNotFound') {
-				callback({ code: 'UserNotFound' })
+				callback({
+					code: 'UserNotFound',
+					message: 'UserApi could not find the user for the requested operation'
+				})
 			} else if (err === 'OperationNotFound') {
 				callback({
 					code: 'OperationNotFound',
@@ -256,6 +259,11 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					code: 'ValidationError',
 					message: 'Mongoose failed to validate the document after the update',
 					details: err
+				})
+			} else if (err.name === 'CastError') {
+				callback({
+					code: 'CastError',
+					message: err.message
 				})
 			} else {
 				console.error('Error processing update_received_tx', err)
