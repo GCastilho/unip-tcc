@@ -103,10 +103,10 @@ export default class User {
 	 * 
 	 * @returns The updated person object
 	 */
-	changePassword = async (password: string): Promise<Person> => {
+	changePassword = async (password: string): Promise<User> => {
 		this.person.credentials.password_hash = this._hashPassword(password)
 		await this.person.save()
-		return this.person
+		return this
 	}
 
 	/**
