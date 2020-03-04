@@ -46,14 +46,12 @@ export function withdraw(this: Common) {
 			if (err === 'OperationNotFound') {
 				callback({
 					code: 'OperationNotFound',
-					message: 'UserApi could not find the requested operation'
-					//message: `UserApi could not find operation ${tx._id}`
+					message: `UserApi could not find operation '${txUpdate.opid}'`
 				})
 			} else if (err === 'UserNotFound') {
 				callback({
 					code: 'UserNotFound',
-					message: 'UserApi could not find the user for the requested operation'
-					//message: `UserApi could not find user ${tx.user}`
+					message: `UserApi could not find the user for the operation '${txUpdate.opid}'`
 				})
 			} else if (err.name === 'CastError') {
 				callback({
