@@ -16,5 +16,5 @@ require('./websocket')(server)
 const port = process.env.PORT || 3000
 
 server.listen(port, () => {
-	console.log('Server is up on port', port)
+	console.info('Server is up on port', port)
 })
