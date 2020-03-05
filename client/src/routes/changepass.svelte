@@ -10,8 +10,8 @@
   let errorMessage = undefined;
 
   onMount(() => {
-    // Redireciona para home caso esteja autenticado
-    //if ($auth) goto('/')
+    // Redireciona para home caso não esteja autenticado
+    if (!$auth) goto('/')
   });
 
   async function handleSubmit(event) {
@@ -75,12 +75,11 @@
   }
 </style>
 
-<h1>User</h1>
+<h1>Alterar Senha</h1>
 <form method="POST" on:submit|preventDefault={handleSubmit}>
   {#if errorMessage}
     <FormErrorMessage>{errorMessage}</FormErrorMessage>
   {/if}
-  <p>Change Password</p>
   <FancyInput id="password_old" type="password">Old Password</FancyInput>
   <FancyInput id="password_new" type="password">New Password</FancyInput>
   <FancyInput id="password_confirm" type="password">

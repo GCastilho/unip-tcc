@@ -11,6 +11,6 @@ Router.use('/register', require('./register'))
 Router.use('/login', require('./login'))
 
 /**@description Handler de todos os requests para /user */
-Router.use('/user', require('./user'))
+Router.use('/changepass', require('./user'))
 
 module.exports = Router
