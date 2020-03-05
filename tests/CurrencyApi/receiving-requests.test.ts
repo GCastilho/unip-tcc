@@ -647,24 +647,15 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						})
 					})
 
-					callbackify(UserApi.createUser)('randomEmail@email.com', 'UserP@ass', (err, newUser) => {
-						_user = newUser
-						expect(err).to.be.null
-						expect(newUser).to.be.an('object')
-						Person.findByIdAndUpdate(newUser.id, {
+					setImmediate(async () => {
+						_user = await UserApi.createUser('randomEmail@email.com', 'UserP@ass')
+						await Person.findByIdAndUpdate(_user.id, {
 							$set: {
 								[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(50),
 								[`currencies.${currency}.balance.locked`]: Decimal128.fromNumeric(0)
 							}
-						}, () => {
-							callbackify(CurrencyApi.withdraw)(
-								newUser, currency, 'randomAccount', 10,
-								(err, opid) => {
-									expect(err).to.be.null
-									expect(opid).to.be.an('object')
-									_opid = opid
-								})
 						})
+						_opid = await CurrencyApi.withdraw(_user, currency, 'randomAccount', 10)
 					})
 				})
 

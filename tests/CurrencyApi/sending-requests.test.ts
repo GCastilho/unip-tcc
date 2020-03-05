@@ -15,9 +15,9 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 	before(async () => {
 		await Person.deleteMany({})
 		await Checklist.deleteMany({})
-	
+
 		user = await UserApi.createUser('sending_request@example.com', 'userP@ss')
-	
+
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of CurrencyApi.currencies) {
 			user.person.currencies[currency].balance.available = Decimal128.fromNumeric(10)
@@ -54,7 +54,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						})
 					})
 				})
-	
+
 				it('Should receive a withdraw request', done => {
 					CurrencyApi.withdraw(user, currency, `${currency}_account`, 3.456).then(opid => {
 						client = io(url + '/' + currency)
@@ -70,7 +70,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 
 							expect(request).to.haveOwnProperty('amount')
 								.that.is.a('string').and.equals('3.456')
-		
+
 							callback(null, 'request received for' + currency)
 							done()
 						})
@@ -119,7 +119,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 
 						expect(request).to.haveOwnProperty('account')
 							.that.is.a('string').and.equals(`${currency}_account`)
-	
+
 						expect(request).to.haveOwnProperty('amount')
 							.that.is.a('string').and.equals('4.567')
 

@@ -58,7 +58,7 @@ describe('Testing decimal128\'s extension library', () => {
 		expect(Decimal128.fromNumeric(87315664.21657893e-4, 0).toFullString()).to.equals('8731.566421657893')
 		expect(Decimal128.fromNumeric(8431674351687314E10, 0).toFullString()).to.equals('84316743516873140000000000.0')
 	})
-	
+
 	it('Should cut decimals from the end', () => {
 		expect(Decimal128.fromNumeric(2.02e-2, -2).toFullString()).to.equals('0.02')
 		expect(Decimal128.fromNumeric(2.123456789, -9).toFullString()).to.equals('2.0')

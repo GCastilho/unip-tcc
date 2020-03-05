@@ -34,7 +34,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		stream.once('data', () => {
 			console.log('Success\nReceiving and importing accounts into the database')
 		})
-		
+
 		stream.on('data', (chunk) => {
 			/** Cada chunk é uma account */
 			Account.updateOne({

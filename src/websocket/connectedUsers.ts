@@ -18,7 +18,7 @@ export function add(socket: SocketIO.Socket) {
 /**
  * Retorna o socket de um usuário conectado
  * @param id O userId do usuário
- * 
+ *
  * @returns SocketIO.Socket - caso o usuário esteja conectado
  * @returns undefined - caso o usuário NÃO esteja conectado
  */

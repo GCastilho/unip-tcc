@@ -41,7 +41,7 @@ interface PendingOp {
 
 /**
  * Função para fazer o hash do password de um usuário
- * 
+ *
  * @param salt O salt desse usuário
  * @param password O password desse usuário
  * @returns sha512 do salt + password
@@ -89,7 +89,7 @@ export default class User {
 
 	/**
 	 * Retorna 'void' se o password informado é o password correto do usuário
-	 * 
+	 *
 	 * @throws InvalidPassword if password is invalid
 	 */
 	checkPassword = (password: string): void => {
@@ -100,7 +100,7 @@ export default class User {
 
 	/**
 	 * Atualiza o password do usuário com o password informado
-	 * 
+	 *
 	 * @returns The updated person object
 	 */
 	changePassword = async (password: string): Promise<User> => {
@@ -111,25 +111,25 @@ export default class User {
 
 	/**
 	 * Contém métodos para a manipulação de operações de mudança de saldo
-	 * 
+	 *
 	 * Todos os métodos são async safe
 	 */
 	balanceOps = (() => {
 		/**
 		 * Adiciona uma operação de mudança de saldo pendente no array 'pending'
 		 * da currency trava o saldo utilizado na operação
-		 * 
+		 *
 		 * Caso seja uma operação de redução de saldo e available - amount >= 0,
 		 * o valor de 'amount' será retirado de 'available' e adicionado em
 		 * 'locked'. Se a operação for de aumento de saldo, a única coisa que
 		 * será feita é aumentar o valor do locked
-		 * 
+		 *
 		 * Essa função é async safe, ou seja, a operação é feita de forma
 		 * atômica no banco de dados
-		 * 
+		 *
 		 * @param currency A currency que a operação se refere
 		 * @param op O objeto da operação pendente que será adicionado
-		 * 
+		 *
 		 * @throws NotEnoughFunds Caso não haja saldo disponível (o campo
 		 * 'available' do balance) para executar a operação
 		 */
@@ -165,11 +165,11 @@ export default class User {
 
 		/**
 		 * Retorna uma operação salva no documento desse usuário
-		 * 
+		 *
 		 * @param currency A currency que a operação se refere
 		 * @param opid O ObjectId que referencia o documento da operação em sua
 		 * respectiva collection
-		 * 
+		 *
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
 		const get = async (
@@ -204,11 +204,11 @@ export default class User {
 
 		/**
 		 * Retorna o amount de uma operação DESSE usuário
-		 * 
+		 *
 		 * @param currency A currency que a operação se refere
 		 * @param opid O ObjectId que referencia o documento da operação em sua
 		 * respectiva collection
-		 * 
+		 *
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
 		const _getOpAmount = async (currency: SC, opid: ObjectId): Promise<Decimal128> => {
@@ -220,7 +220,7 @@ export default class User {
 		 * Remove uma operação do banco de dados, subtraindo o módulo do
 		 * opAmount do campo locked e incrementando o campo 'available' com o
 		 * valor passado em 'changeInAvailable'
-		 * 
+		 *
 		 * @param currency A currency que a operação se refere
 		 * @param opid O ObjectId que referencia o documento da operação em sua
 		 * respectiva collection
@@ -228,7 +228,7 @@ export default class User {
 		 * @param changeInAvailable O valor que o campo available deve ser
 		 * incrementado; Embora suporte, esteja ciênte que a precisão do number
 		 * é extremamente limitada, use com cautela
-		 * 
+		 *
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
 		const _removeOperation = async (
@@ -251,7 +251,7 @@ export default class User {
 					[`currencies.${currency}.pending`]: { opid }
 				}
 			})
-	
+
 			if (!response)
 				throw 'OperationNotFound'
 		}
@@ -259,13 +259,13 @@ export default class User {
 		/**
 		 * Cancela uma operação adicionada pelo 'addPending', voltando tudo ao
 		 * seu estado original
-		 * 
+		 *
 		 * Essa função é async safe
-		 * 
+		 *
 		 * @param currency A currency que a operação se refere
 		 * @param opid O ObjectId que referencia o documento da operação em sua
 		 * respectiva collection
-		 * 
+		 *
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
 		const cancel = async (
@@ -280,7 +280,7 @@ export default class User {
 			/**
 			 * Calcula o quanto o campo 'available' deverá ser alterado para
 			 * retornar os saldos ao estado original
-			 * 
+			 *
 			 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
 			 */
 			const changeInAvailable = +amount < 0 ? amount.abs() : 0
@@ -294,13 +294,13 @@ export default class User {
 		/**
 		 * Completa uma operação pendente, atualizando os saldos e removendo a
 		 * operação do array de 'pending'
-		 * 
+		 *
 		 * Essa função é async safe
-		 * 
+		 *
 		 * @param currency A currency que a operação se refere
 		 * @param opid O ObjectId que referencia o documento da operação em sua
 		 * respectiva collection
-		 * 
+		 *
 		 * @throws OperationNotFound if an operation was not found for THIS user
 		 */
 		const complete = async (
@@ -315,7 +315,7 @@ export default class User {
 			/**
 			 * Calcula o quanto o campo 'available' deverá ser alterado para
 			 * completar a operação
-			 * 
+			 *
 			 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
 			 */
 			const changeInAvailable = +amount < 0 ? 0 : amount

@@ -7,7 +7,7 @@ import User, { hashPassword } from './user'
 
 /**
  * Cria um novo usuário no database com as credenciais informadas
- * 
+ *
  * @throws ValidationError from mongoose.Error if document validation fails
  * @returns The User class instance of the new User
  */
@@ -39,7 +39,7 @@ export async function createUser(email: string, password: string): Promise<User>
 export const findUser = {
 	/**
 	 * Procura por um usuário usando o email informado
-	 * 
+	 *
 	 * @returns A User class instance with the found user
 	 * @throws 'UserNotFound'
 	 */
@@ -51,7 +51,7 @@ export const findUser = {
 
 	/**
 	 * Procura por um usuário usando o ID informado
-	 * 
+	 *
 	 * @returns A User class instance with the found user
 	 * @throws 'UserNotFound'
 	 */
@@ -64,11 +64,11 @@ export const findUser = {
 	/**
 	 * Procura por um usuário usando o cookie de sessionId informado
 	 * @param sessionId O cookie 'sessionId' do usuário
-	 * 
+	 *
 	 * @returns A User class instance with the found user
 	 * @throws 'CookieNotFound'
 	 * @throws 'UserNotFound'
-	 * 
+	 *
 	 * @todo Checar se o Cookie não expirou antes de continuar
 	 */
 	async byCookie(sessionId: string): Promise<User> {
@@ -80,11 +80,11 @@ export const findUser = {
 	/**
 	 * Procura por um usuário usando o token informado
 	 * @param token O token do usuário
-	 * 
+	 *
 	 * @returns A User class instance with the found user
 	 * @throws 'TokenNotFound'
 	 * @throws 'UserNotFound'
-	 * 
+	 *
 	 * @todo Checar se o Token não expirou antes de continuar
 	 */
 	async byToken(token: string): Promise<User> {
@@ -95,7 +95,7 @@ export const findUser = {
 
 	/**
 	 * Procura por um usuário usando uma account informada
-	 * 
+	 *
 	 * @param currency A currency que a account se refere
 	 * @param account A account pertencente ao usuário
 	 * @returns A User class instance with the found user

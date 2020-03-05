@@ -34,9 +34,9 @@ export const currencies = Object.values(_currencies).map(currency => currency.na
 /**
  * Um array de objetos com informações detalhadas sobre as currencies
  * suportadas pela api
- * 
+ *
  * O objeto contém as propriedades 'name', 'code' e 'decimals'
- * 
+ *
  * @todo Isso não ser um array
  */
 export const currenciesDetailed = Object.values(_currencies).map(currency => {
@@ -54,7 +54,7 @@ export const events = new EventEmitter() as TypedEmitter<PublicEvents>
  * Adiciona o request de criar accounts na checklist e chama o método
  * create_account das currencies solicitadas. Se nenhum account for
  * especificada, será criado uma account de cada currency
- * 
+ *
  * @param userId O ObjectId do usuário
  * @param currenciesToCreate As currencies que devem ser criadas accounts
  */
@@ -90,7 +90,7 @@ export async function create_accounts(
 /**
  * Adiciona o request de withdraw na checklist e chama a função de withdraw
  * desta currency
- * 
+ *
  * @param email O email do usuário que a currency será retirada
  * @param currency A currency que será retirada
  * @param address O address de destino do saque
@@ -168,7 +168,7 @@ console.log('CurrencyApi listener is up on port', port)
 
 /**
  * Listener da currencyApi, para comunicação com os módulos externos
- * 
+ *
  * Ao receber uma conexão em '/<currency>' do socket, chama a função connection
  * do módulo desta currency
  */

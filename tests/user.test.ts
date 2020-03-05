@@ -142,7 +142,7 @@ describe('Testing UserApi', () => {
 						expect(op.amount.toFullString())
 							.to.equals(Decimal128.fromNumeric(20).toFullString())
 					})
-		
+
 					it('Should cancel a pending operation', async () => {
 						await user.balanceOps.cancel(currency, opid)
 						const person = await Person.findById(user.id)
@@ -152,7 +152,7 @@ describe('Testing UserApi', () => {
 						expect(person.currencies[currency].balance.locked.toFullString())
 							.to.equals(Decimal128.fromNumeric(0).toFullString())
 					})
-		
+
 					it('Should complete a pending operation', async () => {
 						await user.balanceOps.complete(currency, opid)
 						const person = await Person.findById(user.id)

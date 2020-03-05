@@ -136,7 +136,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					/*
 					 * Houve um erro entre adicionar a tx e a update do status,
 					 * restaurar o database para status inicial e tentar de novo
-					 * 
+					 *
 					 * Esse tipo de erro não deve ocorrer a menos que ocorra
 					 * uma falha no database (no momento específico) ou falha de
 					 * energia, slá. O q importa é que PODE ocorrer, então o
@@ -153,7 +153,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					await tx.remove()
 					/**
 					 * Chama essa função novamente com os mesmos parâmetros
-					 * 
+					 *
 					 * Ao emitir o evento no socket ele também será
 					 * transmitido ao módulo externo, mas, como o módulo externo
 					 * não tem (não devería ter) um handler para um evento de
@@ -188,11 +188,11 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				callback({ code: 'InternalServerError' })
 				/**
 				 * Restaura o database ao estado original
-				 * 
+				 *
 				 * Não se sabe em que estágio ocorreu um erro para cair aqui,
 				 * então a operação pode ou não ter sido criada, por esse motivo
 				 * o erro de 'OperationNotFound' está sendo ignorando
-				 * 
+				 *
 				 * Entretando, um outro erro é um erro de fato e deve terminar
 				 * a execução do programa para evitar potencial dano
 				 */
@@ -247,12 +247,12 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			if (err === 'UserNotFound') {
 				callback({
 					code: 'UserNotFound',
-					message: 'UserApi could not find the user for the requested operation'
+					message: `UserApi could not find the user for the operation '${txUpdate.opid}'`
 				})
 			} else if (err === 'OperationNotFound') {
 				callback({
 					code: 'OperationNotFound',
-					message: 'userApi could not find the requested operation'
+					message: `userApi could not find operation '${txUpdate.opid}'`
 				})
 			} else if (err.name === 'ValidationError') {
 				callback({

@@ -6,7 +6,7 @@ import Common from '../index'
 /**
  * Retorna uma função que varre a collection da checklist e executa os requests
  * de saque requisitados, depois disso executa o checklistCleaner
- * 
+ *
  * Essa função também garante uma única instância do loop por curency para
  * impedir problemas de race condition
  */
@@ -81,7 +81,7 @@ export function withdraw(this: Common) {
 				command: 'withdraw',
 				status: 'requested'
 			}).cursor()
-	
+
 			let item: Ck
 			while (this.isOnline && (item = await checklist.next())) {
 				const tx = await Transaction.findById(item.opid)

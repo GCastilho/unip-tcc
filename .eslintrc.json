@@ -38,7 +38,12 @@
             "named": "never",
             "asyncArrow": "always"
         }],
-        "space-infix-ops": "error"
+        "space-infix-ops": "error",
+        "no-trailing-spaces": "error",
+        "no-multi-spaces": ["error", {
+            "ignoreEOLComments": true,
+            "exceptions": { "Property": true }
+        }]
     },
     "overrides": [{
         "files": [ "**/*.ts" ],

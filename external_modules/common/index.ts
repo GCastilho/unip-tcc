@@ -23,12 +23,12 @@ export default abstract class Common {
 
 	/**
 	 * Executa o request de saque de uma currency em sua blockchain
-	 * 
+	 *
 	 * @param pSended O documento dessa operação pendente na collection
 	 * @param callback Caso transações foram agendadas para ser executadas em
 	 * batch, o callback deve ser chamado com elas para informar que elas foram
 	 * executadas
-	 * 
+	 *
 	 * @returns UpdtSended object se a transação foi executada imediatamente
 	 * @returns true se a transação foi agendada para ser executada em batch
 	 */
@@ -41,7 +41,7 @@ export default abstract class Common {
 
 	/**
 	 * Processa novas transações recebidas e as envia ao servidor principal
-	 * 
+	 *
 	 * @param txid O txid da transação recém recebida
 	 */
 	abstract processTransaction(txid: TxReceived['txid']): Promise<void>
@@ -92,11 +92,11 @@ export default abstract class Common {
 
 	/**
 	 * Indica se o node da currency está online ou não
-	 * 
+	 *
 	 * Os eventos 'node_connected' e 'node_disconnected' devem ser disparados
 	 * no event emitter interno para manter essa váriável atualizada e outras
 	 * partes do sistema que dependem desses eventos, funcionando
-	 * 
+	 *
 	 * NÃO MODIFICAR MANUALMENTE
 	 */
 	protected nodeOnline = false
@@ -114,9 +114,9 @@ export default abstract class Common {
 		/**
 		 * Envia uma transação ao servidor principal e atualiza o opid dela no
 		 * database
-		 * 
+		 *
 		 * @param transaction A transação que será enviada ao servidor
-		 * 
+		 *
 		 * @returns opid se o envio foi bem-sucedido e a transação está pendente
 		 * @returns void se a transação não foi enviada ou se estava confirmada
 		 */
@@ -137,7 +137,7 @@ export default abstract class Common {
 	 * Wrapper de comunicação com o socket do servidor principal. Essa função
 	 * resolve ou rejeita uma promessa AO RECEBER UMA RESPOSTA do main server,
 	 * até lá ela ficará pendente
-	 * 
+	 *
 	 * @param event O evento que será enviado ao socket
 	 * @param args Os argumentos desse evento
 	 */

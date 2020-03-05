@@ -43,10 +43,10 @@ export default abstract class Common {
 
 	/**
 	 * Wrapper de comunicação com o socket do módulo externo
-	 * 
+	 *
 	 * @param event O evento que será enviado ao socket
 	 * @param args Os argumentos desse evento
-	 * 
+	 *
 	 * @throws SocketDisconnected if socket is disconnected
 	 */
 	protected emit(event: string, ...args: any): Promise<any> {
