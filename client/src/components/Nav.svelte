@@ -9,6 +9,9 @@
 	// Roteia o websocket a cada atualização do path da página
 	const { page } = stores()
 	page.subscribe(value => route(value.path))
+
+	let userdropdown='hide';
+
 </script>
 
 <style>
@@ -55,10 +58,30 @@
 		padding: 1em 0.5em;
 		display: block;
 	}
+	.a {
+		text-decoration: none;
+		padding: 1em 0.5em;
+		display: block;
+	}
     img{
-        height:30px;
-        width:30px;
+        height:20px;
+        width:20px;
     }
+	.dropdown{
+		width: 100px;
+		position: absolute;
+		height: 0;
+		opacity: 1;
+		transition: 0.5s height;
+		overflow: hidden;
+	}
+	.dropdown table,tr,td,a{
+	}
+	.show{
+		opacity: 1;
+		height: 100px;
+		transition: 0.5s height;
+	}
 </style>
 
 <nav>
@@ -68,9 +91,18 @@
 
 		<div style="float:right">
 			{#if $auth}
-                <li><a class:selected={segment === 'user'} href="user"><img alt="User" src="./user-icon.png" /></a></li>
 				<li><a class:selected='{segment === "balances"}' href="balances">balances</a></li>
-				<li><a on:click={auth.deauthenticate} href="/">logout</a></li>
+                <li on:mouseover='{()=>{userdropdown='show'}}' on:mouseleave='{()=>{userdropdown='hide'}}'>
+					<div class='a' class:selected='{userdropdown === "show" || segment === "changepass"}'>
+						<img alt="Config" title="Config" src="./assets/settings-icon.svg" />
+						</div>
+					<div class="{userdropdown==='show'? 'dropdown show':'dropdown'}" id="dropdown_usermenu">
+						<table >
+							<tr><td><a class:selected='{segment==="changepass"}' on:click='{()=>{userdropdown='hide'}}' href="changepass"><img alt="Senha" title="Alterar Senha" src="./assets/key-icon.svg" /></a></td></tr>
+						</table>
+					</div>
+				</li>
+				<li><a on:click={auth.deauthenticate} href="/"><img alt="Logout" title="Logout" src="./assets/logout-icon.svg" /></a></li>
 			{:else}
 				<li><a class:selected='{segment === "login"}' href="login">login</a></li>
 				<li><a class:selected='{segment === "register"}' href="register">register</a></li>
