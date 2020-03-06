@@ -33,7 +33,7 @@ function checkConnection() {
  * Emite um evento ao socket, com o último argumento sendo uma função callback.
  * O retorno dessa função callback é retornado na forma de uma promessa,
  * rejeitada ou resolvida de acordo com a chamada desse callback
- * 
+ *
  * @param {stirng} event O evento que será enviado ao socket
  * @param  {...any} args Os argumentos desse evento
  */

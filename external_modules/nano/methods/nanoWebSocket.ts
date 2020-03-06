@@ -37,7 +37,7 @@ export function nanoWebSocket(this: Nano) {
 
 	/**
 	 * The node sent us a message
-	 * 
+	 *
 	 * @todo Tratar os dados e enviar para o servidor e banco de dados
 	 */
 	ws.onmessage = async msg => {

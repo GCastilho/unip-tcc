@@ -6,9 +6,9 @@ import { fromRawToNano, fromNanoToRaw } from '../utils/unitConverter'
 
 /**
  * Processa blocos de receive da nano
- * 
+ *
  * @param block O bloco que acabou de ser recebido
- * 
+ *
  * @todo Common não receber string, mas any
  */
 export async function processTransaction(this: Nano, block: any): Promise<void> {
@@ -16,7 +16,7 @@ export async function processTransaction(this: Nano, block: any): Promise<void> 
 	try {
 		const savedAccount = await Account.findOne({ account: block.message.account })
 		if (!savedAccount) return
-		
+
 		/** Procura por transações que não foram computadas */
 		txArray = await this.findMissingTx(savedAccount.account, savedAccount.lastBlock)
 		if (!txArray) return

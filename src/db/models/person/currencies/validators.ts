@@ -1,6 +1,6 @@
 /**
  * Cada objeto é um objeto 'validator' do mongoose
- * 
+ *
  * @see https://mongoosejs.com/docs/api.html#schematype_SchemaType-validate
  */
 

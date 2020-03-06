@@ -7,7 +7,7 @@ export function withdraw_pending(this: Common) {
 	/**
 	 * Atualiza no database uma transação enviada a e envia ao main server; Se
 	 * ela estiver confirmada, deleta-a do database
-	 * 
+	 *
 	 * @param transaction O objeto da UpdtSended retornado pelo withdraw
 	 */
 	const updateAndSend = async (transaction: UpdtSent) => {
@@ -40,7 +40,7 @@ export function withdraw_pending(this: Common) {
 	/**
 	 * Ao utilizar o modo batch as transações deverão ser retornadas em um array
 	 * para essa função, que chama a updateAndSend para cada item do array
-	 * 
+	 *
 	 * @param transactions O array de transações executadas em batch
 	 */
 	const updateAndSendTxs = (transactions: UpdtSent[]) => {
@@ -50,7 +50,7 @@ export function withdraw_pending(this: Common) {
 	/**
 	 * Varre a SendPending procurando por transações com journaling 'requested',
 	 * e as executa, chamando a função de withdraw para cada uma delas
-	 * 
+	 *
 	 * @todo Uma maneira de se recuperar de erros
 	 */
 	const withdraw_loop = async () => {
@@ -58,7 +58,7 @@ export function withdraw_pending(this: Common) {
 			'transaction.txid': { $exists: false },
 			'journaling': 'requested'
 		}).cursor()
-	
+
 		let doc: PSent
 		while((doc = await pendingTx.next())) {
 			doc.journaling = 'picked'
@@ -83,10 +83,10 @@ export function withdraw_pending(this: Common) {
 				await doc.save()
 				continue
 			}
-	
+
 			doc.journaling = 'sended'
 			await doc.save()
-	
+
 			await updateAndSend(transaction)
 		}
 	}

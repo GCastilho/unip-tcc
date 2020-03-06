@@ -34,12 +34,14 @@ export const currencies = Object.values(_currencies).map(currency => currency.na
 /**
  * Um array de objetos com informações detalhadas sobre as currencies
  * suportadas pela api
- * 
+ *
  * O objeto contém as propriedades 'name', 'code' e 'decimals'
+ *
+ * @todo Isso não ser um array
  */
 export const currenciesDetailed = Object.values(_currencies).map(currency => {
-	const { name, code, decimals, supportedDecimals } = currency
-	return { name, code, decimals: Math.min(decimals, supportedDecimals) }
+	const { name, code, supportedDecimals } = currency
+	return { name, code, decimals: supportedDecimals }
 })
 
 /** EventEmmiter para eventos internos */
@@ -52,13 +54,13 @@ export const events = new EventEmitter() as TypedEmitter<PublicEvents>
  * Adiciona o request de criar accounts na checklist e chama o método
  * create_account das currencies solicitadas. Se nenhum account for
  * especificada, será criado uma account de cada currency
- * 
+ *
  * @param userId O ObjectId do usuário
  * @param currenciesToCreate As currencies que devem ser criadas accounts
  */
 export async function create_accounts(
 	userId: Person['_id'],
-	currenciesToCreate: string[] = currencies
+	currenciesToCreate: SuportedCurrencies[] = currencies
 ): Promise<void> {
 	const itemsToSave = currenciesToCreate.map(currency => {
 		return new Checklist({
@@ -77,13 +79,18 @@ export async function create_accounts(
 	/**
 	 * Chama create_account de cada currency que precisa ser criada uma account
 	 */
-	currenciesToCreate.forEach(currency => _currencies[currency].create_account())
+	const createAccounts = currenciesToCreate.map(currency => _currencies[currency].create_account())
+
+	/** Se múltiplas forem rejeitadas só irá mostrar o valor da primeira */
+	Promise.all(createAccounts).catch(err => {
+		console.error('Error running create_account', err)
+	})
 }
 
 /**
  * Adiciona o request de withdraw na checklist e chama a função de withdraw
  * desta currency
- * 
+ *
  * @param email O email do usuário que a currency será retirada
  * @param currency A currency que será retirada
  * @param address O address de destino do saque
@@ -155,13 +162,13 @@ export async function withdraw(
 }
 
 // Inicia o listener da currencyApi
-const port = 8085
+const port = process.env.CURRENCY_API_PORT || 8085
 const io = socketIO(port)
 console.log('CurrencyApi listener is up on port', port)
 
 /**
  * Listener da currencyApi, para comunicação com os módulos externos
- * 
+ *
  * Ao receber uma conexão em '/<currency>' do socket, chama a função connection
  * do módulo desta currency
  */

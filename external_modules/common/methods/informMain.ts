@@ -12,16 +12,16 @@ export function informMain(this: Common) {
 	/**
 	 * Envia uma transação ao servidor principal e atualiza o opid dela no
 	 * database
-	 * 
+	 *
 	 * @param transaction A transação que será enviada ao servidor
-	 * 
+	 *
 	 * @returns opid se o envio foi bem-sucedido e a transação está pendente
 	 * @returns void se a transação não foi enviada ou se estava confirmada
 	 */
 	const newTransaction = async (transaction: TxReceived): Promise<string|void> => {
 		try {
 			const opid: string = await this.module('new_transaction', transaction)
-			
+
 			/** Adiciona o opid à transação no db local */
 			await Transaction.findOneAndUpdate({
 				txid: transaction.txid

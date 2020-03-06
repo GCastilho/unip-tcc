@@ -77,7 +77,7 @@ export async function send(pSend: PSent): Promise<UpdtSent> {
 			// Invalid amount for send
 			err.code = 'NotSent'
 		}
-			
+
 		throw err
 	})
 

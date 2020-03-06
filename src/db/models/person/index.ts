@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from '../../mongoose'
 import currenciesSchema from './currencies'
 import type { Currencies } from './currencies'
 

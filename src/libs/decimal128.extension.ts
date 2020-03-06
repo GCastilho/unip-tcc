@@ -20,7 +20,7 @@ declare module 'mongodb' {
 		/**
 		 * Create a Decimal128 instance from a number or numeric string with the
 		 * possibility to truncate numbers beyond a specified decimal place
-		 * 
+		 *
 		 * @param value a number or numeric string representation
 		 * @param decimals the maximum number of significant decimal places
 		 */

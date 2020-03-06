@@ -9,7 +9,7 @@ import { TxReceived } from '../../common'
  * Recebe um txid e uma função para pegar informações brutas dessa transação
  * recebida da blockchain, retorna uma transação formatada usando
  * a interface Tx ou void
- * 
+ *
  * @param txid A txid da transação
  * @param getInfo Uma função que recebe um txid e retorna informações brutas da
  * transação da blockchain
@@ -19,7 +19,7 @@ export async function formatTransaction(txid: string, getInfo: Function): Promis
 	 * Informações da transação pegas da blockchain
 	 */
 	const txInfo = await getInfo(txid)
-	
+
 	/**
 	 * Verifica se o txid é de uma transação de mineração
 	 */
@@ -32,9 +32,9 @@ export async function formatTransaction(txid: string, getInfo: Function): Promis
 		details.category === 'receive'
 	)
 	if(!received) return
-	
+
 	const address: TxReceived['account'] = received.address
-	
+
 	/** Verifica se a transação é nossa */
 	const account = await Account.findOne({ account: address })
 	if (!account) return

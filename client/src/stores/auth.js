@@ -3,14 +3,14 @@ import { emit, addSocketListener } from '../utils/websocket'
 
 /**
  * Função helper para retornar o token do localStorage
- * 
+ *
  * @returns {string} o item 'socket-auth-token' do localStorage
  */
 const getToken = () => localStorage.getItem('socket-auth-token')
 
 /**
  * Função helper para armazenar o token 'socket-auth-token' no localStorage
- * 
+ *
  * @param {string} token O valor token 'socket-auth-token' para ser armazenado
  * no localStorage
  */
@@ -25,7 +25,7 @@ const removeToken = () => localStorage.removeItem('socket-auth-token')
  * Caso exista um token salvo, presume que está autenticado (mesmo que
  * desconectado) até o socket emitir um evento de falha de conexão ou de
  * autenticação
- * 
+ *
  * @type {boolean} Indica se deve presumir autenticado ou não na inicialização
  */
 const initialState = typeof window !== 'undefined'
