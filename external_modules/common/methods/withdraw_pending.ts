@@ -1,7 +1,7 @@
 import Common from '../index'
 import { SendPending, PSent } from '../db/models/pendingTx'
 import { UpdtSent } from '../index'
-import Transaction from '../db/models/transaction'
+import { SendTransaction } from '../db/models/transaction'
 
 export function withdraw_pending(this: Common) {
 	/**
@@ -12,7 +12,7 @@ export function withdraw_pending(this: Common) {
 	 */
 	const updateAndSend = async (transaction: UpdtSent) => {
 		try {
-			await Transaction.updateOne({
+			await SendTransaction.updateOne({
 				opid: transaction.opid
 			}, {
 				$set: {

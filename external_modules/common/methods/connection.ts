@@ -2,7 +2,7 @@
 const ss = require('socket.io-stream')
 import Common from '../index'
 import Account from '../db/models/account'
-import Transaction from '../db/models/transaction'
+import { SendTransaction } from '../db/models/transaction'
 import { TxSend } from '../index'
 import { SendPending } from '../db/models/pendingTx'
 
@@ -72,7 +72,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		 * ou da falha
 		 */
 		try {
-			await new Transaction({
+			await new SendTransaction({
 				opid: request.opid,
 				account: request.account,
 				type: 'send'
