@@ -100,4 +100,28 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		/** Faz o withdraw de todas as transações ainda não enviadas */
 		this.withdraw_pending()
 	})
+
+	socket.on('cancellWithdraw', async (request: TxSend, callback: Function) => {
+		console.log('received cancell withdraw request', request)
+		/**
+		 * Salva na pending e retorna um callback informando se a
+		 * transaçao de receive foi recebida e completada ou se falhou
+		 */
+		try {
+			const doc = await SendPending.findOneAndUpdate({
+				opid: request.opid,
+				journaling: 'requested'
+			}, {
+				journaling: 'cancelled'
+			})
+			if (doc) {
+				callback(null, `SUCESSFULL cancelled request'${request.opid}'`)
+			} else {
+				callback(null, `the request '${request.opid}' could not be cancelled`)
+			}
+		} catch (err) {
+			console.error('Error cancelling request:', err)
+			callback(err)
+		}
+	})
 }

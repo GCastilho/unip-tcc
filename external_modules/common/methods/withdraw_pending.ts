@@ -60,10 +60,17 @@ export function withdraw_pending(this: Common) {
 		}).cursor()
 
 		let doc: PSent
-		while((doc = await pendingTx.next())) {
-			doc.journaling = 'picked'
-			await doc.save()
-
+		while ((doc = await pendingTx.next())) {
+			const _doc = await SendPending.findOneAndUpdate({
+				opid: doc.opid,
+				journaling: 'requested'
+			}, {
+				journaling: 'picked'
+			})
+			if (!_doc) {
+				await doc.remove()
+				continue
+			}
 			let transaction: true|UpdtSent
 			try {
 				transaction = await this.withdraw(doc, updateAndSendTxs)
