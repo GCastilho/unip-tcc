@@ -1,16 +1,15 @@
 import express from 'express'
 import user from './user'
+import * as CurrencyApi from '../../../currencyApi'
 
 const router = express.Router()
 
 router.use('/currencies', (_req, res) => {
-	res.send({
-		currencies: ['nano', 'bitcoin']
-	})
+	res.send(CurrencyApi.currenciesDetailed)
 })
 
-router.use('/transaction/:opid', (_req, res) => {
-	res.send({ transaction: 'transaction:opid' })
+router.use('/transaction/:opid', (req, res) => {
+	res.send({ opid: req.params.opid })
 })
 
 router.use('/transaction', (_req, res) => {
@@ -28,27 +27,26 @@ router.use('/', (_req, res) => {
 		version: 1.0,
 		description: 'Entrypoint for the v1 of the HTTP API',
 		deprecated: false,
-		entries: {
-			list: [ 'currencies', 'transaction', 'user' ],
-			details: {
-				currencies: {
-					description: 'Detailed information about the supported currencies of the system',
-					endpoint: true,
-					auth: false,
-					methods: [ 'GET' ]
-				},
-				transaction: {
-					description: 'Informations about a transaction',
-					endpoint: false,
-					auth: true
-				},
-				user: {
-					description: 'Entrypoint for requests specific to a user',
-					endpoint: false,
-					auth: true
-				}
+		entries: [
+			{
+				path: 'currencies',
+				description: 'Request informations about the currencies supported by the API',
+				request: [{
+					method: 'GET',
+					returns: 'Detailed information about the supported currencies of the API'
+				}],
+				auth: false
+			},
+			{
+				path: 'user',
+				description: 'Entrypoint for requests specific to a user',
+				request: [{
+					method: 'GET',
+					returns: 'Informations about the entrypoint'
+				}],
+				auth: false
 			}
-		}
+		]
 	})
 })
 
