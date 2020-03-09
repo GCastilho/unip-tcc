@@ -5,6 +5,7 @@ import cookieparser from 'cookieparser'
 import * as UserApi from '../../src/userApi'
 import * as CurrencyApi from '../../src/currencyApi'
 import Person from '../../src/db/models/person'
+import Transaction from '../../src/db/models/transaction'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const app = require('../../src/server')
 
@@ -20,7 +21,7 @@ describe('Testing version 1 of HTTP API', () => {
 		const { body } = await request(app).get('/v1').set(apiConfig).send()
 			.expect('Content-Type', /json/)
 			.expect(200)
-		expect(body).to.be.an('object').that.equals({
+		expect(body).to.be.an('object').that.deep.equals({
 			version: 1.0,
 			description: 'Entrypoint for the v1 of the HTTP API',
 			deprecated: false,
@@ -56,7 +57,7 @@ describe('Testing version 1 of HTTP API', () => {
 			const { body } = await request(app).get('/v1/currencies').set(apiConfig).send()
 				.expect('Content-Type', /json/)
 				.expect(200)
-			expect(body).to.be.an('array').that.equals(CurrencyApi.currenciesDetailed)
+			expect(body).to.be.an('array').that.deep.equals(CurrencyApi.currenciesDetailed)
 		})
 	})
 
@@ -65,6 +66,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 		before(async () => {
 			await Person.deleteMany({})
+			await Transaction.deleteMany({})
 			await UserApi.createUser('v1-test@email.com', 'UserP@ss')
 			const res = await request(app).post('/login').send({
 				email: 'v1-test@email.com',
@@ -73,14 +75,14 @@ describe('Testing version 1 of HTTP API', () => {
 			expect(res.header['set-cookie']).not.to.be.undefined
 			sessionId = res.header['set-cookie']
 				.map(cookieparser.parse)
-				.filter(cookie => cookie.sessionId)[0]
+				.filter(cookie => cookie.sessionId)[0].sessionId
 		})
 
 		it('Should return information about the subpath', async () => {
 			const { body } = await request(app).get('/v1/currencies').set(apiConfig).send()
 				.expect('Content-Type', /json/)
 				.expect(200)
-			expect(body).to.be.an('object').that.equals({
+			expect(body).to.be.an('object').that.deep.equals({
 				description: 'Entrypoint for requests specific to a user',
 				entries: [
 					{
@@ -167,7 +169,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should return Not Authorized if invalid or missing sessionId', async () => {
 				const { body } = await request(app).get('/v1/user/info').set(apiConfig).send()
 					.expect(401)
-				expect(body).to.be.an('obejct').that.equals({
+				expect(body).to.be.an('obejct').that.deep.equals({
 					error: 'Not Authorized',
 					message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
 				})
@@ -180,7 +182,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should return Not Authorized if invalid or missing sessionId', async () => {
 				const { body } = await request(app).get('/v1/user/accounts').set(apiConfig).send()
 					.expect(401)
-				expect(body).to.be.an('obejct').that.equals({
+				expect(body).to.be.an('obejct').that.deep.equals({
 					error: 'Not Authorized',
 					message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
 				})
@@ -193,7 +195,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should return Not Authorized if invalid or missing sessionId', async () => {
 				const { body } = await request(app).get('/v1/user/balances').set(apiConfig).send()
 					.expect(401)
-				expect(body).to.be.an('obejct').that.equals({
+				expect(body).to.be.an('obejct').that.deep.equals({
 					error: 'Not Authorized',
 					message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
 				})
@@ -206,7 +208,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should return Not Authorized if invalid or missing sessionId', async () => {
 				const { body } = await request(app).get('/v1/user/transactions').set(apiConfig).send()
 					.expect(401)
-				expect(body).to.be.an('obejct').that.equals({
+				expect(body).to.be.an('obejct').that.deep.equals({
 					error: 'Not Authorized',
 					message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
 				})
@@ -218,7 +220,7 @@ describe('Testing version 1 of HTTP API', () => {
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
 					const { body } = await request(app).get('/v1/user/transactions/a-opid').set(apiConfig).send()
 						.expect(401)
-					expect(body).to.be.an('obejct').that.equals({
+					expect(body).to.be.an('obejct').that.deep.equals({
 						error: 'Not Authorized',
 						message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
 					})
@@ -230,14 +232,15 @@ describe('Testing version 1 of HTTP API', () => {
 			})
 
 			describe('withdraw', () => {
-				// Checar se a transação não foi agendada
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
 					const { body } = await request(app).post('/v1/user/transactions').set(apiConfig).send()
 						.expect(401)
-					expect(body).to.be.an('obejct').that.equals({
+					expect(body).to.be.an('obejct').that.deep.equals({
 						error: 'Not Authorized',
 						message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
 					})
+					// Checa se a transação foi agendada
+					expect(await Transaction.find({})).to.have.lengthOf(0)
 				})
 
 				it('Should return Bad Request if the request is malformed')
