@@ -1,7 +1,7 @@
 import '../../src/libs'
 import request from 'supertest'
 import { expect } from 'chai'
-import { ObjectId } from 'mongodb'
+import { ObjectId, Decimal128 } from 'mongodb'
 import cookieparser from 'cookieparser'
 import * as UserApi from '../../src/userApi'
 import * as CurrencyApi from '../../src/currencyApi'
@@ -74,6 +74,10 @@ describe('Testing version 1 of HTTP API', () => {
 				await Person.findByIdAndUpdate(user.id, {
 					$push: {
 						[`currencies.${currency}.accounts`]: `${currency}-account`
+					},
+					$set: {
+						[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(55.19764382),
+						[`currencies.${currency}.balance.locked`]: Decimal128.fromNumeric(67.997)
 					}
 				})
 			}
@@ -207,9 +211,11 @@ describe('Testing version 1 of HTTP API', () => {
 					.send()
 					.expect(200)
 				expect(body).to.be.an('object')
+				for (const key in body) {
+					expect(key).to.be.oneOf(CurrencyApi.currencies)
+				}
 				for (const currency of CurrencyApi.currencies) {
-					// Não testa por propriedades extras que podem vir junto
-					expect(body).to.have.deep.property(currency, user.getBalance(currency))
+					expect(body).to.have.deep.property(currency, user.getAccounts(currency))
 				}
 			})
 		})
@@ -224,7 +230,22 @@ describe('Testing version 1 of HTTP API', () => {
 				})
 			})
 
-			it('should return a balances object from the user')
+			it('should return a balances object from the user', async () => {
+				const user = await UserApi.findUser.byId(id)
+				const { body } = await request(app)
+					.get('/v1/user/balances')
+					.set('Cookie', [`sessionId=${sessionId}`])
+					.set(apiConfig)
+					.send()
+					.expect(200)
+				expect(body).to.be.an('object')
+				for (const key in body) {
+					expect(key).to.be.oneOf(CurrencyApi.currencies)
+				}
+				for (const currency of CurrencyApi.currencies) {
+					expect(body).to.have.deep.property(currency, user.getBalance(currency, true))
+				}
+			})
 		})
 
 		describe('/transactions', () => {
