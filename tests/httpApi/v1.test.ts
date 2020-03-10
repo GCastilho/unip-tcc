@@ -249,18 +249,58 @@ describe('Testing version 1 of HTTP API', () => {
 		})
 
 		describe('/transactions', () => {
-			it('Should return Not Authorized if invalid or missing sessionId', async () => {
-				const { body } = await request(app).get('/v1/user/transactions').set(apiConfig).send()
-					.expect(401)
-				expect(body).to.be.an('object').that.deep.equals({
-					error: 'Not Authorized',
-					message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-				})
+			before(async () => {
+				const user = await UserApi.findUser.byId(id)
+				for (const currency of CurrencyApi.currencies) {
+					let txAmount = 0.00000001
+					for (let i = 0; i < 30; i++) {
+						await CurrencyApi.withdraw(user, currency, `random-account-${currency}`, txAmount)
+						txAmount = txAmount * 2
+					}
+				}
 			})
 
-			it('Should return a list of transactions of the user')
+			describe('/', () => {
+				it('Should return Not Authorized if invalid or missing sessionId', async () => {
+					const { body } = await request(app).get('/v1/user/transactions').set(apiConfig).send()
+						.expect(401)
+					expect(body).to.be.an('object').that.deep.equals({
+						error: 'Not Authorized',
+						message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
+					})
+				})
+
+				it('Should return a list of transactions of the user', async () => {
+					const transactions = await Transaction.find({})
+					const { body } = await request(app)
+						.get('/v1/user/transactions')
+						.set('Cookie', [`sessionId=${sessionId}`])
+						.set(apiConfig)
+						.send()
+						.expect(200)
+					expect(body).to.be.an('array')
+					expect(body.length).to.equal(transactions.length)
+					transactions.forEach(tx_stored => {
+						const tx_received = body.find(e => e.opid.toHexString() === tx_stored._id.toHexString())
+						expect(tx_received.status).to.equals(tx_stored.status)
+						expect(tx_received.txid).to.equals(tx_stored.txid)
+						expect(tx_received.account).to.equals(tx_stored.account)
+						expect(tx_received.amount).to.equals(tx_stored.amount.toFullString())
+						expect(tx_received.type).to.equals(tx_stored.type)
+						expect(tx_received.confirmations).to.equals(tx_stored.confirmations)
+						expect(tx_received.timestamp.toString()).to.equals(tx_stored.timestamp.toString())
+					})
+				})
+
+				it('Should filter transactions by currency')
+
+				it('Should skip first 10 transactions')
+
+				it('Should return an empty array if there is no transactions')
+			})
 
 			describe('/:opid', () => {
+
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
 					const { body } = await request(app).get('/v1/user/transactions/a-opid').set(apiConfig).send()
 						.expect(401)
@@ -270,7 +310,33 @@ describe('Testing version 1 of HTTP API', () => {
 					})
 				})
 
-				it('Should return Not Authorized if transaction is from a different user')
+				it('Should return Not Authorized if transaction is from a different user', async () => {
+					/** Set do opid das transações do outro usuário */
+					const opidSet = new Set<ObjectId>()
+
+					// Cria o outro usuário
+					const user = await UserApi.createUser('randomUser-v1-test@email.com', 'randomPass')
+					for (const currency of CurrencyApi.currencies) {
+						user.person.currencies[currency].balance.available = Decimal128.fromNumeric(50)
+						await user.person.save()
+						const opid = await CurrencyApi.withdraw(user, currency, `other-account-${currency}`, 12.5)
+						opidSet.add(opid)
+					}
+
+					// Tenta requisitar info das txs do outro usuário
+					for (const opid of opidSet) {
+						const { body } = await request(app)
+							.get(`/v1/user/transactions/${opid.toHexString()}`)
+							.set('Cookie', [`sessionId=${sessionId}`])
+							.set(apiConfig)
+							.send()
+							.expect(401)
+						expect(body).to.be.an('object').that.deep.equals({
+							error: 'Not Authorized',
+							message: 'This transaction does not belong to your account'
+						})
+					}
+				})
 
 				it('Should return informations about the transaction')
 			})
