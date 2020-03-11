@@ -251,16 +251,16 @@ describe('Testing version 1 of HTTP API', () => {
 		describe('/transactions', () => {
 			before(async () => {
 				const user = await UserApi.findUser.byId(id)
-				for (const currency of CurrencyApi.currencies) {
-					let txAmount = 0.00000001
-					for (let i = 0; i < 30; i++) {
+				let txAmount = 0.00000001
+				for (let i = 0; i < 30; i++) {
+					for (const currency of CurrencyApi.currencies) {
 						await CurrencyApi.withdraw(user, currency, `random-account-${currency}`, txAmount)
-						txAmount = txAmount * 2
 					}
+					txAmount = txAmount * 2
 				}
 			})
 
-			describe('/', () => {
+			describe('Testing fetch of multiple transactions', () => {
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
 					const { body } = await request(app).get('/v1/user/transactions').set(apiConfig).send()
 						.expect(401)
@@ -270,8 +270,8 @@ describe('Testing version 1 of HTTP API', () => {
 					})
 				})
 
-				it('Should return a list of transactions of the user', async () => {
-					const transactions = await Transaction.find({})
+				it('Should return a list of the last 10 transactions of the user', async () => {
+					const transactions = (await Transaction.find({})).slice(-10)
 					const { body } = await request(app)
 						.get('/v1/user/transactions')
 						.set('Cookie', [`sessionId=${sessionId}`])
@@ -279,10 +279,12 @@ describe('Testing version 1 of HTTP API', () => {
 						.send()
 						.expect(200)
 					expect(body).to.be.an('array')
-					expect(body.length).to.equal(transactions.length)
+					expect(body.length).to.be.lte(10)
 					transactions.forEach(tx_stored => {
 						const tx_received = body.find(e => e.opid.toHexString() === tx_stored._id.toHexString())
+						expect(Object.entries(tx_received).length).to.equal(8)
 						expect(tx_received.status).to.equals(tx_stored.status)
+						expect(tx_received.currency).to.equals(tx_stored.currency)
 						expect(tx_received.txid).to.equals(tx_stored.txid)
 						expect(tx_received.account).to.equals(tx_stored.account)
 						expect(tx_received.amount).to.equals(tx_stored.amount.toFullString())
@@ -299,7 +301,7 @@ describe('Testing version 1 of HTTP API', () => {
 				it('Should return an empty array if there is no transactions')
 			})
 
-			describe('/:opid', () => {
+			describe('Testing fetch of specific transaction', () => {
 
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
 					const { body } = await request(app).get('/v1/user/transactions/a-opid').set(apiConfig).send()
@@ -338,10 +340,29 @@ describe('Testing version 1 of HTTP API', () => {
 					}
 				})
 
-				it('Should return informations about the transaction')
+				it('Should return informations about the transaction', async () => {
+					const tx = await Transaction.findOne({})
+					const { body } = await request(app)
+						.get(`/v1/user/transactions/${tx._id.toHexString()}`)
+						.set('Cookie', [`sessionId=${sessionId}`])
+						.set(apiConfig)
+						.send()
+						.expect('Content-Type', /json/)
+						.expect(200)
+					expect(body).to.be.an('object').that.deep.equals({
+						status:        tx.status,
+						currency:      tx.currency,
+						txid:          tx.txid,
+						account:       tx.account,
+						amount:       +tx.amount.toFullString(),
+						type:          tx.type,
+						confirmations: tx.confirmations,
+						timestamp:     tx.timestamp
+					})
+				})
 			})
 
-			describe('withdraw', () => {
+			describe('Testing for withdraw requests', () => {
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
 					const { body } = await request(app).post('/v1/user/transactions').set(apiConfig).send()
 						.expect(401)
