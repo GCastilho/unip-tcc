@@ -16,7 +16,7 @@ const TransactionSchema = new Schema({
 	},
 	txid: {
 		type: String,
-		unique: true,
+		//unique: true,
 		sparse: true,
 		required: false
 	},
@@ -30,6 +30,9 @@ const TransactionSchema = new Schema({
 		required: true
 	}
 })
+TransactionSchema.index({
+	txid: 1,
+	type: 1
+}, { unique: true })
 
-export const SendTransaction = mongoose.model<Transaction>('sendTransaction', TransactionSchema)
 export default mongoose.model<Transaction>('transaction', TransactionSchema)
