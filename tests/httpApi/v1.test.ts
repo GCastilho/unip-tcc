@@ -340,44 +340,98 @@ describe('Testing version 1 of HTTP API', () => {
 					}
 				})
 
-				it('Should return informations about the transaction', async () => {
-					const tx = await Transaction.findOne({})
-					const { body } = await request(app)
-						.get(`/v1/user/transactions/${tx._id.toHexString()}`)
-						.set('Cookie', [`sessionId=${sessionId}`])
-						.set(apiConfig)
-						.send()
-						.expect('Content-Type', /json/)
-						.expect(200)
-					expect(body).to.be.an('object').that.deep.equals({
-						status:        tx.status,
-						currency:      tx.currency,
-						txid:          tx.txid,
-						account:       tx.account,
-						amount:       +tx.amount.toFullString(),
-						type:          tx.type,
-						confirmations: tx.confirmations,
-						timestamp:     tx.timestamp
-					})
+				it('Should return informations about a transaction', async () => {
+					const transactions = await Transaction.find({})
+					// Testa pelo recebimento individual de todas as transações
+					for (const tx of transactions) {
+						const { body } = await request(app)
+							.get(`/v1/user/transactions/${tx._id.toHexString()}`)
+							.set('Cookie', [`sessionId=${sessionId}`])
+							.set(apiConfig)
+							.send()
+							.expect('Content-Type', /json/)
+							.expect(200)
+						expect(body).to.be.an('object').that.deep.equals({
+							status:        tx.status,
+							currency:      tx.currency,
+							txid:          tx.txid,
+							account:       tx.account,
+							amount:       +tx.amount.toFullString(),
+							type:          tx.type,
+							confirmations: tx.confirmations,
+							timestamp:     tx.timestamp
+						})
+					}
 				})
 			})
 
-			describe('Testing for withdraw requests', () => {
-				it('Should return Not Authorized if invalid or missing sessionId', async () => {
-					const { body } = await request(app).post('/v1/user/transactions').set(apiConfig).send()
-						.expect(401)
-					expect(body).to.be.an('object').that.deep.equals({
-						error: 'Not Authorized',
-						message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
+			for (const currency of CurrencyApi.currencies) {
+				describe(`Testing for withdraw requests for ${currency}`, () => {
+					it('Should return Not Authorized if invalid or missing sessionId', async () => {
+						/** Número de transações antes da operação */
+						const txSavedBefore = (await Transaction.find({})).length
+						const { body } = await request(app)
+							.post('/v1/user/transactions')
+							.set(apiConfig)
+							.send({
+								currency,
+								destination: `account-destination-${currency}`,
+								amount: 1
+							})
+							.expect(401)
+						expect(body).to.be.an('object').that.deep.equals({
+							error: 'Not Authorized',
+							message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
+						})
+						// Checa se a transação foi agendada
+						expect(await Transaction.find({})).to.have.lengthOf(txSavedBefore)
 					})
-					// Checa se a transação foi agendada
-					expect(await Transaction.find({})).to.have.lengthOf(0)
+
+					it('Should return Bad Request if the request is malformed')
+
+					it('Should return NotEnoughFunds if amount is greater than the available balance', async () => {
+						const user = await UserApi.findUser.byId(id)
+						const { available } = user.getBalance(currency, true)
+						const { body } = await request(app)
+							.post('/v1/user/transactions')
+							.set('Cookie', [`sessionId=${sessionId}`])
+							.set(apiConfig)
+							.send({
+								currency,
+								destination: `account-destination-${currency}`,
+								amount: +available + 10
+							})
+							.expect('Content-Type', /json/)
+							.expect(403)
+						expect(body).to.be.an('object').that.deep.equals({
+							code: 'NotEnoughFunds',
+							message: 'There are not enough funds on your account to perform this operation'
+						})
+					})
+
+					it('Should execute a withdraw for a given currency from the user', async () => {
+						const { body } = await request(app)
+							.post('/v1/user/transactions')
+							.set('Cookie', [`sessionId=${sessionId}`])
+							.set(apiConfig)
+							.send({
+								currency,
+								destination: `account-destination-${currency}`,
+								amount: 2
+							})
+							.expect('Content-Type', /json/)
+							.expect(200)
+						expect(body).to.be.an('object')
+						expect(body.opid).to.be.a('string')
+						// Checa de uma transação com esse opid existe
+						const tx = await Transaction.findById(body.opid)
+						expect(tx).to.be.an('object')
+						expect(tx.currency).to.equals(currency)
+						expect(tx.account).to.equal(`account-destination-${currency}`)
+						expect(tx.amount.toFullString()).to.equal('2.0')
+					})
 				})
-
-				it('Should return Bad Request if the request is malformed')
-
-				it('Should execute a withdraw for a given currency from the user')
-			})
+			}
 		})
 	})
 })
