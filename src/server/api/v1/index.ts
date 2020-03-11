@@ -4,25 +4,13 @@ import * as CurrencyApi from '../../../currencyApi'
 
 const router = express.Router()
 
-router.use('/currencies', (_req, res) => {
+router.get('/currencies', (_req, res) => {
 	res.send(CurrencyApi.currenciesDetailed)
-})
-
-router.use('/transaction/:opid', (req, res) => {
-	res.send({ opid: req.params.opid })
-})
-
-router.use('/transaction', (_req, res) => {
-	res.send({ transaction: 'transaction' })
 })
 
 router.use('/user', user)
 
-router.use('/:err', (_req, res) => {
-	res.status(404).send({ error: 'Not found' })
-})
-
-router.use('/', (_req, res) => {
+router.get('/', (_req, res) => {
 	res.send({
 		version: 1.0,
 		description: 'Entrypoint for the v1 of the HTTP API',
@@ -48,6 +36,10 @@ router.use('/', (_req, res) => {
 			}
 		]
 	})
+})
+
+router.all('/*', (_req, res) => {
+	res.status(404).send({ error: 'Not found' })
 })
 
 export default router
