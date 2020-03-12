@@ -6,11 +6,11 @@ const router = express.Router()
 
 router.use(cookieParser())
 
-router.get('/accounts', async (req, res) => {
+router.use(async (req, res, next) => {
 	try {
 		if (!req.cookies.sessionId) throw new Error('Not Authorized')
-		await UserApi.findUser.byCookie(req.cookies.sessionId)
-		res.send({ accounts: 'accounts' })
+		const user = await UserApi.findUser.byCookie(req.cookies.sessionId)
+		next()
 	} catch(err) {
 		res.status(401).send({
 			error: 'Not Authorized',
@@ -19,69 +19,28 @@ router.get('/accounts', async (req, res) => {
 	}
 })
 
-router.get('/balances', async (req, res) => {
-	try {
-		if (!req.cookies.sessionId) throw new Error('Not Authorized')
-		await UserApi.findUser.byCookie(req.cookies.sessionId)
-		res.send({ balances: 'balances' })
-	} catch(err) {
-		res.status(401).send({
-			error: 'Not Authorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-		})
-	}
+router.get('/accounts', async (_req, res) => {
+	res.send({ accounts: 'accounts' })
 })
 
-router.get('/info', async (req, res) => {
-	try {
-		if (!req.cookies.sessionId) throw new Error('Not Authorized')
-		await UserApi.findUser.byCookie(req.cookies.sessionId)
-		res.send(req.cookies)
-	} catch(err) {
-		res.status(401).send({
-			error: 'Not Authorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-		})
-	}
+router.get('/balances', async (_req, res) => {
+	res.send({ balances: 'balances' })
 })
 
-router.get('/transactions/withdraw', async (req, res) => {
-	try {
-		if (!req.cookies.sessionId) throw new Error('Not Authorized')
-		await UserApi.findUser.byCookie(req.cookies.sessionId)
-		res.send({ withdraw: 'withdraw' })
-	} catch(err) {
-		res.status(401).send({
-			error: 'Not Authorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-		})
-	}
+router.get('/info', async (_req, res) => {
+	res.send({ info: 'info' })
+})
+
+router.get('/transactions/withdraw', async (_req, res) => {
+	res.send({ withdraw: 'withdraw' })
 })
 
 router.get('/transactions/:opid', async (req, res) => {
-	try {
-		if (!req.cookies.sessionId) throw new Error('Not Authorized')
-		await UserApi.findUser.byCookie(req.cookies.sessionId)
-		res.send(req.cookies)
-	} catch(err) {
-		res.status(401).send({
-			error: 'Not Authorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-		})
-	}
+	res.send(req.cookies)
 })
 
-router.get('/transactions', async (req, res) => {
-	try {
-		if (!req.cookies.sessionId) throw new Error('Not Authorized')
-		await UserApi.findUser.byCookie(req.cookies.sessionId)
-		res.send({ transaction: 'transactions' })
-	} catch(err) {
-		res.status(401).send({
-			error: 'Not Authorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-		})
-	}
+router.get('/transactions', async (_req, res) => {
+	res.send({ transaction: 'transactions' })
 })
 
 router.get('/', (_req, res) => {
