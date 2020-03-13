@@ -12,6 +12,10 @@ const app = require('../../src/server')
 
 describe('Testing version 1 of HTTP API', () => {
 	const apiConfig = { host: 'api.site.com' }
+	const notFoundModel = {
+		error: 'NotFound',
+		message: 'Endpoint not found'
+	}
 
 	before(async () => {
 		await Person.deleteMany({})
@@ -51,7 +55,15 @@ describe('Testing version 1 of HTTP API', () => {
 
 	it('Should return Bad Request if the request is unrecognized')
 
-	it('Should return Not Found if the path for the request was not found')
+	it('Should return Not Found if the path for the request was not found', async () => {
+		const { body } = await request(app)
+			.post('/v1/notFoundPath')
+			.set(apiConfig)
+			.send()
+			.expect('Content-Type', /json/)
+			.expect(404)
+		expect(body).to.be.an('object').that.deep.equal(notFoundModel)
+	})
 
 	describe('/currencies', () => {
 		it('Should return information about the suported currencies', async () => {
@@ -67,7 +79,7 @@ describe('Testing version 1 of HTTP API', () => {
 		let id: ObjectId
 
 		const notAuthorizedModel = {
-			error: 'Not Authorized',
+			error: 'NotAuthorized',
 			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
 		}
 
@@ -98,7 +110,7 @@ describe('Testing version 1 of HTTP API', () => {
 		})
 
 		it('Should return information about the subpath', async () => {
-			const { body } = await request(app).get('/v1/currencies').set(apiConfig).send()
+			const { body } = await request(app).get('/v1/user').set(apiConfig).send()
 				.expect('Content-Type', /json/)
 				.expect(200)
 			expect(body).to.be.an('object').that.deep.equals({
@@ -195,6 +207,16 @@ describe('Testing version 1 of HTTP API', () => {
 					},
 				]
 			})
+		})
+
+		it('Should return Not Found if the path for the request was not found', async () => {
+			const { body } = await request(app)
+				.post('/v1/user/notFoundPath')
+				.set(apiConfig)
+				.send()
+				.expect('Content-Type', /json/)
+				.expect(404)
+			expect(body).to.be.an('object').that.deep.equal(notFoundModel)
 		})
 
 		describe('/info', () => {
@@ -477,7 +499,7 @@ describe('Testing version 1 of HTTP API', () => {
 							.expect('Content-Type', /json/)
 							.expect(403)
 						expect(body).to.be.an('object').that.deep.equals({
-							code: 'NotEnoughFunds',
+							error: 'NotEnoughFunds',
 							message: 'There are not enough funds on your account to perform this operation'
 						})
 					})
