@@ -90,7 +90,7 @@ describe('Testing version 1 of HTTP API', () => {
 				email: 'v1-test@email.com',
 				password: 'UserP@ss'
 			}).expect(200)
-			expect(res.header['set-cookie']).not.to.be.undefined
+			expect(res.header['set-cookie']).to.be.a('string')
 			sessionId = res.header['set-cookie']
 				.map(cookieparser.parse)
 				.filter(cookie => cookie.sessionId)[0].sessionId
@@ -138,19 +138,19 @@ describe('Testing version 1 of HTTP API', () => {
 						requests: [
 							{
 								method: 'GET',
-								returns: 'List of transactions from the user',
+								returns: 'List of transactions from the user in descending order',
 								parametres: [
 									{
 										type: 'query',
-										description: '',
-										value: 'numeric',
-										name: 'from'
+										description: 'Filter transactions by currency',
+										value: 'string',
+										name: 'currency'
 									},
 									{
 										type: 'query',
-										description: '',
+										description: 'Skip first n results',
 										value: 'numeric',
-										name: 'to'
+										name: 'skip'
 									}
 								]
 							},
@@ -174,7 +174,20 @@ describe('Testing version 1 of HTTP API', () => {
 									{
 										type: 'body',
 										description: 'Instructions to execute a withdraw of a currency',
-										value: {}
+										value: {
+											currency: {
+												type: 'string',
+												description: 'Currency to withdraw from'
+											},
+											destination: {
+												type: 'string',
+												description: 'Address to send currency to'
+											},
+											amount: {
+												type: 'numeric',
+												description: 'Amount of currency to withdraw'
+											}
+										}
 									}
 								]
 							}
@@ -263,8 +276,29 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 				})
 
+				it('Should return an empty array if there is no transactions', async () => {
+					await UserApi.createUser('empty-tx-user@email.com', 'emptyP@ss')
+					const res = await request(app).post('/login').send({
+						email: 'v1-test@email.com',
+						password: 'UserP@ss'
+					}).expect(200)
+					expect(res.header['set-cookie']).to.be.a('string')
+					const _sessionId = res.header['set-cookie']
+						.map(cookieparser.parse)
+						.filter(cookie => cookie.sessionId)[0].sessionId
+					const { body } = await request(app)
+						.get('/v1/user/transactions')
+						.set('Cookie', [`sessionId=${_sessionId}`])
+						.set(apiConfig)
+						.send()
+						.expect(200)
+					expect(body).to.be.an('array').that.have.lengthOf(0)
+				})
+
 				it('Should return a list of the last 10 transactions of the user', async () => {
-					const transactions = (await Transaction.find({})).slice(-10)
+					const transactions = (
+						await Transaction.find({}).sort({ timestamp: -1 })
+					).slice(10)
 					const { body } = await request(app)
 						.get('/v1/user/transactions')
 						.set('Cookie', [`sessionId=${sessionId}`])
@@ -287,11 +321,63 @@ describe('Testing version 1 of HTTP API', () => {
 					})
 				})
 
-				it('Should filter transactions by currency')
+				it('Should skip first 10 transactions', async () => {
+					const transactions = (
+						await Transaction.find().sort({ timestamp: -1 })
+					).slice(10, 20)
+					const { body } = await request(app)
+						.get('/v1/user/transactions')
+						.set('Cookie', [`sessionId=${sessionId}`])
+						.set(apiConfig)
+						.query({ skip: 10 })
+						.send()
+						.expect(200)
+					expect(body).to.be.an('array')
+					expect(body.length).to.be.lte(10)
+					transactions.forEach(tx_stored => {
+						const tx_received = body.find(e => e.opid.toHexString() === tx_stored._id.toHexString())
+						expect(Object.entries(tx_received).length).to.equal(8)
+						expect(tx_received.status).to.equals(tx_stored.status)
+						expect(tx_received.currency).to.equals(tx_stored.currency)
+						expect(tx_received.txid).to.equals(tx_stored.txid)
+						expect(tx_received.account).to.equals(tx_stored.account)
+						expect(tx_received.amount).to.equals(tx_stored.amount.toFullString())
+						expect(tx_received.type).to.equals(tx_stored.type)
+						expect(tx_received.confirmations).to.equals(tx_stored.confirmations)
+						expect(tx_received.timestamp.toString()).to.equals(tx_stored.timestamp.toString())
+					})
+				})
 
-				it('Should skip first 10 transactions')
-
-				it('Should return an empty array if there is no transactions')
+				describe('Testing filtering of transactions by currency', () => {
+					for (const currency of CurrencyApi.currencies) {
+						it(`Should filter transactions by ${currency}`, async () => {
+							const transactions = (
+								await Transaction.find({ currency }).sort({ timestamp: -1 })
+							).slice(10)
+							const { body } = await request(app)
+								.get('/v1/user/transactions')
+								.set('Cookie', [`sessionId=${sessionId}`])
+								.set(apiConfig)
+								.query({ currency })
+								.send()
+								.expect(200)
+							expect(body).to.be.an('array')
+							expect(body.length).to.be.lte(10)
+							transactions.forEach(tx_stored => {
+								const tx_received = body.find(e => e.opid.toHexString() === tx_stored._id.toHexString())
+								expect(Object.entries(tx_received).length).to.equal(8)
+								expect(tx_received.status).to.equals(tx_stored.status)
+								expect(tx_received.currency).to.equals(tx_stored.currency)
+								expect(tx_received.txid).to.equals(tx_stored.txid)
+								expect(tx_received.account).to.equals(tx_stored.account)
+								expect(tx_received.amount).to.equals(tx_stored.amount.toFullString())
+								expect(tx_received.type).to.equals(tx_stored.type)
+								expect(tx_received.confirmations).to.equals(tx_stored.confirmations)
+								expect(tx_received.timestamp.toString()).to.equals(tx_stored.timestamp.toString())
+							})
+						})
+					}
+				})
 			})
 
 			describe('Testing fetch of specific transaction', () => {
@@ -356,7 +442,7 @@ describe('Testing version 1 of HTTP API', () => {
 			})
 
 			for (const currency of CurrencyApi.currencies) {
-				describe(`Testing for withdraw requests for ${currency}`, () => {
+				describe(`Testing withdraw requests for ${currency}`, () => {
 					it('Should return Not Authorized if invalid or missing sessionId', async () => {
 						/** Número de transações antes da operação */
 						const txSavedBefore = (await Transaction.find({})).length
