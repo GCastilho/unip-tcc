@@ -66,6 +66,11 @@ describe('Testing version 1 of HTTP API', () => {
 		let sessionId: string
 		let id: ObjectId
 
+		const notAuthorizedModel = {
+			error: 'Not Authorized',
+			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
+		}
+
 		before(async () => {
 			await Person.deleteMany({})
 			await Transaction.deleteMany({})
@@ -183,10 +188,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should return Not Authorized if invalid or missing sessionId', async () => {
 				const { body } = await request(app).get('/v1/user/info').set(apiConfig).send()
 					.expect(401)
-				expect(body).to.be.an('object').that.deep.equals({
-					error: 'Not Authorized',
-					message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-				})
+				expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 			})
 
 			it('Should return user information')
@@ -196,10 +198,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should return Not Authorized if invalid or missing sessionId', async () => {
 				const { body } = await request(app).get('/v1/user/accounts').set(apiConfig).send()
 					.expect(401)
-				expect(body).to.be.an('object').that.deep.equals({
-					error: 'Not Authorized',
-					message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-				})
+				expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 			})
 
 			it('should return a accounts object from the user', async () => {
@@ -224,10 +223,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should return Not Authorized if invalid or missing sessionId', async () => {
 				const { body } = await request(app).get('/v1/user/balances').set(apiConfig).send()
 					.expect(401)
-				expect(body).to.be.an('object').that.deep.equals({
-					error: 'Not Authorized',
-					message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-				})
+				expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 			})
 
 			it('should return a balances object from the user', async () => {
@@ -264,10 +260,7 @@ describe('Testing version 1 of HTTP API', () => {
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
 					const { body } = await request(app).get('/v1/user/transactions').set(apiConfig).send()
 						.expect(401)
-					expect(body).to.be.an('object').that.deep.equals({
-						error: 'Not Authorized',
-						message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-					})
+					expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 				})
 
 				it('Should return a list of the last 10 transactions of the user', async () => {
@@ -306,10 +299,7 @@ describe('Testing version 1 of HTTP API', () => {
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
 					const { body } = await request(app).get('/v1/user/transactions/a-opid').set(apiConfig).send()
 						.expect(401)
-					expect(body).to.be.an('object').that.deep.equals({
-						error: 'Not Authorized',
-						message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-					})
+					expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 				})
 
 				it('Should return Not Authorized if transaction is from a different user', async () => {
@@ -379,10 +369,7 @@ describe('Testing version 1 of HTTP API', () => {
 								amount: 1
 							})
 							.expect(401)
-						expect(body).to.be.an('object').that.deep.equals({
-							error: 'Not Authorized',
-							message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
-						})
+						expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 						// Checa se a transação foi agendada
 						expect(await Transaction.find({})).to.have.lengthOf(txSavedBefore)
 					})
