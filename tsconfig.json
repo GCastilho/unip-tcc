@@ -60,6 +60,12 @@
     // "experimentalDecorators": true,        /* Enables experimental support for ES7 decorators. */
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
 
+    // Add project types to typescript
+    "typeRoots": [
+      "@types",
+      "node_modules/@types"
+    ],
+
     /* Advanced Options */
     "forceConsistentCasingInFileNames": true  /* Disallow inconsistently-cased references to the same file. */
   },
