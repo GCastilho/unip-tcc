@@ -102,7 +102,7 @@ describe('Testing version 1 of HTTP API', () => {
 				email: 'v1-test@email.com',
 				password: 'UserP@ss'
 			}).expect(200)
-			expect(res.header['set-cookie']).to.be.a('string')
+			expect(res.header['set-cookie']).to.be.an('array')
 			sessionId = res.header['set-cookie']
 				.map(cookieparser.parse)
 				.filter(cookie => cookie.sessionId)[0].sessionId
@@ -304,7 +304,7 @@ describe('Testing version 1 of HTTP API', () => {
 						email: 'v1-test@email.com',
 						password: 'UserP@ss'
 					}).expect(200)
-					expect(res.header['set-cookie']).to.be.a('string')
+					expect(res.header['set-cookie']).to.be.an('array')
 					const _sessionId = res.header['set-cookie']
 						.map(cookieparser.parse)
 						.filter(cookie => cookie.sessionId)[0].sessionId
