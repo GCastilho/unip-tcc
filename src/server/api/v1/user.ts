@@ -1,6 +1,11 @@
 import express from 'express'
 import * as UserApi from '../../../userApi'
+import * as CurrencyApi from '../../../currencyApi'
+//import Transaction from '../../../db/models/transaction'
 import cookieParser from 'cookie-parser'
+
+let account: object
+let balance: object
 
 const router = express.Router()
 
@@ -8,23 +13,37 @@ router.use(cookieParser())
 
 router.use(async (req, res, next) => {
 	try {
-		if (!req.cookies.sessionId) throw new Error('Not Authorized')
-		const user = await UserApi.findUser.byCookie(req.cookies.sessionId)
+		if (!req.cookies.sessionId) throw 'Cookie Not Found'
+		req.user = await UserApi.findUser.byCookie(req.cookies.sessionId)
 		next()
 	} catch(err) {
 		res.status(401).send({
-			error: 'Not Authorized',
+			error: 'NotAuthorized',
 			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
 		})
 	}
 })
 
-router.get('/accounts', async (_req, res) => {
-	res.send({ accounts: 'accounts' })
+router.get('/accounts', async (req, res) => {
+	try {
+		for (const currency of CurrencyApi.currencies) {
+			account[currency] = req.user?.getAccounts(currency)
+		}
+		res.send(account)
+	} catch(err) {
+		console.log(err)
+	}
 })
 
-router.get('/balances', async (_req, res) => {
-	res.send({ balances: 'balances' })
+router.get('/balances', async (req, res) => {
+	try {
+		for (const currency of CurrencyApi.currencies) {
+			balance[currency] = req.user?.getBalance(currency, true)
+		}
+		res.send(balance)
+	} catch(err) {
+		console.log(err)
+	}
 })
 
 router.get('/info', async (_req, res) => {
@@ -128,7 +147,10 @@ router.get('/', (_req, res) => {
 })
 
 router.all('/*', (_req, res) => {
-	res.status(404).send({ error: 'Not found' })
+	res.status(404).send({
+		error: 'NotFound',
+		message: 'Endpoint not found'
+	})
 })
 
 export default router

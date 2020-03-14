@@ -39,7 +39,10 @@ router.get('/', (_req, res) => {
 })
 
 router.all('/*', (_req, res) => {
-	res.status(404).send({ error: 'Not found' })
+	res.status(404).send({
+		error: 'NotFound',
+		message: 'Endpoint not found'
+	})
 })
 
 export default router
