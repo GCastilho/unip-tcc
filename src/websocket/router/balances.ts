@@ -3,9 +3,9 @@ import User from '../../userApi/user'
 
 /** Interface do retorno do socket ao receber 'list' */
 export interface List {
-	code: typeof CurrencyApi['currenciesDetailed'][number]['code']
-	name: typeof CurrencyApi['currenciesDetailed'][number]['name']
-	decimals: typeof CurrencyApi['currenciesDetailed'][number]['decimals']
+	name: CurrencyApi.SuportedCurrencies
+	code: ReturnType<typeof CurrencyApi['detailsOf']>['code']
+	decimals: ReturnType<typeof CurrencyApi['detailsOf']>['decimals']
 	accounts: ReturnType<User['getAccounts']>|undefined
 }
 
@@ -29,12 +29,17 @@ export default function balances(socket: SocketIO.Socket) {
 		if (!socket.user) return callback('NotLoggedIn')
 
 		console.log('requested list')
-		const list = CurrencyApi.currenciesDetailed.map(currency => ({
-			code:     currency.code,
-			name:     currency.name,
-			decimals: currency.decimals,
-			accounts: socket.user?.getAccounts(currency.name),
-		}))
+		const list: List[] = []
+		for (const currency of CurrencyApi.currencies) {
+			const details = CurrencyApi.detailsOf(currency)
+			list.push({
+				name:     currency,
+				code:     details.code,
+				decimals: details.decimals,
+				accounts: socket.user?.getAccounts(currency)
+			})
+		}
+
 		callback(null, list)
 	})
 

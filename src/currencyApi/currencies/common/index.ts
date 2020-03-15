@@ -22,7 +22,7 @@ export default abstract class Common {
 	abstract name: 'bitcoin' | 'nano'
 
 	/** O código da currency */
-	abstract code: string
+	abstract code: 'btc' | 'nano'
 
 	/** A quantidade de casas decimais que esta currency tem */
 	public decimals = 8

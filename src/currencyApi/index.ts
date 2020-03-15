@@ -32,17 +32,27 @@ const _currencies = {
 export const currencies = Object.values(_currencies).map(currency => currency.name)
 
 /**
- * Um array de objetos com informações detalhadas sobre as currencies
- * suportadas pela api
- *
- * O objeto contém as propriedades 'name', 'code' e 'decimals'
- *
- * @todo Isso não ser um array
+ * Retorna informações detalhada sobre uma currency suportada pela API
  */
-export const currenciesDetailed = Object.values(_currencies).map(currency => {
-	const { name, code, supportedDecimals } = currency
-	return { name, code, decimals: supportedDecimals }
-})
+export const detailsOf = (function() {
+	const detailsMap = new Map<SuportedCurrencies, {
+		code: Common['code']
+		decimals: Common['supportedDecimals']
+	}>()
+
+	for (const currency of currencies) {
+		detailsMap.set(currency, {
+			code: _currencies[currency].code,
+			decimals: _currencies[currency].supportedDecimals,
+		})
+	}
+
+	return function currenciesDetailed(currency: SuportedCurrencies) {
+		const details = detailsMap.get(currency)
+		if (!details) throw new Error(`The currency '${currency}' was not found`)
+		return details
+	}
+})()
 
 /** EventEmmiter para eventos internos */
 // const _events = new EventEmitter()

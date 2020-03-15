@@ -206,9 +206,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 							expect(doc.amount.toFullString()).to.equals(
 								Decimal128.fromNumeric(
 									transaction.amount,
-									CurrencyApi.currenciesDetailed
-										.find(c => c.name === currency)
-										.decimals
+									CurrencyApi.detailsOf(currency).decimals
 								).toFullString()
 							)
 							done()
