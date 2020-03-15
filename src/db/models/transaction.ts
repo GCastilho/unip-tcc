@@ -185,8 +185,7 @@ const TransactionSchema: Schema = new Schema({
 	},
 	txid: {
 		type: String,
-		sparse: true,
-		unique: true
+		sparse: true
 	},
 	type: {
 		type: String,
@@ -220,6 +219,13 @@ const TransactionSchema: Schema = new Schema({
 		type: Date,
 		required: true
 	}
+})
+
+TransactionSchema.index({
+	txid: 1,
+	type: 1
+}, {
+	unique: true
 })
 
 /**

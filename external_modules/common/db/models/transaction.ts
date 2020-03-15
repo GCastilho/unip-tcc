@@ -16,7 +16,6 @@ const TransactionSchema = new Schema({
 	},
 	txid: {
 		type: String,
-		//unique: true,
 		sparse: true,
 		required: false
 	},
@@ -30,9 +29,14 @@ const TransactionSchema = new Schema({
 		required: true
 	}
 })
+//compound index to allow the storing of a send and a receive transaction
 TransactionSchema.index({
 	txid: 1,
 	type: 1
-}, { unique: true })
+}, {
+	unique: true
+})
+//mongodb recomends to turn off autoIndex for optimization
+TransactionSchema.set('autoIndex', false)
 
 export default mongoose.model<Transaction>('transaction', TransactionSchema)
