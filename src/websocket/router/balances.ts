@@ -5,6 +5,7 @@ import User from '../../userApi/user'
 export interface List {
 	name: CurrencyApi.SuportedCurrencies
 	code: ReturnType<typeof CurrencyApi['detailsOf']>['code']
+	fee: ReturnType<typeof CurrencyApi['detailsOf']>['fee']
 	decimals: ReturnType<typeof CurrencyApi['detailsOf']>['decimals']
 	accounts: ReturnType<User['getAccounts']>|undefined
 }
@@ -35,6 +36,7 @@ export default function balances(socket: SocketIO.Socket) {
 			list.push({
 				name:     currency,
 				code:     details.code,
+				fee:      details.fee,
 				decimals: details.decimals,
 				accounts: socket.user?.getAccounts(currency)
 			})

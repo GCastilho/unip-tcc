@@ -32,18 +32,20 @@ const _currencies = {
 export const currencies = Object.values(_currencies).map(currency => currency.name)
 
 /**
- * Retorna informações detalhada sobre uma currency suportada pela API
+ * Retorna informações detalhadas sobre uma currency suportada pela API
  */
 export const detailsOf = (function() {
 	const detailsMap = new Map<SuportedCurrencies, {
 		code: Common['code']
 		decimals: Common['supportedDecimals']
+		fee: Common['fee']
 	}>()
 
 	for (const currency of currencies) {
 		detailsMap.set(currency, {
 			code: _currencies[currency].code,
 			decimals: _currencies[currency].supportedDecimals,
+			fee: _currencies[currency].fee
 		})
 	}
 

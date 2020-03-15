@@ -24,6 +24,9 @@ export default abstract class Common {
 	/** O código da currency */
 	abstract code: 'btc' | 'nano'
 
+	/** Taxa cobrada do usuário para executar operações de saque */
+	abstract fee: number
+
 	/** A quantidade de casas decimais que esta currency tem */
 	public decimals = 8
 

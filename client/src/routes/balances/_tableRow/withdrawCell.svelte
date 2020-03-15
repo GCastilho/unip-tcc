@@ -3,10 +3,13 @@
 	import * as balances from '../../../stores/balances.js'
 
 	export let name
+	export let fee
 	let withdrawAmount
 
 	/** Impede que o valor digitado do amount seja maior que o saldo disponível */
 	const filterAmount = () => withdrawAmount = withdrawAmount > $balances[name].available ? $balances[name].available : withdrawAmount
+
+	$: amountToReceive = withdrawAmount - fee > 0 ? withdrawAmount - fee : 0
 
 	async function handleWithdraw(event) {
 		const destination = event.target.destination.value
@@ -85,6 +88,10 @@
 	input[type=number] {
 		-moz-appearance:textfield;
 	}
+
+	p {
+		margin: 0
+	}
 </style>
 
 <form on:submit|preventDefault={handleWithdraw}>
@@ -102,6 +109,8 @@
 				on:input="{filterAmount}"
 			>
 		</div>
+		<p>Fee: {fee.toFixed(8)}</p>
+		<p>You will receive: {amountToReceive.toFixed(8)}</p>
 	</div>
 
 	<button type="submit">Withdraw</button>
