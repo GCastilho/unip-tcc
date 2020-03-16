@@ -56,20 +56,21 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 				})
 
 				it('Should receive a withdraw request', done => {
-					CurrencyApi.withdraw(user, currency, `${currency}_account`, 3.456).then(opid => {
+					const amount = 3.456
+					CurrencyApi.withdraw(user, currency, `${currency}_account`, amount).then(opid => {
 						client = io(url + '/' + currency)
 
 						client.once('withdraw', (request: TxSend, callback: (err: any, response?: string) => void) => {
 							expect(request).to.be.an('object')
 
-							expect(request).to.haveOwnProperty('opid')
-								.that.is.a('string').and.equals(opid.toHexString())
+							expect(request.opid).to.be.a('string')
+								.that.equals(opid.toHexString())
 
-							expect(request).to.haveOwnProperty('account')
-								.that.is.a('string').and.equals(`${currency}_account`)
+							expect(request.account).to.be.a('string')
+								.that.equals(`${currency}_account`)
 
-							expect(request).to.haveOwnProperty('amount')
-								.that.is.a('string').and.equals('3.456')
+							expect(request.amount).to.be.a('string')
+								.that.equals((amount - CurrencyApi.detailsOf(currency).fee).toString())
 
 							callback(null, 'request received for' + currency)
 							done()
@@ -106,6 +107,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 				})
 
 				it('Should receive a withdraw request immediate after requested', done => {
+					const amount = 4.567
 					client.once('withdraw', (request: TxSend, callback: (err: any, response?: string) => void) => {
 						expect(request).to.be.an('object')
 
@@ -114,20 +116,19 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						 * listener de withdraw ser colocado depois do evento
 						 * ser emitido
 						 */
-						expect(request).to.haveOwnProperty('opid')
-							.that.is.a('string')//.and.equals(opid.toHexString())
+						expect(request.opid).to.be.a('string')//.and.equals(opid.toHexString())
 
-						expect(request).to.haveOwnProperty('account')
-							.that.is.a('string').and.equals(`${currency}_account`)
+						expect(request.account).to.be.a('string')
+							.that.equals(`${currency}_account`)
 
-						expect(request).to.haveOwnProperty('amount')
-							.that.is.a('string').and.equals('4.567')
+						expect(request.amount).to.be.a('string')
+							.that.equals((amount - CurrencyApi.detailsOf(currency).fee).toString())
 
 						callback(null, 'request received for' + currency)
 						done()
 					})
 
-					CurrencyApi.withdraw(user, currency, `${currency}_account`, 4.567)
+					CurrencyApi.withdraw(user, currency, `${currency}_account`, amount)
 						.catch(err => done(err))
 				})
 			})

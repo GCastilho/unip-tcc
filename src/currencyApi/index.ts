@@ -136,7 +136,8 @@ export async function withdraw(
 		currency,
 		status: 'processing',
 		account,
-		amount,
+		amount: amount - _currencies[currency].fee,
+		fee: _currencies[currency].fee,
 		timestamp: new Date()
 	}).save()
 
