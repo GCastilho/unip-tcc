@@ -432,7 +432,7 @@ describe('Testing version 1 of HTTP API', () => {
 							.send()
 							.expect(401)
 						expect(body).to.be.an('object').that.deep.equals({
-							error: 'Not Authorized',
+							error: 'NotAuthorized',
 							message: 'This transaction does not belong to your account'
 						})
 					}
@@ -457,7 +457,7 @@ describe('Testing version 1 of HTTP API', () => {
 							amount:       +tx.amount.toFullString(),
 							type:          tx.type,
 							confirmations: tx.confirmations,
-							timestamp:     tx.timestamp
+							timestamp:     tx.timestamp.getTime()
 						})
 					}
 				})
