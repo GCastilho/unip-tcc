@@ -11,7 +11,8 @@ export class Bitcoin extends Common {
 	name = 'bitcoin'
 	mainServerIp = MAIN_SERVER_IP
 	mainServerPort = MAIN_SERVER_PORT
-	blockHeight = 20000000;
+	blockHeight = 20000000
+	canSincronize = true
 	protected rpc = methods.rpc
 
 	rewindTransactions = methods.rewindTransactions
@@ -41,16 +42,25 @@ export class Bitcoin extends Common {
 			this.processBlock(req.body.block)
 			res.send() // Finaliza a comunicação com o curl do BTC
 		})
-		axios.get('https://api.blockcypher.com/v1/btc/test3').then(blockInfo => {
-			this.blockHeight = (blockInfo.data.height)
+		this.rpc.getBlockChainInfo().then(blockChainInfo => {
+			this.blockHeight = (blockChainInfo.headers)
 			console.log('current block height :' + this.blockHeight)
 		
 			app.listen(this.port, () => {
 				console.log('Bitcoin blockchain listener is up on port', this.port)
 			})
-		}).catch(err => {
-			console.error('Error', err)
-			process.exit(1)
+		}).catch(async err => {
+			const blockInfo = await axios.get('https://api.blockcypher.com/v1/btc/test3')
+			if (!blockInfo.data.height) {
+				console.error('Error on receiving blockchain height', err)
+				process.exit(1)
+			}
+			this.blockHeight = (blockInfo.data.height)
+			console.log('current block height :' + this.blockHeight)
+				
+			app.listen(this.port, () => {
+				console.log('Bitcoin blockchain listener is up on port', this.port)
+			})
 		})
 		
 	}
