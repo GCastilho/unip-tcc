@@ -301,8 +301,8 @@ describe('Testing version 1 of HTTP API', () => {
 				it('Should return an empty array if there is no transactions', async () => {
 					await UserApi.createUser('empty-tx-user@email.com', 'emptyP@ss')
 					const res = await request(app).post('/login').send({
-						email: 'v1-test@email.com',
-						password: 'UserP@ss'
+						email: 'empty-tx-user@email.com',
+						password: 'emptyP@ss'
 					}).expect(200)
 					expect(res.header['set-cookie']).to.be.an('array')
 					const _sessionId = res.header['set-cookie']
@@ -330,7 +330,8 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(body).to.be.an('array')
 					expect(body.length).to.be.lte(10)
 					transactions.forEach(tx_stored => {
-						const tx_received = body.find(e => e.opid.toHexString() === tx_stored._id.toHexString())
+						const tx_received = body.find(e => e.opid?.toHexString() === tx_stored._id.toHexString())
+						expect(tx_received).to.be.an('object')
 						expect(Object.entries(tx_received).length).to.equal(8)
 						expect(tx_received.status).to.equals(tx_stored.status)
 						expect(tx_received.currency).to.equals(tx_stored.currency)
@@ -357,7 +358,8 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(body).to.be.an('array')
 					expect(body.length).to.be.lte(10)
 					transactions.forEach(tx_stored => {
-						const tx_received = body.find(e => e.opid.toHexString() === tx_stored._id.toHexString())
+						const tx_received = body.find(e => e.opid?.toHexString() === tx_stored._id.toHexString())
+						expect(tx_received).to.be.an('object')
 						expect(Object.entries(tx_received).length).to.equal(8)
 						expect(tx_received.status).to.equals(tx_stored.status)
 						expect(tx_received.currency).to.equals(tx_stored.currency)
@@ -386,7 +388,8 @@ describe('Testing version 1 of HTTP API', () => {
 							expect(body).to.be.an('array')
 							expect(body.length).to.be.lte(10)
 							transactions.forEach(tx_stored => {
-								const tx_received = body.find(e => e.opid.toHexString() === tx_stored._id.toHexString())
+								const tx_received = body.find(e => e.opid?.toHexString() === tx_stored._id.toHexString())
+								expect(tx_received).to.be.an('object')
 								expect(Object.entries(tx_received).length).to.equal(8)
 								expect(tx_received.status).to.equals(tx_stored.status)
 								expect(tx_received.currency).to.equals(tx_stored.currency)
@@ -449,14 +452,13 @@ describe('Testing version 1 of HTTP API', () => {
 							.send()
 							.expect('Content-Type', /json/)
 							.expect(200)
+						// txid e confirmations não serão enviados pq são undefined
 						expect(body).to.be.an('object').that.deep.equals({
 							status:        tx.status,
 							currency:      tx.currency,
-							txid:          tx.txid,
 							account:       tx.account,
 							amount:       +tx.amount.toFullString(),
 							type:          tx.type,
-							confirmations: tx.confirmations,
 							timestamp:     tx.timestamp.getTime()
 						})
 					}
