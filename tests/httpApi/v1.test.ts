@@ -291,6 +291,14 @@ describe('Testing version 1 of HTTP API', () => {
 					}
 					txAmount = txAmount * 2
 				}
+
+				// Adiciona um txid e confirmations nas transações
+				const txs = await Transaction.find({})
+				for (const tx of txs) {
+					tx.txid = `txid-${tx.currency}-${tx.amount}`
+					tx.confirmations = Math.trunc(+tx.amount.toFullString())
+				}
+				await Promise.all(txs.map(tx => tx.save()))
 			})
 
 			describe('Testing fetch of multiple transactions', () => {
@@ -322,7 +330,7 @@ describe('Testing version 1 of HTTP API', () => {
 				it('Should return a list of the last 10 transactions of the user', async () => {
 					const transactions = (
 						await Transaction.find({}).sort({ timestamp: -1 })
-					).slice(10)
+					).slice(0, 10)
 					const { body } = await request(app)
 						.get('/v1/user/transactions')
 						.set('Cookie', [`sessionId=${sessionId}`])
@@ -333,7 +341,7 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(body.length).to.be.lte(10)
 					transactions.forEach(tx_stored => {
 						const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
-						expect(tx_received).to.be.an('object')
+						expect(tx_received).to.be.an('object', `Transaction with opid ${tx_stored._id} not sent`)
 						expect(Object.entries(tx_received).length).to.equal(8)
 						expect(tx_received.status).to.equals(tx_stored.status)
 						expect(tx_received.currency).to.equals(tx_stored.currency)
@@ -361,7 +369,7 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(body.length).to.be.lte(10)
 					transactions.forEach(tx_stored => {
 						const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
-						expect(tx_received).to.be.an('object')
+						expect(tx_received).to.be.an('object', `Transaction with opid ${tx_stored._id} not sent`)
 						expect(Object.entries(tx_received).length).to.equal(8)
 						expect(tx_received.status).to.equals(tx_stored.status)
 						expect(tx_received.currency).to.equals(tx_stored.currency)
@@ -370,7 +378,7 @@ describe('Testing version 1 of HTTP API', () => {
 						expect(tx_received.amount).to.equals(tx_stored.amount.toFullString())
 						expect(tx_received.type).to.equals(tx_stored.type)
 						expect(tx_received.confirmations).to.equals(tx_stored.confirmations)
-						expect(tx_received.timestamp.toString()).to.equals(tx_stored.timestamp.toString())
+						expect(tx_received.timestamp).to.equals(tx_stored.timestamp.getTime())
 					})
 				})
 
@@ -379,7 +387,7 @@ describe('Testing version 1 of HTTP API', () => {
 						it(`Should filter transactions by ${currency}`, async () => {
 							const transactions = (
 								await Transaction.find({ currency }).sort({ timestamp: -1 })
-							).slice(10)
+							).slice(0, 10)
 							const { body } = await request(app)
 								.get('/v1/user/transactions')
 								.set('Cookie', [`sessionId=${sessionId}`])
@@ -391,7 +399,7 @@ describe('Testing version 1 of HTTP API', () => {
 							expect(body.length).to.be.lte(10)
 							transactions.forEach(tx_stored => {
 								const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
-								expect(tx_received).to.be.an('object')
+								expect(tx_received).to.be.an('object', `Transaction with opid ${tx_stored._id} not sent`)
 								expect(Object.entries(tx_received).length).to.equal(8)
 								expect(tx_received.status).to.equals(tx_stored.status)
 								expect(tx_received.currency).to.equals(tx_stored.currency)
@@ -400,7 +408,7 @@ describe('Testing version 1 of HTTP API', () => {
 								expect(tx_received.amount).to.equals(tx_stored.amount.toFullString())
 								expect(tx_received.type).to.equals(tx_stored.type)
 								expect(tx_received.confirmations).to.equals(tx_stored.confirmations)
-								expect(tx_received.timestamp.toString()).to.equals(tx_stored.timestamp.toString())
+								expect(tx_received.timestamp).to.equals(tx_stored.timestamp.getTime())
 							})
 						})
 					}
@@ -454,15 +462,17 @@ describe('Testing version 1 of HTTP API', () => {
 							.send()
 							.expect('Content-Type', /json/)
 							.expect(200)
-						// txid e confirmations não serão enviados pq são undefined
-						expect(body).to.be.an('object').that.deep.equals({
-							status:        tx.status,
-							currency:      tx.currency,
-							account:       tx.account,
-							amount:       +tx.amount.toFullString(),
-							type:          tx.type,
-							timestamp:     tx.timestamp.getTime()
-						})
+
+						expect(body).to.be.an('object')
+						expect(Object.entries(body).length).to.equal(8)
+						expect(body.status).to.equals(tx.status)
+						expect(body.currency).to.equals(tx.currency)
+						expect(body.txid).to.equals(tx.txid)
+						expect(body.account).to.equals(tx.account)
+						expect(body.amount).to.equals(tx.amount.toFullString())
+						expect(body.type).to.equals(tx.type)
+						expect(body.confirmations).to.equals(tx.confirmations)
+						expect(body.timestamp).to.equals(tx.timestamp.getTime())
 					}
 				})
 			})
