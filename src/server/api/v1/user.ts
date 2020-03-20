@@ -9,12 +9,15 @@ let balance: object
 
 const router = express.Router()
 
-router.use(cookieParser())
+/** Parsers */
+router.use(cookieParser()) // for parsing cookie
+router.use(express.json()) // for parsing application/json
 
 /**
  * Checa se você está logado
  */
 router.use(async (req, res, next) => {
+	console.log(req.cookies)
 	if ( req.path === '/') return next()
 	try {
 		if (!req.cookies.sessionId) throw 'Cookie Not Found'
@@ -54,23 +57,18 @@ router.get('/info', async (_req, res) => {
 	res.send({ info: 'info' })
 })
 
-router.get('/transactions/withdraw', async (_req, res) => {
-	res.send({ withdraw: 'withdraw' })
-})
-
 //Working in progress
 router.get('/transactions/:opid', async (req, res) => {
 	try {
 		const transactions = await Transaction.find({ _id: req.params.opid })
-		if (transactions[0].user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
+		/** checa se o usuario da transação é o mesmo que esta logado */
+		if (transactions[0].user !== req.user?.id) throw 'NotAuthorized'
 		const tx = {
 			status:        transactions[0].status,
 			currency:      transactions[0].currency,
-			txid:          transactions[0].txid,
 			account:       transactions[0].account,
 			amount:       +transactions[0].amount.toFullString(),
 			type:          transactions[0].type,
-			confirmations: transactions[0].confirmations,
 			timestamp:     transactions[0].timestamp.getTime()
 		}
 		res.send(tx)
@@ -82,7 +80,7 @@ router.get('/transactions/:opid', async (req, res) => {
 	}
 })
 
-//TODO: consertar o erro "Cannot read property 'toHexString' of undefined"
+//TODO: consertar o erro "expected undefined to be an object"
 router.get('/transactions', async (req, res) => {
 	/** Indica o numero de transações que sera puladas */
 	const skip: number = +req.query.skip || 0
@@ -94,6 +92,30 @@ router.get('/transactions', async (req, res) => {
 		.sort({ timestamp: -1 })
 
 	res.send(transactions.slice(skip, skip + 10))
+})
+
+/**
+ * Faz o request 'withdraw' usando as informações do req.body
+ */
+router.post('/transactions', async (req, res) => {
+	try {
+		/** Checa se o usuario foi recebido */
+		if (!req.user) throw 'BadRequest'
+		const opid = await CurrencyApi.withdraw(req.user, req.body.currency, req.body.destination, +req.body.amount)
+		res.send({ opid })
+	} catch(err) {
+		if (err === 'NotEnoughFunds') {
+			res.status(403).send({
+				error: 'NotEnoughFunds',
+				message: 'There are not enough funds on your account to perform this operation'
+			})
+		} else {
+			res.status(400).send({
+				error: 'BadRequest',
+				err
+			})
+		}
+	}
 })
 
 router.get('/', (_req, res) => {
