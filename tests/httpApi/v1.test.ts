@@ -330,7 +330,7 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(body).to.be.an('array')
 					expect(body.length).to.be.lte(10)
 					transactions.forEach(tx_stored => {
-						const tx_received = body.find(e => e.opid?.toHexString() === tx_stored._id.toHexString())
+						const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
 						expect(tx_received).to.be.an('object')
 						expect(Object.entries(tx_received).length).to.equal(8)
 						expect(tx_received.status).to.equals(tx_stored.status)
@@ -358,7 +358,7 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(body).to.be.an('array')
 					expect(body.length).to.be.lte(10)
 					transactions.forEach(tx_stored => {
-						const tx_received = body.find(e => e.opid?.toHexString() === tx_stored._id.toHexString())
+						const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
 						expect(tx_received).to.be.an('object')
 						expect(Object.entries(tx_received).length).to.equal(8)
 						expect(tx_received.status).to.equals(tx_stored.status)
@@ -388,7 +388,7 @@ describe('Testing version 1 of HTTP API', () => {
 							expect(body).to.be.an('array')
 							expect(body.length).to.be.lte(10)
 							transactions.forEach(tx_stored => {
-								const tx_received = body.find(e => e.opid?.toHexString() === tx_stored._id.toHexString())
+								const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
 								expect(tx_received).to.be.an('object')
 								expect(Object.entries(tx_received).length).to.equal(8)
 								expect(tx_received.status).to.equals(tx_stored.status)
