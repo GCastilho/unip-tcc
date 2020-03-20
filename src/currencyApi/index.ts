@@ -128,6 +128,11 @@ export async function withdraw(
 		status: 'preparing'
 	}).save()
 
+	// Desconta o fee do amount
+	const { decimals, fee } = detailsOf(currency)
+	const _amount = amount * Math.pow(10, decimals)
+	const _fee = fee * Math.pow(10, decimals)
+
 	// Adiciona a operação na Transactions
 	const transaction = await new Transaction({
 		_id: opid,
@@ -136,7 +141,7 @@ export async function withdraw(
 		currency,
 		status: 'processing',
 		account,
-		amount: amount - _currencies[currency].fee,
+		amount: (_amount - _fee) / Math.pow(10, decimals),
 		fee: _currencies[currency].fee,
 		timestamp: new Date()
 	}).save()
