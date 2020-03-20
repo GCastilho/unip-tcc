@@ -20,7 +20,7 @@ Router.post('/change-password', function(req, res) {
 		return res.status(400).send({ error: 'Bad request' })
 
 	userApi.findUser.byCookie(
-		getcookie(req,"sessionId")
+		getcookie(req,'sessionId')
 	).then(user => {
 		user.checkPassword(req.body.passwordold)
 		user.changePassword(req.body.passwordnew)
@@ -70,9 +70,9 @@ Router.post('/change-password', function(req, res) {
 })
 
 function getcookie(req, name) {
-	const cookie = req.headers.cookie;
-	let list= cookie.split('; ');
-	return (list.find((item)=> item.indexOf(name)>-1)).replace(name+"=","") || "";
+	const cookie = req.headers.cookie
+	let list = cookie.split('; ')
+	return (list.find((item)=> item.indexOf(name) > -1)).replace(name + '=','') || ''
 }
 
 module.exports = Router
