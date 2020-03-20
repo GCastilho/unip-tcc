@@ -68,12 +68,14 @@
         width:20px;
     }
 	.dropdown{
-		width: 100px;
+		width: 180px;
 		position: absolute;
+		right: 10px;
 		height: 0;
 		opacity: 1;
 		transition: 0.5s height;
 		overflow: hidden;
+		background-color: #60606030;
 	}
 	.dropdown table,tr,td,a{
 	}
@@ -97,8 +99,8 @@
 						<img alt="Config" title="Config" src="./assets/settings-icon.svg" />
 						</div>
 					<div class="{userdropdown==='show'? 'dropdown show':'dropdown'}" id="dropdown_usermenu">
-						<table >
-							<tr><td><a class:selected='{segment==="changepass"}' on:click='{()=>{userdropdown='hide'}}' href="changepass"><img alt="Senha" title="Alterar Senha" src="./assets/key-icon.svg" /></a></td></tr>
+						<table>
+							<tr><td><a class:selected='{segment==="changepass"}' on:click='{()=>{userdropdown='hide'}}' href="changepass">Change Password <img alt="Senha" title="Alterar Senha" src="./assets/key-icon.svg" /></a></td></tr>
 						</table>
 					</div>
 				</li>
