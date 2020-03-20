@@ -17,8 +17,6 @@ router.use(express.json()) // for parsing application/json
  * Checa se você está logado
  */
 router.use(async (req, res, next) => {
-	console.log(req.cookies)
-	if ( req.path === '/') return next()
 	try {
 		if (!req.cookies.sessionId) throw 'Cookie Not Found'
 		req.user = await UserApi.findUser.byCookie(req.cookies.sessionId)
@@ -36,6 +34,11 @@ router.get('/accounts', async (req, res) => {
 		for (const currency of CurrencyApi.currencies) {
 			account[currency] = req.user?.getAccounts(currency)
 		}
+		/*account = {
+			bitcoin: req.user?.getAccounts('bitcoin'),
+			nano: req.user?.getAccounts('nano')
+		}*/
+
 		res.send(account)
 	} catch(err) {
 		console.log(err)
@@ -47,6 +50,10 @@ router.get('/balances', async (req, res) => {
 		for (const currency of CurrencyApi.currencies) {
 			balance[currency] = req.user?.getBalance(currency, true)
 		}
+		/*balance = {
+			bitcoin: req.user?.getAccounts('bitcoin'),
+			nano: req.user?.getAccounts('nano')
+		}*/
 		res.send(balance)
 	} catch(err) {
 		console.log(err)
@@ -88,7 +95,11 @@ router.get('/transactions', async (req, res) => {
 	 * Pega as transações no banco de dados por currency
 	 * Se req.query.currency for vazio ele pegara todas as transações
 	 * */
-	const transactions = await Transaction.find(req.query.currency ? { currency: req.query.currency } : {})
+	const transactions = await Transaction.find(
+		req.query.currency ? {
+			user: req.user?.id,
+			currency: req.query.currency
+		} : { user: req.user?.id })
 		.sort({ timestamp: -1 })
 
 	res.send(transactions.slice(skip, skip + 10))

@@ -112,6 +112,7 @@ describe('Testing version 1 of HTTP API', () => {
 		it('Should return information about the subpath', async () => {
 			const { body } = await request(app).get('/v1/user').set(apiConfig).send()
 				.expect('Content-Type', /json/)
+				.set('Cookie', [`sessionId=${sessionId}`])
 				.expect(200)
 			expect(body).to.be.an('object').that.deep.equals({
 				description: 'Entrypoint for requests specific to a user',
@@ -212,6 +213,7 @@ describe('Testing version 1 of HTTP API', () => {
 		it('Should return Not Found if the path for the request was not found', async () => {
 			const { body } = await request(app)
 				.post('/v1/user/notFoundPath')
+				.set('Cookie', [`sessionId=${sessionId}`])
 				.set(apiConfig)
 				.send()
 				.expect('Content-Type', /json/)
