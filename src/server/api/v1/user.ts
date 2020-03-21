@@ -4,9 +4,6 @@ import * as CurrencyApi from '../../../currencyApi'
 import Transaction from '../../../db/models/transaction'
 import cookieParser from 'cookie-parser'
 
-let account: object
-let balance: object
-
 const router = express.Router()
 
 /** Parsers */
@@ -29,35 +26,26 @@ router.use(async (req, res, next) => {
 	}
 })
 
-router.get('/accounts', async (req, res) => {
-	try {
-		for (const currency of CurrencyApi.currencies) {
-			account[currency] = req.user?.getAccounts(currency)
-		}
-		/*account = {
-			bitcoin: req.user?.getAccounts('bitcoin'),
-			nano: req.user?.getAccounts('nano')
-		}*/
-
-		res.send(account)
-	} catch(err) {
-		console.log(err)
+/**
+ * Pega todas as contas do usuario
+ */
+router.get('/accounts', (req, res) => {
+	const account: object = {}
+	for (const currency of CurrencyApi.currencies) {
+		account[currency] = req.user?.getAccounts(currency)
 	}
+	res.send(account)
 })
 
-router.get('/balances', async (req, res) => {
-	try {
-		for (const currency of CurrencyApi.currencies) {
-			balance[currency] = req.user?.getBalance(currency, true)
-		}
-		/*balance = {
-			bitcoin: req.user?.getAccounts('bitcoin'),
-			nano: req.user?.getAccounts('nano')
-		}*/
-		res.send(balance)
-	} catch(err) {
-		console.log(err)
+/**
+ * Pega todos os saldos do usuario
+ */
+router.get('/balances', (req, res) => {
+	const balance: object = {}
+	for (const currency of CurrencyApi.currencies) {
+		balance[currency] = req.user?.getBalance(currency, true)
 	}
+	res.send(balance)
 })
 
 router.get('/info', async (_req, res) => {
