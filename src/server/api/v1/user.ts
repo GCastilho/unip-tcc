@@ -67,27 +67,40 @@ router.get('/info', async (_req, res) => {
 //Working in progress
 router.get('/transactions/:opid', async (req, res) => {
 	try {
-		const transactions = await Transaction.find({ _id: req.params.opid })
+		const transactions = await Transaction.findOne({ _id: req.params.opid })
+		if (!transactions) throw 'NotFound'
 		/** checa se o usuario da transação é o mesmo que esta logado */
-		if (transactions[0].user !== req.user?.id) throw 'NotAuthorized'
+		if (transactions.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
+
 		const tx = {
-			status:        transactions[0].status,
-			currency:      transactions[0].currency,
-			account:       transactions[0].account,
-			amount:       +transactions[0].amount.toFullString(),
-			type:          transactions[0].type,
-			timestamp:     transactions[0].timestamp.getTime()
+			status:        transactions.status,
+			currency:      transactions.currency,
+			txid:		   transactions.txid,
+			account:       transactions.account,
+			amount:        transactions.amount.toFullString(),
+			type:          transactions.type,
+			confirmations: transactions.confirmations,
+			timestamp:     transactions.timestamp.getTime()
 		}
 		res.send(tx)
 	} catch(err) {
-		res.status(401).send({
-			error: 'NotAuthorized',
-			message: 'This transaction does not belong to your account'
-		})
+		if (err === 'NotFound') {
+			res.status(404).send({
+				error: err,
+				message: 'This transaction does not belong to your account'
+			})
+		} else {
+			res.status(401).send({
+				error: err,
+				message: 'This transaction does not belong to your account'
+			})
+		}
 	}
 })
 
-//TODO: consertar o erro "expected undefined to be an object"
+/**
+ * Pega multiplas transações feitas pelo usuario
+ */
 router.get('/transactions', async (req, res) => {
 	/** Indica o numero de transações que sera puladas */
 	const skip: number = +req.query.skip || 0
@@ -95,14 +108,29 @@ router.get('/transactions', async (req, res) => {
 	 * Pega as transações no banco de dados por currency
 	 * Se req.query.currency for vazio ele pegara todas as transações
 	 * */
-	const transactions = await Transaction.find(
+	const transactions = (await Transaction.find(
 		req.query.currency ? {
 			user: req.user?.id,
 			currency: req.query.currency
 		} : { user: req.user?.id })
-		.sort({ timestamp: -1 })
-
-	res.send(transactions.slice(skip, skip + 10))
+		.sort({ timestamp: -1 }))
+		.slice(skip, skip + 10)
+	/** Coloca as transações o formato certo */
+	const tx_received: object[] = []
+	transactions.forEach((transaction) => {
+		tx_received.push({
+			opid:			transaction._id,
+			status:			transaction.status,
+			currency:		transaction.currency,
+			txid:			transaction.txid,
+			account:		transaction.account,
+			amount:			transaction.amount.toFullString(),
+			type:			transaction.type,
+			confirmations:	transaction.confirmations,
+			timestamp:		transaction.timestamp.getTime()
+		})
+	})
+	res.send(tx_received)
 })
 
 /**

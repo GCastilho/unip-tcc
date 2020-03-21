@@ -342,7 +342,8 @@ describe('Testing version 1 of HTTP API', () => {
 					transactions.forEach(tx_stored => {
 						const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
 						expect(tx_received).to.be.an('object', `Transaction with opid ${tx_stored._id} not sent`)
-						expect(Object.entries(tx_received).length).to.equal(8)
+						expect(Object.entries(tx_received).length).to.equal(9)
+						expect(tx_received.opid).to.equals(tx_stored._id.toHexString())
 						expect(tx_received.status).to.equals(tx_stored.status)
 						expect(tx_received.currency).to.equals(tx_stored.currency)
 						expect(tx_received.txid).to.equals(tx_stored.txid)
@@ -350,7 +351,7 @@ describe('Testing version 1 of HTTP API', () => {
 						expect(tx_received.amount).to.equals(tx_stored.amount.toFullString())
 						expect(tx_received.type).to.equals(tx_stored.type)
 						expect(tx_received.confirmations).to.equals(tx_stored.confirmations)
-						expect(tx_received.timestamp.toString()).to.equals(tx_stored.timestamp.toString())
+						expect(tx_received.timestamp).to.equals(tx_stored.timestamp.getTime())
 					})
 				})
 
@@ -370,7 +371,8 @@ describe('Testing version 1 of HTTP API', () => {
 					transactions.forEach(tx_stored => {
 						const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
 						expect(tx_received).to.be.an('object', `Transaction with opid ${tx_stored._id} not sent`)
-						expect(Object.entries(tx_received).length).to.equal(8)
+						expect(Object.entries(tx_received).length).to.equal(9)
+						expect(tx_received.opid).to.equals(tx_stored._id.toHexString())
 						expect(tx_received.status).to.equals(tx_stored.status)
 						expect(tx_received.currency).to.equals(tx_stored.currency)
 						expect(tx_received.txid).to.equals(tx_stored.txid)
@@ -400,7 +402,8 @@ describe('Testing version 1 of HTTP API', () => {
 							transactions.forEach(tx_stored => {
 								const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
 								expect(tx_received).to.be.an('object', `Transaction with opid ${tx_stored._id} not sent`)
-								expect(Object.entries(tx_received).length).to.equal(8)
+								expect(Object.entries(tx_received).length).to.equal(9)
+								expect(tx_received.opid).to.equals(tx_stored._id.toHexString())
 								expect(tx_received.status).to.equals(tx_stored.status)
 								expect(tx_received.currency).to.equals(tx_stored.currency)
 								expect(tx_received.txid).to.equals(tx_stored.txid)
@@ -464,7 +467,7 @@ describe('Testing version 1 of HTTP API', () => {
 							.expect(200)
 
 						expect(body).to.be.an('object')
-						expect(Object.entries(body).length).to.equal(8)
+						expect(Object.entries(body).length).to.be.within(6, 8)
 						expect(body.status).to.equals(tx.status)
 						expect(body.currency).to.equals(tx.currency)
 						expect(body.txid).to.equals(tx.txid)
