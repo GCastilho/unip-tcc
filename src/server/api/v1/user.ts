@@ -27,7 +27,7 @@ router.use(async (req, res, next) => {
 })
 
 /**
- * Pega todas as contas do usuario
+ * Retorna todas as contas do usuario
  */
 router.get('/accounts', (req, res) => {
 	const account: object = {}
@@ -38,7 +38,7 @@ router.get('/accounts', (req, res) => {
 })
 
 /**
- * Pega todos os saldos do usuario
+ * Retorna todos os saldos do usuario
  */
 router.get('/balances', (req, res) => {
 	const balance: object = {}
@@ -52,34 +52,38 @@ router.get('/info', async (_req, res) => {
 	res.send({ info: 'info' })
 })
 
-//Working in progress
+/**
+ * Retorna uma transação especifica do usuario
+ */
 router.get('/transactions/:opid', async (req, res) => {
 	try {
-		const transactions = await Transaction.findOne({ _id: req.params.opid })
+		const transactions = await Transaction.findById(req.params.opid)
 		if (!transactions) throw 'NotFound'
-		/** checa se o usuario da transação é o mesmo que esta logado */
+		//console.error(`opid=${transactions._id} user=${transactions.user.toHexString()}`)
+		/** Checa se o usuario da transação é o mesmo que esta logado */
 		if (transactions.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
-
+		/** Coloca as transações o formato certo */
 		const tx = {
-			status:        transactions.status,
-			currency:      transactions.currency,
-			txid:		   transactions.txid,
-			account:       transactions.account,
-			amount:        transactions.amount.toFullString(),
-			type:          transactions.type,
-			confirmations: transactions.confirmations,
-			timestamp:     transactions.timestamp.getTime()
+			opid:			transactions._id,
+			status:			transactions.status,
+			currency:		transactions.currency,
+			txid:			transactions.txid,
+			account:		transactions.account,
+			amount:			transactions.amount.toFullString(),
+			type:			transactions.type,
+			confirmations:	transactions.confirmations,
+			timestamp:		transactions.timestamp.getTime()
 		}
 		res.send(tx)
 	} catch(err) {
 		if (err === 'NotFound') {
 			res.status(404).send({
-				error: err,
-				message: 'This transaction does not belong to your account'
+				error: 'NotFound',
+				message: 'Transaction not found'
 			})
 		} else {
 			res.status(401).send({
-				error: err,
+				error: 'NotAuthorized',
 				message: 'This transaction does not belong to your account'
 			})
 		}
@@ -87,25 +91,30 @@ router.get('/transactions/:opid', async (req, res) => {
 })
 
 /**
- * Pega multiplas transações feitas pelo usuario
+ * Retorna uma lista de transações do usuário
  */
 router.get('/transactions', async (req, res) => {
 	/** Indica o numero de transações que sera puladas */
 	const skip: number = +req.query.skip || 0
+	/** Checa se a currency é surportada, se não for suportada ou ela for undefined ou null, ela retora undefined */
+	const currency = CurrencyApi.currencies.find(currency => currency === req.query.currency)
+	/** Chega se o filtro currency foi enviado */
+	const query = currency ? {
+		user: req.user?.id,
+		currency: currency
+	} : { user: req.user?.id }
 	/**
-	 * Pega as transações no banco de dados por currency
+	 * Pega as transações 10 ultimas transações no banco de dados por currency.
 	 * Se req.query.currency for vazio ele pegara todas as transações
 	 * */
-	const transactions = (await Transaction.find(
-		req.query.currency ? {
-			user: req.user?.id,
-			currency: req.query.currency
-		} : { user: req.user?.id })
-		.sort({ timestamp: -1 }))
-		.slice(skip, skip + 10)
+	const transactions = await Transaction.find(query, null,{
+		sort : { timestamp: -1 },
+		limit: 10,
+		skip: skip
+	})
 	/** Coloca as transações o formato certo */
 	const tx_received: object[] = []
-	transactions.forEach((transaction) => {
+	for (const transaction of transactions) {
 		tx_received.push({
 			opid:			transaction._id,
 			status:			transaction.status,
@@ -117,7 +126,7 @@ router.get('/transactions', async (req, res) => {
 			confirmations:	transaction.confirmations,
 			timestamp:		transaction.timestamp.getTime()
 		})
-	})
+	}
 	res.send(tx_received)
 })
 
@@ -126,9 +135,14 @@ router.get('/transactions', async (req, res) => {
  */
 router.post('/transactions', async (req, res) => {
 	try {
-		/** Checa se o usuario foi recebido */
-		if (!req.user) throw 'BadRequest'
-		const opid = await CurrencyApi.withdraw(req.user, req.body.currency, req.body.destination, +req.body.amount)
+		const currency = CurrencyApi.currencies.find(currency => currency === req.body.currency)
+		/** Checa se os dados dados enviados pelo o usuario são do type correto */
+		if (!currency ||
+			!req.user ||
+			typeof req.body.destination !== 'string' ||
+			isNaN(+req.body.amount)) throw 'BadRequest'
+
+		const opid = await CurrencyApi.withdraw(req.user, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
 	} catch(err) {
 		if (err === 'NotEnoughFunds') {
@@ -139,7 +153,7 @@ router.post('/transactions', async (req, res) => {
 		} else {
 			res.status(400).send({
 				error: 'BadRequest',
-				err
+				message: 'The request is malformed'
 			})
 		}
 	}

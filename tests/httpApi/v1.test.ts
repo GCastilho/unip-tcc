@@ -467,7 +467,8 @@ describe('Testing version 1 of HTTP API', () => {
 							.expect(200)
 
 						expect(body).to.be.an('object')
-						expect(Object.entries(body).length).to.be.within(6, 8)
+						expect(Object.entries(body).length).to.be.within(7, 9)
+						expect(body.opid).to.equals(tx._id.toHexString())
 						expect(body.status).to.equals(tx.status)
 						expect(body.currency).to.equals(tx.currency)
 						expect(body.txid).to.equals(tx.txid)
