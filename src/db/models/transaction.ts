@@ -165,6 +165,8 @@ interface TransactionDoc extends Document {
 	account: TransactionInternal['account']
 	/** Amount da transação */
 	amount: Decimal128
+	/** Taxa cobrada para a execução da operação */
+	fee: number
 	/** Tipo dessa transação */
 	type: TransactionInternal['type']
 	/**
@@ -215,6 +217,11 @@ const TransactionSchema: Schema = new Schema({
 	amount: {
 		type: Decimal128,
 		required: true
+	},
+	fee: {
+		type: Number,
+		min: 0,
+		default: 0
 	},
 	timestamp: {
 		type: Date,

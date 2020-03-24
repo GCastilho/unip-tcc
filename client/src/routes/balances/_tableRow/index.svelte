@@ -11,6 +11,7 @@
 
 	export let code
 	export let name
+	export let fee
 	export let accounts = []
 
 	let hidden = true
@@ -109,7 +110,7 @@
 			{#if selectedAction === 'deposit'}
 				<DepositCell {name} {accounts} />
 			{:else if selectedAction === 'withdraw'}
-				<WithdrawCell {name} />
+				<WithdrawCell {name} {fee} />
 			{/if}
 		</div>
 	</td>
