@@ -29,27 +29,7 @@ describe('Testing version 1 of HTTP API', () => {
 		expect(body).to.be.an('object').that.deep.equals({
 			version: 1.0,
 			description: 'Entrypoint for the v1 of the HTTP API',
-			deprecated: false,
-			entries: [
-				{
-					path: 'currencies',
-					description: 'Request informations about the currencies supported by the API',
-					request: [{
-						method: 'GET',
-						returns: 'Detailed information about the supported currencies of the API'
-					}],
-					auth: false
-				},
-				{
-					path: 'user',
-					description: 'Entrypoint for requests specific to a user',
-					request: [{
-						method: 'GET',
-						returns: 'Informations about the entrypoint'
-					}],
-					auth: false
-				}
-			]
+			deprecated: false
 		})
 	})
 
@@ -115,98 +95,7 @@ describe('Testing version 1 of HTTP API', () => {
 				.set('Cookie', [`sessionId=${sessionId}`])
 				.expect(200)
 			expect(body).to.be.an('object').that.deep.equals({
-				description: 'Entrypoint for requests specific to a user',
-				entries: [
-					{
-						path: 'info',
-						description: 'Request informations about the user',
-						auth: true,
-						requests: [{
-							method: 'GET',
-							returns: 'Informations about the user'
-						}]
-					},
-					{
-						path: 'accounts',
-						description: 'Request a list of accounts of the user',
-						auth: true,
-						requests: [{
-							method: 'GET',
-							returns: 'List of accounts of all currencies that the user has',
-						}]
-					},
-					{
-						path: 'balances',
-						description: 'Request the balances for all the currencies',
-						auth: true,
-						requests: [{
-							method: 'GET',
-							returns: 'List of balances of all currencies',
-						}]
-					},
-					{
-						path: 'transactions',
-						description: 'Fetch, send and update transactions',
-						auth: true,
-						requests: [
-							{
-								method: 'GET',
-								returns: 'List of transactions from the user in descending order',
-								parametres: [
-									{
-										type: 'query',
-										description: 'Filter transactions by currency',
-										value: 'string',
-										name: 'currency'
-									},
-									{
-										type: 'query',
-										description: 'Skip first n results',
-										value: 'numeric',
-										name: 'skip'
-									}
-								]
-							},
-							{
-								method: 'GET',
-								returns: 'Informations about specific transaction',
-								parametres: [
-									{
-										type: 'path',
-										description: 'The opid of the transaction to request data from',
-										value: 'string',
-										name: 'opid'
-									}
-								]
-							},
-							{
-								method: 'POST',
-								description: 'Submit new transaction',
-								returns: 'opid of the submitted transaction',
-								parametres: [
-									{
-										type: 'body',
-										description: 'Instructions to execute a withdraw of a currency',
-										value: {
-											currency: {
-												type: 'string',
-												description: 'Currency to withdraw from'
-											},
-											destination: {
-												type: 'string',
-												description: 'Address to send currency to'
-											},
-											amount: {
-												type: 'numeric',
-												description: 'Amount of currency to withdraw'
-											}
-										}
-									}
-								]
-							}
-						],
-					},
-				]
+				description: 'Entrypoint for requests specific to a user'
 			})
 		})
 
