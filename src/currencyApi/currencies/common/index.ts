@@ -60,7 +60,7 @@ export default abstract class Common {
 			}))
 			setTimeout(() => {
 				if (!gotResponse) reject('RequestTimeout')
-			}, 1000)
+			}, 10000)
 		})
 	}
 
