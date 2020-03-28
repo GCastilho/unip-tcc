@@ -1,78 +1,38 @@
-/*
- * Handler da página de autenticação de usuários
- */
-
 const Router = require('express').Router()
 const bodyParser = require('body-parser')
-const randomstring = require('randomstring')
-
-import Session from '../db/models/session'
+const cookieparser = require('cookie-parser')
 const userApi = require('../userApi')
 
-/**
- * @description Ativa o middleware para dar parse no body enviado pelo form
- * da página de login
- */
 Router.use(bodyParser.json({ extended: true }))
+Router.use(cookieparser())
 
-Router.post('/change-password', function(req, res) {
+Router.post('/change-password', async function(req, res) {
 	if (!req.body.passwordold || !req.body.passwordnew)
 		return res.status(400).send({ error: 'Bad request' })
 
-	userApi.findUser.byCookie(
-		getcookie(req,'sessionId')
-	).then(user => {
+	try {
+		const user = await userApi.findUser.byCookie(req.cookies['sessionId'])
 		user.checkPassword(req.body.passwordold)
-		user.changePassword(req.body.passwordnew)
-
-		/**
-		 * Muda a senha e reseta o token de autenticação
-		 */
-
-		return Session.findOneAndUpdate({
-			userId: user.id
-		}, {
-			sessionId: randomstring.generate(128),
-			token: randomstring.generate(128),
-			date: new Date()
-		}, {
-			new: true,
-			upsert: true,
-			useFindAndModify: false
-		})
-	}).then(session => {
-		/**
-		 * Se a autenticação, a criação e o salvamento da sessão forem bem
-		 * sucedidas, seta o cookie no header e retorna o token
-		 * 
-		 * @todo cookie ter tempo de expiração
-		 */
-		res.cookie('sessionId', session.sessionId, { httpOnly: true })
-		res.send({ token: session.token })
-	}).catch(err => {
-		if (err === 'UserNotFound' || err === 'InvalidPassword') {
+		await user.changePassword(req.body.passwordnew)
+		res.send({ message: 'Password updated' })
+	} catch (err) {
+		switch (err) {
+		case ('CookieNotFound'):
+			res.status(401).send({ error: 'NotLoggedIn' })
+			break
+		case ('UserNotFound'):
+		case ('InvalidPassword'):
 			/**
 			 * Diferenciar usuário não encontrado de credenciais inválidas
 			 * faz com que seja possível descobrir quais usuários estão
 			 * cadastrados no database, por isso a mensagem é a mesma
 			 */
-			res.status(401).send({ error: 'Not authorized' })
-		} else {
-			/**
-			 * @description Esse else pode ser chamado em situações onde não foi
-			 * um erro interno do servidor, como uma entrada malformada
-			 * 
-			 * @todo Fazer um error handling melhor
-			 */
-			res.status(500).send({ error: 'Internal server error' })
+			res.status(401).send({ error: 'NotAuthorized' })
+			break
+		default:
+			res.status(500).send({ error: 'InternalServerError' })
 		}
-	})
+	}
 })
-
-function getcookie(req, name) {
-	const cookie = req.headers.cookie
-	let list = cookie.split('; ')
-	return (list.find((item)=> item.indexOf(name) > -1)).replace(name + '=','') || ''
-}
 
 module.exports = Router

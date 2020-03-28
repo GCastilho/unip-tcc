@@ -38,13 +38,22 @@
 				goto("/")
 			} catch (err) {
 				if (err.response.status === 401) {
-					errorMessage = "Invalid email or password"
+					switch(err.response.data.error) {
+						case('NotLoggedIn'):
+							errorMessage = 'Authentication error'
+							break
+						case('NotAuthorized'):
+							errorMessage = 'Fail to verify old password'
+							break
+						default:
+							errorMessage = `Unknown error response: ${err.response.error}`
+					}
 				} else {
 					errorMessage = err.response.statusText
 				}
 			}
 		} else {
-			errorMessage = "Passwords are different."
+			errorMessage = 'Passwords are different'
 		}
 	}
 </script>
