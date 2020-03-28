@@ -6,9 +6,9 @@ import cookieParser from 'cookie-parser'
 
 const router = express.Router()
 
-/** Parsers */
-router.use(cookieParser()) // for parsing cookie
-router.use(express.json()) // for parsing application/json
+// Parsers
+router.use(cookieParser())
+router.use(express.json())
 
 /**
  * Checa se você está logado
@@ -60,11 +60,11 @@ router.get('/transactions/:opid', async (req, res) => {
 		const transactions = await Transaction.findById(req.params.opid)
 		if (!transactions) throw 'NotFound'
 		//console.error(`opid=${transactions._id} user=${transactions.user.toHexString()}`)
-		/** Checa se o usuario da transação é o mesmo que esta logado */
+		// Checa se o usuario da transação é o mesmo que esta logado
 		if (transactions.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
-		/** Coloca as transações o formato certo */
+		// Coloca as transações o formato certo
 		const tx = {
-			opid:			transactions._id,
+			opid:			transactions._id.toHexString(),
 			status:			transactions.status,
 			currency:		transactions.currency,
 			txid:			transactions.txid,
@@ -110,13 +110,13 @@ router.get('/transactions', async (req, res) => {
 	const transactions = await Transaction.find(query, null,{
 		sort : { timestamp: -1 },
 		limit: 10,
-		skip: skip
+		skip
 	})
 	/** Coloca as transações o formato certo */
 	const tx_received: object[] = []
 	for (const transaction of transactions) {
 		tx_received.push({
-			opid:			transaction._id,
+			opid:			transaction._id.toHexString(),
 			status:			transaction.status,
 			currency:		transaction.currency,
 			txid:			transaction.txid,
@@ -137,10 +137,10 @@ router.post('/transactions', async (req, res) => {
 	try {
 		const currency = CurrencyApi.currencies.find(currency => currency === req.body.currency)
 		/** Checa se os dados dados enviados pelo o usuario são do type correto */
-		if (!currency ||
-			!req.user ||
-			typeof req.body.destination !== 'string' ||
-			isNaN(+req.body.amount)) throw 'BadRequest'
+		if (!currency
+			|| !req.user
+			|| typeof req.body.destination !== 'string'
+			|| isNaN(+req.body.amount)) throw 'BadRequest'
 
 		const opid = await CurrencyApi.withdraw(req.user, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
