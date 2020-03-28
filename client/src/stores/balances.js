@@ -55,7 +55,7 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
 	}
 })
 
-/** 
+/**
  * Atualiza o balance locked ao confirmar envio da transação
  */
 addSocketListener('update_sent_tx', async (currency, txSent) => {

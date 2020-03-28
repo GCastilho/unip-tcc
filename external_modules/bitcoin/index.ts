@@ -47,7 +47,7 @@ export class Bitcoin extends Common {
 	constructor(bitcoinListenerPort: number) {
 		super()
 		this.port = bitcoinListenerPort
-		
+
 		// Monitora os eventos do rpc para manter o nodeOnline atualizado
 		this.rpc.events.on('rpc_success', () => {
 			if (!this.nodeOnline) this._events.emit('rpc_connected')

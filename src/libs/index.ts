@@ -3,3 +3,4 @@
  */
 import './decimal128.extension'
 import './socketIo.extension'
+import './console.extension'

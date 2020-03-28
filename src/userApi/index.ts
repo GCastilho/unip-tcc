@@ -4,15 +4,14 @@ import Session from '../db/models/session'
 import PersonModel from '../db/models/person'
 import * as CurrencyApi from '../currencyApi'
 import User, { hashPassword } from './user'
-import type { Person } from '../db/models/person'
 
 /**
  * Cria um novo usuário no database com as credenciais informadas
- * 
+ *
  * @throws ValidationError from mongoose.Error if document validation fails
- * @returns The newly created document
+ * @returns The User class instance of the new User
  */
-export async function createUser(email: string, password: string): Promise<Person> {
+export async function createUser(email: string, password: string): Promise<User> {
 	const salt = randomstring.generate({ length: 32 })
 	const password_hash = hashPassword(salt, password)
 
@@ -28,9 +27,9 @@ export async function createUser(email: string, password: string): Promise<Perso
 	 * @todo Criar as accounts quando o e-mail for confirmado, não ao
 	 * criar o usuário
 	 */
-	CurrencyApi.create_accounts(person._id)
+	await CurrencyApi.create_accounts(person._id)
 
-	return person
+	return new User(person)
 }
 
 /**
@@ -40,7 +39,7 @@ export async function createUser(email: string, password: string): Promise<Perso
 export const findUser = {
 	/**
 	 * Procura por um usuário usando o email informado
-	 * 
+	 *
 	 * @returns A User class instance with the found user
 	 * @throws 'UserNotFound'
 	 */
@@ -52,7 +51,7 @@ export const findUser = {
 
 	/**
 	 * Procura por um usuário usando o ID informado
-	 * 
+	 *
 	 * @returns A User class instance with the found user
 	 * @throws 'UserNotFound'
 	 */
@@ -65,11 +64,11 @@ export const findUser = {
 	/**
 	 * Procura por um usuário usando o cookie de sessionId informado
 	 * @param sessionId O cookie 'sessionId' do usuário
-	 * 
+	 *
 	 * @returns A User class instance with the found user
 	 * @throws 'CookieNotFound'
 	 * @throws 'UserNotFound'
-	 * 
+	 *
 	 * @todo Checar se o Cookie não expirou antes de continuar
 	 */
 	async byCookie(sessionId: string): Promise<User> {
@@ -81,11 +80,11 @@ export const findUser = {
 	/**
 	 * Procura por um usuário usando o token informado
 	 * @param token O token do usuário
-	 * 
+	 *
 	 * @returns A User class instance with the found user
 	 * @throws 'TokenNotFound'
 	 * @throws 'UserNotFound'
-	 * 
+	 *
 	 * @todo Checar se o Token não expirou antes de continuar
 	 */
 	async byToken(token: string): Promise<User> {
@@ -96,7 +95,7 @@ export const findUser = {
 
 	/**
 	 * Procura por um usuário usando uma account informada
-	 * 
+	 *
 	 * @param currency A currency que a account se refere
 	 * @param account A account pertencente ao usuário
 	 * @returns A User class instance with the found user

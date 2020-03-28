@@ -5,7 +5,7 @@ import Common from '../index'
 /**
  * Retorna uma função que varre a collection checklist procurando por accounts
  * para criar e depois executa o checklistCleaner
- * 
+ *
  * Essa função também garante uma única instância do loop por curency para
  * impedir problemas de race condition
  */
@@ -23,7 +23,7 @@ export function create_account(this: Common) {
 				command: 'create_account',
 				status: 'requested',
 			}).cursor()
-	
+
 			let item: Ck
 			while (this.isOnline && (item = await checklist.next())) {
 				const account: string = await this.emit('create_new_account')

@@ -22,13 +22,16 @@ export default abstract class Common {
 	abstract name: 'bitcoin' | 'nano'
 
 	/** O código da currency */
-	abstract code: string
+	abstract code: 'btc' | 'nano'
+
+	/** Taxa cobrada do usuário para executar operações de saque */
+	abstract fee: number
 
 	/** A quantidade de casas decimais que esta currency tem */
 	public decimals = 8
 
 	/** A quantidade de casas decimais desta currency que o sistema opera */
-	public supportedDecimals = 8
+	public supportedDecimals = Math.min(this.decimals, 8)
 
 	/** EventEmmiter para eventos internos */
 	protected _events = new EventEmitter()
@@ -43,21 +46,24 @@ export default abstract class Common {
 
 	/**
 	 * Wrapper de comunicação com o socket do módulo externo
-	 * 
+	 *
 	 * @param event O evento que será enviado ao socket
 	 * @param args Os argumentos desse evento
-	 * 
+	 *
 	 * @throws SocketDisconnected if socket is disconnected
 	 */
 	protected emit(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {
-			if (!this.isOnline) reject('SocketDisconnected')
+			let gotResponse = false
+			if (!this.isOnline) return reject('SocketDisconnected')
 			this._events.emit('emit', event, ...args, ((error, response) => {
-				if (error)
-					reject(error)
-				else
-					resolve(response)
+				gotResponse = true
+				if (error) return reject(error)
+				resolve(response)
 			}))
+			setTimeout(() => {
+				if (!gotResponse) reject('RequestTimeout')
+			}, 1000)
 		})
 	}
 

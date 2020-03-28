@@ -5,7 +5,7 @@ import { fromRawToNano } from '../utils/unitConverter'
 /**
  * Procura por transações não computadas até a última transação salva no db
  * e as retorna em um array de Tx
- * 
+ *
  * @param account A account para checar o histórico de transações
  * @param lastBlock o utimo bloco recebido na account, armazenado no database
  */

@@ -39,7 +39,7 @@ Router.post('/', function(req, res) {
 		/**
 		 * Se a autenticação, a criação e o salvamento da sessão forem bem
 		 * sucedidas, seta o cookie no header e retorna o token
-		 * 
+		 *
 		 * @todo cookie ter tempo de expiração
 		 */
 		res.cookie('sessionId', session.sessionId, { httpOnly: true })
@@ -56,7 +56,7 @@ Router.post('/', function(req, res) {
 			/**
 			 * @description Esse else pode ser chamado em situações onde não foi
 			 * um erro interno do servidor, como uma entrada malformada
-			 * 
+			 *
 			 * @todo Fazer um error handling melhor
 			 */
 			res.status(500).send({ error: 'Internal server error' })
