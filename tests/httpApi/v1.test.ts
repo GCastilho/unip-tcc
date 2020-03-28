@@ -455,7 +455,7 @@ describe('Testing version 1 of HTTP API', () => {
 				})
 
 				it('Should return informations about a transaction', async () => {
-					const transactions = await Transaction.find({})
+					const transactions = await Transaction.find({ user: id })
 					// Testa pelo recebimento individual de todas as transações
 					for (const tx of transactions) {
 						const { body } = await request(app)
