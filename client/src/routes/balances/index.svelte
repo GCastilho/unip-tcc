@@ -65,8 +65,8 @@
 		<th>Available Balance</th>
 		<th>Locked Balance</th>
 		<th>Actions</th>
-		{#each currenciesList as {code, name, accounts}}
-			<TableRow {code} {name} {accounts} />
+		{#each currenciesList as {code, name, fee, accounts}}
+			<TableRow {code} {name} {fee} {accounts} />
 		{/each}
 	</table>
 {:catch err}
