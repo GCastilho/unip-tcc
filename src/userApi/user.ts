@@ -61,10 +61,20 @@ export default class User {
 
 	/**
 	 * Retorna os saldos de um usuário para determinada currency
+	 * @param currency A currency que o saldo se refere
+	 * @param asString Retorna os saldos como string ou Decimal128
 	 */
-	getBalance = (currency: SC) => {
+	getBalance(currency: SC, asString: true): { available: string; locked: string }
+	getBalance(currency: SC, asString?: false): { available: Decimal128; locked: Decimal128 }
+	getBalance(currency: SC, asString?: boolean) {
 		const { available, locked } = this.person.currencies[currency].balance
-		return { available, locked }
+		return asString ? {
+			available: available.toFullString(),
+			locked: locked.toFullString()
+		} : {
+			available,
+			locked
+		}
 	}
 
 	/**
