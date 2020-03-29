@@ -8,7 +8,11 @@ const router = express.Router()
  * Retorna as currencies suportadas
  */
 router.get('/currencies', (_req, res) => {
-	res.send(CurrencyApi.currenciesDetailed)
+	const currenciesDetailed = CurrencyApi.currencies.map(currency => ({
+		name: currency,
+		...CurrencyApi.detailsOf(currency)
+	}))
+	res.send(currenciesDetailed)
 })
 
 /**
