@@ -1,8 +1,8 @@
 import express from 'express'
+import cookieParser from 'cookie-parser'
+import Transaction from '../../../db/models/transaction'
 import * as UserApi from '../../../userApi'
 import * as CurrencyApi from '../../../currencyApi'
-import Transaction from '../../../db/models/transaction'
-import cookieParser from 'cookie-parser'
 
 const router = express.Router()
 
@@ -30,7 +30,7 @@ router.use(async (req, res, next) => {
  * Retorna todas as contas do usuario
  */
 router.get('/accounts', (req, res) => {
-	const account: object = {}
+	const account = {}
 	for (const currency of CurrencyApi.currencies) {
 		account[currency] = req.user?.getAccounts(currency)
 	}
@@ -41,7 +41,7 @@ router.get('/accounts', (req, res) => {
  * Retorna todos os saldos do usuario
  */
 router.get('/balances', (req, res) => {
-	const balance: object = {}
+	const balance = {}
 	for (const currency of CurrencyApi.currencies) {
 		balance[currency] = req.user?.getBalance(currency, true)
 	}
@@ -50,7 +50,7 @@ router.get('/balances', (req, res) => {
 
 //Não implementado
 router.get('/info', async (_req, res) => {
-	res.send({ info: 'info' })
+	res.send({ error: 'NotImplemented' })
 })
 
 /**
@@ -58,23 +58,22 @@ router.get('/info', async (_req, res) => {
  */
 router.get('/transactions/:opid', async (req, res) => {
 	try {
-		const transactions = await Transaction.findById(req.params.opid)
-		if (!transactions) throw 'NotFound'
+		const tx = await Transaction.findById(req.params.opid)
+		if (!tx) throw 'NotFound'
 		// Checa se o usuario da transação é o mesmo que esta logado
-		if (transactions.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
-		// Coloca as transações o formato certo
-		const tx = {
-			opid:			transactions._id.toHexString(),
-			status:			transactions.status,
-			currency:		transactions.currency,
-			txid:			transactions.txid,
-			account:		transactions.account,
-			amount:			transactions.amount.toFullString(),
-			type:			transactions.type,
-			confirmations:	transactions.confirmations,
-			timestamp:		transactions.timestamp.getTime()
-		}
-		res.send(tx)
+		if (tx.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
+		// Formata o objeto da transação
+		res.send({
+			opid:           tx._id.toHexString(),
+			status:         tx.status,
+			currency:       tx.currency,
+			txid:           tx.txid,
+			account:        tx.account,
+			amount:         tx.amount.toFullString(),
+			type:           tx.type,
+			confirmations:  tx.confirmations,
+			timestamp:      tx.timestamp.getTime()
+		})
 	} catch(err) {
 		if (err === 'NotFound') {
 			res.status(404).send({
@@ -94,40 +93,37 @@ router.get('/transactions/:opid', async (req, res) => {
  * Retorna uma lista de transações do usuário
  */
 router.get('/transactions', async (req, res) => {
-	/** Indica o numero de transações que sera puladas */
+	/** Numero de transações que sera puladas */
 	const skip: number = +req.query.skip || 0
-	/** Checa se a currency é surportada, se não for suportada ou ela for undefined ou null, ela retora undefined */
+	/** Checa se a currency é surportada, se não, ela será undefined */
 	const currency = CurrencyApi.currencies.find(currency => currency === req.query.currency)
-	/** Chega se o filtro currency foi enviado */
-	const query = currency ? {
-		user: req.user?.id,
-		currency: currency
-	} : { user: req.user?.id }
+	/** Filtro da query do mongo */
+	const query = currency ? { user: req.user?.id, currency } : { user: req.user?.id }
 	/**
-	 * Pega as transações 10 ultimas transações no banco de dados por currency.
-	 * Se req.query.currency for vazio ele pegara todas as transações
-	 * */
-	const transactions = await Transaction.find(query, null,{
+	 * As 10 mais recentes transações do usuário,
+	 * filtrado de acordo com a query e pulando de acordo com skip
+	 */
+	const txs = await Transaction.find(query, null, {
 		sort : { timestamp: -1 },
 		limit: 10,
 		skip
 	})
-	/** Coloca as transações o formato certo */
-	const tx_received: object[] = []
-	for (const transaction of transactions) {
-		tx_received.push({
-			opid:			transaction._id.toHexString(),
-			status:			transaction.status,
-			currency:		transaction.currency,
-			txid:			transaction.txid,
-			account:		transaction.account,
-			amount:			transaction.amount.toFullString(),
-			type:			transaction.type,
-			confirmations:	transaction.confirmations,
-			timestamp:		transaction.timestamp.getTime()
+	const formattedTransactions: object[] = []
+	for (const tx of txs) {
+		// Formata as transações
+		formattedTransactions.push({
+			opid:           tx._id.toHexString(),
+			status:         tx.status,
+			currency:       tx.currency,
+			txid:           tx.txid,
+			account:        tx.account,
+			amount:         tx.amount.toFullString(),
+			type:           tx.type,
+			confirmations:  tx.confirmations,
+			timestamp:      tx.timestamp.getTime()
 		})
 	}
-	res.send(tx_received)
+	res.send(formattedTransactions)
 })
 
 /**
@@ -140,7 +136,8 @@ router.post('/transactions', async (req, res) => {
 		if (!currency
 			|| !req.user
 			|| typeof req.body.destination !== 'string'
-			|| isNaN(+req.body.amount)) throw 'BadRequest'
+			|| isNaN(+req.body.amount)
+		) throw 'BadRequest'
 
 		const opid = await CurrencyApi.withdraw(req.user, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
