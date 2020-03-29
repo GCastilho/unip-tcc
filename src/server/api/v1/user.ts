@@ -48,6 +48,7 @@ router.get('/balances', (req, res) => {
 	res.send(balance)
 })
 
+//Não implementado
 router.get('/info', async (_req, res) => {
 	res.send({ info: 'info' })
 })
@@ -59,7 +60,6 @@ router.get('/transactions/:opid', async (req, res) => {
 	try {
 		const transactions = await Transaction.findById(req.params.opid)
 		if (!transactions) throw 'NotFound'
-		//console.error(`opid=${transactions._id} user=${transactions.user.toHexString()}`)
 		// Checa se o usuario da transação é o mesmo que esta logado
 		if (transactions.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
 		// Coloca as transações o formato certo
@@ -159,103 +159,18 @@ router.post('/transactions', async (req, res) => {
 	}
 })
 
+/**
+ * Retorna informações sobre os subpath de /user
+ */
 router.get('/', (_req, res) => {
 	res.send({
 		description: 'Entrypoint for requests specific to a user',
-		entries: [
-			{
-				path: 'info',
-				description: 'Request informations about the user',
-				auth: true,
-				requests: [{
-					method: 'GET',
-					returns: 'Informations about the user'
-				}]
-			},
-			{
-				path: 'accounts',
-				description: 'Request a list of accounts of the user',
-				auth: true,
-				requests: [{
-					method: 'GET',
-					returns: 'List of accounts of all currencies that the user has',
-				}]
-			},
-			{
-				path: 'balances',
-				description: 'Request the balances for all the currencies',
-				auth: true,
-				requests: [{
-					method: 'GET',
-					returns: 'List of balances of all currencies',
-				}]
-			},
-			{
-				path: 'transactions',
-				description: 'Fetch, send and update transactions',
-				auth: true,
-				requests: [
-					{
-						method: 'GET',
-						returns: 'List of transactions from the user in descending order',
-						parametres: [
-							{
-								type: 'query',
-								description: 'Filter transactions by currency',
-								value: 'string',
-								name: 'currency'
-							},
-							{
-								type: 'query',
-								description: 'Skip first n results',
-								value: 'numeric',
-								name: 'skip'
-							}
-						]
-					},
-					{
-						method: 'GET',
-						returns: 'Informations about specific transaction',
-						parametres: [
-							{
-								type: 'path',
-								description: 'The opid of the transaction to request data from',
-								value: 'string',
-								name: 'opid'
-							}
-						]
-					},
-					{
-						method: 'POST',
-						description: 'Submit new transaction',
-						returns: 'opid of the submitted transaction',
-						parametres: [
-							{
-								type: 'body',
-								description: 'Instructions to execute a withdraw of a currency',
-								value: {
-									currency: {
-										type: 'string',
-										description: 'Currency to withdraw from'
-									},
-									destination: {
-										type: 'string',
-										description: 'Address to send currency to'
-									},
-									amount: {
-										type: 'numeric',
-										description: 'Amount of currency to withdraw'
-									}
-								}
-							}
-						]
-					}
-				],
-			},
-		]
 	})
 })
 
+/**
+ * Retorna NotFound se não for encontrado o path
+ */
 router.all('/*', (_req, res) => {
 	res.status(404).send({
 		error: 'NotFound',
