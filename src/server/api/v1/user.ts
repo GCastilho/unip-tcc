@@ -64,15 +64,15 @@ router.get('/transactions/:opid', async (req, res) => {
 		if (tx.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
 		// Formata o objeto da transação
 		res.send({
-			opid:           tx._id.toHexString(),
-			status:         tx.status,
-			currency:       tx.currency,
-			txid:           tx.txid,
-			account:        tx.account,
-			amount:         tx.amount.toFullString(),
-			type:           tx.type,
-			confirmations:  tx.confirmations,
-			timestamp:      tx.timestamp.getTime()
+			opid:          tx._id.toHexString(),
+			status:        tx.status,
+			currency:      tx.currency,
+			txid:          tx.txid,
+			account:       tx.account,
+			amount:        tx.amount.toFullString(),
+			type:          tx.type,
+			confirmations: tx.confirmations,
+			timestamp:     tx.timestamp.getTime()
 		})
 	} catch(err) {
 		if (err === 'NotFound') {
