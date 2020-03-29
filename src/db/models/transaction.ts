@@ -187,7 +187,6 @@ const TransactionSchema: Schema = new Schema({
 	},
 	txid: {
 		type: String,
-		sparse: true
 	},
 	type: {
 		type: String,
@@ -232,6 +231,9 @@ const TransactionSchema: Schema = new Schema({
  * Compound index to allow the storing of a send and a receive transaction
  * with the same txid
  *
+ * partialFilterExpression especifica que esse index só existe para os campos em
+ * que um txid esta presente, possibilitando um "sparse" de unico campo em um index composto
+ *
  * Tbm é uma boa ideia desabilitar o autoIndex em produção
  *
  * See https://mongoosejs.com/docs/guide.html#indexes
@@ -240,7 +242,10 @@ TransactionSchema.index({
 	txid: 1,
 	type: 1
 }, {
-	unique: true
+	unique: true,
+	partialFilterExpression: {
+		txid: {$exists: true},
+	}
 })
 
 /**
