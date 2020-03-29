@@ -2,7 +2,6 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import Common from '../common'
 import * as methods from './methods'
-import axios from 'axios'
 
 const MAIN_SERVER_IP = process.env.MAIN_SERVER_IP || 'localhost'
 const MAIN_SERVER_PORT = parseInt(process.env.MAIN_SERVER_PORT || '8085')
@@ -50,17 +49,8 @@ export class Bitcoin extends Common {
 				console.log('Bitcoin blockchain listener is up on port', this.port)
 			})
 		}).catch(async err => {
-			const blockInfo = await axios.get('https://api.blockcypher.com/v1/btc/test3')
-			if (!blockInfo.data.height) {
-				console.error('Error on receiving blockchain height', err)
-				process.exit(1)
-			}
-			this.blockHeight = (blockInfo.data.height)
-			console.log('current block height :' + this.blockHeight)
-				
-			app.listen(this.port, () => {
-				console.log('Bitcoin blockchain listener is up on port', this.port)
-			})
+			console.error('Error on receiving blockchain height', err)
+			process.exit(1)
 		})
 		
 	}
