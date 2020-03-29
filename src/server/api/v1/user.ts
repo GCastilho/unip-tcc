@@ -95,7 +95,7 @@ router.get('/transactions/:opid', async (req, res) => {
 router.get('/transactions', async (req, res) => {
 	/** Numero de transações que sera puladas */
 	const skip: number = +req.query.skip || 0
-	/** Checa se a currency é surportada, se não, ela será undefined */
+	/** Filtro de transações por currency */
 	const currency = CurrencyApi.currencies.find(currency => currency === req.query.currency)
 	/** Filtro da query do mongo */
 	const query = currency ? { user: req.user?.id, currency } : { user: req.user?.id }
@@ -104,25 +104,21 @@ router.get('/transactions', async (req, res) => {
 	 * filtrado de acordo com a query e pulando de acordo com skip
 	 */
 	const txs = await Transaction.find(query, null, {
-		sort : { timestamp: -1 },
+		sort: { timestamp: -1 },
 		limit: 10,
 		skip
 	})
-	const formattedTransactions: object[] = []
-	for (const tx of txs) {
-		// Formata as transações
-		formattedTransactions.push({
-			opid:           tx._id.toHexString(),
-			status:         tx.status,
-			currency:       tx.currency,
-			txid:           tx.txid,
-			account:        tx.account,
-			amount:         tx.amount.toFullString(),
-			type:           tx.type,
-			confirmations:  tx.confirmations,
-			timestamp:      tx.timestamp.getTime()
-		})
-	}
+	const formattedTransactions = txs.map(tx => ({
+		opid:          tx._id.toHexString(),
+		status:        tx.status,
+		currency:      tx.currency,
+		txid:          tx.txid,
+		account:       tx.account,
+		amount:        tx.amount.toFullString(),
+		type:          tx.type,
+		confirmations: tx.confirmations,
+		timestamp:     tx.timestamp.getTime()
+	}))
 	res.send(formattedTransactions)
 })
 
