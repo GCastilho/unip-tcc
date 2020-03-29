@@ -32,17 +32,29 @@ const _currencies = {
 export const currencies = Object.values(_currencies).map(currency => currency.name)
 
 /**
- * Um array de objetos com informações detalhadas sobre as currencies
- * suportadas pela api
- *
- * O objeto contém as propriedades 'name', 'code' e 'decimals'
- *
- * @todo Isso não ser um array
+ * Retorna informações detalhadas sobre uma currency suportada pela API
  */
-export const currenciesDetailed = Object.values(_currencies).map(currency => {
-	const { name, code, supportedDecimals } = currency
-	return { name, code, decimals: supportedDecimals }
-})
+export const detailsOf = (function() {
+	const detailsMap = new Map<SuportedCurrencies, {
+		code: Common['code']
+		decimals: Common['supportedDecimals']
+		fee: Common['fee']
+	}>()
+
+	for (const currency of currencies) {
+		detailsMap.set(currency, {
+			code: _currencies[currency].code,
+			decimals: _currencies[currency].supportedDecimals,
+			fee: _currencies[currency].fee
+		})
+	}
+
+	return function currenciesDetailed(currency: SuportedCurrencies) {
+		const details = detailsMap.get(currency)
+		if (!details) throw new Error(`The currency '${currency}' was not found`)
+		return details
+	}
+})()
 
 /** EventEmmiter para eventos internos */
 // const _events = new EventEmitter()
@@ -116,6 +128,11 @@ export async function withdraw(
 		status: 'preparing'
 	}).save()
 
+	// Desconta o fee do amount
+	const { decimals, fee } = detailsOf(currency)
+	const _amount = amount * Math.pow(10, decimals)
+	const _fee = fee * Math.pow(10, decimals)
+
 	// Adiciona a operação na Transactions
 	const transaction = await new Transaction({
 		_id: opid,
@@ -124,7 +141,8 @@ export async function withdraw(
 		currency,
 		status: 'processing',
 		account,
-		amount,
+		amount: (_amount - _fee) / Math.pow(10, decimals),
+		fee: _currencies[currency].fee,
 		timestamp: new Date()
 	}).save()
 

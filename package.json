@@ -2,7 +2,7 @@
   "name": "unip-tcc",
   "version": "1.0.0",
   "description": "Cryptocurrency exchange webserver",
-  "main": "src/server.js",
+  "main": "src/index.js",
   "scripts": {
     "start": "node build/main_server/index.js",
     "start:nano": "npm start --prefix ./build/external_modules/nano",
