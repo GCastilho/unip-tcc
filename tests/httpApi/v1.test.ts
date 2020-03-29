@@ -50,7 +50,11 @@ describe('Testing version 1 of HTTP API', () => {
 			const { body } = await request(app).get('/v1/currencies').set(apiConfig).send()
 				.expect('Content-Type', /json/)
 				.expect(200)
-			expect(body).to.be.an('array').that.deep.equals(CurrencyApi.currenciesDetailed)
+			const currenciesDetailed = CurrencyApi.currencies.map(currency => ({
+				name: currency,
+				...CurrencyApi.detailsOf(currency)
+			}))
+			expect(body).to.be.an('array').that.deep.equals(currenciesDetailed)
 		})
 	})
 
@@ -308,7 +312,6 @@ describe('Testing version 1 of HTTP API', () => {
 			})
 
 			describe('Testing fetch of specific transaction', () => {
-
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
 					const { body } = await request(app).get('/v1/user/transactions/a-opid').set(apiConfig).send()
 						.expect(401)
@@ -430,7 +433,7 @@ describe('Testing version 1 of HTTP API', () => {
 						expect(tx).to.be.an('object')
 						expect(tx.currency).to.equals(currency)
 						expect(tx.account).to.equal(`account-destination-${currency}`)
-						expect(tx.amount.toFullString()).to.equal('2.0')
+						expect(tx.amount.toFullString()).to.equal((2 - tx.fee).toString())
 					})
 				})
 			}
