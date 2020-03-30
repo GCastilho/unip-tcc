@@ -2,7 +2,7 @@
   "name": "unip-tcc",
   "version": "1.0.0",
   "description": "Cryptocurrency exchange webserver",
-  "main": "src/server.js",
+  "main": "src/index.js",
   "scripts": {
     "start": "node build/main_server/index.js",
     "start:nano": "npm start --prefix ./build/external_modules/nano",
@@ -19,13 +19,14 @@
     "build:server": "tsc --build",
     "build:svelte": "npm run export --prefix ./client",
     "build:restruct": "move-cli ./build/src ./build/main_server && move-cli ./public ./build/public",
-    "build:config": "copyfiles -E external_modules/** -e '**/node_modules/**' -e '**/*.js' -e '**/*.ts' build/ && copyfiles -E package* build/main_server/",
+    "build:config": "copyfiles -E external_modules/** -e **/node_modules/** -e **/*.js -e **/*.ts build/ && copyfiles -E package* build/main_server/",
     "build:dep-install": "npm-recursive-install --rootDir=build --production"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.19.0",
+    "cookie-parser": "^1.4.4",
     "env-cmd": "^10.1.0",
     "express": "^4.17.1",
     "js-sha512": "^0.8.0",

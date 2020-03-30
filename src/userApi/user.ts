@@ -1,24 +1,9 @@
 import { sha512 } from 'js-sha512'
 import { ObjectId, Decimal128 } from 'mongodb'
-import * as currencyApi from '../currencyApi'
-import { Pending } from '../db/models/person/currencies/pending'
+import * as CurrencyApi from '../currencyApi'
+import type { Pending } from '../db/models/person/currencies/pending'
 import type { Person } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../currencyApi'
-
-/**
- * Um map com as casas decimais de cada uma das currencies suportadas
- */
-const decimals = new Map<SC, number>()
-
-/**
- * Acessa a CurrencyApi no próximo tick para garantir que ela estará
- * completamente carregada (UserApi e CurrencyApi tem dependência circular)
- */
-setImmediate(() => {
-	currencyApi.currenciesDetailed.forEach(currency => {
-		decimals.set(currency.name, currency.decimals)
-	})
-})
 
 /**
  * Interface utilizada pela balanceOps para operações de manipulação de saldo
@@ -76,10 +61,20 @@ export default class User {
 
 	/**
 	 * Retorna os saldos de um usuário para determinada currency
+	 * @param currency A currency que o saldo se refere
+	 * @param asString Retorna os saldos como string ou Decimal128
 	 */
-	getBalance = (currency: SC) => {
+	getBalance(currency: SC, asString: true): { available: string; locked: string }
+	getBalance(currency: SC, asString?: false): { available: Decimal128; locked: Decimal128 }
+	getBalance(currency: SC, asString?: boolean) {
 		const { available, locked } = this.person.currencies[currency].balance
-		return { available, locked }
+		return asString ? {
+			available: available.toFullString(),
+			locked: locked.toFullString()
+		} : {
+			available,
+			locked
+		}
 	}
 
 	/**
@@ -139,7 +134,7 @@ export default class User {
 			const pending: Pending = {
 				opid: op.opid,
 				type: op.type,
-				amount: Decimal128.fromNumeric(op.amount, decimals.get(currency))
+				amount: Decimal128.fromNumeric(op.amount, CurrencyApi.detailsOf(currency).decimals)
 			}
 
 			const response = await this.person.collection.findOneAndUpdate({

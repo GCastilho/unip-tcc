@@ -6,8 +6,8 @@ const Router = require('express').Router()
 const bodyParser = require('body-parser')
 const randomstring = require('randomstring')
 
-import Session from '../db/models/session'
-const userApi = require('../userApi')
+const Session = require('../../db/models/session').default
+const userApi = require('../../userApi')
 
 /**
  * @description Ativa o middleware para dar parse no body enviado pelo form

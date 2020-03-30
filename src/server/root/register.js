@@ -5,7 +5,7 @@
 const Router = require('express').Router()
 const bodyParser = require('body-parser')
 
-const userApi = require('../userApi')
+const userApi = require('../../userApi')
 
 /**
  * Ativa o middleware de parse no body enviado pelo form da página de cadastro
