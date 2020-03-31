@@ -70,6 +70,7 @@
 	}
 
 	.dropdown {
+		z-index: 2;
 		width: 180px;
 		position: absolute;
 		right: 10px;
@@ -77,12 +78,12 @@
 		opacity: 1;
 		transition: 0.5s height;
 		overflow: hidden;
-		background-color: #60606030;
+		background-color: #d0d0d0;
 	}
 
 	.show {
 		opacity: 1;
-		height: 100px;
+		height: calc(4em * 1); /* 4em * Numero de itens */
 		transition: 0.5s height;
 	}
 </style>
@@ -96,16 +97,16 @@
 			{#if $auth}
 				<li><a class:selected="{segment === 'balances'}" href="balances">balances</a></li>
 				<li on:mouseover="{() => userdropdown = 'show'}" on:mouseleave="{() => userdropdown = 'hide'}">
-					<div class='dropdown-button' class:selected = {userdropdown === 'show' || segment === 'changepass'}>
+					<div class='dropdown-button' class:selected = {userdropdown === 'show' || segment === 'user'}>
 						<img alt="Config" title="Config" src="./assets/settings-icon.svg" />
 					</div>
 					<div class="{userdropdown === 'show' ? 'dropdown show' : 'dropdown'}" id="dropdown_usermenu">
 						<table>
 							<tr><td>
 								<a
-									class:selected="{segment === 'changepass'}"
+									class:selected="{segment === 'user'}"
 									on:click="{() => userdropdown = 'hide'}"
-									href="changepass"
+									href="/user/changepass"
 								><img alt="Senha" title="Alterar Senha" src="./assets/key-icon.svg" />
 									Change Password
 								</a>

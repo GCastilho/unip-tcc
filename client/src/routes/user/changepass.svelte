@@ -1,11 +1,11 @@
 <script>
 	import { onMount } from "svelte"
 	import { goto } from "@sapper/app"
-	import axios from "../utils/axios.js"
-	import * as auth from "../stores/auth.js"
-	import FancyInput from "../components/FancyInput.svelte"
-	import FancyButton from "../components/FancyButton.svelte"
-	import FormErrorMessage from "../components/FormErrorMessage.svelte"
+	import axios from "../../utils/axios.js"
+	import * as auth from "../../stores/auth.js"
+	import FancyInput from "../../components/FancyInput.svelte"
+	import FancyButton from "../../components/FancyButton.svelte"
+	import FormErrorMessage from "../../components/FormErrorMessage.svelte"
 
 	let errorMessage = undefined
 
@@ -22,7 +22,7 @@
 		if (passwordnew === passwordconfirm) {
 			try {
 				const { token } = await axios.post(
-					window.location + "/change-password",
+					window.location + "",
 					{
 						passwordold,
 						passwordnew

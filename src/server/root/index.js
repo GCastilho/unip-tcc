@@ -12,4 +12,7 @@ root.use('/register', require('./register'))
 /** Handler de todos os requests para /login */
 root.use('/login', require('./login'))
 
+/** Handler de todos os requests para /login */
+root.use('/user', require('./user'))
+
 export default root
