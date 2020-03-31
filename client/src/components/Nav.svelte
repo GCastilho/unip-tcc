@@ -106,7 +106,7 @@
 								<a
 									class:selected="{segment === 'user'}"
 									on:click="{() => userdropdown = 'hide'}"
-									href="/user/changepass"
+									href="user/changepass"
 								><img alt="Senha" title="Alterar Senha" src="./assets/key-icon.svg" />
 									Change Password
 								</a>
