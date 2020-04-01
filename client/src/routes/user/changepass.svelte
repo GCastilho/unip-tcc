@@ -15,17 +15,17 @@
 	})
 
 	async function handleSubmit(event) {
-		const passwordold = event.target.password_old.value
-		const passwordnew = event.target.password_new.value
+		const oldPassword = event.target.password_old.value
+		const newPassword = event.target.password_new.value
 		const passwordconfirm = event.target.password_confirm.value
 
-		if (passwordnew === passwordconfirm) {
+		if (newPassword === passwordconfirm) {
 			try {
 				const { token } = await axios.post(
-					window.location + "",
+					window.location,
 					{
-						passwordold,
-						passwordnew
+						oldPassword,
+						newPassword
 					}
 				)
 				/**
@@ -82,11 +82,9 @@
 	{#if errorMessage}
 		<FormErrorMessage>{errorMessage}</FormErrorMessage>
 	{/if}
-	<FancyInput id="password_old" type="password">Old Password</FancyInput>
-	<FancyInput id="password_new" type="password">New Password</FancyInput>
-	<FancyInput id="password_confirm" type="password">
-		Confirm Password
-	</FancyInput>
+	<FancyInput id="password_old" type="password" autocomplete="current-password">Old Password</FancyInput>
+	<FancyInput id="password_new" type="password" autocomplete="new-password">New Password</FancyInput>
+	<FancyInput id="password_confirm" type="password" autocomplete="new-password">Confirm Password</FancyInput>
 
 	<FancyButton type="submit">Update Password</FancyButton>
 </form>
