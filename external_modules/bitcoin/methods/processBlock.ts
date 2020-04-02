@@ -6,7 +6,7 @@ export function processBlock(this: Bitcoin) {
 	/**
 	 * Verifica a quantidade de confirmações de uma transação recebida e informa
 	 * o servidor principal
-	 * 
+	 *
 	 * Se uma transação foi confirmada, remove-a da collection da transações
 	 * não confirmadas
 	 */
@@ -43,7 +43,7 @@ export function processBlock(this: Bitcoin) {
 	/**
 	 * Verifica a quantidade de confirmações de uma transação enviada e informa
 	 * o servidor principal
-	 * 
+	 *
 	 * Se uma transação foi confirmada, remove-a da collection da transações
 	 * não confirmadas
 	 */
@@ -70,7 +70,7 @@ export function processBlock(this: Bitcoin) {
 
 	/**
 	 * Processa novos blocos recebidos da blockchain
-	 * 
+	 *
 	 * @param block O hash do bloco enviado pelo curl
 	 */
 	const _processBlock = async (block: string) => {
@@ -81,7 +81,7 @@ export function processBlock(this: Bitcoin) {
 		await this.rewindTransactions(block)
 		/**
 		 * Faz um request no rpc para saber se ele está respondendo ou não
-		 * 
+		 *
 		 * O getInfo tem um handler que vai emitir 'node_connected' ou
 		 * 'node_disconnected' de acordo com a resposta recebida, que é o motivo
 		 * dessa function call estar aqui
@@ -112,7 +112,7 @@ export function processBlock(this: Bitcoin) {
 						console.error('Error processing received transactions', err)
 				})
 			}
-			
+
 			/** Todas as transações ENVIADAS e não confirmadas no database */
 			const sended: PSent[] = await SendPending.find({
 				'transaction.txid': { $exists: true }

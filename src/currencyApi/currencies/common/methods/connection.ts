@@ -1,6 +1,6 @@
 import socketIO from 'socket.io'
 import ss = require('socket.io-stream')
-import { ObjectId } from 'mongodb'
+import { ObjectId, Decimal128 } from 'mongodb'
 import Common from '../index'
 import Person from '../../../../db/models/person'
 import * as userApi from '../../../../userApi'
@@ -21,6 +21,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	socket.on('disconnect', () => {
 		console.log(`Disconnected from the '${this.name}' module`)
 		this.isOnline = false
+		this._events.removeAllListeners('emit')
 		this._events.emit('disconnected')
 	})
 
@@ -47,11 +48,21 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Processa novas transações desta currency, atualizando o balanço do
 	 * usuário e emitindo um evento de 'new_transaction' no EventEmitter público
 	 */
-	socket.on('new_transaction', async (transaction: TxReceived, callback: Function) => {
+	socket.on('new_transaction', async (transaction: TxReceived, callback: (err: any, opid?: string) => void) => {
 		console.log('received new transaction', transaction)
 
 		const { txid, account, amount, status, confirmations } = transaction
 		const timestamp = new Date(transaction.timestamp)
+
+		if (Number.isNaN(+amount)) return callback({
+			code: 'BadRequest',
+			message: 'Amount is not numeric'
+		})
+
+		if (+amount < 0) return callback({
+			code: 'BadRequest',
+			message: 'Amount can not be a negative number'
+		})
 
 		let user: User
 		try {
@@ -83,7 +94,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				status: 'processing',
 				confirmations,
 				account,
-				amount,
+				amount: Decimal128.fromNumeric(amount, this.supportedDecimals),
 				timestamp
 			}).save()
 
@@ -114,7 +125,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				confirmations: tx.confirmations,
 				timestamp:     tx.timestamp
 			})
-			callback(null, opid)
+			callback(null, opid.toHexString())
 		} catch (err) {
 			if (err.code === 11000 && err.keyPattern.txid) {
 				// A transação já existe
@@ -125,7 +136,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					/*
 					 * Houve um erro entre adicionar a tx e a update do status,
 					 * restaurar o database para status inicial e tentar de novo
-					 * 
+					 *
 					 * Esse tipo de erro não deve ocorrer a menos que ocorra
 					 * uma falha no database (no momento específico) ou falha de
 					 * energia, slá. O q importa é que PODE ocorrer, então o
@@ -142,7 +153,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 					await tx.remove()
 					/**
 					 * Chama essa função novamente com os mesmos parâmetros
-					 * 
+					 *
 					 * Ao emitir o evento no socket ele também será
 					 * transmitido ao módulo externo, mas, como o módulo externo
 					 * não tem (não devería ter) um handler para um evento de
@@ -177,11 +188,11 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				callback({ code: 'InternalServerError' })
 				/**
 				 * Restaura o database ao estado original
-				 * 
+				 *
 				 * Não se sabe em que estágio ocorreu um erro para cair aqui,
 				 * então a operação pode ou não ter sido criada, por esse motivo
 				 * o erro de 'OperationNotFound' está sendo ignorando
-				 * 
+				 *
 				 * Entretando, um outro erro é um erro de fato e deve terminar
 				 * a execução do programa para evitar potencial dano
 				 */
@@ -200,7 +211,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 	 * Processa requests de atualização de transações PENDENTES existentes
 	 * Os únicos campos que serão atualizados são o status e o confirmations
 	 */
-	socket.on('update_received_tx', async (txUpdate: UpdtReceived, callback: Function) => {
+	socket.on('update_received_tx', async (txUpdate: UpdtReceived, callback: (err: any, res?: string) => void) => {
 		if (!txUpdate.opid) return callback({
 			code: 'BadRequest',
 			message: '\'opid\' needs to be informed to update a transaction'
@@ -234,17 +245,25 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			this.events.emit('update_received_tx', tx.user, txUpdate)
 		} catch (err) {
 			if (err === 'UserNotFound') {
-				callback({ code: 'UserNotFound' })
+				callback({
+					code: 'UserNotFound',
+					message: `UserApi could not find the user for the operation '${txUpdate.opid}'`
+				})
 			} else if (err === 'OperationNotFound') {
 				callback({
 					code: 'OperationNotFound',
-					message: 'userApi could not find the requested operation'
+					message: `userApi could not find operation '${txUpdate.opid}'`
 				})
 			} else if (err.name === 'ValidationError') {
 				callback({
 					code: 'ValidationError',
 					message: 'Mongoose failed to validate the document after the update',
 					details: err
+				})
+			} else if (err.name === 'CastError') {
+				callback({
+					code: 'CastError',
+					message: err.message
 				})
 			} else {
 				console.error('Error processing update_received_tx', err)

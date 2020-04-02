@@ -3,9 +3,9 @@ import { emit, addSocketListener } from './websocket'
 /**
  * Map das transações armazenadas no cliente, a chave é o opid
  * e o valor é um TxInfo
- * 
+ *
  * @type {Map.<string, object>}
- * 
+ *
  * @todo Usar type da interface ao invés de 'object'
  */
 const transactions = new Map()

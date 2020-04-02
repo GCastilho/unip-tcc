@@ -6,8 +6,8 @@ const Router = require('express').Router()
 const bodyParser = require('body-parser')
 const randomstring = require('randomstring')
 
-import Session from '../db/models/session'
-const userApi = require('../userApi')
+const Session = require('../../db/models/session').default
+const userApi = require('../../userApi')
 
 /**
  * @description Ativa o middleware para dar parse no body enviado pelo form
@@ -39,7 +39,7 @@ Router.post('/', function(req, res) {
 		/**
 		 * Se a autenticação, a criação e o salvamento da sessão forem bem
 		 * sucedidas, seta o cookie no header e retorna o token
-		 * 
+		 *
 		 * @todo cookie ter tempo de expiração
 		 */
 		res.cookie('sessionId', session.sessionId, { httpOnly: true })
@@ -56,7 +56,7 @@ Router.post('/', function(req, res) {
 			/**
 			 * @description Esse else pode ser chamado em situações onde não foi
 			 * um erro interno do servidor, como uma entrada malformada
-			 * 
+			 *
 			 * @todo Fazer um error handling melhor
 			 */
 			res.status(500).send({ error: 'Internal server error' })

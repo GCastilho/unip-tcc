@@ -39,7 +39,7 @@ function route(socket: SocketIO.Socket, path = '/') {
 	GlobalListeners.getListenersNames()
 		.filter(i => !socket.eventNames().includes(i))
 		.forEach(event => socket.removeAllListeners(event))
-	
+
 	/**
 	 * Checa se existe match para o path dado e em caso afirmativo chama o
 	 * handler para ele

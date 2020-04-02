@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document } from 'mongoose'
 import { ObjectId, Decimal128 } from 'mongodb'
+import mongoose, { Schema, Document } from '../mongoose'
 import type { Person } from './person'
 import type { SuportedCurrencies } from '../../currencyApi'
 
@@ -13,9 +13,9 @@ interface Transaction {
 	amount: number|bigint|string
 	/**
 	 * Status da transação
-	 * 
+	 *
 	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
-	 * 
+	 *
 	 * confirmed: A transação foi confirmada pela rede e é considerada
 	 * irreversível
 	 */
@@ -74,9 +74,9 @@ export interface UpdtReceived {
 	opid: ExternalModuleTransaction['opid']
 	/**
 	 * Status da transação
-	 * 
+	 *
 	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
-	 * 
+	 *
 	 * confirmed: A transação foi confirmada pela rede e é considerada irreversível
 	 */
 	status: ExternalModuleTransaction['status']
@@ -98,9 +98,9 @@ export interface UpdtSent {
 	txid: ExternalModuleTransaction['txid']
 	/**
 	 * Status da transação
-	 * 
+	 *
 	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
-	 * 
+	 *
 	 * confirmed: A transação foi confirmada pela rede e é considerada irreversível
 	 */
 	status: ExternalModuleTransaction['status']
@@ -146,13 +146,13 @@ interface TransactionDoc extends Document {
 	user: Person['_id']
 	/**
 	 * Status da transação
-	 * 
+	 *
 	 * pending: A transação já foi processada e aceita no saldo do usuário e
 	 * está pendente para ser confirmada na rede
-	 * 
+	 *
 	 * confirmed: A transação foi confirmada na rede e teve o saldo do usuário
 	 * atualizado no database
-	 * 
+	 *
 	 * processing: A transação ainda não foi processada no saldo do usuário,
 	 * podendo ser negada quando isso ocorrer (e deletada do db)
 	 */
@@ -165,6 +165,8 @@ interface TransactionDoc extends Document {
 	account: TransactionInternal['account']
 	/** Amount da transação */
 	amount: Decimal128
+	/** Taxa cobrada para a execução da operação */
+	fee: number
 	/** Tipo dessa transação */
 	type: TransactionInternal['type']
 	/**
@@ -215,6 +217,11 @@ const TransactionSchema: Schema = new Schema({
 	amount: {
 		type: Decimal128,
 		required: true
+	},
+	fee: {
+		type: Number,
+		min: 0,
+		default: 0
 	},
 	timestamp: {
 		type: Date,

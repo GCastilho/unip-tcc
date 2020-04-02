@@ -1,6 +1,6 @@
 /**
  * Converte um valor em raw para um valor em NANO
- * 
+ *
  * @param amount O valor em raw que será convertido
  */
 export function fromRawToNano(amount: string): string {
@@ -10,7 +10,7 @@ export function fromRawToNano(amount: string): string {
 
 	// Garante q o número tem a qtd de caracteres da qtd de casas decimais
 	const _amount = amount.padStart(30 + 1, '0')
-	
+
 	// Separa o decimal do inteiro usando o numero de casas decimais como separador
 	const inteiro = _amount.slice(0, -30)
 	const casas = _amount.slice(-30)
@@ -20,7 +20,7 @@ export function fromRawToNano(amount: string): string {
 
 /**
  * Converte um valor em NANO para um valor em raw
- * 
+ *
  * @param amount O valor em NANO que será convertido
  */
 export function fromNanoToRaw(amount: string): string {

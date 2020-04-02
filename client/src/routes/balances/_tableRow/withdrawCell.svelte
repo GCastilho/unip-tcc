@@ -3,14 +3,20 @@
 	import * as balances from '../../../stores/balances.js'
 
 	export let name
+	export let fee
 	let withdrawAmount
 
 	/** Impede que o valor digitado do amount seja maior que o saldo disponível */
 	const filterAmount = () => withdrawAmount = withdrawAmount > $balances[name].available ? $balances[name].available : withdrawAmount
 
+	$: amountToReceive = withdrawAmount - fee > 0 ? withdrawAmount - fee : 0
+
 	async function handleWithdraw(event) {
 		const destination = event.target.destination.value
 		const amount = +event.target.amount.value
+
+		event.target.destination.value = ''
+		event.target.amount.value = ''
 
 		try {
 			const opid = await emit('withdraw', {
@@ -51,12 +57,18 @@
 		background-color: #F0AE98;
 	}
 
-	div {
+	form > div {
 		border: 1px solid var(--table-borders);
 		border-radius: 10px;
 		padding: 20px;
 		margin-bottom: 5px;
 		background-color: white;
+	}
+
+	.withdraw-info {
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-end;
 	}
 
 	input {
@@ -76,21 +88,29 @@
 	input[type=number] {
 		-moz-appearance:textfield;
 	}
+
+	p {
+		margin: 0
+	}
 </style>
 
 <form on:submit|preventDefault={handleWithdraw}>
 	<h4>Withdraw {name.toUpperCase()}</h4>
 	<div>
-		<label for="destination">Destination:</label>
-		<input type="text" id="destination" required>
-		<br/>
-
-		<label for="amount">Amount:</label>
-		<input
-			type="number" id="amount" step="0.00000001" required
-			bind:value={withdrawAmount}
-			on:input="{filterAmount}"
-		>
+		<div class="withdraw-info">
+			<label for="destination">Destination:</label>
+			<input type="text" id="destination" required>
+		</div>
+		<div class="withdraw-info">
+			<label for="amount">Amount:</label>
+			<input
+				type="number" id="amount" step="0.00000001" required
+				bind:value={withdrawAmount}
+				on:input="{filterAmount}"
+			>
+		</div>
+		<p>Fee: {fee.toFixed(8)}</p>
+		<p>You will receive: {amountToReceive.toFixed(8)}</p>
 	</div>
 
 	<button type="submit">Withdraw</button>
