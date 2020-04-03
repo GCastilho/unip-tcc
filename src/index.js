@@ -7,6 +7,9 @@ require('./db/mongoose')
 /** Load CurrencyApi module */
 require('./currencyApi')
 
+/** Load MarketApi module */
+require('./marketApi')
+
 /** Load express webserver */
 const server = require('./server')
 
