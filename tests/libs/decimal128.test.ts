@@ -51,6 +51,7 @@ describe('Testing decimal128\'s extension library', () => {
 		expect(Decimal128.fromNumeric(2, 0).toFullString()).to.equals('2.0')
 		expect(Decimal128.fromNumeric(-2, 0).toFullString()).to.equals('-2.0')
 		expect(Decimal128.fromNumeric(2e-2, 1).toFullString()).to.equals('0.0')
+		expect(Decimal128.fromNumeric(0.000000001, 8).toFullString()).to.equals('0.0')
 		expect(Decimal128.fromNumeric(8431674351687314e-5, 3).toFullString()).to.equals('84316743516.873')
 		expect(Decimal128.fromNumeric(-8431674351687314e-5, 1).toFullString()).to.equals('-84316743516.8')
 		expect(Decimal128.fromNumeric(87315664.21657893e4, 6).toFullString()).to.equals('873156642165.7893')
@@ -67,10 +68,10 @@ describe('Testing decimal128\'s extension library', () => {
 	})
 
 	it('Should fail to convert non-numeric strings', () => {
-		expect(() => Decimal128.fromNumeric('2,5')).to.throw()
-		expect(() => Decimal128.fromNumeric('235n')).to.throw()
-		expect(() => Decimal128.fromNumeric('23.5.')).to.throw()
-		expect(() => Decimal128.fromNumeric('235 78')).to.throw()
-		expect(() => Decimal128.fromNumeric('abacaxi')).to.throw()
+		expect(() => Decimal128.fromNumeric('2,5')).to.throw('2,5 is not numeric')
+		expect(() => Decimal128.fromNumeric('235n')).to.throw('235n is not numeric')
+		expect(() => Decimal128.fromNumeric('23.5.')).to.throw('23.5. is not numeric')
+		expect(() => Decimal128.fromNumeric('235 78')).to.throw('235 78 is not numeric')
+		expect(() => Decimal128.fromNumeric('abacaxi')).to.throw('abacaxi is not numeric')
 	})
 })
