@@ -88,7 +88,7 @@ export function withdraw(this: Common) {
 				if (!tx) throw `Withdraw error: Transaction ${item.opid} not found!`
 
 				const transaction: TxSend = {
-					opid:    tx._id.toHexString(),
+					opid:    tx.id,
 					account: tx.account,
 					amount:  tx.amount.toFullString()
 				}

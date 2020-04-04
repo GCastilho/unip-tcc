@@ -64,7 +64,7 @@ router.get('/transactions/:opid', async (req, res) => {
 		if (tx.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
 		// Formata o objeto da transação
 		res.send({
-			opid:          tx._id.toHexString(),
+			opid:          tx.id,
 			status:        tx.status,
 			currency:      tx.currency,
 			txid:          tx.txid,
@@ -109,7 +109,7 @@ router.get('/transactions', async (req, res) => {
 		skip
 	})
 	const formattedTransactions = txs.map(tx => ({
-		opid:          tx._id.toHexString(),
+		opid:          tx.id,
 		status:        tx.status,
 		currency:      tx.currency,
 		txid:          tx.txid,
