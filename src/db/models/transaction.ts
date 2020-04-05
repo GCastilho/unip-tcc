@@ -243,9 +243,7 @@ TransactionSchema.index({
 	type: 1
 }, {
 	unique: true,
-	partialFilterExpression: {
-		txid: {$exists: true},
-	}
+	partialFilterExpression: { txid: {$exists: true}, }
 })
 
 /**
