@@ -16,7 +16,6 @@ const TransactionSchema = new Schema({
 	},
 	txid: {
 		type: String,
-		sparse: true,
 		required: false
 	},
 	account: {
@@ -42,7 +41,8 @@ TransactionSchema.index({
 	txid: 1,
 	type: 1
 }, {
-	unique: true
+	unique: true,
+	partialFilterExpression: { txid: {$exists: true}, }
 })
 
 export default mongoose.model<Transaction>('transaction', TransactionSchema)
