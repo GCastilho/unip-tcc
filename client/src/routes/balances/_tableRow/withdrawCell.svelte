@@ -123,7 +123,7 @@
 	<h4>Withdraw {name.toUpperCase()}</h4>
 	<div>
 		{#if err}
-			<small>O saque precisa ser de no minimo <b>{(fee*2).toFixed(8)}</b></small>
+			<small>The withdrawal must be at least <b>{(fee*2).toFixed(8)}</b></small>
 		{/if}
 		<div class="withdraw-info">
 			<label for="destination">Destination:</label>
@@ -141,6 +141,6 @@
 		<p>Fee: {fee.toFixed(8)}</p>
 		<p>Minimum withdrawal: {(fee*2).toFixed(8)}</p>
 		<p>You will receive: {amountToReceive.toFixed(8)}</p>
-		<button type="submit">Withdraw</button>
 	</div>
+	<button type="submit">Withdraw</button>
 </form>
