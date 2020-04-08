@@ -83,7 +83,7 @@
 
 	.show {
 		opacity: 1;
-		height: calc(4em * 1); /* 4em * Numero de itens */
+		height: calc(4em * 2); /* 4em * Numero de itens */
 		transition: 0.5s height;
 	}
 </style>
@@ -104,11 +104,20 @@
 						<table>
 							<tr><td>
 								<a
-									class:selected="{segment === 'user'}"
+									class:selected="{segment === 'user/changepass'}"
 									on:click="{() => userdropdown = 'hide'}"
 									href="user/changepass"
 								><img alt="Senha" title="Alterar Senha" src="./assets/key-icon.svg" />
 									Change Password
+								</a>
+							</td></tr>
+							<tr><td>
+								<a
+									class:selected="{segment === 'user/transactions'}"
+									on:click="{() => userdropdown = 'hide'}"
+									href="user/transactions"
+								><img alt="Transactions" title="Transactions" src="./assets/key-icon.svg" />
+									Transactions
 								</a>
 							</td></tr>
 						</table>

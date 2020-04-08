@@ -41,8 +41,9 @@ Router.post('/', function(req, res) {
 		 * sucedidas, seta o cookie no header e retorna o token
 		 *
 		 * @todo cookie ter tempo de expiração
+		 *
 		 */
-		res.cookie('sessionId', session.sessionId, { httpOnly: true })
+		res.cookie('sessionId', session.sessionId,)
 		res.send({ token: session.token })
 	}).catch(err => {
 		if (err === 'UserNotFound' || err === 'InvalidPassword') {

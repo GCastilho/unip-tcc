@@ -11,12 +11,31 @@ router.use(cookieParser())
 router.use(express.json())
 
 /**
+ * Call para logar na api
+ */
+router.post('/login', async (req, res) => {
+	try {
+		console.log(req.body)
+		if (!req.cookies.sessionId || !req.body.sessionId) throw 'Cookie Not Found' // adicionado verificação se existe no body o sessionId
+		req.user = await UserApi.findUser.byCookie(req.cookies.sessionId || req.body.sessionId)
+		res.cookie('sessionId', req.cookies.sessionId || req.body.sessionId,{domain:'api.localhost:3000'}) //reaplica o cookie sessionId
+		res.status(200)
+	} catch(err) {
+		res.status(401).send({
+			error: 'NotAuthorized',
+			message: 'A valid cookie \'sessionId\' needs to be informed in body to perform this operation'
+		})
+	}
+})
+
+/**
  * Checa se você está logado
  */
 router.use(async (req, res, next) => {
 	try {
-		if (!req.cookies.sessionId) throw 'Cookie Not Found'
-		req.user = await UserApi.findUser.byCookie(req.cookies.sessionId)
+		if (!req.cookies.sessionId || !req.body.sessionId) throw 'Cookie Not Found' // adicionado verificação se existe no body o sessionId
+		req.user = await UserApi.findUser.byCookie(req.cookies.sessionId || req.body.sessionId)
+		res.cookie('sessionId', req.cookies.sessionId || req.body.sessionId,) //reaplica o cookie sessionId
 		next()
 	} catch(err) {
 		res.status(401).send({
