@@ -1,10 +1,16 @@
 <script>
 	export let transactionItem
-
 </script>
 
 <style>
 
+	td{
+		border-right: 1px solid #80808080;
+		padding-left: 10px;
+	}
+	tr{
+		border-top: 1px solid #80808080;
+	}
 </style>
 <tr>
 	<td>{transactionItem['opid']}</td>
@@ -15,6 +21,5 @@
 	<td>{transactionItem['amount']}</td>
 	<td>{transactionItem['type']}</td>
 	<td>{transactionItem['confirmations']}</td>
-	<td>{transactionItem['timestamp']}</td>
+	<td style="border-right:none">{transactionItem['timestamp']}</td>
 </tr>
-

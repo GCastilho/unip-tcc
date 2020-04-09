@@ -18,13 +18,13 @@
 <style>
 	div {
 		position: relative;
-		padding-top: 15px;
-		padding-bottom: 15px;
+		padding-top: 0;
+		padding-bottom: 0;
 	}
 
 	div, label {
-		padding-left: 5px;
-		padding-right: 5px;
+		padding-left: 0;
+		padding-right: 0;
 	}
 
 	input {
@@ -58,7 +58,7 @@
 		position: absolute;
 		top: 0;
 		left: 0;
-		margin-top: 13px;
+		margin-top: 0px;
 		transition: all .3s ease-out;
 		-webkit-transition: all .3s ease-out;
 		-moz-transition: all .3s ease-out;
@@ -67,7 +67,7 @@
 	input:focus + label,
 	input:not(:placeholder-shown) + label {
 		font-size: 13px;
-		margin-top: 0;
+		margin-top: -16px;
 		color: #3951b2;
 	}
 </style>
