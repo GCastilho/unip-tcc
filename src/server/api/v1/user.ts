@@ -48,7 +48,7 @@ router.post('/login', async (req, res) => {
 		console.log(req.body)
 		if (!req.cookies.sessionId || !req.body.sessionId) throw 'Cookie Not Found' // adicionado verificação se existe no body o sessionId
 		req.user = await UserApi.findUser.byCookie(req.cookies.sessionId || req.body.sessionId)
-		res.cookie('sessionId', req.cookies.sessionId || req.body.sessionId,{domain:'api.localhost:3000'}) //reaplica o cookie sessionId
+		res.cookie('sessionId', req.cookies.sessionId || req.body.sessionId,{domain:'.localhost:3000'}) //reaplica o cookie sessionId
 		res.status(200)
 	} catch(err) {
 		res.status(401).send({
