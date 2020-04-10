@@ -178,6 +178,9 @@ interface TransactionDoc extends Document {
 	timestamp: TransactionInternal['timestamp']
 }
 
+//Work in progress
+function validateAmount(v) { return v > 0 }
+
 /** Schema da collection de transações dos usuários */
 const TransactionSchema: Schema = new Schema({
 	user: {
@@ -216,7 +219,11 @@ const TransactionSchema: Schema = new Schema({
 	},
 	amount: {
 		type: Decimal128,
-		required: true
+		required: true,
+		validate: {
+			validator: validateAmount,
+			message: props => `${props.value} must be a positive number`
+		}
 	},
 	fee: {
 		type: Number,
