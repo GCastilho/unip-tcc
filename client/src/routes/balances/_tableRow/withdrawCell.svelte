@@ -16,10 +16,10 @@
 		const destination = event.target.destination.value
 		const amount = +event.target.amount.value
 
-		if (amount < (fee*2)) {
+		/*if (amount < (fee*2)) {
 			err = 'err'
 			return
-		}
+		}*/
 
 		event.target.destination.value = ''
 		event.target.amount.value = ''

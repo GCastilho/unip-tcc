@@ -179,7 +179,7 @@ interface TransactionDoc extends Document {
 }
 
 //Work in progress
-function validateAmount(v) { return v > 0 }
+const _fee = this.fee
 
 /** Schema da collection de transações dos usuários */
 const TransactionSchema: Schema = new Schema({
@@ -221,7 +221,7 @@ const TransactionSchema: Schema = new Schema({
 		type: Decimal128,
 		required: true,
 		validate: {
-			validator: validateAmount,
+			validator: (v) => v > (2 * _fee),
 			message: props => `${props.value} must be a positive number`
 		}
 	},
