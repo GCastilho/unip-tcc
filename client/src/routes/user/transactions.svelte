@@ -7,10 +7,13 @@
 	import FancyButton from "../../components/FancyButton.svelte"
 	import FormErrorMessage from "../../components/FormErrorMessage.svelte"
 	import FancyTransactionItem from "../../components/FancyTransactionItem.svelte"
+	import { transactionsList } from "../../stores/transactions"
 
 	let errorMessage = undefined
+	let transactions
 
-	let transactions = []
+	transactionsList.subscribe(value => {transactions = value})
+
 	let TransactionTable;
 	let filters={
 		opid:          '',
@@ -35,33 +38,50 @@
 		 * Carregar a ultima transaction do servidor e comparar se 
 		 * existe na lista da store 
 		 */
-		/*
-		console.log('Connecting to Api')
 		try{
-			console.log(JSON.stringify({sessionId:getCookie('sessionId')}))
-			fetch('http://api.localhost:3001/v1/user/login',
-				{
-					headers: {
-						'Accept': 'application/json',
-						'Content-Type': 'application/json'
-					},
-					method:'POST',
-					credentials:'include',
-					body:JSON.stringify({sessionId:getCookie('sessionId')})
+			/**
+			 * Faz o login na api e gera o cookie para o subdomínio
+			 * OBS mover posteriormente esse login para ser feito apos logar no
+			 * domínio principal
+			 */
+			fetch('http://api.'+window.location.host+'/v1/user/login',{
+				method:'POST',
+				credentials:'include',
+				/**
+				 * necessita passar o valor do cookie pelo body pois o cookie não estava sendo enviado
+				 * mesmo colocando o dominio *.localhost
+				 * necessita pesquisar mais a fundo como gerar requests para subdomínio
+				 * usando o cookie do domínio principal
+				 */
+				body:JSON.stringify({sessionId:getCookie('sessionId')})
+			}).then((res)=>{
+				if(res.status == 200){
+					/**
+					 * Apos relizar o login na api com o sessionID recarrega a lista de transactions
+					 */
+					fetch('http://api.'+window.location.host+'/v1/user/lasttransaction',
+					{
+						method:'GET',
+						credentials: 'include' // passa os cookies da api.localhost
+					}).then(data=>{
+						return data.json()
+					}).then(data =>{
+						if(!!data[0] && !!transactionsList[0]){ //checa se existe o id 0
+							if(data[0].opid != transactionsList[0].opid){
+								/**
+								 * se a ultima transaction for diferente da armazenada na store 
+								 * faz um request para o servidor pedindo pelas 10 mais atualizadas
+								 */
+								reloadListFromServer()
+							}
+						}
+					}).catch((err)=>{
+						console.log("Error on retrieving data from api")
+						console.log(err);
+					})
+				}else{
+					console.log("Error on connecting to api")
 				}
-			).then(()=>{
-				console.log('Get Server data')
-				fetch('http://api.localhost:3001/v1/user/transactions',
-				{
-					method:'GET',
-					credentials: 'include'
-				}).then(data=>{
-					console.log(data.json())
-				}).catch((err)=>{
-					console.log("Error on retrieving data from api")
-					console.log(err);
-				})
-			
 			}).catch((err)=>{
 				console.log("Error on connecting to api")
 				console.log(err);
@@ -71,7 +91,7 @@
 			console.log(err);
 		}
 		/**
-		 * Deletar Gerador de transactions apos criar coleta do servidor 
+		 * Deletar Gerador de transactionsList apos criar coleta do servidor 
 		 * >>>>>>>>>>>>>>>>>>>
 		 */
 		
@@ -91,11 +111,30 @@
 				}
 			)
 		}
-		transactions = tr
+		transactionsList.set(tr)
 		//*/
 		/**
 		 * <<<<<<<<<<<<<<<<<<<<<< DELETE THIS
 		 */
+	}
+
+
+	/**
+	 *	Recarrega a lista do servidor  
+	 */
+	async function reloadListFromServer(){
+		fetch('http://api.'+window.location.host+'/v1/user/transactions',
+		{
+			method:'GET',
+			credentials: 'include' // passa os cookies da api.localhost
+		}).then(data=>{
+			return data.json()
+		}).then(data =>{
+			transactionsList.set(data) // reseta a lista para a do servidor	
+		}).catch((err)=>{
+			console.log("Error on retrieving data from api")
+			console.log(err);
+		})
 	}
 
 	function getCookie(name) {
@@ -106,7 +145,7 @@
 	
 	let filteredList=[];
 
-	$: filters, filteredList = transactions.filter(item => {
+	$: filters, transactions, filteredList = transactions.filter(item => {
 		return (
 			(	filters.opid == '' && 
 				filters.status == '' && 
