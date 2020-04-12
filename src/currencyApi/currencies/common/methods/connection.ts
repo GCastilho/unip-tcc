@@ -163,7 +163,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 				} else {
 					// A transação já existe, retornar ela ao módulo externo
 					const transaction: TxReceived = {
-						opid:          tx._id.toHexString(),
+						opid:          tx.id,
 						txid:          tx.txid,
 						account:       tx.account,
 						amount:        tx.amount.toFullString(),
