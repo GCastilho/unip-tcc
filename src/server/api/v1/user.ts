@@ -154,7 +154,7 @@ router.get('/lasttransaction', async (req, res) => {
 		limit: 1,
 		skip:0
 	})
-	
+
 	const formattedTransactions = txs.map(tx => ({
 		opid:          tx._id.toHexString(),
 		status:        tx.status,
