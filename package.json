@@ -8,10 +8,9 @@
     "start:nano": "npm start --prefix ./build/external_modules/nano",
     "start:bitcoin": "npm start --prefix ./build/external_modules/bitcoin",
     "test": "env-cmd -f ./cfg/test.env ts-mocha --exit \"tests/**/*.test.+(ts|js)\"",
-    "dev": "npm run eslint && concurrently --kill-others-on-fail \"env PORT=3001 npm run dev-server\" \"env PORT=3002 npm run dev-client\" \"env SERVER_PORT=3001 PORT=3002 npm run dev-router\"",
+    "dev": "npm run eslint && concurrently --kill-others-on-fail \"env PORT=3001 npm run dev-server\" \"npm run dev-client\"",
     "dev-server": "env-cmd -f ./cfg/dev.env ts-node-dev --inspect -- src/index.js",
     "dev-client": "npm run dev --prefix ./client",
-    "dev-router": "node src/devRouter",
     "dep-install": "npm install && npm-recursive-install --rootDir=client && npm-recursive-install --rootDir=external_modules",
     "eslint": "eslint . --ext .js,.ts",
     "eslint-fix": "eslint --fix . --ext .js,.ts",
@@ -37,8 +36,7 @@
     "randomstring": "^1.1.5",
     "routes": "^2.1.0",
     "socket.io": "^2.3.0",
-    "socket.io-stream": "^0.9.1",
-    "subdomain-router": "^0.1.3"
+    "socket.io-stream": "^0.9.1"
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",
