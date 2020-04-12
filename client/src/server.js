@@ -9,13 +9,18 @@ const dev = NODE_ENV === 'development'
 const server_port = SERVER_PORT || 3001
 
 express()
+	.set('subdomain offset', 1)
 	.use(
-		proxy(`http://127.0.0.1:${server_port}`, {
+		proxy((req => req.subdomains.length > 0 ?
+			`http://${req.subdomains.join('.')}.localhost:${server_port}` :
+			`http://127.0.0.1:${server_port}`
+		), {
 			/**
 			 * O request que retorna true é redirecionado ao main server
 			 */
 			filter: req => req.url.startsWith('/socket.io')
 			&& !req.url.includes('websocket')
+			|| req.subdomains.length > 0
 			|| req.method !== 'GET'
 		}),
 		compression({ threshold: 0 }),
