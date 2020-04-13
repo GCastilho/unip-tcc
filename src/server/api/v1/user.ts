@@ -41,24 +41,6 @@ router.post('/', async (req, res): Promise<any> => {
 })
 
 /**
- * Call para logar na api
- */
-router.post('/login', async (req, res) => {
-	try {
-		req.body = JSON.parse(req.body)
-		if (!req.body.sessionId) throw 'Cookie Not Found' // verificação se existe no body o sessionId
-		req.user = await UserApi.findUser.byCookie(req.body.sessionId)
-		res.cookie('sessionId', req.body.sessionId) //reaplica o cookie sessionId para o subdominio
-		res.status(200).send({starus:'ok'})
-	} catch(err) {
-		res.status(401).send({
-			error: 'NotAuthorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed in body to perform this operation'
-		})
-	}
-})
-
-/**
  * Checa se você está logado
  */
 router.use(async (req, res, next) => {
@@ -137,38 +119,6 @@ router.get('/transactions/:opid', async (req, res) => {
 		}
 	}
 })
-
-/**
- * Retorna a ultima transaction do usuario
- */
-router.get('/lasttransaction', async (req, res) => {
-	/** Filtro de transações por currency */
-	const currency = CurrencyApi.currencies.find(currency => currency === req.query.currency)
-	/** Filtro da query do mongo */
-	const query = currency ? { user: req.user?.id, currency } : { user: req.user?.id }
-	/**
-	 * retorna a ultima transaction
-	 */
-	const txs = await Transaction.find(query, null, {
-		sort: { timestamp: -1 },
-		limit: 1,
-		skip:0
-	})
-
-	const formattedTransactions = txs.map(tx => ({
-		opid:          tx._id.toHexString(),
-		status:        tx.status,
-		currency:      tx.currency,
-		txid:          tx.txid,
-		account:       tx.account,
-		amount:        tx.amount.toFullString(),
-		type:          tx.type,
-		confirmations: tx.confirmations,
-		timestamp:     tx.timestamp.getTime()
-	}))
-	res.send(formattedTransactions)
-})
-
 
 /**
  * Retorna uma lista de transações do usuário
