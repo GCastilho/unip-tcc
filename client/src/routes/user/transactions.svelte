@@ -7,10 +7,11 @@
 	import FancyButton from "../../components/FancyButton.svelte"
 	import FormErrorMessage from "../../components/FormErrorMessage.svelte"
 	import FancyTransactionItem from "../../components/FancyTransactionItem.svelte"
-	import { transactionsList } from "../../stores/transactions"
+	import * as transactionsList  from "../../stores/transactions"
 
 	let errorMessage = undefined
-	let transactions
+	let transactions = []
+	let skipTransaction = 0
 
 	transactionsList.subscribe(value => {transactions = value})
 
@@ -40,82 +41,37 @@
 		 */
 		try{
 			/**
-			 * Faz o login na api e gera o cookie para o subdomínio
-			 * OBS mover posteriormente esse login para ser feito apos logar no
-			 * domínio principal
+			 * Apos relizar o login na api com o sessionID recarrega a lista de transactions
 			 */
-			fetch('http://api.'+window.location.host+'/v1/user/login',{
-				method:'POST',
-				credentials:'include',
-				/**
-				 * necessita passar o valor do cookie pelo body pois o cookie não estava sendo enviado
-				 * mesmo colocando o dominio *.localhost
-				 * necessita pesquisar mais a fundo como gerar requests para subdomínio
-				 * usando o cookie do domínio principal
-				 */
-				body:JSON.stringify({sessionId:getCookie('sessionId')})
-			}).then((res)=>{
-				if(res.status == 200){
-					/**
-					 * Apos relizar o login na api com o sessionID recarrega a lista de transactions
-					 */
-					fetch('http://api.'+window.location.host+'/v1/user/lasttransaction',
-					{
-						method:'GET',
-						credentials: 'include' // passa os cookies da api.localhost
-					}).then(data=>{
-						return data.json()
-					}).then(data =>{
-						if(!!data[0] && !!transactionsList[0]){ //checa se existe o id 0
-							if(data[0].opid != transactionsList[0].opid){
-								/**
-								 * se a ultima transaction for diferente da armazenada na store 
-								 * faz um request para o servidor pedindo pelas 10 mais atualizadas
-								 */
-								reloadListFromServer()
-							}
-						}
-					}).catch((err)=>{
-						console.log("Error on retrieving data from api")
-						console.log(err);
-					})
+			fetch('http://api.'+window.location.host+'/v1/user/transactions',
+			{
+				method:'GET',
+				credentials: 'include' // passa os cookies da api.localhost
+			}).then(data=>{
+				return data.json()
+			}).then(data =>{
+				if(!!data[0] && !!transactions[0]){ //checa se existe o id 0
+					if(data[0].opid != transactions[0].opid){
+						/**
+						 * se a ultima transaction for diferente da armazenada na store 
+						 * faz um request para o servidor pedindo pelas 10 ultimas
+						 */
+						reloadListFromServer()
+					}
 				}else{
-					console.log("Error on connecting to api")
+					/**
+					 * se não existir nenhuma salva na store 
+					 * faz um request para o servidor pedindo pelas 10 ultimas
+					 */
+					reloadListFromServer()
 				}
 			}).catch((err)=>{
-				console.log("Error on connecting to api")
+				console.log("Error on retrieving data from api")
 				console.log(err);
 			})
-
 		}catch(err){
 			console.log(err);
 		}
-		/**
-		 * Deletar Gerador de transactionsList apos criar coleta do servidor 
-		 * >>>>>>>>>>>>>>>>>>>
-		 */
-		
-		let tr=[];
-		for(let i=0;i<20;i++){
-			tr.push(
-				{
-					opid:          'id-'+i,
-					status:        'status'+i,
-					currency:      'currency'+i,
-					txid:          'txid'+i,
-					account:       'tx.account'+i,
-					amount:        'tx.amount'+i,
-					type:          'tx.type'+i,
-					confirmations: 'tx.confirmations'+i,
-					timestamp:     Date.now()
-				}
-			)
-		}
-		transactionsList.set(tr)
-		//*/
-		/**
-		 * <<<<<<<<<<<<<<<<<<<<<< DELETE THIS
-		 */
 	}
 
 
@@ -130,7 +86,7 @@
 		}).then(data=>{
 			return data.json()
 		}).then(data =>{
-			transactionsList.set(data) // reseta a lista para a do servidor	
+			transactionsList.set(data) // reseta a lista para a do servidor
 		}).catch((err)=>{
 			console.log("Error on retrieving data from api")
 			console.log(err);
@@ -142,9 +98,54 @@
 		let parts = value.split("; " + name + "=");
 		if (parts.length == 2) return parts.pop().split(";").shift();
 	}
-	
-	let filteredList=[];
 
+	function loadMore(){
+		fetch('http://api.'+window.location.host+'/v1/user/transactions' + '?skip='+skipTransaction,
+		{
+			method:'GET',
+			credentials: 'include' // passa os cookies da api.localhost
+		}).then(data=>{
+			return data.json()
+		}).then(data =>{
+			//let tr = transactions.concat(generator()) // Teste
+			let tr = transactions.concat(data) //Produção
+			skipTransaction = tr.length;
+			transactionsList.set(tr)
+		}).catch((err)=>{
+			console.log("Error on retrieving data from api")
+			console.log(err);
+		})
+	}
+
+	/**
+	 * Deletar Gerador de transactionsList apos criar coleta do servidor
+	 * >>>>>>>>>>>>>>>>>>>
+	 */
+	function generator(){
+		let tr = []
+		for(let i = skipTransaction;i < 10 + skipTransaction;i++){
+			tr.push(
+				{
+					opid:          'id-' + i,
+					status:        'status' + i,
+					currency:      'currency' + i,
+					txid:          'txid' + i,
+					account:       'tx.account' + i,
+					amount:        'tx.amount' + i,
+					type:          'tx.type' + i,
+					confirmations: 'tx.confirmations' + i,
+					timestamp:     Date.now()
+				}
+			)
+		}
+		return tr
+	}
+	//*/
+	/**
+	 * <<<<<<<<<<<<<<<<<<<<<< DELETE THIS
+	 */
+
+	let filteredList=[];
 	$: filters, transactions, filteredList = transactions.filter(item => {
 		return (
 			(	filters.opid == '' && 
@@ -169,6 +170,13 @@
 			)
 		)
 	})
+	function scrollHandle(o){
+		//visible height + pixel scrolled < total height
+		if(o.target.offsetHeight + o.target.scrollTop >= o.target.scrollHeight)
+		{
+			loadMore()
+		}
+	}
 </script>
 
 <style>
@@ -202,7 +210,7 @@
 </style>
 
 <h1>Transactions</h1>
-<div class="table_holder">
+<div class="table_holder" on:scroll={scrollHandle}>
 <table bind:this = {TransactionTable}>
 	<thead>
 		<td>

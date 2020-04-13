@@ -1,5 +1,8 @@
 import { writable } from 'svelte/store'
 
-const transactionsList = writable([])
+const { subscribe, set, update } = writable([])
 
-export { transactionsList }
+/**
+ * Exporta a store para permitir modificação da lista de transactions
+ */
+export { subscribe, set, update }
