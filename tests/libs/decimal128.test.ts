@@ -74,4 +74,13 @@ describe('Testing decimal128\'s extension library', () => {
 		expect(() => Decimal128.fromNumeric('235 78')).to.throw('235 78 is not numeric')
 		expect(() => Decimal128.fromNumeric('abacaxi')).to.throw('abacaxi is not numeric')
 	})
+
+	it('Should return the opposite value', () => {
+		expect(Decimal128.fromNumeric(1).opposite().toFullString()).to.equals('-1.0')
+		expect(Decimal128.fromNumeric(-1).opposite().toFullString()).to.equals('1.0')
+		expect(Decimal128.fromNumeric(0).opposite().toFullString()).to.equals('-0.0')
+		expect(Decimal128.fromNumeric(-0).opposite().toFullString()).to.equals('-0.0')
+		expect(Decimal128.fromNumeric(159.27).opposite().toFullString()).to.equals('-159.27')
+		expect(Decimal128.fromNumeric(-159.27).opposite().toFullString()).to.equals('159.27')
+	})
 })

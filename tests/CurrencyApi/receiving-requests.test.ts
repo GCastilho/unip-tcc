@@ -140,13 +140,15 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					timestamp: 123456789
 				}
 
-				client.emit('new_transaction', transaction, async () => {
-					const doc = await Person.findById(user.id)
-					expect(doc.currencies[currency].balance.available.toFullString())
-						.to.equals(transaction.amount.toString())
-					expect(doc.currencies[currency].balance.locked.toFullString())
-						.to.equals('0.0')
-					done()
+				client.emit('new_transaction', transaction, () => {
+					Person.findById(user.id, (err, doc) => {
+						expect(doc).to.be.an('object')
+						expect(doc.currencies[currency].balance.available.toFullString())
+							.to.equals(transaction.amount.toString())
+						expect(doc.currencies[currency].balance.locked.toFullString())
+							.to.equals('0.00')
+						done()
+					})
 				})
 			})
 

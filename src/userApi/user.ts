@@ -239,7 +239,7 @@ export default class User {
 				[`currencies.${currency}.pending.opid`]: opid
 			}, {
 				$inc: {
-					[`${balanceObj}.locked`]: - opAmount.abs(),
+					[`${balanceObj}.locked`]: opAmount.abs().opposite(),
 					[`${balanceObj}.available`]: changeInAvailable
 				},
 				$pull: {
