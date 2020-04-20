@@ -16,6 +16,12 @@ export interface Pending {
 	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
 	 */
 	amount: Decimal128
+	/**
+	 * Array dos opids das operações que parcialmente completaram essa pending.
+	 * Se o opid de uma operação está nesse array é porque essa operação JÁ
+	 * ATUALIZOU o amount dessa pending
+	 */
+	completions?: ObjectId[]
 }
 
 /**
@@ -24,7 +30,7 @@ export interface Pending {
  */
 export const PendingSchema: Schema = new Schema({
 	opid: {
-		type: Schema.Types.ObjectId,
+		type: ObjectId,
 		required: true
 	},
 	type: {
@@ -34,5 +40,9 @@ export const PendingSchema: Schema = new Schema({
 	amount: {
 		type: Decimal128,
 		required: true
+	},
+	completions: {
+		type: [ObjectId],
+		required: false
 	}
 })

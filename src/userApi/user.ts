@@ -171,30 +171,32 @@ export default class User {
 			currency: string,
 			opid: ObjectId
 		): Promise<Pending> => {
-			// No primeiro item do array retornado pega o objeto 'operations'
-			const [{ operations }] = await this.person.collection.aggregate([
+			type Operations = { pending?: Pending }[]
+			const [{ pending }]: Operations = await this.person.collection.aggregate([
 				{
 					$match: { _id: this.person._id }
 				}, {
-					$limit: 1
-				}, {
 					$project: {
-						operations: {
+						_id: false,
+						pending: {
 							$filter: {
 								input: `$currencies.${currency}.pending`,
-								as: 'operations',
-								cond: {
-									$eq: [ '$$operations.opid', opid ]
-								}
+								as: 'pending',
+								cond: { $eq: [ '$$pending.opid', opid ] }
 							}
 						}
 					}
+				}, {
+					$project: {
+						pending: { $arrayElemAt: [ '$pending', 0] }
+					}
 				}
 			]).toArray()
-			if (!operations[0] || !(operations[0].amount instanceof Decimal128))
+
+			if (!pending)
 				throw 'OperationNotFound'
 
-			return operations[0]
+			return pending
 		}
 
 		/**
@@ -321,10 +323,126 @@ export default class User {
 			await _removeOperation(currency, opid, amount, changeInAvailable)
 		}
 
+		/**
+		 * Contém métodos para manipulação de operações que parcialmente completam
+		 * uma operação pendente
+		 */
+		const partials = {
+			/**
+			 * Completa uma ordem pacialmente, liberando o saldo informado mas
+			 * mantendo a ordem em aberto
+			 *
+			 * @param currency A currency que essa operação se refere
+			 * @param opid O identificador único dessa operação
+			 * @param amount O valor que a ordem será parcialmente completa. Não pode
+			 * ter valor igualou maior que o módulo do valor da ordem
+			 * @param rfOpid O opid de referência da operação que está parcialmente
+			 * completando essa pending
+			 *
+			 * @throws AmountOutOfRange if amount is greater or equal than
+			 * operation's amount
+			 * @throws OperationNotFound if the operation was not found for THIS user
+			 */
+			complete: async (
+				currency: SC,
+				opid: ObjectId,
+				amount: Decimal128,
+				rfOpid: ObjectId
+			): Promise<void> => {
+				const opAmount = await _getOpAmount(currency, opid)
+
+				/**
+				 * Garante que o amount será positivo para uma ordem de redução de saldo
+				 * e negativo para uma ordem de aumento de saldo
+				 */
+				if (+opAmount > 0) {
+					amount = amount.abs().opposite()
+				} else {
+					amount = amount.abs()
+				}
+
+				/**
+				 * Subtrai o valor absoluto da ordem com o valor absoluto do amount
+				 * para checar se o amount para completar a ordem é menor que o amount
+				 * da ordem
+				 *
+				 * Esse if é só para ter uma mensagem de erro mais certa, pois o
+				 * update não executa se o amount da ordem for menor ou igual ao
+				 * amount fornecido
+				 */
+				if (+opAmount.abs() - +amount.abs() <= 0) throw {
+					name: 'AmountOutOfRange',
+					message: 'Amount provided is greater or equal than amount in order'
+				}
+
+				/**
+				 * Atualiza os saldos e o amount da ordem, reduzindo-o junto com o
+				 * locked e incrementando o amount available SE existir uma pending com
+				 * o opid informado e pending.amount - amount > 0
+				 */
+				const response = await this.person.collection.findOneAndUpdate({
+					_id: this.id,
+					[`currencies.${currency}.pending.opid`]: opid,
+					$expr: {
+						/** Checa se o amount da operação é maior que o amount informado */
+						$reduce: {
+							input: `$currencies.${currency}.pending`,
+							initialValue: false,
+							in: {
+								$cond: {
+									if: '$$value',
+									then: true,
+									else: {
+										/**
+										 * this.amount pode ser negativo ou positivo, por isso são
+										 * duas possibilidades de testes
+										 */
+										$or: [{
+											$gte: [
+												{ $add: ['$$this.amount', amount] }, 0
+											]
+										}, {
+											$lte: [
+												{ $add: ['$$this.amount', amount.abs()] }, 0
+											]
+										}]
+									}
+								}
+							}
+						}
+					}
+				}, {
+					$inc: {
+						[`currencies.${currency}.balance.available`]: +opAmount > 0 ? amount.abs() : 0,
+						[`currencies.${currency}.balance.locked`]: amount.abs().opposite(),
+						[`currencies.${currency}.pending.$.amount`]: amount,
+					},
+					$push: {
+						[`currencies.${currency}.pending.$.completions`]: rfOpid
+					}
+				})
+
+				if (!response.lastErrorObject.updatedExisting) throw 'OperationNotFound'
+			},
+
+			/**
+			 * Retorna um array com a lista de opids das ordens que parcialmente
+			 * completaram uma operação
+			 *
+			 * @param currency A currency que essa operação se refere
+			 * @param opid O identificador único dessa operação
+			 */
+			get: async (currency: SC, opid: ObjectId): Promise<ObjectId[]|undefined> => {
+				const pending = await get(currency, opid)
+				return pending.completions
+			}
+		}
+
 		return {
 			add,
 			cancel,
 			complete,
+			partials,
 			get
 		}
 	})()
