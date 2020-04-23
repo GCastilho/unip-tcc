@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from '../mongoose'
 import { ObjectId, Decimal128 } from 'mongodb'
 import type { SuportedCurrencies as SC } from '../../currencyApi'
 
-interface OrderBook extends Document {
+export interface Order extends Document {
 	/** ID do usuário dono dessa ordem */
 	userId: ObjectId
 	/**
@@ -51,7 +51,14 @@ const OrderSchema = new Schema({
 		base: {
 			type: String,
 			enum: ['bitcoin', 'nano'],
-			required: true
+			required: true,
+			validate: {
+				// Garante que base é diferente de target
+				validator: function(this: Order, base: Order['currency']['base']) {
+					return this.currency.target != base
+				},
+				message: () => 'Currency BASE must be different than currency TARGET'
+			}
 		},
 		target: {
 			type: String,
@@ -89,4 +96,4 @@ const OrderSchema = new Schema({
 	}
 })
 
-export default mongoose.model<OrderBook>('Order', OrderSchema, 'orderbook')
+export default mongoose.model<Order>('Order', OrderSchema, 'orderbook')
