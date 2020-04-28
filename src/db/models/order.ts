@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from '../mongoose'
 import { ObjectId, Decimal128 } from 'mongodb'
+import { detailsOf } from '../../currencyApi'
 import type { SuportedCurrencies as SC } from '../../currencyApi'
 
 export interface Order extends Document {
@@ -22,7 +23,7 @@ export interface Order extends Document {
 		target: SC
 	}
 	/** O preço p[base]/1[target], ou seja, o preço em [base] */
-	price: number
+	price: Decimal128
 	/** A quantidade de [target] que o usuário está comprando/vendendo */
 	amount: Decimal128
 	/** A quantidade de [base] que o usuário irá pagar/receber com a operação */
@@ -94,6 +95,13 @@ const OrderSchema = new Schema({
 		type: Date,
 		required: true
 	}
+})
+
+// Faz a truncagem dos valores de acordo com a currency que eles se referem
+OrderSchema.pre('validate', function(this: Order) {
+	this.price = this.price.truncate(detailsOf(this.currency.base).decimals)
+	this.total = this.total.truncate(detailsOf(this.currency.base).decimals)
+	this.amount = this.amount.truncate(detailsOf(this.currency.target).decimals)
 })
 
 export default mongoose.model<Order>('Order', OrderSchema, 'orderbook')
