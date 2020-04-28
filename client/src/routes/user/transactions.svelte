@@ -73,13 +73,14 @@
 		}catch(err){
 			console.log(err);
 		}
+		reloadListFromServer() // para teste apenas
 	}
 
 
 	/**
 	 *	Recarrega a lista do servidor  
 	 */
-	async function reloadListFromServer(){
+	function reloadListFromServer(){
 		fetch('http://api.'+window.location.host+'/v1/user/transactions',
 		{
 			method:'GET',
@@ -87,7 +88,13 @@
 		}).then(data=>{
 			return data.json()
 		}).then(data =>{
-			transactionsList.set(data) // reseta a lista para a do servidor
+			/**
+			 *  reseta a lista para a do servidor
+			 *  OBS: como ele recupera todas as ultimas transactions é mais facil resetar a listagem salva
+			 * 	ou implementar uma função para retorno da ultima apenas (txid somente)
+			 */
+			transactionsList.set(data) //produção
+			transactionsList.set(generator()) //teste
 		}).catch((err)=>{
 			console.log("Error on retrieving data from api")
 			console.log(err);
@@ -108,8 +115,8 @@
 		}).then(data=>{
 			return data.json()
 		}).then(data =>{
-			//let tr = transactions.concat(generator()) // Teste
-			let tr = transactions.concat(data) //Produção
+			let tr = transactions.concat(generator()) // Teste
+			//let tr = transactions.concat(data) //Produção
 			skipTransaction = tr.length;
 			transactionsList.set(tr)
 		}).catch((err)=>{
@@ -171,9 +178,11 @@
 			)
 		)
 	})
-	function scrollHandle(o){
+	let scrollHandle = (o)=>{
 		//visible height + pixel scrolled < total height
-		if(o.target.offsetHeight + o.target.scrollTop >= o.target.scrollHeight)
+		console.log(o)
+		console.log((o.target.offsetHeight + o.target.scrollTop) + " " + o.target.scrollHeight)
+		if(window.pageYOffset - document.body.scrollHeight + window.innerHeight == 0)
 		{
 			loadMore()
 		}
@@ -185,7 +194,7 @@
 
 	.table_holder {
 		width: calc(100vw - 100px);
-		height: calc(100vh - 220px);
+		min-height: calc(100vh - 220px);
 		border: 1px solid lightgray;
 		background-color: #60606060;
 		margin-top: 1.5em;
@@ -195,7 +204,7 @@
 		border-radius: 15px;
 		box-shadow: 0px 5px 50px 0px rgba(18, 89, 93, 0.15);
 		line-height: 30px;
-		overflow: scroll;
+		overflow: hidden;
 	}
 	.table_holder table{
 		border-collapse: collapse;
@@ -210,8 +219,10 @@
 
 </style>
 
+<svelte:window style="overflow-x:hidden" on:scroll={scrollHandle}/>
+
 <h1>Transactions</h1>
-<div class="table_holder" on:scroll={scrollHandle}>
+<div class="table_holder">
 <table bind:this = {TransactionTable}>
 	<thead>
 		<td>
