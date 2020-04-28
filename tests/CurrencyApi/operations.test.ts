@@ -47,12 +47,6 @@ describe('Testing operations on the currencyApi', () => {
 				expect(tx.fee).to.be.a('number').and.greaterThan(0)
 			})
 
-			it('Should return AmountOfRange', async () => {
-				const { fee } = await CurrencyApi.detailsOf(currency)
-				await expect(CurrencyApi.withdraw(user, currency, account, (fee * -0.01))).to.eventually.be
-					.rejectedWith(`Withdraw amount for ${currency} must be at least '${2 * fee}', but got ${fee * -0.01}`)
-			})
-
 			it('Should have saved the transaction with the correct amount', async () => {
 				const tx = await Transaction.findById(opid)
 
@@ -66,22 +60,28 @@ describe('Testing operations on the currencyApi', () => {
 						.toFixed(CurrencyApi.detailsOf(currency).decimals))
 
 				/*
-					* Checa se houve erros de arredondamento comparando as
-					* as casas decimais significativas
-					*/
+				 * Checa se houve erros de arredondamento comparando as
+				 * as casas decimais significativas
+				 */
 				const amount_decimals = tx.amount.toFullString().split('.')[1].length
 				const fee_decimals = tx.fee.toString().split('.')[1].length
 				const tst_amount_decimals = amount.toString().split('.')[1].length
 				expect(Math.max(amount_decimals, fee_decimals)).to.equal(tst_amount_decimals)
 
 				/*
-					* Checa se houve erros no arredondamento somando os valores
-					*/
+				 * Checa se houve erros no arredondamento somando os valores
+				 */
 				const expoencial = 10 * CurrencyApi.detailsOf(currency).decimals
 				const _tx_amount = Math.trunc(+tx.amount.toFullString() * expoencial)
 				const _fee = Math.trunc(tx.fee * expoencial)
 				const _tst_amount = Math.trunc(amount * expoencial)
 				expect(_tx_amount + _fee).to.equal(_tst_amount)
+			})
+
+			it('Should return AmountOfRange', async () => {
+				const { fee } = await CurrencyApi.detailsOf(currency)
+				await expect(CurrencyApi.withdraw(user, currency, account, (fee * -0.01))).to.eventually.be
+					.rejectedWith(`Withdraw amount for ${currency} must be at least '${2 * fee}', but got ${fee * -0.01}`)
 			})
 		})
 	}

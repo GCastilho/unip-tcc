@@ -50,6 +50,8 @@
 	}
 
 	form {
+		display: flex;
+		flex-direction: column;
 		margin: auto;
 		margin-top: 15px;
 		margin-bottom: 15px;
@@ -59,8 +61,11 @@
 	button {
 		border: 0;
 		border-radius: 10px;
+		width: 85.5625px;
+		height: 45px;
 		padding: 15px;
 		cursor: pointer;
+		align-self: flex-end;
 		background-color: #F0AE98;
 	}
 
