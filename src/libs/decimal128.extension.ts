@@ -19,6 +19,10 @@ declare module 'mongodb' {
 		 * example, the opposite of 5 is -5, -12 is 12 and so on
 		 */
 		opposite(): Decimal128
+		/**
+		 * Returns a truncated version of this Decimal128's intance
+		 */
+		truncate(decimals: number): this
 	}
 	// Extends the mongodb.Decimal128 object
 	namespace Decimal128 {
@@ -109,6 +113,13 @@ Decimal128.prototype.opposite = function opposite() {
 	return str.charAt(0) === '-'
 		? Decimal128.fromString(str.replace(/^-/, ''))
 		: Decimal128.fromString(str.padStart(str.length + 1, '-'))
+}
+
+/**
+ * Retorna uma versão truncada desse decimal128 sem alterar o valor original
+ */
+Decimal128.prototype.truncate = function truncate(decimals) {
+	return Decimal128.fromNumeric(this.toFullString(), decimals)
 }
 
 /**
