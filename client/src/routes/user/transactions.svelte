@@ -50,6 +50,7 @@
 			}).then(data=>{
 				return data.json()
 			}).then(data =>{
+				if(!!data.error){ throw data.message; }
 				if(!!data[0] && !!transactions[0]){ //checa se existe o id 0
 					if(data[0].opid != transactions[0].opid){
 						/**
