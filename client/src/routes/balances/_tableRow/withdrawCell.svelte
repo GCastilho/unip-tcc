@@ -50,11 +50,10 @@
 	}
 
 	form {
-		display: flex;
-		flex-direction: column;
 		margin: auto;
 		margin-top: 15px;
 		margin-bottom: 15px;
+		text-align: right;
 		width: 85%;
 	}
 
@@ -65,7 +64,6 @@
 		height: 45px;
 		padding: 15px;
 		cursor: pointer;
-		align-self: flex-end;
 		background-color: #F0AE98;
 	}
 
@@ -103,6 +101,8 @@
 	}
 
 	small {
+		display: block;
+		text-align: center;
 		color: red
 	}
 
@@ -120,7 +120,6 @@
 
 	p {
 		margin: 0;
-		text-align: right
 	}
 </style>
 
