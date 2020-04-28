@@ -107,6 +107,9 @@ export async function create_accounts(
  * @param currency A currency que será retirada
  * @param address O address de destino do saque
  * @param amount A quantidade que será sacada
+ * @throws AmountOutOfRange If amount < 2*fee
+ * @throws NotEnoughFunds If there are not enough balance available
+ * @throws ValidationError from mongoose
  */
 export async function withdraw(
 	user: User,
@@ -114,6 +117,12 @@ export async function withdraw(
 	account: string,
 	amount: number
 ): Promise<ObjectId> {
+	const { decimals, fee } = detailsOf(currency)
+	if (amount < 2 * fee) throw {
+		error: 'AmountOutOfRange',
+		message: `Withdraw amount for ${currency} must be at least '${2 * fee}', but got ${amount}`
+	}
+
 	/**
 	 * O identificador único dessa operação
 	 */
@@ -129,7 +138,6 @@ export async function withdraw(
 	}).save()
 
 	// Desconta o fee do amount
-	const { decimals, fee } = detailsOf(currency)
 	const _amount = amount * Math.pow(10, decimals)
 	const _fee = fee * Math.pow(10, decimals)
 

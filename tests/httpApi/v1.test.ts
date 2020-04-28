@@ -177,12 +177,34 @@ describe('Testing version 1 of HTTP API', () => {
 		describe('/transactions', () => {
 			before(async () => {
 				const user = await UserApi.findUser.byId(id)
-				let txAmount = 0.00000001
-				for (let i = 0; i < 30; i++) {
+
+				// Calcula os amount das operações
+				const amounts: [CurrencyApi.SuportedCurrencies, number][] = []
+				const amountsSum = new Map<CurrencyApi.SuportedCurrencies, number>()
+				for (let i = 1; i <= 30; i++) {
 					for (const currency of CurrencyApi.currencies) {
-						await CurrencyApi.withdraw(user, currency, `random-account-${currency}`, txAmount)
+						const txAmount = CurrencyApi.detailsOf(currency).fee * 2 * Math.pow(i, Math.E)
+						amounts.push([currency, txAmount])
+
+						const sum = amountsSum.get(currency) | 0
+						amountsSum.set(currency, sum + txAmount)
 					}
-					txAmount = txAmount * 2
+				}
+
+				// Garante saldo disponível para todas as operações
+				for (const currency of CurrencyApi.currencies) {
+					const { available } = user.person.currencies[currency].balance
+					const updatedAmount = +available + amountsSum.get(currency)
+					await Person.findByIdAndUpdate(user.id, {
+						$set: {
+							[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(updatedAmount)
+						}
+					})
+				}
+
+				// Executa as operações de saque
+				for (const [currency, amount] of amounts) {
+					await CurrencyApi.withdraw(user, currency, `random-account-${currency}`, amount)
 				}
 
 				// Adiciona um txid e confirmations nas transações

@@ -216,7 +216,11 @@ const TransactionSchema: Schema = new Schema({
 	},
 	amount: {
 		type: Decimal128,
-		required: true
+		required: true,
+		validate: {
+			validator: v => v > 0,
+			message: props => `${props.value} must be a positive number`
+		}
 	},
 	fee: {
 		type: Number,

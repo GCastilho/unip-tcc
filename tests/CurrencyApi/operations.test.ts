@@ -24,11 +24,11 @@ describe('Testing operations on the currencyApi', () => {
 		await user.person.save()
 	})
 
-	describe('Testing withdraw', () => {
-		let opid: ObjectId
-		const amount = 0.011
+	for (const currency of CurrencyApi.currencies) {
+		describe(`Testing withdraw for ${currency}`, () => {
+			let opid: ObjectId
+			const amount = 0.011
 
-		for (const currency of CurrencyApi.currencies) {
 			const account = `operations-${currency}`
 
 			before(async () => {
@@ -77,6 +77,12 @@ describe('Testing operations on the currencyApi', () => {
 				const _tst_amount = Math.trunc(amount * expoencial)
 				expect(_tx_amount + _fee).to.equal(_tst_amount)
 			})
-		}
-	})
+
+			it('Should return AmountOfRange', async () => {
+				const { fee } = await CurrencyApi.detailsOf(currency)
+				await expect(CurrencyApi.withdraw(user, currency, account, (fee * -0.01))).to.eventually.be
+					.rejectedWith(`Withdraw amount for ${currency} must be at least '${2 * fee}', but got ${fee * -0.01}`)
+			})
+		})
+	}
 })
