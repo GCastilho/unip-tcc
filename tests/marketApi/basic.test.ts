@@ -57,6 +57,7 @@ describe('Performing basic tests on the MarketApi', () => {
 
 	it('Should fail if significant digits of amount are after suported from that currency', async () => {
 		const ordersBefore = await Order.find()
+		const decimals = CurrencyApi.detailsOf('bitcoin').decimals
 
 		await expect(MarketApi.add(user, {
 			currency: {
@@ -64,9 +65,9 @@ describe('Performing basic tests on the MarketApi', () => {
 				target: 'nano'
 			},
 			type: 'buy',
-			amount: 0.000000000000000001,
+			amount: +`0.${'0'.repeat(decimals)}1`,
 			price: 0.5
-		})).to.eventually.be.rejectedWith('amount: 0.0 must be a positive number')
+		})).to.eventually.be.rejectedWith(`amount: 0E-${decimals} must be a positive number`)
 
 		const ordersAfter = await Order.find()
 		expect(ordersBefore.length).to.equal(ordersAfter.length)
@@ -74,6 +75,7 @@ describe('Performing basic tests on the MarketApi', () => {
 
 	it('Should fail if significant digits of price are after suported from the base currency', async () => {
 		const ordersBefore = await Order.find()
+		const decimals = CurrencyApi.detailsOf('bitcoin').decimals
 
 		await expect(MarketApi.add(user, {
 			currency: {
@@ -82,8 +84,8 @@ describe('Performing basic tests on the MarketApi', () => {
 			},
 			type: 'buy',
 			amount: 0.5,
-			price: 0.000000000000000001
-		})).to.eventually.be.rejectedWith('price: 0.0 must be a positive number')
+			price: +`0.${'0'.repeat(decimals)}1`
+		})).to.eventually.be.rejectedWith(`price: 0E-${decimals} must be a positive number`)
 
 		const ordersAfter = await Order.find()
 		expect(ordersBefore.length).to.equal(ordersAfter.length)
