@@ -15,8 +15,8 @@ express()
 		`http://127.0.0.1:${server_port}`
 	), {
 		/**
-			 * O request que retorna true é redirecionado ao main server
-			 */
+		 * O request que retorna true é redirecionado ao main server
+		 */
 		filter: req => req.url.startsWith('/socket.io')
 			&& !req.url.includes('websocket')
 			|| req.subdomains.length > 0
