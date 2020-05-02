@@ -19,7 +19,7 @@
 		const password = event.target.password.value
 
 		try {
-			const { token } = await axios.post(window.location, { email, password })
+			const { token } = await axios.post("http://api." + window.location.host + "/v1/login", { email, password },{withCredentials: true})
 			/**
 			 * @todo Adicionar handlers para os erros vindos do sistema
 			 * de autenticação do websocket
