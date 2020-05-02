@@ -10,15 +10,6 @@ if (process.env.NODE_ENV !== 'production') {
 	app.set('subdomain offset', 1)
 }
 
-
-app.use((_, res, next) => {
-	res.header('Access-Control-Allow-Origin', 'http://localhost:3000')
-	res.header('Access-Control-Allow-Credentials','true')
-	res.header('Access-Control-Allow-Headers', 'Content-Type')
-	//res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
-	next()
-})//*/
-
 // Redireciona para o subdomain adequado
 app.use((req, res, next) => {
 	switch(req.subdomains.pop()) {

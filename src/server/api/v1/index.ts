@@ -5,9 +5,9 @@ import * as CurrencyApi from '../../../currencyApi'
 const router = express.Router()
 
 /**
- * Responde o preflight request autorizando requests autenticados da URL base
+ * Autoriza requests autenticados vindos da URL base
  */
-router.options('*', function(req, res) {
+router.use((req, res, next) => {
 	// Workaround do CORS em diferentes ips; Remover qdo for para prod
 	const host = req.hostname.replace('api.', '')
 	const port = process.env.PORT == '3001' ? '3000' : process.env.PORT
@@ -15,6 +15,13 @@ router.options('*', function(req, res) {
 	res.header('Access-Control-Allow-Origin', `http://${host}:${port}`)
 	res.header('Access-Control-Allow-Credentials','true')
 	res.header('Access-Control-Allow-Headers', 'Content-Type')
+	next()
+})
+
+/**
+ * Handler do preflight request
+ */
+router.options('*', function(_req, res) {
 	res.sendStatus(200)
 })
 
