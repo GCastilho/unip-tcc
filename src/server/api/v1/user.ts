@@ -26,7 +26,7 @@ router.use(async (req, res, next) => {
 	} catch(err) {
 		res.status(401).send({
 			error: 'NotAuthorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
+			message: 'A valid cookie \'sessionId\' is required to perform this operation'
 		})
 	}
 })

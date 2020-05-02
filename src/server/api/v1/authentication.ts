@@ -1,9 +1,9 @@
 import express from 'express'
-import cookieParser from 'cookie-parser'
 import bodyParser from 'body-parser'
+import cookieParser from 'cookie-parser'
+import Session from '../../../db/models/session'
+import * as randomstring from 'randomstring'
 import * as UserApi from '../../../userApi'
-import * as Session from '../../../db/models/session'
-import * as RandomString from 'randomstring'
 
 const router = express.Router()
 
@@ -12,28 +12,27 @@ router.use(cookieParser())
 router.use(bodyParser.json())
 
 /**
- * recebe o request de autenticação
+ * Handler do request de autenticação
  */
 router.post('/', async (req, res): Promise<any> => {
 	if (!req.body.email || !req.body.password)
 		return res.status(400).send({ error: 'BadRequest' })
 
-	await UserApi.findUser.byEmail(
-		req.body.email
-	).then(user => {
+	try {
+		const user = await UserApi.findUser.byEmail(req.body.email)
 		user.checkPassword(req.body.password)
 
-		return Session.default.findOneAndUpdate({
+		const session = await Session.findOneAndUpdate({
 			userId: user.id
 		}, {
-			sessionId: RandomString.generate(128),
-			token: RandomString.generate(128),
+			sessionId: randomstring.generate(128),
+			token: randomstring.generate(128),
 			date: new Date()
 		}, {
 			new: true,
 			upsert: true
 		})
-	}).then(session => {
+
 		/**
 		 * Se a autenticação, a criação e o salvamento da sessão forem bem
 		 * sucedidas, seta o cookie no header e retorna o token
@@ -42,7 +41,7 @@ router.post('/', async (req, res): Promise<any> => {
 		 */
 		res.cookie('sessionId', session.sessionId, { httpOnly: true })
 		res.send({ token: session.token })
-	}).catch(err => {
+	} catch (err) {
 		if (err === 'UserNotFound' || err === 'InvalidPassword') {
 			/**
 			 * Diferenciar usuário não encontrado de credenciais inválidas
@@ -52,14 +51,34 @@ router.post('/', async (req, res): Promise<any> => {
 			res.status(401).send({ error: 'NotAuthorized' })
 		} else {
 			/**
-			 * @description Esse else pode ser chamado em situações onde não foi
-			 * um erro interno do servidor, como uma entrada malformada
+			 * Esse else pode ser chamado em situações onde não foi um erro interno
+			 * do servidor, como uma entrada malformada
 			 *
 			 * @todo Fazer um error handling melhor
 			 */
 			res.status(500).send({ error: 'InternalServerError' })
 		}
-	})
+	}
+})
+
+/**
+ * Handler do request de desautenticação
+ */
+router.delete('/', async (req, res) => {
+	try {
+		if (!req.cookies.sessionId) throw 'CookieNotFound'
+		const session = await Session.findOneAndDelete({ cookie: req.cookies.sessionId })
+		if (!session) throw 'CookieNotFound'
+
+		// Seta o cookie para expirar no passado, fazendo com o que browser o delete
+		res.cookie('sessionId', null, { expires: new Date(0) })
+		res.send({ message: 'success' })
+	} catch(err) {
+		res.status(401).send({
+			error: 'NotAuthorized',
+			message: 'A valid cookie \'sessionId\' is required to perform this operation'
+		})
+	}
 })
 
 /**
