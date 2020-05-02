@@ -19,7 +19,6 @@ app.use((_, res, next) => {
 	next()
 })//*/
 
-
 // Redireciona para o subdomain adequado
 app.use((req, res, next) => {
 	switch(req.subdomains.pop()) {
@@ -28,18 +27,7 @@ app.use((req, res, next) => {
 		return root(req, res, next)
 	case('api'):
 		/** Request to the api subdomain */
-		if(req.method == 'OPTIONS'){
-			/**
-			 * necessario para passar pelo preflight check
-			 * o preflight checa se a operação pode ser feita (POST, GET, DELETE ...)
-			 */
-			res.header('Access-Control-Allow-Origin', 'http://localhost:3000')
-			res.header('Access-Control-Allow-Credentials','true')
-			res.header('Access-Control-Allow-Headers', 'Content-Type')
-			return res.sendStatus(200)
-		}else{
-			return api(req, res, next)
-		}
+		return api(req, res, next)
 	default:
 		return res.status(404).send()
 	}

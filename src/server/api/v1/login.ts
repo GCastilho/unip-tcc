@@ -12,6 +12,16 @@ router.use(bodyParser())
 router.use(cookieParser())
 router.use(express.json())
 
+/**
+ * necessario para passar pelo preflight check
+ * o preflight checa se a operação pode ser feita (POST, GET, DELETE ...)
+ */
+router.options('*', function(_,res) {
+	res.header('Access-Control-Allow-Origin', 'http://localhost:3000')
+	res.header('Access-Control-Allow-Credentials','true')
+	res.header('Access-Control-Allow-Headers', 'Content-Type')
+	res.sendStatus(200)
+})
 
 /**
  * recebe o request de login
@@ -68,7 +78,7 @@ router.post('/', async (req, res) => {
 /**
  * Retorna informações sobre os subpath de /user
  */
- router.get('/', (_req, res) => {
+router.get('/', (_req, res) => {
 	res.send({
 		description: 'Entrypoint for requests specific to a login',
 	})
