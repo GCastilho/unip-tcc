@@ -8,27 +8,15 @@ import * as RandomString from 'randomstring'
 const router = express.Router()
 
 // Parsers
-router.use(bodyParser())
 router.use(cookieParser())
-router.use(express.json())
-
-/**
- * necessario para passar pelo preflight check
- * o preflight checa se a operação pode ser feita (POST, GET, DELETE ...)
- */
-router.options('*', function(_,res) {
-	res.header('Access-Control-Allow-Origin', 'http://localhost:3000')
-	res.header('Access-Control-Allow-Credentials','true')
-	res.header('Access-Control-Allow-Headers', 'Content-Type')
-	res.sendStatus(200)
-})
+router.use(bodyParser.json())
 
 /**
  * recebe o request de login
  */
-router.post('/', async (req, res) => {
+router.post('/', async (req, res): Promise<any> => {
 	if (!req.body.email || !req.body.password)
-		return res.status(400).send({ error: 'Bad request' })
+		return res.status(400).send({ error: 'BadRequest' })
 
 	await UserApi.findUser.byEmail(
 		req.body.email
@@ -52,7 +40,7 @@ router.post('/', async (req, res) => {
 		 *
 		 * @todo cookie ter tempo de expiração
 		 */
-		res.cookie('sessionId', session.sessionId,{httpOnly:true})
+		res.cookie('sessionId', session.sessionId, { httpOnly: true })
 		res.send({ token: session.token })
 	}).catch(err => {
 		if (err === 'UserNotFound' || err === 'InvalidPassword') {
@@ -61,7 +49,7 @@ router.post('/', async (req, res) => {
 			 * faz com que seja possível descobrir quais usuários estão
 			 * cadastrados no database, por isso a mensagem é a mesma
 			 */
-			res.status(401).send({ error: 'Not authorized' })
+			res.status(401).send({ error: 'NotAuthorized' })
 		} else {
 			/**
 			 * @description Esse else pode ser chamado em situações onde não foi
@@ -69,10 +57,9 @@ router.post('/', async (req, res) => {
 			 *
 			 * @todo Fazer um error handling melhor
 			 */
-			res.status(500).send({ error: 'Internal server error' })
+			res.status(500).send({ error: 'InternalServerError' })
 		}
 	})
-	return res.status(500).send({ error: 'Internal server error' })
 })
 
 /**

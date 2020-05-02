@@ -1,5 +1,6 @@
 import express from 'express'
 import cookieParser from 'cookie-parser'
+import bodyParser from 'body-parser'
 import Transaction from '../../../db/models/transaction'
 import * as UserApi from '../../../userApi'
 import * as CurrencyApi from '../../../currencyApi'
@@ -8,7 +9,7 @@ const router = express.Router()
 
 // Parsers
 router.use(cookieParser())
-router.use(express.json())
+router.use(bodyParser.json())
 
 /**
  * Checa se você está logado
