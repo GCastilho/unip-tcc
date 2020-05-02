@@ -64,7 +64,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 		const notAuthorizedModel = {
 			error: 'NotAuthorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
+			message: 'A valid cookie \'sessionId\' is required to perform this operation'
 		}
 
 		before(async () => {
@@ -92,6 +92,8 @@ describe('Testing version 1 of HTTP API', () => {
 				.filter(cookie => cookie.sessionId)[0].sessionId
 			id = user.id
 		})
+
+		it('Should implement test for authentiction and deauthentiction')
 
 		it('Should return information about the subpath', async () => {
 			const { body } = await request(app).get('/v1/user').set(apiConfig).send()

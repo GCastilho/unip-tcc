@@ -87,6 +87,9 @@ describe('Testing requests do the main domain', () => {
 	})
 
 	describe('When making a login request', () => {
+		it('Should replace this test with the api test for /v1/user/authentication')
+		it('Should implement authentication and deauthentication on /v1/user/authentication')
+
 		it('Should fail if sending empty object', async () => {
 			await request(app).post('/login').send({}).expect(400)
 		})
