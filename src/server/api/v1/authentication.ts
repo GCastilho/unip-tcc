@@ -12,7 +12,7 @@ router.use(cookieParser())
 router.use(bodyParser.json())
 
 /**
- * recebe o request de login
+ * recebe o request de autenticação
  */
 router.post('/', async (req, res): Promise<any> => {
 	if (!req.body.email || !req.body.password)
@@ -67,7 +67,7 @@ router.post('/', async (req, res): Promise<any> => {
  */
 router.get('/', (_req, res) => {
 	res.send({
-		description: 'Entrypoint for requests specific to a login',
+		description: 'Entrypoint for authentication requests. POST do authenticate, DELETE to deauthenticate'
 	})
 })
 

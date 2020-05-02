@@ -1,6 +1,7 @@
 import express from 'express'
-import cookieParser from 'cookie-parser'
 import bodyParser from 'body-parser'
+import cookieParser from 'cookie-parser'
+import authentication from './authentication'
 import Transaction from '../../../db/models/transaction'
 import * as UserApi from '../../../userApi'
 import * as CurrencyApi from '../../../currencyApi'
@@ -10,6 +11,9 @@ const router = express.Router()
 // Parsers
 router.use(cookieParser())
 router.use(bodyParser.json())
+
+/** Hanlder de autenticação de usuários */
+router.use('/authentication', authentication)
 
 /**
  * Checa se você está logado

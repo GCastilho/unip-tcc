@@ -20,7 +20,7 @@
 
 		try {
 			const { data: { token } } = await axios.post(
-				`${location.protocol}//api.${location.host}/v1/login`,
+				`${location.protocol}//api.${location.host}/v1/user/authentication`,
 				{ email, password },
 				{ withCredentials: true }
 			)

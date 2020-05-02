@@ -1,6 +1,5 @@
 import express from 'express'
 import user from './user'
-import login from './login'
 import * as CurrencyApi from '../../../currencyApi'
 
 const router = express.Router()
@@ -34,7 +33,6 @@ router.get('/currencies', (_req, res) => {
  * Redireciona todas as chamadas para /user e manda para user.ts
  */
 router.use('/user', user)
-router.use('/login', login)
 
 /**
  * Retorna informações sobre a API
