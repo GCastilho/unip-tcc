@@ -87,7 +87,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 		try {
 			const tx = await new Tx({
 				_id: opid,
-				user: user.id,
+				userId: user.id,
 				txid,
 				type: 'receive',
 				currency: this.name,
@@ -236,13 +236,13 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			await tx.validate()
 
 			if (status === 'confirmed') {
-				const user = await userApi.findUser.byId(tx.user)
+				const user = await userApi.findUser.byId(tx.userId)
 				await user.balanceOps.complete(this.name, new ObjectId(opid))
 			}
 
 			await tx.save()
 			callback(null, `${txUpdate.opid} updated`)
-			this.events.emit('update_received_tx', tx.user, txUpdate)
+			this.events.emit('update_received_tx', tx.userId, txUpdate)
 		} catch (err) {
 			if (err === 'UserNotFound') {
 				callback({

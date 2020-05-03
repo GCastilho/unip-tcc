@@ -144,7 +144,7 @@ export async function withdraw(
 	// Adiciona a operação na Transactions
 	const transaction = await new Transaction({
 		_id: opid,
-		user: user.id,
+		userId: user.id,
 		type: 'send',
 		currency,
 		status: 'processing',

@@ -257,7 +257,7 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(body).to.be.an('array')
 					expect(body.length).to.be.lte(10)
 					transactions.forEach(tx_stored => {
-						const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
+						const tx_received = body.find(e => e.opid === tx_stored.id)
 						expect(tx_received).to.be.an('object', `Transaction with opid ${tx_stored._id} not sent`)
 						expect(Object.entries(tx_received).length).to.equal(9)
 						expect(tx_received.opid).to.equals(tx_stored._id.toHexString())

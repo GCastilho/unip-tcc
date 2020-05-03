@@ -6,7 +6,7 @@ import Transaction from '../../src/db/models/transaction'
 describe('Testing transactions collection', () => {
 	it('Should fail to save a transaction with negative amount', async () => {
 		const tx = new Transaction({
-			user: new ObjectId(),
+			userId: new ObjectId(),
 			txid: 'random-txid',
 			type: 'receive',
 			currency: 'bitcoin',
@@ -23,7 +23,7 @@ describe('Testing transactions collection', () => {
 
 	it('Should truncate the amount of the amount after the supported for that currency', async () => {
 		const tx = new Transaction({
-			user: new ObjectId(),
+			userId: new ObjectId(),
 			txid: 'random-txid',
 			type: 'receive',
 			currency: 'bitcoin',
@@ -38,7 +38,7 @@ describe('Testing transactions collection', () => {
 
 	it('Should save a transaction', async () => {
 		const tx = new Transaction({
-			user: new ObjectId(),
+			userId: new ObjectId(),
 			txid: 'random-txid',
 			type: 'receive',
 			currency: 'bitcoin',

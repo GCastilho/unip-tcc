@@ -100,7 +100,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					expect(err).to.be.null
 					expect(opid).to.be.a('string')
 					Transaction.findById(opid).then(doc => {
-						expect(doc.user.toHexString()).to.equals(user.id.toHexString())
+						expect(doc.userId.toHexString()).to.equals(user.id.toHexString())
 						expect(doc.txid).to.equals(transaction.txid)
 						expect(doc.status).to.equals(transaction.status)
 						expect(doc.amount.toFullString()).to.equals(transaction.amount.toString())
