@@ -1,5 +1,6 @@
 import { ObjectId, Decimal128 } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
+import { detailsOf } from '../../currencyApi'
 import type { Person } from './person'
 import type { SuportedCurrencies } from '../../currencyApi'
 
@@ -210,6 +211,7 @@ const TransactionSchema: Schema = new Schema({
 		min: 0,
 		required: false
 	},
+	/** @todo Adicionar um validador de accounts */
 	account: {
 		type: String,
 		required: true
@@ -231,6 +233,10 @@ const TransactionSchema: Schema = new Schema({
 		type: Date,
 		required: true
 	}
+})
+
+TransactionSchema.pre('validate', function(this: TransactionDoc) {
+	this.amount = this.amount.truncate(detailsOf(this.currency).decimals)
 })
 
 /**
