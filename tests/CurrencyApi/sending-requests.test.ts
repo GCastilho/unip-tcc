@@ -44,7 +44,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						callback(null, `account-${currency}`)
 						done()
 					})
-				})
+				}).catch(done)
 			})
 
 			it('Should receive a withdraw request', done => {
@@ -72,7 +72,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						callback(null, 'request received for' + currency)
 						done()
 					})
-				})
+				}).catch(done)
 			})
 		})
 
@@ -93,9 +93,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					done()
 				})
 
-				CurrencyApi.create_accounts(user.id, [currency]).catch(err => {
-					done(err)
-				})
+				CurrencyApi.create_accounts(user.id, [currency]).catch(done)
 			})
 
 			it('Should receive a withdraw request immediate after requested', done => {
@@ -105,8 +103,8 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					callback: (err: any, response?: string) => void
 				) => {
 					expect(request).to.be.an('object')
-
 					expect(request.opid).to.be.a('string')
+
 					const tx = await Transaction.findById(request.opid)
 					expect(tx).to.be.an('object')
 
@@ -121,7 +119,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 				})
 
 				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount)
-					.catch(err => done(err))
+					.catch(done)
 			})
 		})
 	}

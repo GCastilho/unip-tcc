@@ -78,10 +78,12 @@ describe('Testing operations on the currencyApi', () => {
 				expect(_tx_amount + _fee).to.equal(_tst_amount)
 			})
 
-			it('Should return AmountOfRange', async () => {
-				const { fee } = await CurrencyApi.detailsOf(currency)
-				await expect(CurrencyApi.withdraw(user, currency, account, (fee * -0.01))).to.eventually.be
-					.rejectedWith(`Withdraw amount for ${currency} must be at least '${2 * fee}', but got ${fee * -0.01}`)
+			it('Should return AmountOfRange if amount is lower than 2*fee', async () => {
+				const { fee } = CurrencyApi.detailsOf(currency)
+				await expect(
+					CurrencyApi.withdraw(user, currency, account, (2 * fee - 0.01 * fee))
+				).to.eventually.be
+					.rejectedWith(`Withdraw amount for ${currency} must be at least '${2 * fee}', but got ${2 * fee - 0.01 * fee}`)
 			})
 		})
 	}
