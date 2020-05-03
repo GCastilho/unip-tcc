@@ -234,7 +234,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						client.emit('new_transaction', negativeAmount, (err: any, opid?: string) => {
 							Promise.resolve().then(() => {
 								expect(err).to.be.an('object')
-								expect(err.code).to.equals('BadRequest')
+								expect(err.code).to.equals('ValidationError')
 								expect(err.message).to.be.a('string')
 								expect(opid).to.be.undefined
 								return Person.findById(user.id)
@@ -269,14 +269,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					})
 				})
 
-				it('Should return BadRequest if amount is not numeric', done => {
+				it('Should return ValidationError if amount is not numeric', done => {
 					const invalidAmount = {
 						...transaction,
 						amount: '68.94p'
 					}
 					client.emit('new_transaction', invalidAmount, (err: any, opid?: string) => {
 						try {
-							expect(err.code).to.equals('BadRequest')
+							expect(err.code).to.equals('ValidationError')
 							expect(err.message).to.be.a('string')
 							expect(opid).to.be.undefined
 							done()

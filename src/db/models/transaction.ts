@@ -236,7 +236,8 @@ const TransactionSchema: Schema = new Schema({
 })
 
 TransactionSchema.pre('validate', function(this: TransactionDoc) {
-	this.amount = this.amount.truncate(detailsOf(this.currency).decimals)
+	if (this.amount instanceof Decimal128)
+		this.amount = this.amount.truncate(detailsOf(this.currency).decimals)
 })
 
 /**
