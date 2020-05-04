@@ -1,5 +1,4 @@
 <script>
-	import { emit } from '../../../utils/websocket.js'
 	import * as balances from '../../../stores/balances.js'
 	import axios from 'axios'
 
@@ -36,7 +35,7 @@
 				},
 				{ withCredentials: true }
 			)
-			console.log('Withdraw executed, opid is:', opid)
+			console.log('Withdraw executed, opid is:', opid.data)
 			err = null
 
 			// Atualiza o balance
