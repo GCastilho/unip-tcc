@@ -77,9 +77,11 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 
 				Transaction.find({}, (err, txs_before) => {
 					client.emit('new_transaction', transaction, (err: any, response?: any) => {
-						expect(err).to.haveOwnProperty('code').that.equals('UserNotFound')
-						expect(response).to.be.undefined
-						Transaction.find({}, (err, transactions) => {
+						Promise.resolve().then(() => {
+							expect(err).to.haveOwnProperty('code').that.equals('UserNotFound')
+							expect(response).to.be.undefined
+							return Transaction.find({})
+						}).then(transactions => {
 							expect(transactions.length).to.equals(txs_before.length)
 							done()
 						})
@@ -97,9 +99,11 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('new_transaction', transaction, (err: any, opid?: string) => {
-					expect(err).to.be.null
-					expect(opid).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(opid).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.userId.toHexString()).to.equals(user.id.toHexString())
 						expect(doc.txid).to.equals(transaction.txid)
 						expect(doc.status).to.equals(transaction.status)

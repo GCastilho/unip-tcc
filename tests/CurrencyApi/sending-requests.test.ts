@@ -56,21 +56,25 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						request: TxSend,
 						callback: (err: any, response?: string) => void
 					) => {
-						expect(request).to.be.an('object')
+						try {
+							expect(request).to.be.an('object')
 
-						expect(request.opid).to.be.a('string')
-							.that.equals(opid.toHexString())
+							expect(request.opid).to.be.a('string')
+								.that.equals(opid.toHexString())
 
-						const tx = await Transaction.findById(opid)
+							const tx = await Transaction.findById(opid)
 
-						expect(request.account).to.be.a('string')
-							.that.equals(tx.account)
+							expect(request.account).to.be.a('string')
+								.that.equals(tx.account)
 
-						expect(request.amount).to.be.a('string')
-							.that.equals(tx.amount.toFullString())
+							expect(request.amount).to.be.a('string')
+								.that.equals(tx.amount.toFullString())
 
+							done()
+						} catch (err) {
+							done(err)
+						}
 						callback(null, 'request received for' + currency)
-						done()
 					})
 				}).catch(done)
 			})
@@ -102,20 +106,24 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					request: TxSend,
 					callback: (err: any, response?: string) => void
 				) => {
-					expect(request).to.be.an('object')
-					expect(request.opid).to.be.a('string')
+					try {
+						expect(request).to.be.an('object')
+						expect(request.opid).to.be.a('string')
 
-					const tx = await Transaction.findById(request.opid)
-					expect(tx).to.be.an('object')
+						const tx = await Transaction.findById(request.opid)
+						expect(tx).to.be.an('object')
 
-					expect(request.account).to.be.a('string')
-						.that.equals(tx.account)
+						expect(request.account).to.be.a('string')
+							.that.equals(tx.account)
 
-					expect(request.amount).to.be.a('string')
-						.that.equals(tx.amount.toFullString())
+						expect(request.amount).to.be.a('string')
+							.that.equals(tx.amount.toFullString())
 
+						done()
+					} catch (err) {
+						done(err)
+					}
 					callback(null, 'request received for' + currency)
-					done()
 				})
 
 				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount)
