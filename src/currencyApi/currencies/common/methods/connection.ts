@@ -1,6 +1,6 @@
 import socketIO from 'socket.io'
 import ss = require('socket.io-stream')
-import { ObjectId, Decimal128 } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import Common from '../index'
 import Person from '../../../../db/models/person'
 import * as userApi from '../../../../userApi'
@@ -54,16 +54,6 @@ export function connection(this: Common, socket: socketIO.Socket) {
 		const { txid, account, amount, status, confirmations } = transaction
 		const timestamp = new Date(transaction.timestamp)
 
-		if (Number.isNaN(+amount)) return callback({
-			code: 'BadRequest',
-			message: 'Amount is not numeric'
-		})
-
-		if (+amount < 0) return callback({
-			code: 'BadRequest',
-			message: 'Amount can not be a negative number'
-		})
-
 		let user: User
 		try {
 			user = await userApi.findUser.byAccount(this.name, account)
@@ -84,19 +74,21 @@ export function connection(this: Common, socket: socketIO.Socket) {
 		 */
 		const opid = new ObjectId()
 
+		const tx = new Tx({
+			_id: opid,
+			userId: user.id,
+			txid,
+			type: 'receive',
+			currency: this.name,
+			status: 'processing',
+			confirmations,
+			account,
+			amount,
+			timestamp
+		})
+
 		try {
-			const tx = await new Tx({
-				_id: opid,
-				user: user.id,
-				txid,
-				type: 'receive',
-				currency: this.name,
-				status: 'processing',
-				confirmations,
-				account,
-				amount: Decimal128.fromNumeric(amount, this.supportedDecimals),
-				timestamp
-			}).save()
+			await tx.save()
 
 			await user.balanceOps.add(this.name, {
 				opid,
@@ -107,11 +99,6 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			tx.status = status
 			await tx.save()
 
-			/**
-			 * TODO: balanceOp.add ter um argumento opcional
-			 * 'status' = 'pending' | 'complete', que se for o segundo adiciona
-			 * uma operação confirmada
-			 */
 			if (status === 'confirmed')
 				await user.balanceOps.complete(this.name, opid)
 
@@ -180,8 +167,7 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			} else if (err.name === 'ValidationError') {
 				callback({
 					code: 'ValidationError',
-					message: 'Mongoose failed to validate the document',
-					details: err
+					message: err.message
 				})
 			} else {
 				console.error('Error processing new_transaction:', err)
@@ -236,13 +222,13 @@ export function connection(this: Common, socket: socketIO.Socket) {
 			await tx.validate()
 
 			if (status === 'confirmed') {
-				const user = await userApi.findUser.byId(tx.user)
+				const user = await userApi.findUser.byId(tx.userId)
 				await user.balanceOps.complete(this.name, new ObjectId(opid))
 			}
 
 			await tx.save()
 			callback(null, `${txUpdate.opid} updated`)
-			this.events.emit('update_received_tx', tx.user, txUpdate)
+			this.events.emit('update_received_tx', tx.userId, txUpdate)
 		} catch (err) {
 			if (err === 'UserNotFound') {
 				callback({
