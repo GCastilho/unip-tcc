@@ -250,19 +250,3 @@
 	</tbody>
 </table>
 </div>
-			<FancyInputFilterTable id='timestamp'  bind:value={filters.timestamp}>Timestamp</FancyInputFilterTable>
-		</td>
-	</thead>
-	<tbody>
-	{#each filteredList as trs}
-		<FancyTransactionItem transactionItem = {trs}></FancyTransactionItem>
-	{:else}
-      <tr>
-        <td colspan="100%">
-          <h5 class="text-center">There are no Transactions here.</h5>
-        </td>
-      </tr>
-	{/each}
-	</tbody>
-</table>
-</div>
