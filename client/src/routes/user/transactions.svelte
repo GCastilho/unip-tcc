@@ -93,7 +93,7 @@
 			 *  OBS: como ele recupera todas as ultimas transactions é mais facil resetar a listagem salva
 			 * 	ou implementar uma função para retorno da ultima apenas (txid somente)
 			 */
-			transactionsList.set(data) //produção
+			//transactionsList.set(data) //produção
 			transactionsList.set(generator()) //teste
 		}).catch((err)=>{
 			console.log("Error on retrieving data from api")
@@ -179,10 +179,7 @@
 		)
 	})
 	let scrollHandle = (o)=>{
-		//visible height + pixel scrolled < total height
-		console.log(o)
-		console.log((o.target.offsetHeight + o.target.scrollTop) + " " + o.target.scrollHeight)
-		if(window.pageYOffset - document.body.scrollHeight + window.innerHeight == 0)
+		if(document.body.scrollHeight - (window.pageYOffset + window.innerHeight) < 100)
 		{
 			loadMore()
 		}
@@ -194,6 +191,7 @@
 
 	.table_holder {
 		width: calc(100vw - 100px);
+    	min-width: 630px;
 		min-height: calc(100vh - 220px);
 		border: 1px solid lightgray;
 		background-color: #60606060;
@@ -204,11 +202,11 @@
 		border-radius: 15px;
 		box-shadow: 0px 5px 50px 0px rgba(18, 89, 93, 0.15);
 		line-height: 30px;
-		overflow: hidden;
 	}
 	.table_holder table{
 		border-collapse: collapse;
-		margin-right:20px
+		margin-right:20px;
+    	width: 100%;
 	}
 	.table_holder table td{
 		border-right: 1px solid #80808080;
@@ -225,31 +223,33 @@
 <div class="table_holder">
 <table bind:this = {TransactionTable}>
 	<thead>
+		<td></td>
 		<td>
-			<FancyInputFilterTable id='opid' bind:value={filters.opid}>OpID</FancyInputFilterTable>
-		</td>
-		<td>
-			<FancyInputFilterTable id='status'  bind:value={filters.status}>Status</FancyInputFilterTable>
-		</td>
-		<td>
-			<FancyInputFilterTable id='currency'  bind:value={filters.currency}>Currency</FancyInputFilterTable>
-		</td>
-		<td>
-			<FancyInputFilterTable id='txid'  bind:value={filters.txid}>Txid</FancyInputFilterTable>
-		</td>
-		<td>
-			<FancyInputFilterTable id='account'  bind:value={filters.account}>Account</FancyInputFilterTable>
+			<FancyInputFilterTable id='type'  bind:value={filters.type}>Type</FancyInputFilterTable>
 		</td>
 		<td>
 			<FancyInputFilterTable id='amount'  bind:value={filters.amount}>Amount</FancyInputFilterTable>
 		</td>
 		<td>
-			<FancyInputFilterTable id='type'  bind:value={filters.type}>Type</FancyInputFilterTable>
-		</td>
-		<td>
-			<FancyInputFilterTable id='confirmations'  bind:value={filters.confirmations}>Confirmations</FancyInputFilterTable>
+			<FancyInputFilterTable id='txid'  bind:value={filters.txid}>Txid</FancyInputFilterTable>
 		</td>
 		<td style="border-right:none">
+			<FancyInputFilterTable id='timestamp'  bind:value={filters.timestamp}>Timestamp</FancyInputFilterTable>
+		</td>
+	</thead>
+	<tbody>
+	{#each filteredList as trs}
+		<FancyTransactionItem transactionItem = {trs}></FancyTransactionItem>
+	{:else}
+      <tr>
+        <td colspan="100%" style="border-right:none">
+          <h5 class="text-center">There are no Transactions here.</h5>
+        </td>
+      </tr>
+	{/each}
+	</tbody>
+</table>
+</div>
 			<FancyInputFilterTable id='timestamp'  bind:value={filters.timestamp}>Timestamp</FancyInputFilterTable>
 		</td>
 	</thead>
