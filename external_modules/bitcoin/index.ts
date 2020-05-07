@@ -10,7 +10,7 @@ export class Bitcoin extends Common {
 	name = 'bitcoin'
 	mainServerIp = MAIN_SERVER_IP
 	mainServerPort = MAIN_SERVER_PORT
-	blockHeight = 20000000
+	blockHeight = 20000000 //inicializado com um valor extremamente alto
 	canSincronize = true
 	protected rpc = methods.rpc
 
@@ -22,10 +22,10 @@ export class Bitcoin extends Common {
 
 	processTransaction = methods.processTransaction.bind(this)
 
-	initBlockchainListener() {
+	async initBlockchainListener() {
 		const app = express()
 		app.use(bodyParser.urlencoded({extended: true}))
-		
+
 		/**
 		 * Novas transações são enviadas aqui
 		 */
@@ -41,19 +41,26 @@ export class Bitcoin extends Common {
 			this.processBlock(req.body.block)
 			res.send() // Finaliza a comunicação com o curl do BTC
 		})
-		this.rpc.getBlockChainInfo().then(blockChainInfo => {
-			this.blockHeight = (blockChainInfo.headers)
-			console.log('current block height :' + this.blockHeight)
-		
-			app.listen(this.port, () => {
-				console.log('Bitcoin blockchain listener is up on port', this.port)
-			})
-		}).catch(async err => {
-			console.error('Error on receiving blockchain height', err)
-			process.exit(1)
+
+		let blockHeight = null
+		do {
+			try {
+				blockHeight = (await this.rpc.getRpcInfo())?.blockChainInfo.headers
+			} catch (e) {
+				console.log('failed to recover block height, retrying...')
+				//console.log presente apenas para motivos de teste
+			}
+		} while (!blockHeight)
+
+		this.blockHeight = blockHeight
+
+		console.log('current block height :' + this.blockHeight)
+
+		app.listen(this.port, () => {
+			console.log('Bitcoin blockchain listener is up on port', this.port)
 		})
-		
 	}
+
 
 	constructor(bitcoinListenerPort: number) {
 		super()

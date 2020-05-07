@@ -23,7 +23,7 @@ export class Nano extends Common {
 
 	findMissingTx = methods.findMissingTx
 
-	initBlockchainListener = methods.nanoWebSocket
+	initBlockchainListener = async () => {methods.nanoWebSocket}
 
 	getNewAccount = this.rpc.accountCreate
 
