@@ -44,7 +44,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						callback(null, `account-${currency}`)
 						done()
 					})
-				})
+				}).catch(done)
 			})
 
 			it('Should receive a withdraw request', done => {
@@ -56,23 +56,27 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						request: TxSend,
 						callback: (err: any, response?: string) => void
 					) => {
-						expect(request).to.be.an('object')
+						try {
+							expect(request).to.be.an('object')
 
-						expect(request.opid).to.be.a('string')
-							.that.equals(opid.toHexString())
+							expect(request.opid).to.be.a('string')
+								.that.equals(opid.toHexString())
 
-						const tx = await Transaction.findById(opid)
+							const tx = await Transaction.findById(opid)
 
-						expect(request.account).to.be.a('string')
-							.that.equals(tx.account)
+							expect(request.account).to.be.a('string')
+								.that.equals(tx.account)
 
-						expect(request.amount).to.be.a('string')
-							.that.equals(tx.amount.toFullString())
+							expect(request.amount).to.be.a('string')
+								.that.equals(tx.amount.toFullString())
 
+							done()
+						} catch (err) {
+							done(err)
+						}
 						callback(null, 'request received for' + currency)
-						done()
 					})
-				})
+				}).catch(done)
 			})
 		})
 
@@ -93,9 +97,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					done()
 				})
 
-				CurrencyApi.create_accounts(user.id, [currency]).catch(err => {
-					done(err)
-				})
+				CurrencyApi.create_accounts(user.id, [currency]).catch(done)
 			})
 
 			it('Should receive a withdraw request immediate after requested', done => {
@@ -104,24 +106,28 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					request: TxSend,
 					callback: (err: any, response?: string) => void
 				) => {
-					expect(request).to.be.an('object')
+					try {
+						expect(request).to.be.an('object')
+						expect(request.opid).to.be.a('string')
 
-					expect(request.opid).to.be.a('string')
-					const tx = await Transaction.findById(request.opid)
-					expect(tx).to.be.an('object')
+						const tx = await Transaction.findById(request.opid)
+						expect(tx).to.be.an('object')
 
-					expect(request.account).to.be.a('string')
-						.that.equals(tx.account)
+						expect(request.account).to.be.a('string')
+							.that.equals(tx.account)
 
-					expect(request.amount).to.be.a('string')
-						.that.equals(tx.amount.toFullString())
+						expect(request.amount).to.be.a('string')
+							.that.equals(tx.amount.toFullString())
 
+						done()
+					} catch (err) {
+						done(err)
+					}
 					callback(null, 'request received for' + currency)
-					done()
 				})
 
 				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount)
-					.catch(err => done(err))
+					.catch(done)
 			})
 		})
 	}

@@ -98,7 +98,7 @@ GlobalListeners.add('get_tx_info', async function(this: SocketIO.Socket,
 ) {
 	if (!this.user) return callback('NotLoggedIn')
 	const tx = await Transaction.findById(opid)
-	if (tx?.user.toHexString() !== this.user.id.toHexString()) return callback('NotAuthorized')
+	if (tx?.userId.toHexString() !== this.user.id.toHexString()) return callback('NotAuthorized')
 
 	callback(null, {
 		status:        tx.status,

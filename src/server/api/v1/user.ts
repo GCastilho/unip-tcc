@@ -66,7 +66,7 @@ router.get('/transactions/:opid', async (req, res) => {
 		const tx = await Transaction.findById(req.params.opid)
 		if (!tx) throw 'NotFound'
 		// Checa se o usuario da transação é o mesmo que esta logado
-		if (tx.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
+		if (tx.userId.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
 		// Formata o objeto da transação
 		res.send({
 			opid:          tx.id,
@@ -103,7 +103,7 @@ router.get('/transactions', async (req, res) => {
 	/** Filtro de transações por currency */
 	const currency = CurrencyApi.currencies.find(currency => currency === req.query.currency)
 	/** Filtro da query do mongo */
-	const query = currency ? { user: req.user?.id, currency } : { user: req.user?.id }
+	const query = currency ? { userId: req.user?.id, currency } : { userId: req.user?.id }
 	/**
 	 * As 10 mais recentes transações do usuário,
 	 * filtrado de acordo com a query e pulando de acordo com skip

@@ -14,6 +14,15 @@ declare module 'mongodb' {
 		 * absolute value of -5 is the same as the absolute value of 5
 		 */
 		abs(): Decimal128
+		/**
+		 * Returns the opposite of this Decimal128 (the equivalent of -1 * x). For
+		 * example, the opposite of 5 is -5, -12 is 12 and so on
+		 */
+		opposite(): Decimal128
+		/**
+		 * Returns a truncated version of this Decimal128's intance
+		 */
+		truncate(decimals: number): Decimal128
 	}
 	// Extends the mongodb.Decimal128 object
 	namespace Decimal128 {
@@ -94,6 +103,23 @@ Decimal128.prototype.toFullString = function decimal128ToString() {
  */
 Decimal128.prototype.abs = function abs() {
 	return Decimal128.fromString(this.toString().replace(/^-/, ''))
+}
+
+/**
+ * Retorna o valor oposto de um decimal128 sem alterar o valor original
+ */
+Decimal128.prototype.opposite = function opposite() {
+	const str = this.toString()
+	return str.charAt(0) === '-'
+		? Decimal128.fromString(str.replace(/^-/, ''))
+		: Decimal128.fromString(str.padStart(str.length + 1, '-'))
+}
+
+/**
+ * Retorna uma versão truncada desse decimal128 sem alterar o valor original
+ */
+Decimal128.prototype.truncate = function truncate(decimals) {
+	return Decimal128.fromNumeric(this.toFullString(), decimals)
 }
 
 /**
