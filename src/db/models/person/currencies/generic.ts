@@ -21,17 +21,23 @@ export interface Currency {
  * Schema de cada uma das currencies da collection people, haverá um
  * sub-documento desse schema para cada currency
  */
-export const CurrencySchema: Schema = new Schema({
+export const CurrencySchema = new Schema({
 	balance: {
 		available: {
 			type: Decimal128,
 			default: 0,
-			min: [0, 'Available balance can not be less than 0']
+			validate: {
+				validator: v => v >= 0,
+				message: props => `Available balance can not be less than 0, found ${props.value}`
+			}
 		},
 		locked: {
 			type: Decimal128,
 			default: 0,
-			min: [0, 'Locked balance can not be less than 0']
+			validate: {
+				validator: v => v >= 0,
+				message: props => `Locked balance can not be less than 0, found ${props.value}`
+			}
 		}
 	},
 	accounts: {

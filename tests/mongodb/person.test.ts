@@ -1,5 +1,6 @@
 import randomstring from 'randomstring'
 import { expect } from 'chai'
+import { Decimal128 } from 'mongodb'
 import Person, { Person as P } from '../../src/db/models/person'
 import * as CurrencyApi from '../../src/currencyApi'
 
@@ -89,9 +90,17 @@ describe('Testing person model', () => {
 
 		for (const currency of CurrencyApi.currencies) {
 			describe(`And is requested an operation on ${currency}`, () => {
-				it('Should not save available balance less than zero')
+				it('Should not save available balance less than zero', async () => {
+					person.currencies[currency].balance.available = Decimal128.fromString('-1')
+					await expect(person.save()).to.eventually.be
+						.rejectedWith('Available balance can not be less than 0')
+				})
 
-				it('Should not save locked balance less than zero')
+				it('Should not save locked balance less than zero', async () => {
+					person.currencies[currency].balance.locked = Decimal128.fromString('-1')
+					await expect(person.save()).to.eventually.be
+						.rejectedWith('Locked balance can not be less than 0')
+				})
 
 				it('Should truncate the available balance beyond supported decimals')
 
