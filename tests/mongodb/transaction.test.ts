@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
 import Transaction from '../../src/db/models/transaction'
 
-describe('Testing transactions collection', () => {
+describe('Testing transaction model', () => {
 	it('Should fail to save a transaction with negative amount', async () => {
 		const tx = new Transaction({
 			userId: new ObjectId(),

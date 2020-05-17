@@ -4,8 +4,8 @@
  */
 
 import { Schema } from 'mongoose'
-import * as validators from './validators'
 import { CurrencySchema } from './generic'
+import * as validators from './validators'
 import type { Currency } from './generic'
 
 /**

@@ -34,11 +34,19 @@ const PersonSchema: Schema = new Schema({
 	credentials: {
 		salt: {
 			type: String,
-			required: true
+			required: true,
+			validate: {
+				validator: v => v.length >= 32,
+				message: props => `salt can not have length less than 32 characters, found ${props.value.length}`
+			}
 		},
 		password_hash: {
 			type: String,
-			required: true
+			required: true,
+			validate: {
+				validator: v => v.length >= 128,
+				message: props => `password_hash can not have length less than 128 characters, found ${props.value.length}`
+			}
 		}
 	},
 	currencies: currenciesSchema.obj
