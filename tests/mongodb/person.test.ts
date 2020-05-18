@@ -1,7 +1,7 @@
 import '../../src/libs'
 import randomstring from 'randomstring'
 import { expect } from 'chai'
-import { Decimal128 } from 'mongodb'
+import { Decimal128, ObjectId } from 'mongodb'
 import Person, { Person as P } from '../../src/db/models/person'
 import * as CurrencyApi from '../../src/currencyApi'
 
@@ -123,10 +123,18 @@ describe('Testing person model', () => {
 						.to.equals(truncatedNumber)
 				})
 
+				it('Should not add pending operation with ZERO amount', async () => {
+					person.currencies[currency].pending.push({
+						opid: new ObjectId(),
+						type: 'transaction',
+						amount: Decimal128.fromString('0')
+					})
+					await expect(person.save()).to.eventually.be
+						.rejectedWith('Amount can not be zero')
+				})
+
 				// Isso não é usado na market?
 				it('Should not save two pendings operations with the same opid')
-
-				// Add and check enum from pending type
 
 				it('Should truncate pending amount beyond supported decimals')
 			})
