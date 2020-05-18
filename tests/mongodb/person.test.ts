@@ -1,3 +1,4 @@
+import '../../src/libs'
 import randomstring from 'randomstring'
 import { expect } from 'chai'
 import { Decimal128 } from 'mongodb'
@@ -102,10 +103,27 @@ describe('Testing person model', () => {
 						.rejectedWith('Locked balance can not be less than 0')
 				})
 
-				it('Should truncate the available balance beyond supported decimals')
+				it('Should truncate the available balance beyond supported decimals', async () => {
+					const decimals = CurrencyApi.detailsOf(currency).decimals
+					const originalNumber = '1.1234567891011121314151617181920'
+					const truncatedNumber = originalNumber.slice(0, decimals + 2) // +2 pcausa do '1.'
+					person.currencies[currency].balance.available = Decimal128.fromString(originalNumber)
+					await person.save()
+					expect(person.currencies[currency].balance.available.toFullString())
+						.to.equals(truncatedNumber)
+				})
 
-				it('Should truncate the locked balance beyond supported decimals')
+				it('Should truncate the locked balance beyond supported decimals', async () => {
+					const decimals = CurrencyApi.detailsOf(currency).decimals
+					const originalNumber = '1.1234567891011121314151617181920'
+					const truncatedNumber = originalNumber.slice(0, decimals + 2) // +2 pcausa do '1.'
+					person.currencies[currency].balance.locked = Decimal128.fromString(originalNumber)
+					await person.save()
+					expect(person.currencies[currency].balance.locked.toFullString())
+						.to.equals(truncatedNumber)
+				})
 
+				// Isso não é usado na market?
 				it('Should not save two pendings operations with the same opid')
 
 				// Add and check enum from pending type

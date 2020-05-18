@@ -21,9 +21,9 @@ export interface Person extends Document {
 }
 
 /**
- * Schema da collection de usuários (people)
+ * Schema do documento de usuários
  */
-const PersonSchema: Schema = new Schema({
+const PersonSchema = new Schema({
 	email: {
 		type: String,
 		trim: true,
@@ -49,7 +49,15 @@ const PersonSchema: Schema = new Schema({
 			}
 		}
 	},
-	currencies: currenciesSchema.obj
+	currencies: currenciesSchema
+})
+
+PersonSchema.pre('validate', function(this: Person) {
+	// Ao criar o documento, props de sub-schemas serão undefined
+	if (typeof this.currencies == 'undefined')
+		// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+		// @ts-ignore
+		this.currencies = {}
 })
 
 /**
