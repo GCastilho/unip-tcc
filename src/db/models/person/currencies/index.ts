@@ -1,13 +1,13 @@
 /*
- * Esse módulo exporta um schema com cada propriedade sendo um schema de uma
- * currency individual suportada
+ * Exporta um schema com cada propriedade sendo um schema de uma currency
+ * individual suportada
  */
 
 import { Schema, Document } from 'mongoose'
-import { CurrencySchema } from './generic'
+import { CurrencySchema } from './currencySchema'
 import { detailsOf } from '../../../../currencyApi'
-import * as validators from './validators'
-import type { Currency } from './generic'
+import * as WAValidator from 'multicoin-address-validator'
+import type { Currency } from './currencySchema'
 
 /**
  * A interface do sub-documento 'currencies' da collection people
@@ -18,11 +18,21 @@ export interface Currencies extends Document {
 }
 
 /*
- * Adiciona a função de validação de address na currency e monta o novo schema
+ * Schema das currencies individuais
  */
-export const Bitcoin = new CurrencySchema(detailsOf('bitcoin').decimals, validators.bitcoin)
+export const Bitcoin = new CurrencySchema(detailsOf('bitcoin').decimals, {
+	validator: (accounts: string[]) => {
+		return accounts.every((account) => WAValidator.validate(account, 'bitcoin', 'testnet'))
+	},
+	message: 'Invalid bitcoin account address'
+})
 
-export const Nano = new CurrencySchema(detailsOf('nano').decimals, validators.nano)
+export const Nano = new CurrencySchema(detailsOf('nano').decimals, {
+	validator: (accounts: string[]) => {
+		return accounts.every((account) => WAValidator.validate(account, 'nano', 'testnet'))
+	},
+	message: 'Invalid nano account address'
+})
 
 /**
  * Sub-schema 'currencies' do Schema Person

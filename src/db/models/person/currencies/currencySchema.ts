@@ -4,7 +4,7 @@ import { PendingSchema } from './pending'
 import type { SchemaTypeOpts } from 'mongoose'
 import type { Pending } from './pending'
 
-/** A interface de uma currency da colletion people */
+/** A interface de uma currency genérica */
 export interface Currency extends Document {
 	balance: {
 		/** Saldo disponível para operações */
@@ -18,6 +18,7 @@ export interface Currency extends Document {
 	pending: Pending[]
 }
 
+/** Objeto validate usado para implementação de validação pela CurrencySchema */
 interface Validate {
 	validator: SchemaTypeOpts.ValidateFn<Currency['accounts']>
 	message: SchemaTypeOpts.ValidateOptsBase['message']

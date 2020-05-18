@@ -11,12 +11,14 @@ export interface Person extends Document {
 	_id: ObjectId
 	/** O email do usuário */
 	email: string
+	/** Dados de credenciais */
 	credentials: {
 		/** O salt usado para fazer o hash do password */
 		salt: string
 		/** Hash do salt + password */
 		password_hash: string
 	}
+	/** Informações de currencies desse usuário */
 	currencies: Currencies
 }
 
