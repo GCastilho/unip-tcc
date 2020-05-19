@@ -69,7 +69,7 @@
 	</div>
 {:else}
 	<h1>Register</h1>
-	<form method="POST" on:submit|preventDefault={handleSubmit}>
+	<form on:submit|preventDefault={handleSubmit}>
 		{#if errorMessage}
 			<FormErrorMessage>{errorMessage}</FormErrorMessage>
 		{/if}

@@ -1,4 +1,4 @@
-import User from '../userApi/user'
+import type User from '../../src/userApi/user'
 
 declare module 'socket.io' {
 	interface Socket {

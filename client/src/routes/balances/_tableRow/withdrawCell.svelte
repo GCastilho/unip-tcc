@@ -5,6 +5,7 @@
 	export let name
 	export let fee
 	let withdrawAmount
+	let err = null
 
 	/** Impede que o valor digitado do amount seja maior que o saldo disponível */
 	const filterAmount = () => withdrawAmount = withdrawAmount > $balances[name].available ? $balances[name].available : withdrawAmount
@@ -14,6 +15,11 @@
 	async function handleWithdraw(event) {
 		const destination = event.target.destination.value
 		const amount = +event.target.amount.value
+
+		if (amount < (fee*2)) {
+			err = 'err'
+			return
+		}
 
 		event.target.destination.value = ''
 		event.target.amount.value = ''
@@ -25,10 +31,12 @@
 				amount
 			})
 			console.log('Withdraw executed, opid is:', opid)
+			err = null
 
 			// Atualiza o balance
 			$balances[name].available -= amount
 			$balances[name].locked += amount
+			amountToReceive = 0
 		} catch(err) {
 			console.error('Error on withdraw request:', err)
 		}
@@ -52,6 +60,8 @@
 	button {
 		border: 0;
 		border-radius: 10px;
+		width: 85.5625px;
+		height: 45px;
 		padding: 15px;
 		cursor: pointer;
 		background-color: #F0AE98;
@@ -75,6 +85,25 @@
 		margin: 2px;
 		width: 85%;
 		text-align: right;
+		border: 1px solid #707070
+	}
+
+	input:hover {
+		border-color: #26A0DA
+	}
+
+	.err {
+		border-color: red;
+	}
+
+	.err:hover {
+		border-color: rgb(197, 3, 3)
+	}
+
+	small {
+		display: block;
+		text-align: center;
+		color: red
 	}
 
 	/* Remove arrow do type number */
@@ -90,13 +119,16 @@
 	}
 
 	p {
-		margin: 0
+		margin: 0;
 	}
 </style>
 
 <form on:submit|preventDefault={handleWithdraw}>
 	<h4>Withdraw {name.toUpperCase()}</h4>
 	<div>
+		{#if err}
+			<small>The withdrawal must be at least <b>{(fee*2).toFixed(8)}</b></small>
+		{/if}
 		<div class="withdraw-info">
 			<label for="destination">Destination:</label>
 			<input type="text" id="destination" required>
@@ -104,14 +136,15 @@
 		<div class="withdraw-info">
 			<label for="amount">Amount:</label>
 			<input
+				class={err}
 				type="number" id="amount" step="0.00000001" required
 				bind:value={withdrawAmount}
 				on:input="{filterAmount}"
 			>
 		</div>
 		<p>Fee: {fee.toFixed(8)}</p>
+		<p>Minimum withdrawal: {(fee*2).toFixed(8)}</p>
 		<p>You will receive: {amountToReceive.toFixed(8)}</p>
 	</div>
-
 	<button type="submit">Withdraw</button>
 </form>

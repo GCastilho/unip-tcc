@@ -1,6 +1,7 @@
 import { ObjectId, Decimal128 } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
-import type { Person } from './person'
+import { detailsOf } from '../../currencyApi'
+import type User from '../../userApi/user'
 import type { SuportedCurrencies } from '../../currencyApi'
 
 /** Interface base de uma transaction */
@@ -143,7 +144,7 @@ export interface TxInfo {
 interface TransactionDoc extends Document {
 	_id: ObjectId
 	/** Referência ao usuário dono dessa transação */
-	user: Person['_id']
+	userId: User['id']
 	/**
 	 * Status da transação
 	 *
@@ -180,7 +181,7 @@ interface TransactionDoc extends Document {
 
 /** Schema da collection de transações dos usuários */
 const TransactionSchema: Schema = new Schema({
-	user: {
+	userId: {
 		type: ObjectId,
 		required: true,
 		ref: 'Person'
@@ -208,13 +209,18 @@ const TransactionSchema: Schema = new Schema({
 		min: 0,
 		required: false
 	},
+	/** @todo Adicionar um validador de accounts */
 	account: {
 		type: String,
 		required: true
 	},
 	amount: {
 		type: Decimal128,
-		required: true
+		required: true,
+		validate: {
+			validator: v => v > 0,
+			message: props => `${props.value} must be a positive number`
+		}
 	},
 	fee: {
 		type: Number,
@@ -244,6 +250,11 @@ TransactionSchema.index({
 }, {
 	unique: true,
 	partialFilterExpression: { txid: {$exists: true}, }
+})
+
+TransactionSchema.pre('validate', function(this: TransactionDoc) {
+	if (this.amount instanceof Decimal128)
+		this.amount = this.amount.truncate(detailsOf(this.currency).decimals)
 })
 
 /**
