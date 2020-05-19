@@ -74,5 +74,12 @@ export class CurrencySchema extends Schema {
 			if (this.balance.locked instanceof Decimal128)
 				this.balance.locked = this.balance.locked.truncate(decimals)
 		})
+
+		this.pre('validate', function(this: Currency) {
+			const uniqueAccounts = new Set()
+			this.accounts.forEach(account => uniqueAccounts.add(account))
+			if (uniqueAccounts.size != this.accounts.length)
+				throw 'New account can not be equal to existing account'
+		})
 	}
 }

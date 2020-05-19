@@ -133,6 +133,14 @@ describe('Testing person model', () => {
 						.rejectedWith('Amount can not be zero')
 				})
 
+				it('Should not save the same account in the same document', async () => {
+					const account = 'totally-valid-account'
+					person.currencies[currency].accounts.push(account)
+					person.currencies[currency].accounts.push(account)
+					await expect(person.save()).to.eventually.be
+						.rejectedWith('New account can not be equal to existing account')
+				})
+
 				// Isso não é usado na market?
 				it('Should not save two pendings operations with the same opid')
 

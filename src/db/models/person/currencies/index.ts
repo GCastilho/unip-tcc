@@ -20,14 +20,14 @@ export interface Currencies extends Document {
 /*
  * Schema das currencies individuais
  */
-export const Bitcoin = new CurrencySchema(detailsOf('bitcoin').decimals, {
+const Bitcoin = new CurrencySchema(detailsOf('bitcoin').decimals, {
 	validator: (accounts: string[]) => {
 		return accounts.every((account) => WAValidator.validate(account, 'bitcoin', 'testnet'))
 	},
 	message: 'Invalid bitcoin account address'
 })
 
-export const Nano = new CurrencySchema(detailsOf('nano').decimals, {
+const Nano = new CurrencySchema(detailsOf('nano').decimals, {
 	validator: (accounts: string[]) => {
 		return accounts.every((account) => WAValidator.validate(account, 'nano', 'testnet'))
 	},
