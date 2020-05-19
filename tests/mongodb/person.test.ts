@@ -140,11 +140,6 @@ describe('Testing person model', () => {
 					await expect(person.save()).to.eventually.be
 						.rejectedWith('New account can not be equal to existing account')
 				})
-
-				// Isso não é usado na market?
-				it('Should not save two pendings operations with the same opid')
-
-				it('Should truncate pending amount beyond supported decimals')
 			})
 		}
 	})

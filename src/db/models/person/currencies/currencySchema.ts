@@ -1,8 +1,10 @@
 import { Decimal128 } from 'mongodb'
 import { Schema, Document } from 'mongoose'
 import { PendingSchema } from './pending'
+import { detailsOf } from '../../../../currencyApi'
 import type { SchemaTypeOpts } from 'mongoose'
 import type { Pending } from './pending'
+import type { SuportedCurrencies as SC } from '../../../../currencyApi'
 
 /** A interface de uma currency genérica */
 export interface Currency extends Document {
@@ -28,7 +30,7 @@ interface Validate {
  * Classe do Schema de uma currency genérica
  */
 export class CurrencySchema extends Schema {
-	constructor(decimals: number, validate: Validate) {
+	constructor(currency: SC, validate: Validate) {
 		super({
 			balance: {
 				available: {
@@ -50,13 +52,6 @@ export class CurrencySchema extends Schema {
 			},
 			accounts: {
 				type: [String],
-				/**
-				 * @todo Como o sparse não funciona em indices compostos, fazer uma
-				 * função de validação personalizada que verifica se o novo endereço
-				 * é de fato único
-				 */
-				// sparse: true,
-				// unique: true,
 				trim: true,
 				validate
 			},
@@ -67,6 +62,8 @@ export class CurrencySchema extends Schema {
 			_id: false
 		})
 
+		const { decimals } = detailsOf(currency)
+
 		// Faz a truncagem dos decimais
 		this.pre('validate', function(this: Currency) {
 			if (this.balance.available instanceof Decimal128)
@@ -75,6 +72,7 @@ export class CurrencySchema extends Schema {
 				this.balance.locked = this.balance.locked.truncate(decimals)
 		})
 
+		// Garante que não há accunts repetidas nesse documento
 		this.pre('validate', function(this: Currency) {
 			const uniqueAccounts = new Set()
 			this.accounts.forEach(account => uniqueAccounts.add(account))

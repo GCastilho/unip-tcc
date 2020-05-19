@@ -5,7 +5,6 @@
 
 import { Schema, Document } from 'mongoose'
 import { CurrencySchema } from './currencySchema'
-import { detailsOf } from '../../../../currencyApi'
 import * as WAValidator from 'multicoin-address-validator'
 import type { Currency } from './currencySchema'
 
@@ -20,14 +19,14 @@ export interface Currencies extends Document {
 /*
  * Schema das currencies individuais
  */
-const Bitcoin = new CurrencySchema(detailsOf('bitcoin').decimals, {
+const Bitcoin = new CurrencySchema('bitcoin', {
 	validator: (accounts: string[]) => {
 		return accounts.every((account) => WAValidator.validate(account, 'bitcoin', 'testnet'))
 	},
 	message: 'Invalid bitcoin account address'
 })
 
-const Nano = new CurrencySchema(detailsOf('nano').decimals, {
+const Nano = new CurrencySchema('nano', {
 	validator: (accounts: string[]) => {
 		return accounts.every((account) => WAValidator.validate(account, 'nano', 'testnet'))
 	},
@@ -41,11 +40,12 @@ const CurrenciesSchema = new Schema({
 	nano: Nano,
 	bitcoin: Bitcoin
 }, {
-	_id: false,
+	_id: false
 })
 
 CurrenciesSchema.pre('validate', function(this: Currencies) {
 	// Ao criar o documento, as props dos sub-schemas serão undefined
+	if (!this.isNew) return
 	for (const currency of Object.keys(CurrenciesSchema.obj)) {
 		if (typeof this[currency] == 'undefined')
 			this[currency] = {}
