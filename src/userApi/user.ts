@@ -1,5 +1,6 @@
 import { sha512 } from 'js-sha512'
 import { ObjectId, Decimal128 } from 'mongodb'
+import PersonSchema from '../db/models/person'
 import * as CurrencyApi from '../currencyApi'
 import type { Pending } from '../db/models/person/currencies/pending'
 import type { Person } from '../db/models/person'
@@ -39,10 +40,21 @@ export const hashPassword = (salt: string, password: string) =>
 
 export default class User {
 	/**
+	 * Retorna a versão atualizada do documento desse usuário do database
+	 */
+	private async getPerson(): Promise<Person> {
+		const person = await PersonSchema.findById(this.id)
+		if (!person) throw `Person document for id '${this.id} not found in the database`
+		return person
+	}
+
+	/**
 	 * Retorna o sha512 do salt com o password desse usuário
 	 */
-	private _hashPassword = (password: string): string =>
-		hashPassword(this.person.credentials.salt, password)
+	private async _hashPassword(password: string): Promise<string> {
+		const { salt } = (await this.getPerson()).credentials
+		return hashPassword(salt, password)
+	}
 
 	constructor(person: Person) {
 		this.person = person
@@ -64,10 +76,10 @@ export default class User {
 	 * @param currency A currency que o saldo se refere
 	 * @param asString Retorna os saldos como string ou Decimal128
 	 */
-	getBalance(currency: SC, asString: true): { available: string; locked: string }
-	getBalance(currency: SC, asString?: false): { available: Decimal128; locked: Decimal128 }
-	getBalance(currency: SC, asString?: boolean) {
-		const { available, locked } = this.person.currencies[currency].balance
+	async getBalance(currency: SC, asString: true): Promise<{ available: string; locked: string }>
+	async getBalance(currency: SC, asString?: false): Promise<{ available: Decimal128; locked: Decimal128 }>
+	async getBalance(currency: SC, asString?: boolean) {
+		const { available, locked } = (await this.getPerson()).currencies[currency].balance
 		return asString ? {
 			available: available.toFullString(),
 			locked: locked.toFullString()
@@ -80,15 +92,17 @@ export default class User {
 	/**
 	 * Retorna as accounts de um usuário para determinada currency
 	 */
-	getAccounts = (currency: SC): string[] => this.person.currencies[currency].accounts
+	async getAccounts(currency: SC): Promise<string[]> {
+		return (await this.getPerson()).currencies[currency].accounts
+	}
 
 	/**
 	 * Retorna 'void' se o password informado é o password correto do usuário
 	 *
 	 * @throws InvalidPassword if password is invalid
 	 */
-	checkPassword = (password: string): void => {
-		const password_hash = this._hashPassword(password)
+	async checkPassword(password: string): Promise<void> {
+		const password_hash = await this._hashPassword(password)
 		if (password_hash != this.person.credentials.password_hash)
 			throw 'InvalidPassword'
 	}
@@ -98,8 +112,8 @@ export default class User {
 	 *
 	 * @returns The updated person object
 	 */
-	changePassword = async (password: string): Promise<User> => {
-		this.person.credentials.password_hash = this._hashPassword(password)
+	async changePassword(password: string): Promise<User> {
+		this.person.credentials.password_hash = await this._hashPassword(password)
 		await this.person.save()
 		return this
 	}
