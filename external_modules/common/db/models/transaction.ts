@@ -30,19 +30,16 @@ const TransactionSchema = new Schema({
 })
 
 /*
- * Compound index to allow the storing of a send and a receive transaction
- * with the same txid
- *
- * Tbm é uma boa ideia desabilitar o autoIndex em produção
- *
- * See https://mongoosejs.com/docs/guide.html#indexes
+ * Adicionado txid e type como indice composto caso o txid não seja nulo
  */
 TransactionSchema.index({
 	txid: 1,
 	type: 1
 }, {
 	unique: true,
-	partialFilterExpression: { txid: {$exists: true}, }
+	partialFilterExpression: {
+		txid: { $exists: true }
+	}
 })
 
 export default mongoose.model<Transaction>('transaction', TransactionSchema)
