@@ -188,8 +188,6 @@ const TransactionSchema: Schema = new Schema({
 	},
 	txid: {
 		type: String,
-		sparse: true,
-		unique: true
 	},
 	type: {
 		type: String,
@@ -232,6 +230,19 @@ const TransactionSchema: Schema = new Schema({
 	timestamp: {
 		type: Date,
 		required: true
+	}
+})
+
+/*
+ * Adicionado txid e type como indice composto caso o txid não seja nulo
+ */
+TransactionSchema.index({
+	txid: 1,
+	type: 1
+}, {
+	unique: true,
+	partialFilterExpression: {
+		txid: { $exists: true }
 	}
 })
 
