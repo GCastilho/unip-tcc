@@ -1,7 +1,6 @@
 import { sha512 } from 'js-sha512'
 import { ObjectId, Decimal128 } from 'mongodb'
 import PersonSchema from '../db/models/person'
-import * as CurrencyApi from '../currencyApi'
 import type { Pending } from '../db/models/person/currencies/pending'
 import type { Person } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../currencyApi'
@@ -9,20 +8,12 @@ import type { SuportedCurrencies as SC } from '../currencyApi'
 /**
  * Interface utilizada pela balanceOps para operações de manipulação de saldo
  */
-interface PendingOp {
-	/**
-	 * Referencia ao objectId da operação em sua respectiva collection
-	 */
-	opid: ObjectId
-	/**
-	 * O tipo da operação, para identificar em qual collection ela está
-	 */
-	type: Pending['type']
+interface PendingOp extends Omit<Pending, 'amount'> {
 	/**
 	 * O amount da operação. Positivo se é uma operação que aumenta o saldo do
 	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
 	 */
-	amount: number|string
+	amount: Pending['amount']|number|string
 }
 
 /**
@@ -137,19 +128,16 @@ export default class User {
 		 * atômica no banco de dados
 		 *
 		 * @param currency A currency que a operação se refere
-		 * @param op O objeto da operação pendente que será adicionado
+		 * @param pending O objeto da operação pendente que será adicionado
 		 *
 		 * @throws NotEnoughFunds Caso não haja saldo disponível (o campo
 		 * 'available' do balance) para executar a operação
 		 */
-		const add = async (currency: SC, op: PendingOp): Promise<void> => {
+		const add = async (currency: SC, pending: PendingOp): Promise<void> => {
 			const balanceObj = `currencies.${currency}.balance`
 
-			const pending: Pending = {
-				opid: op.opid,
-				type: op.type,
-				amount: Decimal128.fromNumeric(op.amount, CurrencyApi.detailsOf(currency).decimals)
-			}
+			if (typeof pending.amount == 'string' || typeof pending.amount == 'number')
+				pending.amount = Decimal128.fromNumeric(pending.amount)
 
 			const response = await this.person.collection.findOneAndUpdate({
 				_id: this.person._id,
@@ -161,7 +149,7 @@ export default class User {
 			}, {
 				$inc: {
 					[`${balanceObj}.locked`]: pending.amount.abs(),
-					[`${balanceObj}.available`]: op.amount < 0 ? pending.amount : 0
+					[`${balanceObj}.available`]: +pending.amount < 0 ? pending.amount : 0
 				},
 				$push: {
 					[`currencies.${currency}.pending`]: pending
