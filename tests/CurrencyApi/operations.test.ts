@@ -66,7 +66,7 @@ describe('Testing operations on the currencyApi', () => {
 				const amount_decimals = tx.amount.toFullString().split('.')[1].length
 				const fee_decimals = tx.fee.toString().split('.')[1].length
 				const tst_amount_decimals = amount.toString().split('.')[1].length
-				expect(Math.max(amount_decimals, fee_decimals)).to.equal(tst_amount_decimals)
+				expect(tst_amount_decimals).to.be.at.most(Math.max(amount_decimals, fee_decimals))
 
 				/*
 				 * Checa se houve erros no arredondamento somando os valores
