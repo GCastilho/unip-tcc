@@ -7,17 +7,6 @@ import type { Person } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../currencyApi'
 
 /**
- * Interface utilizada pela balanceOps para operações de manipulação de saldo
- */
-interface PendingOp extends Omit<Pending, 'amount'> {
-	/**
-	 * O amount da operação. Positivo se é uma operação que aumenta o saldo do
-	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
-	 */
-	amount: Pending['amount']|number|string
-}
-
-/**
  * Função para fazer o hash do password de um usuário
  *
  * @param salt O salt desse usuário
@@ -29,6 +18,231 @@ export const hashPassword = (salt: string, password: string) =>
 		.update(salt)
 		.update(password)
 		.hex()
+
+/**
+ * Interface para operações de manipulação de saldo
+ */
+interface PendingOp extends Omit<Pending, 'amount'> {
+	/**
+	 * O amount da operação. Positivo se é uma operação que aumenta o saldo do
+	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
+	 */
+	amount: Pending['amount']|number|string
+}
+
+/**
+ * Classe para métodos de manipulação de saldo da User
+ */
+class BalanceOps {
+	/**
+	 * Id da User dessa classe
+	 */
+	private id: User['id']
+
+	constructor(id: User['id']) {
+		this.id = id
+	}
+
+	/**
+	 * Retorna o amount de uma operação DESSE usuário
+	 *
+	 * @param currency A currency que a operação se refere
+	 * @param opid O ObjectId que referencia o documento da operação em sua
+	 * respectiva collection
+	 *
+	 * @throws OperationNotFound if an operation was not found for THIS user
+	 */
+	private async getOpAmount(currency: SC, opid: ObjectId): Promise<Decimal128> {
+		const operation = await this.get(currency, opid)
+		return operation.amount
+	}
+
+	/**
+	 * Remove uma operação do banco de dados, subtraindo o módulo do
+	 * opAmount do campo locked e incrementando o campo 'available' com o
+	 * valor passado em 'changeInAvailable'
+	 *
+	 * @param currency A currency que a operação se refere
+	 * @param opid O ObjectId que referencia o documento da operação em sua
+	 * respectiva collection
+	 * @param opAmount O amount bruto da operação
+	 * @param changeInAvailable O valor que o campo available deve ser
+	 * incrementado
+	 *
+	 * @throws OperationNotFound if an operation was not found for THIS user
+	 */
+	private async remove(
+		currency: SC,
+		opid: ObjectId,
+		opAmount: Decimal128,
+		changeInAvailable: Decimal128|0
+	): Promise<void> {
+		const balanceObj = `currencies.${currency}.balance`
+
+		const response = await PersonSchema.findOneAndUpdate({
+			_id: this.id,
+			[`currencies.${currency}.pending.opid`]: opid
+		}, {
+			$inc: {
+				[`${balanceObj}.locked`]: opAmount.abs().opposite(),
+				[`${balanceObj}.available`]: changeInAvailable
+			},
+			$pull: {
+				[`currencies.${currency}.pending`]: { opid }
+			}
+		})
+
+		if (!response)
+			throw 'OperationNotFound'
+	}
+
+	/**
+	 * Adiciona uma operação de mudança de saldo pendente no array 'pending'
+	 * da currency trava o saldo utilizado na operação
+	 *
+	 * Caso seja uma operação de redução de saldo e available - amount >= 0,
+	 * o valor de 'amount' será retirado de 'available' e adicionado em
+	 * 'locked'. Se a operação for de aumento de saldo, a única coisa que
+	 * será feita é aumentar o valor do locked
+	 *
+	 * Essa função é async safe, ou seja, a operação é feita de forma
+	 * atômica no banco de dados
+	 *
+	 * @param currency A currency que a operação se refere
+	 * @param pending O objeto da operação pendente que será adicionado
+	 *
+	 * @throws NotEnoughFunds Caso não haja saldo disponível (o campo
+	 * 'available' do balance) para executar a operação
+	 */
+	async add(currency: SC, pending: PendingOp): Promise<void> {
+		const balanceObj = `currencies.${currency}.balance`
+
+		/** O middleware de findOneAndUpdate não é executado em um subdocumento */
+		if (typeof pending.amount == 'string' || typeof pending.amount == 'number') {
+			pending.amount = Decimal128.fromNumeric(pending.amount, detailsOf(currency).decimals)
+		} else {
+			pending.amount = pending.amount.truncate(detailsOf(currency).decimals)
+		}
+
+		const response = await PersonSchema.findOneAndUpdate({
+			_id: this.id,
+			$expr: {
+				$gte: [
+					{ $add: [`$${balanceObj}.available`, pending.amount] }, 0
+				]
+			}
+		}, {
+			$inc: {
+				[`${balanceObj}.locked`]: pending.amount.abs(),
+				[`${balanceObj}.available`]: +pending.amount < 0 ? pending.amount : 0
+			},
+			$push: {
+				[`currencies.${currency}.pending`]: pending
+			}
+		})
+
+		if (!response)
+			throw 'NotEnoughFunds'
+	}
+
+	/**
+	 * Retorna uma operação salva no documento desse usuário
+	 *
+	 * @param currency A currency que a operação se refere
+	 * @param opid O ObjectId que referencia o documento da operação em sua
+	 * respectiva collection
+	 *
+	 * @throws OperationNotFound if an operation was not found for THIS user
+	 */
+	async get(currency: string, opid: ObjectId): Promise<Pending> {
+		// No primeiro item do array retornado pega o objeto 'operations'
+		const [{ operations }] = await PersonSchema.aggregate([
+			{
+				$match: { _id: this.id }
+			}, {
+				$limit: 1
+			}, {
+				$project: {
+					operations: {
+						$filter: {
+							input: `$currencies.${currency}.pending`,
+							as: 'operations',
+							cond: {
+								$eq: [ '$$operations.opid', opid ]
+							}
+						}
+					}
+				}
+			}
+		])
+		if (!operations[0] || !(operations[0].amount instanceof Decimal128))
+			throw 'OperationNotFound'
+
+		return operations[0]
+	}
+
+	/**
+	 * Completa uma operação pendente, atualizando os saldos e removendo a
+	 * operação do array de 'pending'
+	 *
+	 * Essa função é async safe
+	 *
+	 * @param currency A currency que a operação se refere
+	 * @param opid O ObjectId que referencia o documento da operação em sua
+	 * respectiva collection
+	 *
+	 * @throws OperationNotFound if an operation was not found for THIS user
+	 */
+	async complete(currency: SC, opid: ObjectId): Promise<void> {
+		/**
+		 * O amount da operação
+		 */
+		const amount: Pending['amount'] = await this.getOpAmount(currency, opid)
+
+		/**
+		 * Calcula o quanto o campo 'available' deverá ser alterado para
+		 * completar a operação
+		 *
+		 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
+		 */
+		const changeInAvailable = +amount < 0 ? 0 : amount
+
+		/**
+		 * Remove a operação pendente e atualiza os saldos
+		 */
+		await this.remove(currency, opid, amount, changeInAvailable)
+	}
+
+	/**
+	 * Cancela uma operação adicionada pelo 'addPending', voltando tudo ao
+	 * seu estado original
+	 *
+	 * @param currency A currency que a operação se refere
+	 * @param opid O ObjectId que referencia o documento da operação em sua
+	 * respectiva collection
+	 *
+	 * @throws OperationNotFound if an operation was not found for THIS user
+	 */
+	async cancel(currency: SC, opid: ObjectId): Promise<void> {
+		/**
+		 * O amount da operação
+		 */
+		const amount: Pending['amount'] = await this.getOpAmount(currency, opid)
+
+		/**
+		 * Calcula o quanto o campo 'available' deverá ser alterado para
+		 * retornar os saldos ao estado original
+		 *
+		 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
+		 */
+		const changeInAvailable = +amount < 0 ? amount.abs() : 0
+
+		/**
+		 * Remove a operação pendente e volta os saldos ao estado original
+		 */
+		await this.remove(currency, opid, amount, changeInAvailable)
+	}
+}
 
 export default class User {
 	/**
@@ -51,6 +265,7 @@ export default class User {
 	constructor(person: Person) {
 		this.person = person
 		this.id = person._id
+		this.balanceOps = new BalanceOps(this.id)
 	}
 
 	/**
@@ -62,6 +277,13 @@ export default class User {
 	 * Identificador único do documento desse usuário no database
 	 */
 	id: Person['_id']
+
+	/**
+	 * Contém métodos para a manipulação de operações de mudança de saldo
+	 *
+	 * Todos os métodos são async safe
+	 */
+	balanceOps: BalanceOps
 
 	/**
 	 * Retorna os saldos de um usuário para determinada currency
@@ -109,230 +331,4 @@ export default class User {
 		await this.person.save()
 		return this
 	}
-
-	/**
-	 * Contém métodos para a manipulação de operações de mudança de saldo
-	 *
-	 * Todos os métodos são async safe
-	 */
-	balanceOps = (() => {
-		/**
-		 * Adiciona uma operação de mudança de saldo pendente no array 'pending'
-		 * da currency trava o saldo utilizado na operação
-		 *
-		 * Caso seja uma operação de redução de saldo e available - amount >= 0,
-		 * o valor de 'amount' será retirado de 'available' e adicionado em
-		 * 'locked'. Se a operação for de aumento de saldo, a única coisa que
-		 * será feita é aumentar o valor do locked
-		 *
-		 * Essa função é async safe, ou seja, a operação é feita de forma
-		 * atômica no banco de dados
-		 *
-		 * @param currency A currency que a operação se refere
-		 * @param pending O objeto da operação pendente que será adicionado
-		 *
-		 * @throws NotEnoughFunds Caso não haja saldo disponível (o campo
-		 * 'available' do balance) para executar a operação
-		 */
-		const add = async (currency: SC, pending: PendingOp): Promise<void> => {
-			const balanceObj = `currencies.${currency}.balance`
-
-			/** O middleware de findOneAndUpdate não é executado em um subdocumento */
-			if (typeof pending.amount == 'string' || typeof pending.amount == 'number') {
-				pending.amount = Decimal128.fromNumeric(pending.amount, detailsOf(currency).decimals)
-			} else {
-				pending.amount = pending.amount.truncate(detailsOf(currency).decimals)
-			}
-
-			const response = await PersonSchema.findOneAndUpdate({
-				_id: this.person._id,
-				$expr: {
-					$gte: [
-						{ $add: [`$${balanceObj}.available`, pending.amount] }, 0
-					]
-				}
-			}, {
-				$inc: {
-					[`${balanceObj}.locked`]: pending.amount.abs(),
-					[`${balanceObj}.available`]: +pending.amount < 0 ? pending.amount : 0
-				},
-				$push: {
-					[`currencies.${currency}.pending`]: pending
-				}
-			})
-
-			if (!response)
-				throw 'NotEnoughFunds'
-		}
-
-		/**
-		 * Retorna uma operação salva no documento desse usuário
-		 *
-		 * @param currency A currency que a operação se refere
-		 * @param opid O ObjectId que referencia o documento da operação em sua
-		 * respectiva collection
-		 *
-		 * @throws OperationNotFound if an operation was not found for THIS user
-		 */
-		const get = async (
-			currency: string,
-			opid: ObjectId
-		): Promise<Pending> => {
-			// No primeiro item do array retornado pega o objeto 'operations'
-			const [{ operations }] = await this.person.collection.aggregate([
-				{
-					$match: { _id: this.person._id }
-				}, {
-					$limit: 1
-				}, {
-					$project: {
-						operations: {
-							$filter: {
-								input: `$currencies.${currency}.pending`,
-								as: 'operations',
-								cond: {
-									$eq: [ '$$operations.opid', opid ]
-								}
-							}
-						}
-					}
-				}
-			]).toArray()
-			if (!operations[0] || !(operations[0].amount instanceof Decimal128))
-				throw 'OperationNotFound'
-
-			return operations[0]
-		}
-
-		/**
-		 * Retorna o amount de uma operação DESSE usuário
-		 *
-		 * @param currency A currency que a operação se refere
-		 * @param opid O ObjectId que referencia o documento da operação em sua
-		 * respectiva collection
-		 *
-		 * @throws OperationNotFound if an operation was not found for THIS user
-		 */
-		const _getOpAmount = async (currency: SC, opid: ObjectId): Promise<Decimal128> => {
-			const operation = await get(currency, opid)
-			return operation.amount
-		}
-
-		/**
-		 * Remove uma operação do banco de dados, subtraindo o módulo do
-		 * opAmount do campo locked e incrementando o campo 'available' com o
-		 * valor passado em 'changeInAvailable'
-		 *
-		 * @param currency A currency que a operação se refere
-		 * @param opid O ObjectId que referencia o documento da operação em sua
-		 * respectiva collection
-		 * @param opAmount O amount bruto da operação
-		 * @param changeInAvailable O valor que o campo available deve ser
-		 * incrementado; Embora suporte, esteja ciênte que a precisão do number
-		 * é extremamente limitada, use com cautela
-		 *
-		 * @throws OperationNotFound if an operation was not found for THIS user
-		 */
-		const _removeOperation = async (
-			currency: SC,
-			opid: ObjectId,
-			opAmount: Decimal128,
-			changeInAvailable: number|Decimal128
-		): Promise<void> => {
-			const balanceObj = `currencies.${currency}.balance`
-
-			const response = await this.person.collection.findOneAndUpdate({
-				_id: this.person._id,
-				[`currencies.${currency}.pending.opid`]: opid
-			}, {
-				$inc: {
-					[`${balanceObj}.locked`]: opAmount.abs().opposite(),
-					[`${balanceObj}.available`]: changeInAvailable
-				},
-				$pull: {
-					[`currencies.${currency}.pending`]: { opid }
-				}
-			})
-
-			if (!response)
-				throw 'OperationNotFound'
-		}
-
-		/**
-		 * Cancela uma operação adicionada pelo 'addPending', voltando tudo ao
-		 * seu estado original
-		 *
-		 * Essa função é async safe
-		 *
-		 * @param currency A currency que a operação se refere
-		 * @param opid O ObjectId que referencia o documento da operação em sua
-		 * respectiva collection
-		 *
-		 * @throws OperationNotFound if an operation was not found for THIS user
-		 */
-		const cancel = async (
-			currency: SC,
-			opid: ObjectId
-		): Promise<void> => {
-			/**
-			 * O amount da operação
-			 */
-			const amount: Pending['amount'] = await _getOpAmount(currency, opid)
-
-			/**
-			 * Calcula o quanto o campo 'available' deverá ser alterado para
-			 * retornar os saldos ao estado original
-			 *
-			 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
-			 */
-			const changeInAvailable = +amount < 0 ? amount.abs() : 0
-
-			/**
-			 * Remove a operação pendente e volta os saldos ao estado original
-			 */
-			await _removeOperation(currency, opid, amount, changeInAvailable)
-		}
-
-		/**
-		 * Completa uma operação pendente, atualizando os saldos e removendo a
-		 * operação do array de 'pending'
-		 *
-		 * Essa função é async safe
-		 *
-		 * @param currency A currency que a operação se refere
-		 * @param opid O ObjectId que referencia o documento da operação em sua
-		 * respectiva collection
-		 *
-		 * @throws OperationNotFound if an operation was not found for THIS user
-		 */
-		const complete = async (
-			currency: SC,
-			opid: ObjectId
-		): Promise<void> => {
-			/**
-			 * O amount da operação
-			 */
-			const amount: Pending['amount'] = await _getOpAmount(currency, opid)
-
-			/**
-			 * Calcula o quanto o campo 'available' deverá ser alterado para
-			 * completar a operação
-			 *
-			 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
-			 */
-			const changeInAvailable = +amount < 0 ? 0 : amount
-
-			/**
-			 * Remove a operação pendente e atualiza os saldos
-			 */
-			await _removeOperation(currency, opid, amount, changeInAvailable)
-		}
-
-		return {
-			add,
-			cancel,
-			complete,
-			get
-		}
-	})()
 }
