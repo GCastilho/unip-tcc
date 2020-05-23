@@ -1,5 +1,6 @@
 import { sha512 } from 'js-sha512'
 import { ObjectId, Decimal128 } from 'mongodb'
+import { detailsOf } from '../currencyApi'
 import PersonSchema from '../db/models/person'
 import type { Pending } from '../db/models/person/currencies/pending'
 import type { Person } from '../db/models/person'
@@ -136,10 +137,14 @@ export default class User {
 		const add = async (currency: SC, pending: PendingOp): Promise<void> => {
 			const balanceObj = `currencies.${currency}.balance`
 
-			if (typeof pending.amount == 'string' || typeof pending.amount == 'number')
-				pending.amount = Decimal128.fromNumeric(pending.amount)
+			/** O middleware de findOneAndUpdate não é executado em um subdocumento */
+			if (typeof pending.amount == 'string' || typeof pending.amount == 'number') {
+				pending.amount = Decimal128.fromNumeric(pending.amount, detailsOf(currency).decimals)
+			} else {
+				pending.amount = pending.amount.truncate(detailsOf(currency).decimals)
+			}
 
-			const response = await this.person.collection.findOneAndUpdate({
+			const response = await PersonSchema.findOneAndUpdate({
 				_id: this.person._id,
 				$expr: {
 					$gte: [
@@ -156,7 +161,7 @@ export default class User {
 				}
 			})
 
-			if (!response.lastErrorObject.updatedExisting)
+			if (!response)
 				throw 'NotEnoughFunds'
 		}
 
@@ -241,7 +246,7 @@ export default class User {
 				[`currencies.${currency}.pending.opid`]: opid
 			}, {
 				$inc: {
-					[`${balanceObj}.locked`]: - opAmount.abs(),
+					[`${balanceObj}.locked`]: opAmount.abs().opposite(),
 					[`${balanceObj}.available`]: changeInAvailable
 				},
 				$pull: {

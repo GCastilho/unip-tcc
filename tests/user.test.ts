@@ -163,6 +163,23 @@ describe('Testing UserApi', () => {
 						expect(person.currencies[currency].balance.locked.toFullString())
 							.to.equals(Decimal128.fromNumeric(0).toFullString())
 					})
+
+					it('Should update balance with truncated amount', async () => {
+						// Completa a operação original
+						await user.balanceOps.complete(currency, opid)
+						const amount = '1.1234567891011121314151617181920'
+						await user.balanceOps.add(currency, {
+							opid,
+							amount,
+							type: 'transaction'
+						})
+						await user.balanceOps.complete(currency, opid)
+						const person = await Person.findById(user.id)
+						const truncatedDecimals = amount.split('.')[1]
+							.slice(0, CurrencyApi.detailsOf(currency).decimals)
+						expect(person.currencies[currency].balance.available.toFullString())
+							.to.equals('71.' + truncatedDecimals)
+					})
 				})
 			})
 
