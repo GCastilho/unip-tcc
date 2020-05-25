@@ -105,9 +105,6 @@ class BalanceOps {
 	 * 'locked'. Se a operação for de aumento de saldo, a única coisa que
 	 * será feita é aumentar o valor do locked
 	 *
-	 * Essa função é async safe, ou seja, a operação é feita de forma
-	 * atômica no banco de dados
-	 *
 	 * @param currency A currency que a operação se refere
 	 * @param pending O objeto da operação pendente que será adicionado
 	 *
@@ -184,8 +181,6 @@ class BalanceOps {
 	/**
 	 * Completa uma operação pendente, atualizando os saldos e removendo a
 	 * operação do array de 'pending'
-	 *
-	 * Essa função é async safe
 	 *
 	 * @param currency A currency que a operação se refere
 	 * @param opid O ObjectId que referencia o documento da operação em sua

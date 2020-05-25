@@ -21,14 +21,14 @@ export interface Currencies extends Document {
  */
 const Bitcoin = new CurrencySchema('bitcoin', {
 	validator: (accounts: string[]) => {
-		return accounts.every((account) => WAValidator.validate(account, 'bitcoin', 'testnet'))
+		return accounts.every(account => WAValidator.validate(account, 'bitcoin', 'testnet'))
 	},
 	message: 'Invalid bitcoin account address'
 })
 
 const Nano = new CurrencySchema('nano', {
 	validator: (accounts: string[]) => {
-		return accounts.every((account) => WAValidator.validate(account, 'nano', 'testnet'))
+		return accounts.every(account => WAValidator.validate(account, 'nano', 'testnet'))
 	},
 	message: 'Invalid nano account address'
 })
