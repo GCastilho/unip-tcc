@@ -72,7 +72,7 @@ router.delete('/', async (req, res) => {
 
 		// Seta o cookie para expirar no passado, fazendo com o que browser o delete
 		res.cookie('sessionId', '', { expires: new Date(0) })
-		res.send({ message: 'success' })
+		res.send({ message: 'Success' })
 	} catch(err) {
 		res.status(401).send({
 			error: 'NotAuthorized',

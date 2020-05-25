@@ -16,6 +16,31 @@ router.use(bodyParser.json())
 router.use('/authentication', authentication)
 
 /**
+ * Handler de registros de usuários
+ */
+router.post('/', async (req, res): Promise<any> => {
+	if (!req.body.email || !req.body.password)
+		return res.status(400).send({ error: 'BadRequest' })
+
+	try {
+		await UserApi.createUser(req.body.email, req.body.password)
+
+		/**
+		 * @todo Enviar e-mail de confirmação de... e-mail e só liberar a conta
+		 * quando confirmado
+		 */
+		res.status(201).send({ message: 'Success' })
+	} catch (err) {
+		if (err.code === 11000) {
+			res.status(409).send({ error: 'Email already registered' })
+		} else {
+			res.status(500).send({ error: 'Internal server error' })
+			console.error('Register error:', err)
+		}
+	}
+})
+
+/**
  * Checa se você está logado
  */
 router.use(async (req, res, next) => {

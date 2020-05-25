@@ -7,6 +7,7 @@ import * as UserApi from '../../src/userApi'
 import * as CurrencyApi from '../../src/currencyApi'
 import Person from '../../src/db/models/person'
 import Session from '../../src/db/models/session'
+import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const app = require('../../src/server')
@@ -120,6 +121,94 @@ describe('Testing version 1 of HTTP API', () => {
 				.expect('Content-Type', /json/)
 				.expect(404)
 			expect(body).to.be.an('object').that.deep.equal(notFoundModel)
+		})
+
+		describe('When making a register request', () => {
+			const user = {
+				email: 'register-test@email.com',
+				password: 'UserP@ss'
+			}
+
+			it('Should fail if sending empty object', async () => {
+				await request(app)
+					.post('/v1/user')
+					.set(apiConfig)
+					.send({})
+					.expect(400)
+			})
+
+			it('Should fail if email is null', async () => {
+				const usersBefore = await Person.estimatedDocumentCount()
+				await request(app)
+					.post('/v1/user')
+					.set(apiConfig)
+					.send({ password: 'null_email' })
+					.expect(400)
+				const usersAfter = await Person.estimatedDocumentCount()
+				expect(usersBefore).to.equal(usersAfter)
+			})
+
+			it('Should fail if password is null', async () => {
+				await request(app)
+					.post('/v1/user')
+					.set(apiConfig)
+					.send({ email: 'null_pass@example.com' })
+					.expect(400)
+
+				// Assert user was NOT created
+				expect(await Person.findOne({ email: 'null_pass@example.com' })).to.be.null
+			})
+
+			it('Should fail if email and password are null', async () => {
+				await request(app)
+					.post('/v1/user')
+					.set(apiConfig)
+					.send({ email: '', password: '' })
+					.expect(400)
+			})
+
+			it('Should signup new users', async () => {
+				await request(app)
+					.post('/v1/user')
+					.set(apiConfig)
+					.send(user)
+					.expect(201)
+
+				// Assert user was created
+				const person = await Person.findOne({ email: user.email })
+				expect(person).to.not.be.null
+
+				// Assertions about the data saved in the database
+				expect(person.credentials.salt).to.be.a('string')
+				expect(person.credentials.password_hash).to.not.be.equal(user.password)
+				expect(person.credentials.password_hash.length).to.be.gte(128)
+			})
+
+			it('Should fail if user already exists', async () => {
+				await request(app)
+					.post('/v1/user')
+					.set(apiConfig)
+					.send(user)
+					.expect(409)
+
+				// Assert user was NOT created
+				expect(await Person.find({ email: user.email })).lengthOf(1)
+			})
+
+			it('Should have a create_account request for each currency', async () => {
+				const createAccountRequests = await Checklist.find({
+					userId: id,
+					command: 'create_account'
+				})
+				expect(createAccountRequests).to.lengthOf(CurrencyApi.currencies.length)
+
+				CurrencyApi.currencies.forEach(currency => {
+					expect(
+						createAccountRequests.some(item => item.currency === currency),
+						`not found request for ${currency}`
+					).to.be.true
+				})
+			})
 		})
 
 		describe('/authentication', () => {
