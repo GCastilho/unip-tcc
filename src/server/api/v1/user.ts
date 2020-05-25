@@ -34,10 +34,10 @@ router.use(async (req, res, next) => {
 /**
  * Retorna todas as contas do usuario
  */
-router.get('/accounts', (req, res) => {
+router.get('/accounts', async (req, res) => {
 	const account = {}
 	for (const currency of CurrencyApi.currencies) {
-		account[currency] = req.user?.getAccounts(currency)
+		account[currency] = await req.user?.getAccounts(currency)
 	}
 	res.send(account)
 })
@@ -45,10 +45,10 @@ router.get('/accounts', (req, res) => {
 /**
  * Retorna todos os saldos do usuario
  */
-router.get('/balances', (req, res) => {
+router.get('/balances', async (req, res) => {
 	const balance = {}
 	for (const currency of CurrencyApi.currencies) {
-		balance[currency] = req.user?.getBalance(currency, true)
+		balance[currency] = await req.user?.getBalance(currency, true)
 	}
 	res.send(balance)
 })

@@ -54,12 +54,13 @@ describe('Testing UserApi', () => {
 			})
 
 			describe('Testing checkPassword method', () => {
-				it('Should not fail if password is correct', () => {
-					expect(() => user.checkPassword('userP@ss')).to.not.throw('InvalidPassword')
+				it('Should not fail if password is correct', async () => {
+					await expect(user.checkPassword('userP@ss')).to.eventually.be.fulfilled
 				})
 
-				it('Should throw InvalidPassword if password is incorrect', () => {
-					expect(() => user.checkPassword('invalidP@ss')).to.throw('InvalidPassword')
+				it('Should throw InvalidPassword if password is incorrect', async () => {
+					await expect(user.checkPassword('invalidP@ss')).to.eventually.be
+						.rejectedWith('InvalidPassword')
 				})
 			})
 
@@ -162,13 +163,51 @@ describe('Testing UserApi', () => {
 						expect(person.currencies[currency].balance.locked.toFullString())
 							.to.equals(Decimal128.fromNumeric(0).toFullString())
 					})
+
+					it('Should update balance with truncated amount', async () => {
+						// Completa a operação original
+						await user.balanceOps.complete(currency, opid)
+						const amount = '1.1234567891011121314151617181920'
+						await user.balanceOps.add(currency, {
+							opid,
+							amount,
+							type: 'transaction'
+						})
+						await user.balanceOps.complete(currency, opid)
+						const person = await Person.findById(user.id)
+						const truncatedDecimals = amount.split('.')[1]
+							.slice(0, CurrencyApi.detailsOf(currency).decimals)
+						expect(person.currencies[currency].balance.available.toFullString())
+							.to.equals('71.' + truncatedDecimals)
+					})
 				})
 			})
 
 			describe('Testing if returns updated values after instantiated', () => {
-				it('Should return updated balance')
+				it('Should return updated balance', async () => {
+					const { available: availableBefore } = await user.getBalance(currency, true)
 
-				it('Should return updated accounts')
+					const opid = new ObjectId()
+					await user.balanceOps.add(currency, {
+						opid,
+						type: 'transaction',
+						amount: 1
+					})
+					await user.balanceOps.complete(currency, opid)
+					const { available } = await user.getBalance(currency, true)
+					expect(+availableBefore).to.equals(+available - 1)
+				})
+
+				it('Should return updated accounts', async () => {
+					const person = await Person.findById(user.id)
+					const accountsBefore = person.currencies[currency].accounts
+
+					person.currencies[currency].accounts.push('random-account')
+					await person.save({ validateBeforeSave: false })
+
+					const accounts = await user.getAccounts(currency)
+					expect(accounts.length).to.equals(accountsBefore.length)
+				})
 			})
 		})
 	}
