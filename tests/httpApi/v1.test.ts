@@ -6,20 +6,29 @@ import cookieparser from 'cookieparser'
 import * as UserApi from '../../src/userApi'
 import * as CurrencyApi from '../../src/currencyApi'
 import Person from '../../src/db/models/person'
+import Session from '../../src/db/models/session'
 import Transaction from '../../src/db/models/transaction'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const app = require('../../src/server')
 
 describe('Testing version 1 of HTTP API', () => {
 	const apiConfig = { host: 'api.site.com' }
+	const user = {
+		email: 'v1-test@example.com',
+		password: 'userP@ss'
+	}
 	const notFoundModel = {
 		error: 'NotFound',
 		message: 'Endpoint not found'
 	}
+	let id: ObjectId
 
 	before(async () => {
 		await Person.deleteMany({})
-		await UserApi.createUser('api-v1@email.com', 'UserP@ss')
+		await Session.deleteMany({})
+		await Transaction.deleteMany({})
+		const newUser = await UserApi.createUser(user.email, user.password)
+		id = newUser.id
 	})
 
 	it('Should return information about the API', async () => {
@@ -60,7 +69,6 @@ describe('Testing version 1 of HTTP API', () => {
 
 	describe('/user', () => {
 		let sessionId: string
-		let id: ObjectId
 
 		const notAuthorizedModel = {
 			error: 'NotAuthorized',
@@ -68,11 +76,8 @@ describe('Testing version 1 of HTTP API', () => {
 		}
 
 		before(async () => {
-			await Person.deleteMany({})
-			await Transaction.deleteMany({})
-			const user = await UserApi.createUser('v1-test@email.com', 'UserP@ss')
 			for (const currency of CurrencyApi.currencies) {
-				await Person.findByIdAndUpdate(user.id, {
+				await Person.findByIdAndUpdate(id, {
 					$push: {
 						[`currencies.${currency}.accounts`]: `${currency}-account`
 					},
@@ -82,18 +87,19 @@ describe('Testing version 1 of HTTP API', () => {
 					}
 				})
 			}
-			const res = await request(app).post('/login').send({
-				email: 'v1-test@email.com',
-				password: 'UserP@ss'
-			}).expect(200)
+		})
+
+		beforeEach(async () => {
+			const res = await request(app)
+				.post('/v1/user/authentication')
+				.set(apiConfig)
+				.send(user)
+				.expect(200)
 			expect(res.header['set-cookie']).to.be.an('array')
 			sessionId = res.header['set-cookie']
 				.map(cookieparser.parse)
 				.filter(cookie => cookie.sessionId)[0].sessionId
-			id = user.id
 		})
-
-		it('Should implement test for authentiction and deauthentiction')
 
 		it('Should return information about the subpath', async () => {
 			const { body } = await request(app).get('/v1/user').set(apiConfig).send()
@@ -114,6 +120,138 @@ describe('Testing version 1 of HTTP API', () => {
 				.expect('Content-Type', /json/)
 				.expect(404)
 			expect(body).to.be.an('object').that.deep.equal(notFoundModel)
+		})
+
+		describe('/authentication', () => {
+			it('Should authenticate an existing users', async () => {
+				const res = await request(app)
+					.post('/v1/user/authentication')
+					.set(apiConfig)
+					.send(user)
+					.expect(200)
+				expect(res.header['set-cookie']).not.to.be.undefined
+
+				const cookies: any[] = res.header['set-cookie']
+					.map(cookieparser.parse)
+					.filter(cookie => cookie.sessionId)
+				expect(cookies.length).to.equal(1)
+
+				const { _id } = await Person.findOne({ email: user.email })
+				const cookie = await Session.findOne({ userId: _id })
+				expect(cookies[0].sessionId).to.be.equal(cookie.sessionId)
+			})
+
+			it('Should deauthenticate an existing user', async () => {
+				const res = await request(app)
+					.delete('/v1/user/authentication')
+					.set('Cookie', [`sessionId=${sessionId}`])
+					.set(apiConfig)
+					.send()
+					.expect(200)
+				const cookie: string = res.header['set-cookie'][0]
+				expect(cookie).to.includes('sessionId=')
+				expect(cookie).to.includes('Expires=Thu, 01 Jan 1970 00:00:00 GMT')
+			})
+
+			it('Should fail if sending empty object', async () => {
+				await request(app)
+					.post('/v1/user/authentication')
+					.set(apiConfig)
+					.send({})
+					.expect(400)
+			})
+
+			it('Should fail if email is null', async () => {
+				await request(app)
+					.post('/v1/user/authentication')
+					.set(apiConfig)
+					.send({ password: 'null_email' })
+					.expect(400)
+					.expect(res => {
+						expect(res.header['set-cookie']).to.be.undefined
+						expect(res.body)
+							.to.be.an('object')
+							.to.haveOwnProperty('error')
+					})
+			})
+
+			it('Should fail if password is null', async () => {
+				await request(app)
+					.post('/v1/user/authentication')
+					.set(apiConfig)
+					.send({ email: 'null_password@example.com' })
+					.expect(400)
+					.expect(res => {
+						expect(res.header['set-cookie']).to.be.undefined
+						expect(res.body)
+							.to.be.an('object')
+							.to.haveOwnProperty('error')
+					})
+			})
+
+			it('Should fail if email and password are null', async () => {
+				await request(app)
+					.post('/v1/user/authentication')
+					.set(apiConfig)
+					.send({ email: '', password: '' })
+					.expect(400)
+					.expect(res => {
+						expect(res.header['set-cookie']).to.be.undefined
+						expect(res.body)
+							.to.be.an('object')
+							.to.haveOwnProperty('error')
+					})
+			})
+
+			it('Should fail if non-existent user', async () => {
+				await request(app)
+					.post('/v1/user/authentication')
+					.set(apiConfig)
+					.send({
+						email: 'undefined@example.com',
+						password: 'undefined_pass'
+					})
+					.expect(401)
+					.expect(res => {
+						expect(res.header['set-cookie']).to.be.undefined
+						expect(res.body)
+							.to.be.an('object')
+							.to.haveOwnProperty('error')
+					})
+			})
+
+			it('Should fail if user with wrong password', async () => {
+				await request(app)
+					.post('/v1/user/authentication')
+					.set(apiConfig)
+					.send({
+						email: user.email,
+						password: 'not_user.password'
+					})
+					.expect(401)
+					.expect(res => {
+						expect(res.header['set-cookie']).to.be.undefined
+						expect(res.body)
+							.to.be.an('object')
+							.to.haveOwnProperty('error')
+					})
+			})
+
+			it('Should fail if valid password but wrong user', async () => {
+				await request(app)
+					.post('/v1/user/authentication')
+					.set(apiConfig)
+					.send({
+						email: 'undefined@example.com',
+						password: user.password
+					}).expect(401)
+					.expect(res => {
+						expect(res.header['set-cookie']).to.be.undefined
+						expect(res.body)
+							.to.be.an('object')
+							.to.haveOwnProperty('error')
+					})
+			})
 		})
 
 		describe('/info', () => {
