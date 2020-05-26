@@ -689,5 +689,89 @@ describe('Testing version 1 of HTTP API', () => {
 				})
 			}
 		})
+
+		describe('Testing requests to update user data', () => {
+			before(async () => {
+				await Person.findByIdAndUpdate(id, {
+					'currencies': {}
+				})
+			})
+
+			describe('When updating user password', () => {
+				it('Should fail if sending an empty object', async () => {
+					const { body } = await request(app)
+						.patch('/v1/user/password')
+						.set('Cookie', [`sessionId=${sessionId}`])
+						.set(apiConfig)
+						.send({})
+						.expect(400)
+
+					expect(body).to.deep.equal({
+						error: 'BadRequest',
+						message: 'This request must contain a object with an \'old\' and \'new\' properties'
+					})
+				})
+
+				it('Should fail if not sending old_password', async () => {
+					const { body } = await request(app)
+						.patch('/v1/user/password')
+						.set('Cookie', [`sessionId=${sessionId}`])
+						.set(apiConfig)
+						.send({ new: 'aNewPassword' })
+						.expect(400)
+
+					expect(body).to.deep.equal({
+						error: 'BadRequest',
+						message: 'This request must contain a object with an \'old\' and \'new\' properties'
+					})
+				})
+
+				it('Should fail if not sending new_password', async () => {
+					const { body } = await request(app)
+						.patch('/v1/user/password')
+						.set('Cookie', [`sessionId=${sessionId}`])
+						.set(apiConfig)
+						.send({ oldPassword: user.password })
+						.expect(400)
+
+					expect(body).to.deep.equal({
+						error: 'BadRequest',
+						message: 'This request must contain a object with an \'old\' and \'new\' properties'
+					})
+				})
+
+				it('Should fail if not authenticated', async () => {
+					const { body } = await request(app)
+						.patch('/v1/user/password')
+						.set(apiConfig)
+						.send({
+							old: user.password,
+							new: 'aNewPassword'
+						})
+						.expect(401)
+
+					expect(body).to.deep.equal(notAuthorizedModel)
+				})
+
+				it('Should update the password from a user', async () => {
+					const { body } = await request(app)
+						.patch('/v1/user/password')
+						.set('Cookie', [`sessionId=${sessionId}`])
+						.set(apiConfig)
+						.send({
+							old: user.password,
+							new: 'aNewPassword'
+						})
+						.expect(200)
+
+					expect(body).to.deep.equal({
+						message: 'Password updated'
+					})
+
+					const updatedUser = await UserApi.findUser.byCookie(sessionId)
+					await expect(updatedUser.checkPassword('aNewPassword')).to.eventually.be.fulfilled
+				})
+			})
+		})
 	})
 })
