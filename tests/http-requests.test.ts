@@ -272,7 +272,7 @@ describe('Testing requests do the main domain', () => {
 			})
 
 			const _user = await UserApi.findUser.byCookie(sessionId)
-			expect(() => _user.checkPassword('aNewPassword')).to.not.throw()
+			await expect(_user.checkPassword('aNewPassword')).to.eventually.be.fulfilled
 		})
 	})
 })

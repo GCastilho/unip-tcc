@@ -20,7 +20,7 @@ router.post('/', async (req, res): Promise<any> => {
 
 	try {
 		const user = await UserApi.findUser.byEmail(req.body.email)
-		user.checkPassword(req.body.password)
+		await user.checkPassword(req.body.password)
 
 		const session = await Session.findOneAndUpdate({
 			userId: user.id

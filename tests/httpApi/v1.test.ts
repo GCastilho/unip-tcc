@@ -146,7 +146,7 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(key).to.be.oneOf(CurrencyApi.currencies)
 				}
 				for (const currency of CurrencyApi.currencies) {
-					expect(body).to.have.deep.property(currency, user.getAccounts(currency))
+					expect(body).to.have.deep.property(currency, await user.getAccounts(currency))
 				}
 			})
 		})
@@ -158,7 +158,7 @@ describe('Testing version 1 of HTTP API', () => {
 				expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 			})
 
-			it('should return a balances object from the user', async () => {
+			it('Should return a balances object from the user', async () => {
 				const user = await UserApi.findUser.byId(id)
 				const { body } = await request(app)
 					.get('/v1/user/balances')
@@ -171,7 +171,7 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(key).to.be.oneOf(CurrencyApi.currencies)
 				}
 				for (const currency of CurrencyApi.currencies) {
-					expect(body).to.have.deep.property(currency, user.getBalance(currency, true))
+					expect(body).to.have.deep.property(currency, await user.getBalance(currency, true))
 				}
 			})
 		})
@@ -420,7 +420,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 					it('Should return NotEnoughFunds if amount is greater than the available balance', async () => {
 						const user = await UserApi.findUser.byId(id)
-						const { available } = user.getBalance(currency, true)
+						const { available } = await user.getBalance(currency, true)
 						const { body } = await request(app)
 							.post('/v1/user/transactions')
 							.set('Cookie', [`sessionId=${sessionId}`])

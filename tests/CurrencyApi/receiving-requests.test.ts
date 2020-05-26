@@ -147,7 +147,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						expect(doc.currencies[currency].balance.available.toFullString())
 							.to.equals(transaction.amount.toString())
 						expect(doc.currencies[currency].balance.locked.toFullString())
-							.to.equals('0.0')
+							.to.equals('0.00')
 						done()
 					})
 				})
