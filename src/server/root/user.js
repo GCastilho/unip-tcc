@@ -15,7 +15,7 @@ Router.post('/changepass', async function(req, res) {
 
 	try {
 		const user = await userApi.findUser.byCookie(req.cookies['sessionId'])
-		user.checkPassword(req.body.oldPassword)
+		await user.checkPassword(req.body.oldPassword)
 		await user.changePassword(req.body.newPassword)
 		res.send({ message: 'Password updated' })
 	} catch (err) {

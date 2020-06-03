@@ -16,8 +16,6 @@ const TransactionSchema = new Schema({
 	},
 	txid: {
 		type: String,
-		unique: true,
-		sparse: true,
 		required: false
 	},
 	account: {
@@ -28,6 +26,19 @@ const TransactionSchema = new Schema({
 		type: String,
 		enum: ['send', 'receive'],
 		required: true
+	}
+})
+
+/*
+ * Adicionado txid e type como indice composto caso o txid não seja nulo
+ */
+TransactionSchema.index({
+	txid: 1,
+	type: 1
+}, {
+	unique: true,
+	partialFilterExpression: {
+		txid: { $exists: true }
 	}
 })
 

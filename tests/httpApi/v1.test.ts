@@ -64,7 +64,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 		const notAuthorizedModel = {
 			error: 'NotAuthorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
+			message: 'A valid cookie \'sessionId\' is required to perform this operation'
 		}
 
 		before(async () => {
@@ -92,6 +92,8 @@ describe('Testing version 1 of HTTP API', () => {
 				.filter(cookie => cookie.sessionId)[0].sessionId
 			id = user.id
 		})
+
+		it('Should implement test for authentiction and deauthentiction')
 
 		it('Should return information about the subpath', async () => {
 			const { body } = await request(app).get('/v1/user').set(apiConfig).send()
@@ -144,7 +146,7 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(key).to.be.oneOf(CurrencyApi.currencies)
 				}
 				for (const currency of CurrencyApi.currencies) {
-					expect(body).to.have.deep.property(currency, user.getAccounts(currency))
+					expect(body).to.have.deep.property(currency, await user.getAccounts(currency))
 				}
 			})
 		})
@@ -156,7 +158,7 @@ describe('Testing version 1 of HTTP API', () => {
 				expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 			})
 
-			it('should return a balances object from the user', async () => {
+			it('Should return a balances object from the user', async () => {
 				const user = await UserApi.findUser.byId(id)
 				const { body } = await request(app)
 					.get('/v1/user/balances')
@@ -169,7 +171,7 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(key).to.be.oneOf(CurrencyApi.currencies)
 				}
 				for (const currency of CurrencyApi.currencies) {
-					expect(body).to.have.deep.property(currency, user.getBalance(currency, true))
+					expect(body).to.have.deep.property(currency, await user.getBalance(currency, true))
 				}
 			})
 		})
@@ -177,12 +179,34 @@ describe('Testing version 1 of HTTP API', () => {
 		describe('/transactions', () => {
 			before(async () => {
 				const user = await UserApi.findUser.byId(id)
-				let txAmount = 0.00000001
-				for (let i = 0; i < 30; i++) {
+
+				// Calcula os amount das operações
+				const amounts: [CurrencyApi.SuportedCurrencies, number][] = []
+				const amountsSum = new Map<CurrencyApi.SuportedCurrencies, number>()
+				for (let i = 1; i <= 30; i++) {
 					for (const currency of CurrencyApi.currencies) {
-						await CurrencyApi.withdraw(user, currency, `random-account-${currency}`, txAmount)
+						const txAmount = CurrencyApi.detailsOf(currency).fee * 2 * Math.pow(i, Math.E)
+						amounts.push([currency, txAmount])
+
+						const sum = amountsSum.get(currency) | 0
+						amountsSum.set(currency, sum + txAmount)
 					}
-					txAmount = txAmount * 2
+				}
+
+				// Garante saldo disponível para todas as operações
+				for (const currency of CurrencyApi.currencies) {
+					const { available } = user.person.currencies[currency].balance
+					const updatedAmount = +available + amountsSum.get(currency)
+					await Person.findByIdAndUpdate(user.id, {
+						$set: {
+							[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(updatedAmount)
+						}
+					})
+				}
+
+				// Executa as operações de saque
+				for (const [currency, amount] of amounts) {
+					await CurrencyApi.withdraw(user, currency, `random-account-${currency}`, amount)
 				}
 
 				// Adiciona um txid e confirmations nas transações
@@ -233,7 +257,7 @@ describe('Testing version 1 of HTTP API', () => {
 					expect(body).to.be.an('array')
 					expect(body.length).to.be.lte(10)
 					transactions.forEach(tx_stored => {
-						const tx_received = body.find(e => e.opid === tx_stored._id.toHexString())
+						const tx_received = body.find(e => e.opid === tx_stored.id)
 						expect(tx_received).to.be.an('object', `Transaction with opid ${tx_stored._id} not sent`)
 						expect(Object.entries(tx_received).length).to.equal(9)
 						expect(tx_received.opid).to.equals(tx_stored._id.toHexString())
@@ -396,7 +420,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 					it('Should return NotEnoughFunds if amount is greater than the available balance', async () => {
 						const user = await UserApi.findUser.byId(id)
-						const { available } = user.getBalance(currency, true)
+						const { available } = await user.getBalance(currency, true)
 						const { body } = await request(app)
 							.post('/v1/user/transactions')
 							.set('Cookie', [`sessionId=${sessionId}`])

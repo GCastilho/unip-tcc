@@ -1,7 +1,7 @@
 import '../../src/libs'
 import io from 'socket.io-client'
 import { expect } from 'chai'
-import { Decimal128, ObjectId } from 'mongodb'
+import { Decimal128 } from 'mongodb'
 import Person from '../../src/db/models/person'
 import Checklist from '../../src/db/models/checklist'
 import Transaction, { TxSend, UpdtSent } from '../../src/db/models/transaction'
@@ -41,7 +41,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 			client = io(`http://127.0.0.1:${CURRENCY_API_PORT}/${currency}`)
 
 			// Responde eventos de create_account para evitar timeout
-			client.on('create_new_account', async (callback: (err: any, account: string) => void) => {
+			client.on('create_new_account', (callback: (err: any, account: string) => void) => {
 				account_counter++
 				callback(null, 'account-' + currency + account_counter)
 			})
@@ -77,9 +77,11 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 
 				Transaction.find({}, (err, txs_before) => {
 					client.emit('new_transaction', transaction, (err: any, response?: any) => {
-						expect(err).to.haveOwnProperty('code').equals('UserNotFound')
-						expect(response).to.be.undefined
-						Transaction.find({}, (err, transactions) => {
+						Promise.resolve().then(() => {
+							expect(err).to.haveOwnProperty('code').that.equals('UserNotFound')
+							expect(response).to.be.undefined
+							return Transaction.find({})
+						}).then(transactions => {
 							expect(transactions.length).to.equals(txs_before.length)
 							done()
 						})
@@ -97,10 +99,12 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('new_transaction', transaction, (err: any, opid?: string) => {
-					expect(err).to.be.null
-					expect(opid).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
-						expect(doc.user.toHexString()).to.equals(user.id.toHexString())
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(opid).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
+						expect(doc.userId.toHexString()).to.equals(user.id.toHexString())
 						expect(doc.txid).to.equals(transaction.txid)
 						expect(doc.status).to.equals(transaction.status)
 						expect(doc.amount.toFullString()).to.equals(transaction.amount.toString())
@@ -118,15 +122,13 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					timestamp: 123456789
 				}
 
-				setImmediate(async () => {
-					client.emit('new_transaction', transaction, () => {
-						Person.findById(user.id, (err, doc) => {
-							expect(doc.currencies[currency].balance.available.toFullString())
-								.to.equals('0.0')
-							expect(doc.currencies[currency].balance.locked.toFullString())
-								.to.equals(transaction.amount.toString())
-							done()
-						})
+				client.emit('new_transaction', transaction, () => {
+					Person.findById(user.id, (err, doc) => {
+						expect(doc.currencies[currency].balance.available.toFullString())
+							.to.equals('0.0')
+						expect(doc.currencies[currency].balance.locked.toFullString())
+							.to.equals(transaction.amount.toString())
+						done()
 					})
 				})
 			})
@@ -167,7 +169,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					expect(tx).to.be.an('object')
 					expect(tx.txid).to.equals(transaction.txid)
 					expect(tx.status).to.equals(transaction.status)
-					expect(tx.amount.toString()).to.equals(transaction.amount.toString())
+					expect(tx.amount).to.equals(transaction.amount)
 					expect(tx.currency).to.equals(currency)
 					expect(tx.account).to.equals(transaction.account)
 					expect(tx.timestamp).to.be.a('Date')
@@ -191,39 +193,21 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					expect(err).to.be.null
 					expect(opid).to.be.a('string')
 					client.emit('new_transaction', transaction, (err: any, _opid?: string) => {
-						expect(_opid).to.be.undefined
-						expect(err).to.be.an('object')
-						expect(err.code).to.equals('TransactionExists')
-						expect(err.transaction).to.be.an('object')
-						expect(err.transaction.opid).to.equals(opid)
-						expect(err.transaction.txid).to.equals(transaction.txid)
-						expect(err.transaction.status).to.equals(transaction.status)
-						expect(err.transaction.amount).to.equals(transaction.amount.toString())
-						expect(err.transaction.account).to.equals(transaction.account)
-						done()
+						try {
+							expect(_opid).to.be.undefined
+							expect(err).to.be.an('object')
+							expect(err.code).to.equals('TransactionExists')
+							expect(err.transaction).to.be.an('object')
+							expect(err.transaction.opid).to.equals(opid)
+							expect(err.transaction.txid).to.equals(transaction.txid)
+							expect(err.transaction.status).to.equals(transaction.status)
+							expect(err.transaction.amount).to.equals(transaction.amount.toString())
+							expect(err.transaction.account).to.equals(transaction.account)
+							done()
+						} catch (err) {
+							done(err)
+						}
 					})
-				})
-			})
-
-			it('Sould ignore digits after supported when saving the transaction', done => {
-				const transaction: TxReceived = {
-					txid,
-					status: 'pending',
-					amount: 1.23456789101112131415,
-					account: `${currency}-account`,
-					timestamp: 123456789
-				}
-
-				client.emit('new_transaction', transaction, (err: any, opid?: string) => {
-					Transaction.findById(opid).then(doc => {
-						expect(doc.amount.toFullString()).to.equals(
-							Decimal128.fromNumeric(
-								transaction.amount,
-								CurrencyApi.detailsOf(currency).decimals
-							).toFullString()
-						)
-						done()
-					}).catch(done)
 				})
 			})
 
@@ -241,37 +225,37 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						...transaction,
 						amount: -49.37954
 					}
-
-					setImmediate(async () => {
-						const available = Decimal128.fromNumeric(50).toFullString()
-						const locked = Decimal128.fromNumeric(0).toFullString()
-						const txs_before = await Transaction.find({})
-
-						// Garante que o request não irá falhar por falta de saldo
-						await Person.findByIdAndUpdate(user.id, {
-							$set: {
-								[`currencies.${currency}.balance.available`]: Decimal128.fromString(available),
-								[`currencies.${currency}.balance.locked`]: Decimal128.fromString(locked)
-							}
+					const available = Decimal128.fromNumeric(50).toFullString()
+					const locked = Decimal128.fromNumeric(0).toFullString()
+					// Garante que o request não irá falhar por falta de saldo
+					Person.findByIdAndUpdate(user.id, {
+						$set: {
+							[`currencies.${currency}.balance.available`]: Decimal128.fromString(available),
+							[`currencies.${currency}.balance.locked`]: Decimal128.fromString(locked)
+						}
+					}).then(() => {
+						return Transaction.find({})
+					}).then(txs_before => {
+						client.emit('new_transaction', negativeAmount, (err: any, opid?: string) => {
+							Promise.resolve().then(() => {
+								expect(err).to.be.an('object')
+								expect(err.code).to.equals('ValidationError')
+								expect(err.message).to.be.a('string')
+								expect(opid).to.be.undefined
+								return Person.findById(user.id)
+							}).then(doc => {
+								// Checa se o doc do usuário não foi alterado
+								expect(doc.currencies[currency].balance.available.toFullString())
+									.to.equals(available)
+								expect(doc.currencies[currency].balance.locked.toFullString())
+									.to.equals(locked)
+								return Transaction.find({})
+							}).then(txs => {
+								expect(txs).to.have.lengthOf(txs_before.length)
+								done()
+							}).catch(done)
 						})
-
-						client.emit('new_transaction', negativeAmount, async (err: any, opid?: string) => {
-							expect(err).to.be.an('object')
-							expect(err.code).to.equals('BadRequest')
-							expect(err.message).to.be.a('string')
-							expect(opid).to.be.undefined
-
-							const doc = await Person.findById(user.id)
-							expect(doc.currencies[currency].balance.available.toFullString())
-								.to.equals(available)
-							expect(doc.currencies[currency].balance.locked.toFullString())
-								.to.equals(locked)
-
-							const txs = await Transaction.find({})
-							expect(txs).to.have.lengthOf(txs_before.length)
-							done()
-						})
-					})
+					}).catch(done)
 				})
 
 				it('Should return ValidationError if status is invalid', done => {
@@ -280,22 +264,30 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						status: 'not-valid-status'
 					}
 					client.emit('new_transaction', invalidStatus, (err: any, opid?: string) => {
-						expect(err.code).to.equals('ValidationError')
-						expect(opid).to.be.undefined
-						done()
+						try {
+							expect(err.code).to.equals('ValidationError')
+							expect(opid).to.be.undefined
+							done()
+						} catch (err) {
+							done(err)
+						}
 					})
 				})
 
-				it('Should return BadRequest if amount is not numeric', done => {
+				it('Should return ValidationError if amount is not numeric', done => {
 					const invalidAmount = {
 						...transaction,
 						amount: '68.94p'
 					}
 					client.emit('new_transaction', invalidAmount, (err: any, opid?: string) => {
-						expect(err.code).to.equals('BadRequest')
-						expect(err.message).to.be.a('string')
-						expect(opid).to.be.undefined
-						done()
+						try {
+							expect(err.code).to.equals('ValidationError')
+							expect(err.message).to.be.a('string')
+							expect(opid).to.be.undefined
+							done()
+						} catch (err) {
+							done(err)
+						}
 					})
 				})
 
@@ -305,9 +297,13 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						confirmations: '6j'
 					}
 					client.emit('new_transaction', invalidConfirmations, (err: any, opid?: string) => {
-						expect(err.code).to.equals('ValidationError')
-						expect(opid).to.be.undefined
-						done()
+						try {
+							expect(err.code).to.equals('ValidationError')
+							expect(opid).to.be.undefined
+							done()
+						} catch (err) {
+							done(err)
+						}
 					})
 				})
 
@@ -317,9 +313,13 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						timestamp: '123456789t'
 					}
 					client.emit('new_transaction', invalidTimestamp, (err: any, opid?: string) => {
-						expect(err.code).to.equals('ValidationError')
-						expect(opid).to.be.undefined
-						done()
+						try {
+							expect(err.code).to.equals('ValidationError')
+							expect(opid).to.be.undefined
+							done()
+						} catch (err) {
+							done(err)
+						}
 					})
 				})
 			})
@@ -344,10 +344,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						timestamp: 123456789
 					}
 					client.emit('new_transaction', transaction, (err: any, _opid?: string) => {
-						expect(err).to.be.null
-						expect(_opid).to.be.a('string')
-						opid = _opid
-						done()
+						try {
+							expect(err).to.be.null
+							expect(_opid).to.be.a('string')
+							opid = _opid
+							done()
+						} catch (err) {
+							done(err)
+						}
 					})
 				}).catch(done)
 			})
@@ -359,14 +363,16 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					confirmations: 6
 				}
 
-				client.emit('update_received_tx', updReceived, async (err: any, res?: string) => {
-					expect(err).to.be.null
-					expect(res).to.be.a('string')
-
-					const doc = await Transaction.findById(opid)
-					expect(doc.status).to.equals(updReceived.status)
-					expect(doc.confirmations).to.equals(updReceived.confirmations)
-					done()
+				client.emit('update_received_tx', updReceived, (err: any, res?: string) => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
+						expect(doc.status).to.equals(updReceived.status)
+						expect(doc.confirmations).to.equals(updReceived.confirmations)
+						done()
+					}).catch(done)
 				})
 			})
 
@@ -377,27 +383,28 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					confirmations: 6
 				}
 
-				client.emit('update_received_tx', updReceived, async (err: any, res?: string) => {
-					expect(err).to.be.null
-					expect(res).to.be.a('string')
-
-					const doc = await Transaction.findById(opid)
-					expect(doc.status).to.equals(updReceived.status)
-					expect(doc.confirmations).to.be.undefined
-					done()
+				client.emit('update_received_tx', updReceived, (err: any, res?: string) => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
+						expect(doc.status).to.equals(updReceived.status)
+						expect(doc.confirmations).to.be.undefined
+						done()
+					}).catch(done)
 				})
 			})
 
 			it('Should return UserNotFound if a user for existing transaction was not found', done => {
-				setImmediate(async () => {
-					// Configura o novo usuário
-					const newUser = await UserApi.createUser(`UserNotFound-receive-${currency}@email.com`, 'UserP@ass')
-					await Person.findByIdAndUpdate(newUser.id, {
+				// Configura o novo usuário
+				UserApi.createUser(`UserNotFound-receive-${currency}@email.com`, 'UserP@ass').then(newUser => {
+					return Person.findByIdAndUpdate(newUser.id, {
 						$push: {
 							[`currencies.${currency}.accounts`]: `${currency}-account-newUser`
 						}
 					})
-
+				}).then(person => {
 					// Emite a transação
 					client.emit('new_transaction', {
 						txid: `UserNotFound-txid-${currency}`,
@@ -406,26 +413,31 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						account: `${currency}-account-newUser`,
 						timestamp: 123456789
 					}, (err: any, opid?: string) => {
-						expect(err).to.be.null
-						expect(opid).to.be.a('string')
-
-						// Deleta o novo usuário
-						Person.findByIdAndDelete(newUser.id).then(() => {
+						Promise.resolve().then(() => {
+							expect(err).to.be.null
+							expect(opid).to.be.a('string')
+							// Deleta o novo usuário
+							return Person.findByIdAndDelete(person.id)
+						}).then(() => {
 							// Envia um update para a transação do usuário deletado
 							client.emit('update_received_tx', {
 								opid,
 								status: 'confirmed',
 								confirmations: 6
 							}, (err: any, res?: string) => {
-								expect(res).to.be.undefined
-								expect(err).to.be.an('object')
-								expect(err.code).to.equals('UserNotFound')
-								expect(err.message).to.be.a('string')
-								done()
+								try {
+									expect(res).to.be.undefined
+									expect(err).to.be.an('object')
+									expect(err.code).to.equals('UserNotFound')
+									expect(err.message).to.be.a('string')
+									done()
+								} catch (err) {
+									done(err)
+								}
 							})
 						}).catch(done)
 					})
-				})
+				}).catch(done)
 			})
 
 			it('Sould not update balance if status is pending', done => {
@@ -436,9 +448,11 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('update_received_tx', updReceived, (err: any, res?: string) => {
-					expect(err).to.be.null
-					expect(res).to.be.a('string')
-					Person.findById(user.id).then(doc => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						return Person.findById(user.id)
+					}).then(doc => {
 						expect(doc.currencies[currency].balance.locked.toFullString())
 							.to.equals(txAmount)
 						expect(doc.currencies[currency].balance.available.toFullString())
@@ -456,9 +470,11 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('update_received_tx', updReceived, (err: any, res?: string) => {
-					expect(err).to.be.null
-					expect(res).to.be.a('string')
-					Person.findById(user.id).then(doc => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						return Person.findById(user.id)
+					}).then(doc => {
 						expect(doc.currencies[currency].balance.locked.toFullString())
 							.to.equals('0.0')
 						expect(doc.currencies[currency].balance.available.toFullString())
@@ -475,13 +491,15 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('update_received_tx', updReceived, (err: any, res?: string) => {
-					expect(err).to.be.null
-					expect(res).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.status).to.equals(updReceived.status)
 						expect(doc.confirmations).to.be.undefined
 						done()
-					})
+					}).catch(done)
 				})
 			})
 
@@ -490,12 +508,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					status: 'confirmed',
 					confirmations: 6
 				}, (err: any, res?: string) => {
-					expect(res).to.be.undefined
-					expect(err).to.be.a('object')
-					expect(err.code).to.be.a('string')
-						.that.equals('BadRequest')
-					expect(err.message).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('BadRequest')
+						expect(err.message).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.status).to.equals('pending')
 						done()
 					}).catch(done)
@@ -508,12 +528,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					status: 'confirmed',
 					confirmations: 6
 				}, (err: any, res?: string) => {
-					expect(res).to.be.undefined
-					expect(err).to.be.a('object')
-					expect(err.code).to.be.a('string')
-						.that.equals('OperationNotFound')
-					expect(err.message).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('OperationNotFound')
+						expect(err.message).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.status).to.equals('pending')
 						done()
 					}).catch(done)
@@ -526,12 +548,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					status: 'confirmed',
 					confirmations: 6
 				}, (err: any, res?: string) => {
-					expect(res).to.be.undefined
-					expect(err).to.be.a('object')
-					expect(err.code).to.be.a('string')
-						.that.equals('CastError')
-					expect(err.message).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('CastError')
+						expect(err.message).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.status).to.equals('pending')
 						done()
 					}).catch(done)
@@ -544,12 +568,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					status: 'invalid-status',
 					confirmations: 6
 				}, (err: any, res?: string) => {
-					expect(res).to.be.undefined
-					expect(err).to.be.a('object')
-					expect(err.code).to.be.a('string')
-						.that.equals('ValidationError')
-					expect(err.message).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('ValidationError')
+						expect(err.message).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.status).to.equals('pending')
 						done()
 					}).catch(done)
@@ -592,9 +618,11 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('update_sent_tx', updSent, (err: any, res?: string) => {
-					expect(err).to.be.null
-					expect(res).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.txid).to.equals(updSent.txid)
 						expect(doc.status).to.equals(updSent.status)
 						expect(doc.confirmations).to.equals(updSent.confirmations)
@@ -614,9 +642,11 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('update_sent_tx', updSent, (err: any, res?: string) => {
-					expect(err).to.be.null
-					expect(res).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.txid).to.equals(updSent.txid)
 						expect(doc.status).to.equals(updSent.status)
 						expect(doc.confirmations).to.be.undefined
@@ -627,39 +657,49 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 			})
 
 			it('Should return UserNotFound if a user for existing transaction was not found', done => {
-				let _user: User
-				let _opid: ObjectId
+				let user: User
 
-				client.once('withdraw', (request: TxSend, callback: (err: any, response?: string) => void) => {
-					callback(null, 'received withdraw request for userNotFound test')
-
-					Person.findByIdAndDelete(_user.id).then(() => {
-						client.emit('update_sent_tx', {
-							opid: _opid,
-							txid: `randomTxId-deleted-user-${currency}`,
-							status: 'confirmed',
-							confirmations: 6,
-							timestamp: 123456789
-						}, (err: any, res?: string) => {
-							expect(res).to.be.undefined
-							expect(err).to.be.an('object')
-							expect(err.code).to.equals('UserNotFound')
-							expect(err.message).to.be.a('string')
-							done()
-						})
-					}).catch(done)
-				})
-
-				setImmediate(async () => {
-					_user = await UserApi.createUser(`non-existing-user-send-${currency}@email.com`, 'UserP@ass')
-					await Person.findByIdAndUpdate(_user.id, {
+				// Cria o usuário
+				UserApi.createUser(`non-existing-user-send-${currency}@email.com`, 'UserP@ass').then(_user => {
+					user = _user
+					// Seta o saldo do usuário
+					return Person.findByIdAndUpdate(_user.id, {
 						$set: {
 							[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(50),
 							[`currencies.${currency}.balance.locked`]: Decimal128.fromNumeric(0)
 						}
 					})
-					_opid = await CurrencyApi.withdraw(_user, currency, 'randomAccount', 10)
-				})
+				}).then(() => {
+					// Executa o saque
+					return CurrencyApi.withdraw(user, currency, 'randomAccount', 10)
+				}).then(opid => {
+					// Recebe o request de saque
+					client.once('withdraw', (request: TxSend, callback: (err: any, response?: string) => void) => {
+						callback(null, 'received withdraw request for userNotFound test')
+
+						// Deleta o usuário
+						Person.findByIdAndDelete(user.id).then(() => {
+							// Emite o update para o usuário deletado
+							client.emit('update_sent_tx', {
+								opid,
+								txid: `randomTxId-deleted-user-${currency}`,
+								status: 'confirmed',
+								confirmations: 6,
+								timestamp: 123456789
+							}, (err: any, res?: string) => {
+								try {
+									expect(res).to.be.undefined
+									expect(err).to.be.an('object')
+									expect(err.code).to.equals('UserNotFound')
+									expect(err.message).to.be.a('string')
+									done()
+								} catch (err) {
+									done(err)
+								}
+							})
+						}).catch(done)
+					})
+				}).catch(done)
 			})
 
 			it('Sould not update balance if status is pending', done => {
@@ -672,9 +712,11 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('update_sent_tx', updSent, (err: any, res?: string) => {
-					expect(err).to.be.null
-					expect(res).to.be.a('string')
-					Person.findById(user.id).then(doc => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						return Person.findById(user.id)
+					}).then(doc => {
 						expect(doc.currencies[currency].balance.locked.toFullString())
 							.to.equals('10.0')
 						expect(doc.currencies[currency].balance.available.toFullString())
@@ -694,9 +736,11 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('update_sent_tx', updSent, (err: any, res?: string) => {
-					expect(err).to.be.null
-					expect(res).to.be.a('string')
-					Person.findById(user.id).then(doc => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						return Person.findById(user.id)
+					}).then(doc => {
 						expect(doc.currencies[currency].balance.locked.toFullString())
 							.to.equals('0.0')
 						expect(doc.currencies[currency].balance.available.toFullString())
@@ -715,9 +759,11 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('update_sent_tx', updSent, (err: any, res?: string) => {
-					expect(err).to.be.null
-					expect(res).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(err).to.be.null
+						expect(res).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.status).to.equals(updSent.status)
 						expect(doc.confirmations).to.be.undefined
 						done()
@@ -732,12 +778,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					confirmations: 6,
 					timestamp: 123456789
 				}, (err: any, res?: string) => {
-					expect(res).to.be.undefined
-					expect(err).to.be.a('object')
-					expect(err.code).to.be.a('string')
-						.that.equals('BadRequest')
-					expect(err.message).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('BadRequest')
+						expect(err.message).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.status).to.equals('processing')
 						done()
 					}).catch(done)
@@ -752,12 +800,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					confirmations: 6,
 					timestamp: 123456789
 				}, (err: any, res?: string) => {
-					expect(res).to.be.undefined
-					expect(err).to.be.a('object')
-					expect(err.code).to.be.a('string')
-						.that.equals('OperationNotFound')
-					expect(err.message).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('OperationNotFound')
+						expect(err.message).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.status).to.equals('processing')
 						done()
 					}).catch(done)
@@ -772,12 +822,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					confirmations: 6,
 					timestamp: 123456789
 				}, (err: any, res?: string) => {
-					expect(res).to.be.undefined
-					expect(err).to.be.a('object')
-					expect(err.code).to.be.a('string')
-						.that.equals('CastError')
-					expect(err.message).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('CastError')
+						expect(err.message).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.status).to.equals('processing')
 						done()
 					}).catch(done)
@@ -792,12 +844,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					confirmations: 6,
 					timestamp: 123456789
 				}, (err: any, res?: string) => {
-					expect(res).to.be.undefined
-					expect(err).to.be.a('object')
-					expect(err.code).to.be.a('string')
-						.that.equals('ValidationError')
-					expect(err.message).to.be.a('string')
-					Transaction.findById(opid).then(doc => {
+					Promise.resolve().then(() => {
+						expect(res).to.be.undefined
+						expect(err).to.be.a('object')
+						expect(err.code).to.be.a('string')
+							.that.equals('ValidationError')
+						expect(err.message).to.be.a('string')
+						return Transaction.findById(opid)
+					}).then(doc => {
 						expect(doc.status).to.equals('processing')
 						done()
 					}).catch(done)

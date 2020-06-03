@@ -96,4 +96,17 @@ describe('Testing decimal128\'s extension library', () => {
 		expect(Decimal128.fromNumeric(15664.21657893e-4).truncate(0).toFullString()).to.equals('1.566421657893')
 		expect(Decimal128.fromNumeric(14E10).truncate(0).toFullString()).to.equals('140000000000.0')
 	})
+
+	it('Should truncate decimals beyond specified', () => {
+		expect(Decimal128.fromNumeric(2).truncate(0).toFullString()).to.equals('2.0')
+		expect(Decimal128.fromNumeric(-2).truncate(0).toFullString()).to.equals('-2.0')
+		expect(Decimal128.fromNumeric(2e-2).truncate(1).toFullString()).to.equals('0.0')
+		expect(Decimal128.fromNumeric(0.000000001).truncate(8).toFullString()).to.equals('0.0')
+		expect(Decimal128.fromNumeric(51687314e-5).truncate(3).toFullString()).to.equals('516.873')
+		expect(Decimal128.fromNumeric(-51687314e-5).truncate(1).toFullString()).to.equals('-516.8')
+		expect(Decimal128.fromNumeric(4.21657893e4).truncate(6).toFullString()).to.equals('42165.7893')
+		expect(Decimal128.fromNumeric(15664.21657893e-4).truncate(4).toFullString()).to.equals('1.5664')
+		expect(Decimal128.fromNumeric(15664.21657893e-4).truncate(0).toFullString()).to.equals('1.566421657893')
+		expect(Decimal128.fromNumeric(14E10).truncate(0).toFullString()).to.equals('140000000000.0')
+	})
 })

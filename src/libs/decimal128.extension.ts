@@ -22,7 +22,7 @@ declare module 'mongodb' {
 		/**
 		 * Returns a truncated version of this Decimal128's intance
 		 */
-		truncate(decimals: number): this
+		truncate(decimals: number): Decimal128
 	}
 	// Extends the mongodb.Decimal128 object
 	namespace Decimal128 {
