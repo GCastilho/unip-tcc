@@ -97,6 +97,133 @@ class BalanceOps {
 	}
 
 	/**
+	 * Completa uma operação pendente, atualizando os saldos e removendo a
+	 * operação do array de 'pending'
+	 *
+	 * @param currency A currency que a operação se refere
+	 * @param opid O ObjectId que referencia o documento da operação em sua
+	 * respectiva collection
+	 *
+	 * @throws OperationNotFound if an operation was not found for THIS user
+	 */
+	private async completeTotal(currency: SC, opid: ObjectId): Promise<void> {
+		/**
+		 * O amount da operação
+		 */
+		const amount: Pending['amount'] = await this.getOpAmount(currency, opid)
+
+		/**
+		 * Calcula o quanto o campo 'available' deverá ser alterado para
+		 * completar a operação
+		 *
+		 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
+		 */
+		const changeInAvailable = +amount < 0 ? 0 : amount
+
+		/**
+		 * Remove a operação pendente e atualiza os saldos
+		 */
+		await this.remove(currency, opid, amount, changeInAvailable)
+	}
+
+	/**
+	 * Completa uma ordem pacialmente, liberando o saldo informado mas
+	 * mantendo a ordem em aberto
+	 *
+	 * @param currency A currency que essa operação se refere
+	 * @param opid O identificador único dessa operação
+	 * @param amount O valor que a ordem será parcialmente completa. Não pode
+	 * ter valor igualou maior que o módulo do valor da ordem
+	 * @param rfOpid O opid de referência da operação que está parcialmente
+	 * completando essa pending
+	 *
+	 * @throws AmountOutOfRange if amount is greater or equal than
+	 * operation's amount
+	 * @throws OperationNotFound if the operation was not found for THIS user
+	 */
+	private async completePartial(
+		currency: SC,
+		opid: ObjectId,
+		amount: Decimal128,
+		rfOpid: ObjectId
+	): Promise<void> {
+		const opAmount = await this.getOpAmount(currency, opid)
+
+		/**
+		 * Garante que o amount será positivo para uma ordem de redução de saldo
+		 * e negativo para uma ordem de aumento de saldo
+		 */
+		if (+opAmount > 0) {
+			amount = amount.abs().opposite()
+		} else {
+			amount = amount.abs()
+		}
+
+		/**
+		 * Subtrai o valor absoluto da ordem com o valor absoluto do amount
+		 * para checar se o amount para completar a ordem é menor que o amount
+		 * da ordem
+		 *
+		 * Esse if é só para ter uma mensagem de erro mais certa, pois o
+		 * update não executa se o amount da ordem for menor ou igual ao
+		 * amount fornecido
+		 */
+		if (+opAmount.abs() - +amount.abs() <= 0) throw {
+			name: 'AmountOutOfRange',
+			message: 'Amount provided is greater or equal than amount in order'
+		}
+
+		/**
+		 * Atualiza os saldos e o amount da ordem, reduzindo-o junto com o
+		 * locked e incrementando o amount available SE existir uma pending com
+		 * o opid informado e pending.amount - amount > 0
+		 */
+		const response = await PersonSchema.findOneAndUpdate({
+			_id: this.id,
+			[`currencies.${currency}.pending.opid`]: opid,
+			$expr: {
+				/** Checa se o amount da operação é maior que o amount informado */
+				$reduce: {
+					input: `$currencies.${currency}.pending`,
+					initialValue: false,
+					in: {
+						$cond: {
+							if: '$$value',
+							then: true,
+							else: {
+								/**
+								 * this.amount pode ser negativo ou positivo, por isso são
+								 * duas possibilidades de testes
+								 */
+								$or: [{
+									$gte: [
+										{ $add: ['$$this.amount', amount] }, 0
+									]
+								}, {
+									$lte: [
+										{ $add: ['$$this.amount', amount.abs()] }, 0
+									]
+								}]
+							}
+						}
+					}
+				}
+			}
+		}, {
+			$inc: {
+				[`currencies.${currency}.balance.available`]: +opAmount > 0 ? amount.abs() : 0,
+				[`currencies.${currency}.balance.locked`]: amount.abs().opposite(),
+				[`currencies.${currency}.pending.$.amount`]: amount,
+			},
+			$push: {
+				[`currencies.${currency}.pending.$.completions`]: rfOpid
+			}
+		})
+
+		if (!response) throw 'OperationNotFound'
+	}
+
+	/**
 	 * Adiciona uma operação de mudança de saldo pendente no array 'pending'
 	 * da currency trava o saldo utilizado na operação
 	 *
@@ -157,8 +284,6 @@ class BalanceOps {
 			{
 				$match: { _id: this.id }
 			}, {
-				$limit: 1
-			}, {
 				$project: {
 					operations: {
 						$filter: {
@@ -176,36 +301,6 @@ class BalanceOps {
 			throw 'OperationNotFound'
 
 		return operations[0]
-	}
-
-	/**
-	 * Completa uma operação pendente, atualizando os saldos e removendo a
-	 * operação do array de 'pending'
-	 *
-	 * @param currency A currency que a operação se refere
-	 * @param opid O ObjectId que referencia o documento da operação em sua
-	 * respectiva collection
-	 *
-	 * @throws OperationNotFound if an operation was not found for THIS user
-	 */
-	async complete(currency: SC, opid: ObjectId): Promise<void> {
-		/**
-		 * O amount da operação
-		 */
-		const amount: Pending['amount'] = await this.getOpAmount(currency, opid)
-
-		/**
-		 * Calcula o quanto o campo 'available' deverá ser alterado para
-		 * completar a operação
-		 *
-		 * NOTA: (Decimal128->number) > 0 PODE não ser preciso o suficiente
-		 */
-		const changeInAvailable = +amount < 0 ? 0 : amount
-
-		/**
-		 * Remove a operação pendente e atualiza os saldos
-		 */
-		await this.remove(currency, opid, amount, changeInAvailable)
 	}
 
 	/**
@@ -239,124 +334,46 @@ class BalanceOps {
 	}
 
 	/**
-	 * Contém métodos para manipulação de operações que parcialmente completam
-	 * uma operação pendente
+	 * Completa uma operação pendente, atualizando os saldos e removendo a
+	 * operação do array de 'pending'
+	 *
+	 * @param currency A currency que a operação se refere
+	 * @param opid O ObjectId que referencia o documento da operação em sua
+	 * respectiva collection
+	 *
+	 * @throws OperationNotFound if an operation was not found for THIS user
 	 */
-	partials = (() => {
-		/**
-		 * Completa uma ordem pacialmente, liberando o saldo informado mas
-		 * mantendo a ordem em aberto
-		 *
-		 * @param currency A currency que essa operação se refere
-		 * @param opid O identificador único dessa operação
-		 * @param amount O valor que a ordem será parcialmente completa. Não pode
-		 * ter valor igualou maior que o módulo do valor da ordem
-		 * @param rfOpid O opid de referência da operação que está parcialmente
-		 * completando essa pending
-		 *
-		 * @throws AmountOutOfRange if amount is greater or equal than
-		 * operation's amount
-		 * @throws OperationNotFound if the operation was not found for THIS user
-		 */
-		const complete = async (
-			currency: SC,
-			opid: ObjectId,
-			amount: Decimal128,
-			rfOpid: ObjectId
-		): Promise<void> => {
-			const opAmount = await this.getOpAmount(currency, opid)
+	async complete(currency: SC, opid: ObjectId): Promise<void>
 
-			/**
-			 * Garante que o amount será positivo para uma ordem de redução de saldo
-			 * e negativo para uma ordem de aumento de saldo
-			 */
-			if (+opAmount > 0) {
-				amount = amount.abs().opposite()
-			} else {
-				amount = amount.abs()
-			}
+	/**
+	 * Completa uma ordem pacialmente, liberando o saldo informado mas
+	 * mantendo a ordem em aberto
+	 *
+	 * @param currency A currency que essa operação se refere
+	 * @param opid O identificador único dessa operação
+	 * @param amount O valor que a ordem será parcialmente completa. Não pode
+	 * ter valor igualou maior que o módulo do valor da ordem
+	 * @param rfOpid O opid de referência da operação que está parcialmente
+	 * completando essa pending
+	 *
+	 * @throws AmountOutOfRange if amount is greater or equal than
+	 * operation's amount
+	 * @throws OperationNotFound if the operation was not found for THIS user
+	 */
+	async complete(currency: SC, opid: ObjectId, amount: Decimal128, rfOpid: ObjectId): Promise<void>
 
-			/**
-			 * Subtrai o valor absoluto da ordem com o valor absoluto do amount
-			 * para checar se o amount para completar a ordem é menor que o amount
-			 * da ordem
-			 *
-			 * Esse if é só para ter uma mensagem de erro mais certa, pois o
-			 * update não executa se o amount da ordem for menor ou igual ao
-			 * amount fornecido
-			 */
-			if (+opAmount.abs() - +amount.abs() <= 0) throw {
-				name: 'AmountOutOfRange',
-				message: 'Amount provided is greater or equal than amount in order'
-			}
-
-			/**
-			 * Atualiza os saldos e o amount da ordem, reduzindo-o junto com o
-			 * locked e incrementando o amount available SE existir uma pending com
-			 * o opid informado e pending.amount - amount > 0
-			 */
-			const response = await PersonSchema.findOneAndUpdate({
-				_id: this.id,
-				[`currencies.${currency}.pending.opid`]: opid,
-				$expr: {
-					/** Checa se o amount da operação é maior que o amount informado */
-					$reduce: {
-						input: `$currencies.${currency}.pending`,
-						initialValue: false,
-						in: {
-							$cond: {
-								if: '$$value',
-								then: true,
-								else: {
-									/**
-									 * this.amount pode ser negativo ou positivo, por isso são
-									 * duas possibilidades de testes
-									 */
-									$or: [{
-										$gte: [
-											{ $add: ['$$this.amount', amount] }, 0
-										]
-									}, {
-										$lte: [
-											{ $add: ['$$this.amount', amount.abs()] }, 0
-										]
-									}]
-								}
-							}
-						}
-					}
-				}
-			}, {
-				$inc: {
-					[`currencies.${currency}.balance.available`]: +opAmount > 0 ? amount.abs() : 0,
-					[`currencies.${currency}.balance.locked`]: amount.abs().opposite(),
-					[`currencies.${currency}.pending.$.amount`]: amount,
-				},
-				$push: {
-					[`currencies.${currency}.pending.$.completions`]: rfOpid
-				}
-			})
-
-			if (!response) throw 'OperationNotFound'
+	async complete(
+		currency: SC,
+		opid: ObjectId,
+		amount?: Decimal128,
+		rfOpid?: ObjectId
+	): Promise<void> {
+		if (!amount || !rfOpid) {
+			await this.completeTotal(currency, opid)
+		} else {
+			await this.completePartial(currency, opid, amount, rfOpid)
 		}
-
-		/**
-		 * Retorna um array com a lista de opids das ordens que parcialmente
-		 * completaram uma operação
-		 *
-		 * @param currency A currency que essa operação se refere
-		 * @param opid O identificador único dessa operação
-		 */
-		const get = async (currency: SC, opid: ObjectId): Promise<ObjectId[]|undefined> => {
-			const pending = await this.get(currency, opid)
-			return pending.completions
-		}
-
-		return {
-			get,
-			complete
-		}
-	})()
+	}
 }
 
 export default class User {
