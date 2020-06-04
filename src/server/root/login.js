@@ -21,8 +21,8 @@ Router.post('/', function(req, res) {
 
 	userApi.findUser.byEmail(
 		req.body.email
-	).then(user => {
-		user.checkPassword(req.body.password)
+	).then(async user => {
+		await user.checkPassword(req.body.password)
 
 		return Session.findOneAndUpdate({
 			userId: user.id

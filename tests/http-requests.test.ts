@@ -87,6 +87,9 @@ describe('Testing requests do the main domain', () => {
 	})
 
 	describe('When making a login request', () => {
+		it('Should replace this test with the api test for /v1/user/authentication')
+		it('Should implement authentication and deauthentication on /v1/user/authentication')
+
 		it('Should fail if sending empty object', async () => {
 			await request(app).post('/login').send({}).expect(400)
 		})
@@ -269,7 +272,7 @@ describe('Testing requests do the main domain', () => {
 			})
 
 			const _user = await UserApi.findUser.byCookie(sessionId)
-			expect(() => _user.checkPassword('aNewPassword')).to.not.throw()
+			await expect(_user.checkPassword('aNewPassword')).to.eventually.be.fulfilled
 		})
 	})
 })

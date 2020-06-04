@@ -1,5 +1,7 @@
 import express from 'express'
+import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
+import authentication from './authentication'
 import Transaction from '../../../db/models/transaction'
 import * as UserApi from '../../../userApi'
 import * as CurrencyApi from '../../../currencyApi'
@@ -8,7 +10,10 @@ const router = express.Router()
 
 // Parsers
 router.use(cookieParser())
-router.use(express.text())
+router.use(bodyParser.json())
+
+/** Hanlder de autenticação de usuários */
+router.use('/authentication', authentication)
 
 /**
  * Checa se você está logado
@@ -17,12 +22,12 @@ router.use(async (req, res, next) => {
 	try {
 		if (!req.cookies.sessionId) throw 'Cookie Not Found'
 		req.user = await UserApi.findUser.byCookie(req.cookies.sessionId)
-		res.cookie('sessionId', req.cookies.sessionId,)
+		res.cookie('sessionId', req.cookies.sessionId)
 		next()
-	} catch(err) {
+	} catch (err) {
 		res.status(401).send({
 			error: 'NotAuthorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
+			message: 'A valid cookie \'sessionId\' is required to perform this operation'
 		})
 	}
 })
@@ -30,10 +35,10 @@ router.use(async (req, res, next) => {
 /**
  * Retorna todas as contas do usuario
  */
-router.get('/accounts', (req, res) => {
+router.get('/accounts', async (req, res) => {
 	const account = {}
 	for (const currency of CurrencyApi.currencies) {
-		account[currency] = req.user?.getAccounts(currency)
+		account[currency] = await req.user?.getAccounts(currency)
 	}
 	res.send(account)
 })
@@ -41,10 +46,10 @@ router.get('/accounts', (req, res) => {
 /**
  * Retorna todos os saldos do usuario
  */
-router.get('/balances', (req, res) => {
+router.get('/balances', async (req, res) => {
 	const balance = {}
 	for (const currency of CurrencyApi.currencies) {
-		balance[currency] = req.user?.getBalance(currency, true)
+		balance[currency] = await req.user?.getBalance(currency, true)
 	}
 	res.send(balance)
 })
@@ -62,20 +67,20 @@ router.get('/transactions/:opid', async (req, res) => {
 		const tx = await Transaction.findById(req.params.opid)
 		if (!tx) throw 'NotFound'
 		// Checa se o usuario da transação é o mesmo que esta logado
-		if (tx.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
+		if (tx.userId.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
 		// Formata o objeto da transação
 		res.send({
-			opid:          tx._id.toHexString(),
-			status:        tx.status,
-			currency:      tx.currency,
-			txid:          tx.txid,
-			account:       tx.account,
-			amount:        tx.amount.toFullString(),
-			type:          tx.type,
+			opid: tx.id,
+			status: tx.status,
+			currency: tx.currency,
+			txid: tx.txid,
+			account: tx.account,
+			amount: tx.amount.toFullString(),
+			type: tx.type,
 			confirmations: tx.confirmations,
-			timestamp:     tx.timestamp.getTime()
+			timestamp: tx.timestamp.getTime()
 		})
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotFound') {
 			res.status(404).send({
 				error: 'NotFound',
@@ -99,7 +104,7 @@ router.get('/transactions', async (req, res) => {
 	/** Filtro de transações por currency */
 	const currency = CurrencyApi.currencies.find(currency => currency === req.query.currency)
 	/** Filtro da query do mongo */
-	const query = currency ? { user: req.user?.id, currency } : { user: req.user?.id }
+	const query = currency ? { userId: req.user?.id, currency } : { userId: req.user?.id }
 	/**
 	 * As 10 mais recentes transações do usuário,
 	 * filtrado de acordo com a query e pulando de acordo com skip
@@ -110,15 +115,15 @@ router.get('/transactions', async (req, res) => {
 		skip
 	})
 	const formattedTransactions = txs.map(tx => ({
-		opid:          tx._id.toHexString(),
-		status:        tx.status,
-		currency:      tx.currency,
-		txid:          tx.txid,
-		account:       tx.account,
-		amount:        tx.amount.toFullString(),
-		type:          tx.type,
+		opid: tx.id,
+		status: tx.status,
+		currency: tx.currency,
+		txid: tx.txid,
+		account: tx.account,
+		amount: tx.amount.toFullString(),
+		type: tx.type,
 		confirmations: tx.confirmations,
-		timestamp:     tx.timestamp.getTime()
+		timestamp: tx.timestamp.getTime()
 	}))
 	res.send(formattedTransactions)
 })
@@ -138,7 +143,7 @@ router.post('/transactions', async (req, res) => {
 
 		const opid = await CurrencyApi.withdraw(req.user, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotEnoughFunds') {
 			res.status(403).send({
 				error: 'NotEnoughFunds',
