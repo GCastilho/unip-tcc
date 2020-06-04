@@ -22,9 +22,9 @@ express()
 			|| req.subdomains.length > 0
 			|| req.method !== 'GET'
 	}),
-		compression({ threshold: 0 }),
-		sirv('static', { dev }),
-		sapper.middleware(),
+	compression({ threshold: 0 }),
+	sirv('static', { dev }),
+	sapper.middleware(),
 	)
 	.listen(PORT, err => {
 		if (err) console.log('error', err)
