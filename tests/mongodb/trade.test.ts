@@ -100,7 +100,7 @@ describe('Testing the trades collection', () => {
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('amount: -1 must be a positive number')
+			.rejectedWith('amount: -1.0 must be a positive number')
 	})
 
 	it('Should fail if amount is zero', async () => {
@@ -125,7 +125,7 @@ describe('Testing the trades collection', () => {
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('amount: 0 must be a positive number')
+			.rejectedWith('amount: 0.0 must be a positive number')
 	})
 
 	it('Should fail if price is a negative value', async () => {
@@ -150,7 +150,7 @@ describe('Testing the trades collection', () => {
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('price: -1 must be a positive number')
+			.rejectedWith('price: -1.0 must be a positive number')
 	})
 
 	it('Should fail if price is zero', async () => {
@@ -175,7 +175,7 @@ describe('Testing the trades collection', () => {
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('price: 0 must be a positive number')
+			.rejectedWith('price: 0.0 must be a positive number')
 	})
 
 	it('Should fail if total is a negative value', async () => {
@@ -200,7 +200,7 @@ describe('Testing the trades collection', () => {
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('total: -1 must be a positive number')
+			.rejectedWith('total: -1.0 must be a positive number')
 	})
 
 	it('Should fail if total is zero', async () => {
@@ -212,10 +212,12 @@ describe('Testing the trades collection', () => {
 			},
 			maker: {
 				userId: new ObjectId(),
+				orderId: new ObjectId(),
 				fee: 1
 			},
 			taker: {
 				userId: new ObjectId(),
+				orderId: new ObjectId(),
 				fee: 1
 			},
 			type: 'buy',
@@ -225,7 +227,7 @@ describe('Testing the trades collection', () => {
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('total: 0 must be a positive number')
+			.rejectedWith('total: 0.0 must be a positive number')
 	})
 
 	it('Sould save a document', async () => {
@@ -237,10 +239,12 @@ describe('Testing the trades collection', () => {
 			},
 			maker: {
 				userId: new ObjectId(),
+				orderId: new ObjectId(),
 				fee: 1
 			},
 			taker: {
 				userId: new ObjectId(),
+				orderId: new ObjectId(),
 				fee: 1
 			},
 			type: 'buy',

@@ -25,7 +25,7 @@ describe('Performing basic tests on the MarketApi', () => {
 		const ordersBefore = await Order.find()
 
 		await expect(MarketApi.add(user, {
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'bitcoin'
 			},
@@ -42,7 +42,7 @@ describe('Performing basic tests on the MarketApi', () => {
 		const ordersBefore = await Order.find()
 
 		await expect(MarketApi.add(user, {
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -60,7 +60,7 @@ describe('Performing basic tests on the MarketApi', () => {
 		const decimals = CurrencyApi.detailsOf('bitcoin').decimals
 
 		await expect(MarketApi.add(user, {
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -78,7 +78,7 @@ describe('Performing basic tests on the MarketApi', () => {
 		const decimals = CurrencyApi.detailsOf('bitcoin').decimals
 
 		await expect(MarketApi.add(user, {
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -93,7 +93,7 @@ describe('Performing basic tests on the MarketApi', () => {
 
 	it('Should add an order on the orderbook', async () => {
 		const opid = await MarketApi.add(user, {
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -116,7 +116,7 @@ describe('Performing basic tests on the MarketApi', () => {
 			describe(`When ${base} is base and ${target} is target`, () => {
 				it(`Should lock ${base}'s balance when buying`, async () => {
 					const opid = await MarketApi.add(user, {
-						currency: {
+						currencies: {
 							base,
 							target
 						},
@@ -135,7 +135,7 @@ describe('Performing basic tests on the MarketApi', () => {
 
 				it(`Should lock ${target}'s balance when selling`, async () => {
 					const opid = await MarketApi.add(user, {
-						currency: {
+						currencies: {
 							base,
 							target
 						},

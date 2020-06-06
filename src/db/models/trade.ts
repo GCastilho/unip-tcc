@@ -1,14 +1,16 @@
 import mongoose, { Document, Schema } from '../mongoose'
 import { ObjectId, Decimal128 } from 'mongodb'
+import { detailsOf } from '../../currencyApi'
 import type { SuportedCurrencies as SC } from '../../currencyApi'
 
 export interface Trade extends Document {
 	/**
 	 * Status da operação
 	 *
+	 * processing: A order está sendo processada pela Market
 	 * closed: O processamento da ordem foi concluído
 	 */
-	status: 'closed' // usar p/ journaling
+	status: 'processing'|'closed'
 	/** As currencies envolvidas na troca */
 	currencies: {
 		/** A currency base para cálculo do preço */
@@ -20,6 +22,8 @@ export interface Trade extends Document {
 	maker: {
 		/** ID do usuário que adicionou a ordem maker */
 		userId: ObjectId
+		/** ID da ordem no orderbook que originou essa trade */
+		orderId: ObjectId
 		/** O fee que o usuário pagou na operação */
 		fee: number
 	}
@@ -27,6 +31,8 @@ export interface Trade extends Document {
 	taker: {
 		/** ID do usuário que adicionou a ordem taker */
 		userId: ObjectId
+		/** ID da ordem no orderbook que originou essa trade */
+		orderId: ObjectId
 		/** O fee que o usuário pagou na operação */
 		fee: number
 	}
@@ -48,7 +54,7 @@ export interface Trade extends Document {
 const TradeSchema = new Schema({
 	status: {
 		type: String,
-		enum: ['closed'],
+		enum: ['processing', 'closed'],
 		required: true
 	},
 	currencies: {
@@ -76,6 +82,11 @@ const TradeSchema = new Schema({
 			required: true,
 			ref: 'Person'
 		},
+		orderId: {
+			type: ObjectId,
+			required: true,
+			ref: 'Order'
+		},
 		fee: {
 			type: Number,
 			required: true,
@@ -87,6 +98,11 @@ const TradeSchema = new Schema({
 			type: ObjectId,
 			required: true,
 			ref: 'Person'
+		},
+		orderId: {
+			type: ObjectId,
+			required: true,
+			ref: 'Order'
 		},
 		fee: {
 			type: Number,
@@ -127,6 +143,13 @@ const TradeSchema = new Schema({
 		type: Date,
 		required: true
 	}
+})
+
+// Faz a truncagem dos valores de acordo com a currency que eles se referem
+TradeSchema.pre('validate', function(this: Trade) {
+	this.amount = this.amount.truncate(detailsOf(this.currencies.target).decimals)
+	this.price = this.price.truncate(detailsOf(this.currencies.base).decimals)
+	this.total = this.total.truncate(detailsOf(this.currencies.base).decimals)
 })
 
 export default mongoose.model<Trade>('Trade', TradeSchema)

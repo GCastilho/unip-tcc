@@ -4,7 +4,7 @@ import Order from '../db/models/order'
 import { SuportedCurrencies as SC } from '../currencyApi'
 
 interface MarketOrder {
-	currency: {
+	currencies: {
 		base: SC
 		target: SC
 	}
@@ -20,9 +20,9 @@ interface MarketOrder {
  * @returns Order's opid
  */
 export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
-	if (order.currency.base === order.currency.target) throw 'SameCurrencyOperation'
+	if (order.currencies.base === order.currencies.target) throw 'SameCurrencyOperation'
 
-	const { base, target } = order.currency
+	const { base, target } = order.currencies
 	const total = order.amount * order.price
 	const opid = new ObjectId()
 
@@ -31,7 +31,7 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
 		userId: user.id,
 		type: order.type,
 		status: 'preparing',
-		currency: {
+		currencies: {
 			base,
 			target
 		},

@@ -16,7 +16,7 @@ export interface Order extends Document {
 	/** Se essa ordem está comprando ou vendendo target */
 	type: 'buy'|'sell'
 	/** As currencies envolvidas nessa ordem */
-	currency: {
+	currencies: {
 		/** A currency base para cálculo do preço */
 		base: SC
 		/** A currency que o usuário deseja comprar/vender */
@@ -48,15 +48,15 @@ const OrderSchema = new Schema({
 		enum: ['buy', 'sell'],
 		required: true
 	},
-	currency: {
+	currencies: {
 		base: {
 			type: String,
 			enum: ['bitcoin', 'nano'],
 			required: true,
 			validate: {
 				// Garante que base é diferente de target
-				validator: function(this: Order, base: Order['currency']['base']) {
-					return this.currency.target != base
+				validator: function(this: Order, base: Order['currencies']['base']) {
+					return this.currencies.target != base
 				},
 				message: () => 'Currency BASE must be different than currency TARGET'
 			}
@@ -99,9 +99,9 @@ const OrderSchema = new Schema({
 
 // Faz a truncagem dos valores de acordo com a currency que eles se referem
 OrderSchema.pre('validate', function(this: Order) {
-	this.price = this.price.truncate(detailsOf(this.currency.base).decimals)
-	this.total = this.total.truncate(detailsOf(this.currency.base).decimals)
-	this.amount = this.amount.truncate(detailsOf(this.currency.target).decimals)
+	this.price = this.price.truncate(detailsOf(this.currencies.base).decimals)
+	this.total = this.total.truncate(detailsOf(this.currencies.base).decimals)
+	this.amount = this.amount.truncate(detailsOf(this.currencies.target).decimals)
 })
 
 export default mongoose.model<Order>('Order', OrderSchema, 'orderbook')

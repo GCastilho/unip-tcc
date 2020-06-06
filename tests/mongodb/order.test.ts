@@ -8,7 +8,7 @@ describe('Testing orders collection', () => {
 			userId: new ObjectId(),
 			status: 'ready',
 			type: 'buy',
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'bitcoin'
 			},
@@ -26,7 +26,7 @@ describe('Testing orders collection', () => {
 			userId: new ObjectId(),
 			status: 'ready',
 			type: 'buy',
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -44,7 +44,7 @@ describe('Testing orders collection', () => {
 			userId: new ObjectId(),
 			status: 'ready',
 			type: 'buy',
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -62,7 +62,7 @@ describe('Testing orders collection', () => {
 			userId: new ObjectId(),
 			status: 'ready',
 			type: 'buy',
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -80,7 +80,7 @@ describe('Testing orders collection', () => {
 			userId: new ObjectId(),
 			status: 'ready',
 			type: 'buy',
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -98,7 +98,7 @@ describe('Testing orders collection', () => {
 			userId: new ObjectId(),
 			status: 'ready',
 			type: 'buy',
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -116,7 +116,7 @@ describe('Testing orders collection', () => {
 			userId: new ObjectId(),
 			status: 'ready',
 			type: 'buy',
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -134,7 +134,7 @@ describe('Testing orders collection', () => {
 			userId: new ObjectId(),
 			status: 'ready',
 			type: 'buy',
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
@@ -152,7 +152,7 @@ describe('Testing orders collection', () => {
 			userId: new ObjectId(),
 			status: 'ready',
 			type: 'buy',
-			currency: {
+			currencies: {
 				base: 'bitcoin',
 				target: 'nano'
 			},
