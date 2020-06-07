@@ -374,6 +374,61 @@ class BalanceOps {
 			await this.completePartial(currency, opid, amount, rfOpid)
 		}
 	}
+
+	/**
+	 * Trava uma operação para que ela só possa ser completada por uma operação
+	 * com um opid específico
+	 * @param currency A currency da operação
+	 * @param operation A operação pendente que está sendo travada
+	 * @param opid O id da operação que está executando o lock
+	 * @throws OperationNotFound if a pending unlocked operation was not found
+	 */
+	async lock(currency: SC, operation: ObjectId, opid: ObjectId) {
+		const response = await PersonSchema.findOneAndUpdate({
+			_id: this.id,
+			[`currencies.${currency}.pending.opid`]: operation,
+			[`currencies.${currency}.pending.locked.byOpid`]: null
+		}, {
+			[`currencies.${currency}.pending.$.locked.byOpid`]: opid,
+			[`currencies.${currency}.pending.$.locked.timestamp`]: new Date()
+		})
+
+		if (!response) throw 'OperationNotFound'
+	}
+
+	/**
+	 * Destrava uma operação que foi previamente travada
+	 * @param currency A currency da operação
+	 * @param operation A operação pendente que será destravada
+	 * @param opid O id da operação que travou a pending
+	 * @throws OperationNotFound if a pending locked operation was not found
+	 */
+	async unlock(currency: SC, operation: ObjectId, opid: ObjectId): Promise<void>
+	/**
+	 * Destrava uma operação pendente no modo inseguro, ou seja, sem a conferência
+	 * de que o opid informado é o opid que requisitou o lock
+	 * @param currency A currency da operação
+	 * @param operation A operação pendente que será destravada
+	 * @param force Indica que o destrave irá ser executado no modo inseguro
+	 * @throws OperationNotFound if a pending operation was not found
+	 */
+	async unlock(currency: SC, operation: ObjectId, opid: any, force: true): Promise<void>
+	async unlock(currency: SC, operation: ObjectId, opid: ObjectId|null, force?: true) {
+		const query: {} = {
+			_id: this.id,
+			[`currencies.${currency}.pending.opid`]: operation
+		}
+
+		if (!force) {
+			query[`currencies.${currency}.pending.locked.byOpid`] = opid
+		}
+
+		const response = await PersonSchema.findOneAndUpdate(query, {
+			[`currencies.${currency}.pending.$.locked`]: {}
+		})
+
+		if (!response) throw 'OperationNotFound'
+	}
 }
 
 export default class User {

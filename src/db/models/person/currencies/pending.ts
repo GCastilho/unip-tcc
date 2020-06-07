@@ -17,6 +17,16 @@ export interface Pending {
 	 */
 	amount: Decimal128
 	/**
+	 * Objeto com opid da operação que requisitou um lock nessa pending junto com
+	 * o timestamp da requisição
+	 */
+	locked?: {
+		/** Opid que requisitou que essa pending fosse travada para completações */
+		byOpid: ObjectId
+		/** Timestamp que o lock foi requisitado */
+		timestamp: Date
+	}
+	/**
 	 * Array dos opids das operações que parcialmente completaram essa pending.
 	 * Se o opid de uma operação está nesse array é porque essa operação JÁ
 	 * ATUALIZOU o amount dessa pending
@@ -44,6 +54,16 @@ export const PendingSchema = new Schema({
 		validate: {
 			validator: v => v != 0,
 			message: props => `Amount can not be zero, found ${props.value}`
+		}
+	},
+	locked: {
+		byOpid: {
+			type: ObjectId,
+			required: false
+		},
+		timestamp: {
+			type: Date,
+			required: false
 		}
 	},
 	completions: {

@@ -256,6 +256,47 @@ describe('Testing UserApi', () => {
 								.to.be.an.instanceOf(ObjectId)
 						})
 					})
+
+					describe('Testing operation locks', () => {
+						it('Should lock an operation', async () => {
+							const lockOpid = new ObjectId()
+							await user.balanceOps.lock(currency, opid, lockOpid)
+							const pending = await user.balanceOps.get(currency, opid)
+							expect(pending.opid.toHexString()).to.equals(opid.toHexString())
+							expect(pending.locked?.byOpid.toHexString())
+								.to.equals(lockOpid.toHexString())
+							expect(pending.locked?.timestamp).to.be.an.instanceOf(Date)
+						})
+
+						describe('When there is a locked operation', () => {
+							const lockOpid = new ObjectId()
+
+							beforeEach(async () => {
+								await user.balanceOps.lock(currency, opid, lockOpid)
+								const pending = await user.balanceOps.get(currency, opid)
+								expect(pending.locked?.byOpid.toHexString())
+									.to.equals(lockOpid.toHexString())
+								expect(pending.locked?.timestamp).to.be.an.instanceOf(Date)
+							})
+
+							it('Should unlock an operation', async () => {
+								await user.balanceOps.unlock(currency, opid, lockOpid)
+								const pending = await user.balanceOps.get(currency, opid)
+								expect(Object.keys(pending.locked).length).to.equals(0)
+							})
+
+							it('Should not unlock if opid was not informed', async () => {
+								await expect(user.balanceOps.unlock(currency, opid, undefined))
+									.to.eventually.be.rejectedWith('OperationNotFound')
+							})
+
+							it('Should unlock an operation using the forced mode', async () => {
+								await user.balanceOps.unlock(currency, opid, null, true)
+								const pending = await user.balanceOps.get(currency, opid)
+								expect(Object.keys(pending.locked).length).to.equals(0)
+							})
+						})
+					})
 				})
 			})
 
