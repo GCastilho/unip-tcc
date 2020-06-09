@@ -90,7 +90,7 @@ class BalanceOps {
 			$pull: {
 				[`currencies.${currency}.pending`]: { opid }
 			}
-		})
+		}).select({ _id: true })
 
 		if (!response)
 			throw 'OperationNotFound'
@@ -218,7 +218,7 @@ class BalanceOps {
 			$push: {
 				[`currencies.${currency}.pending.$.completions`]: rfOpid
 			}
-		})
+		}).select({ _id: true })
 
 		if (!response) throw 'OperationNotFound'
 	}
@@ -263,7 +263,7 @@ class BalanceOps {
 			$push: {
 				[`currencies.${currency}.pending`]: pending
 			}
-		})
+		}).select({ _id: true })
 
 		if (!response)
 			throw 'NotEnoughFunds'
@@ -391,7 +391,7 @@ class BalanceOps {
 		}, {
 			[`currencies.${currency}.pending.$.locked.byOpid`]: opid,
 			[`currencies.${currency}.pending.$.locked.timestamp`]: new Date()
-		})
+		}).select({ _id: true })
 
 		if (!response) throw 'OperationNotFound'
 	}
@@ -425,7 +425,7 @@ class BalanceOps {
 
 		const response = await PersonSchema.findOneAndUpdate(query, {
 			[`currencies.${currency}.pending.$.locked`]: {}
-		})
+		}).select({ _id: true })
 
 		if (!response) throw 'OperationNotFound'
 	}
@@ -435,8 +435,8 @@ export default class User {
 	/**
 	 * Retorna a versão atualizada do documento desse usuário do database
 	 */
-	private async getPerson(): Promise<Person> {
-		const person = await PersonSchema.findById(this.id)
+	private async getPerson(projection?: any): Promise<Person> {
+		const person = await PersonSchema.findById(this.id, projection)
 		if (!person) throw `Person document for id '${this.id} not found in the database`
 		return person
 	}
@@ -480,7 +480,9 @@ export default class User {
 	async getBalance(currency: SC, asString: true): Promise<{ available: string; locked: string }>
 	async getBalance(currency: SC, asString?: false): Promise<{ available: Decimal128; locked: Decimal128 }>
 	async getBalance(currency: SC, asString?: boolean) {
-		const { available, locked } = (await this.getPerson()).currencies[currency].balance
+		const { available, locked } = (await this.getPerson({
+			[`currencies.${currency}.balance`]: true
+		})).currencies[currency].balance
 		return asString ? {
 			available: available.toFullString(),
 			locked: locked.toFullString()
@@ -494,7 +496,9 @@ export default class User {
 	 * Retorna as accounts de um usuário para determinada currency
 	 */
 	async getAccounts(currency: SC): Promise<string[]> {
-		return (await this.getPerson()).currencies[currency].accounts
+		return (await this.getPerson({
+			[`currencies.${currency}.accounts`]: true
+		})).currencies[currency].accounts
 	}
 
 	/**
