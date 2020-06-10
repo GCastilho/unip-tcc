@@ -75,13 +75,15 @@ class BalanceOps {
 		currency: SC,
 		opid: ObjectId,
 		opAmount: Decimal128,
-		changeInAvailable: Decimal128|0
+		changeInAvailable: Decimal128|0,
+		rfOpid?: ObjectId
 	): Promise<void> {
 		const balanceObj = `currencies.${currency}.balance`
 
 		const response = await PersonSchema.findOneAndUpdate({
 			_id: this.id,
-			[`currencies.${currency}.pending.opid`]: opid
+			[`currencies.${currency}.pending.opid`]: opid,
+			[`currencies.${currency}.pending.locked.byOpid`]: rfOpid
 		}, {
 			$inc: {
 				[`${balanceObj}.locked`]: opAmount.abs().opposite(),
@@ -103,10 +105,11 @@ class BalanceOps {
 	 * @param currency A currency que a operação se refere
 	 * @param opid O ObjectId que referencia o documento da operação em sua
 	 * respectiva collection
+	 * @param rfOpid O ID da operação que trancou essa pending
 	 *
 	 * @throws OperationNotFound if an operation was not found for THIS user
 	 */
-	private async completeTotal(currency: SC, opid: ObjectId): Promise<void> {
+	private async completeTotal(currency: SC, opid: ObjectId, rfOpid?: ObjectId): Promise<void> {
 		/**
 		 * O amount da operação
 		 */
@@ -123,7 +126,7 @@ class BalanceOps {
 		/**
 		 * Remove a operação pendente e atualiza os saldos
 		 */
-		await this.remove(currency, opid, amount, changeInAvailable)
+		await this.remove(currency, opid, amount, changeInAvailable, rfOpid)
 	}
 
 	/**
@@ -132,10 +135,10 @@ class BalanceOps {
 	 *
 	 * @param currency A currency que essa operação se refere
 	 * @param opid O identificador único dessa operação
-	 * @param amount O valor que a ordem será parcialmente completa. Não pode
-	 * ter valor igualou maior que o módulo do valor da ordem
 	 * @param rfOpid O opid de referência da operação que está parcialmente
 	 * completando essa pending
+	 * @param amount O valor que a ordem será parcialmente completa. Não pode
+	 * ter valor igualou maior que o módulo do valor da ordem
 	 *
 	 * @throws AmountOutOfRange if amount is greater or equal than
 	 * operation's amount
@@ -144,8 +147,8 @@ class BalanceOps {
 	private async completePartial(
 		currency: SC,
 		opid: ObjectId,
-		amount: Decimal128,
-		rfOpid: ObjectId
+		rfOpid: ObjectId,
+		amount: Decimal128
 	): Promise<void> {
 		const opAmount = await this.getOpAmount(currency, opid)
 
@@ -181,6 +184,10 @@ class BalanceOps {
 		const response = await PersonSchema.findOneAndUpdate({
 			_id: this.id,
 			[`currencies.${currency}.pending.opid`]: opid,
+			$or: [
+				{ [`currencies.${currency}.pending.locked.byOpid`]: null },
+				{ [`currencies.${currency}.pending.locked.byOpid`]: rfOpid }
+			],
 			$expr: {
 				/** Checa se o amount da operação é maior que o amount informado */
 				$reduce: {
@@ -340,10 +347,11 @@ class BalanceOps {
 	 * @param currency A currency que a operação se refere
 	 * @param opid O ObjectId que referencia o documento da operação em sua
 	 * respectiva collection
+	 * @param rfOpid O ID da operação que trancou essa pending
 	 *
 	 * @throws OperationNotFound if an operation was not found for THIS user
 	 */
-	async complete(currency: SC, opid: ObjectId): Promise<void>
+	async complete(currency: SC, opid: ObjectId, rfOpid?: ObjectId): Promise<void>
 
 	/**
 	 * Completa uma ordem pacialmente, liberando o saldo informado mas
@@ -351,27 +359,28 @@ class BalanceOps {
 	 *
 	 * @param currency A currency que essa operação se refere
 	 * @param opid O identificador único dessa operação
-	 * @param amount O valor que a ordem será parcialmente completa. Não pode
-	 * ter valor igualou maior que o módulo do valor da ordem
 	 * @param rfOpid O opid de referência da operação que está parcialmente
 	 * completando essa pending
+	 * @param amount O valor que a ordem será parcialmente completa. Não pode
+	 * ter valor igualou maior que o módulo do valor da ordem
 	 *
 	 * @throws AmountOutOfRange if amount is greater or equal than
 	 * operation's amount
 	 * @throws OperationNotFound if the operation was not found for THIS user
 	 */
-	async complete(currency: SC, opid: ObjectId, amount: Decimal128, rfOpid: ObjectId): Promise<void>
+	async complete(currency: SC, opid: ObjectId, rfOpid: ObjectId, amount: Decimal128): Promise<void>
 
 	async complete(
 		currency: SC,
 		opid: ObjectId,
-		amount?: Decimal128,
-		rfOpid?: ObjectId
+		rfOpid?: ObjectId,
+		amount?: Decimal128
 	): Promise<void> {
-		if (!amount || !rfOpid) {
-			await this.completeTotal(currency, opid)
+		if (amount) {
+			if (!rfOpid) throw 'rfOpid needs to be informed to partially complete an operation'
+			await this.completePartial(currency, opid, rfOpid, amount)
 		} else {
-			await this.completePartial(currency, opid, amount, rfOpid)
+			await this.completeTotal(currency, opid, rfOpid)
 		}
 	}
 
