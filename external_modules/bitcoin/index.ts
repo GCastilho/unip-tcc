@@ -46,8 +46,6 @@ export class Bitcoin extends Common {
 			return new Promise(resolve => setTimeout(resolve, time))
 		}
 		let blockHeight = null
-		const teste = await methods.rpc.getBlockCount()
-		console.log('\n\n\n' + teste + '\n\n\n')
 		do {
 			try {
 				blockHeight = (await this.rpc.getBlockChainInfo())?.headers
