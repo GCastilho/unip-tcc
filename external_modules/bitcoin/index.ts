@@ -10,7 +10,7 @@ export class Bitcoin extends Common {
 	name = 'bitcoin'
 	mainServerIp = MAIN_SERVER_IP
 	mainServerPort = MAIN_SERVER_PORT
-	blockHeight = 20000000 //inicializado com um valor extremamente alto
+	blockHeight = 20000000 // Inicializado com um valor extremamente alto
 	canSincronize = true
 	protected rpc = methods.rpc
 
@@ -59,13 +59,12 @@ export class Bitcoin extends Common {
 		} while (!blockHeight)
 
 		this.blockHeight = blockHeight
-		console.log('Block height updated:' + this.blockHeight)
+		console.log('Block height updated:', this.blockHeight)
 
 		app.listen(this.port, () => {
 			console.log('Bitcoin blockchain listener is up on port', this.port)
 		})
 	}
-
 
 	constructor(bitcoinListenerPort: number) {
 		super()
