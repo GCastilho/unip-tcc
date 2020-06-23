@@ -31,7 +31,7 @@ export class Bitcoin extends Common {
 		 */
 		app.post('/transaction', (req, res) => {
 			this.processTransaction(req.body.txid)
-			res.send() // Finaliza a comunicação com o curl do BTC
+			res.end() // Finaliza a comunicação com o curl do BTC
 		})
 
 		/**
@@ -39,7 +39,7 @@ export class Bitcoin extends Common {
 		 */
 		app.post('/block', (req, res) => {
 			this.processBlock(req.body.block)
-			res.send() // Finaliza a comunicação com o curl do BTC
+			res.end() // Finaliza a comunicação com o curl do BTC
 		})
 
 		async function sleep(time) {
@@ -49,20 +49,17 @@ export class Bitcoin extends Common {
 		do {
 			try {
 				blockHeight = (await this.rpc.getBlockChainInfo())?.headers
-			} catch (e) {
-				console.log('failed to recover block height')
-				if (e.name != 'RpcError' && e.code != 'ECONNREFUSED')
-					console.log(e)
-				console.log('retring....')
+			} catch (err) {
+				process.stdout.write('Failed to recover block height. ')
+				if (err.name != 'RpcError' && err.code != 'ECONNREFUSED')
+					console.error(err)
+				console.error('Retring...')
+				await sleep(30000) // 30 segundos
 			}
-			console.log('the block is not updated')
-			await sleep(30000) //30 segundos
 		} while (!blockHeight)
-		console.log('block height is updated')
 
 		this.blockHeight = blockHeight
-
-		console.log('current block height :' + this.blockHeight)
+		console.log('Block height updated:' + this.blockHeight)
 
 		app.listen(this.port, () => {
 			console.log('Bitcoin blockchain listener is up on port', this.port)

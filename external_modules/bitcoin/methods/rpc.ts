@@ -109,7 +109,7 @@ export async function send(pSend: PSent): Promise<UpdtSent> {
  */
 setTimeout(() => {
 	getRpcInfo().catch(err => {
-		if (err !== 'ECONNREFUSED')
+		if (err?.code != 'ECONNREFUSED')
 			console.error('Error sendig ping to bitcoin', err)
 	})
 }, 5000)
