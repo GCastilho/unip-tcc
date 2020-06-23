@@ -22,10 +22,10 @@
 		if (newPassword === passwordconfirm) {
 			try {
 				const { token } = await axios.patch(
-					`${location.protocol}//api.${location.hostname}:3001/v1/user/`,
+					`${location.protocol}//api.${location.hostname}:3001/v1/user/password`,
 					{
-						oldPassword,
-						newPassword
+						old: oldPassword,
+						new: newPassword
 					},
 					{ withCredentials: true }
 				)
@@ -83,9 +83,21 @@
 	{#if errorMessage}
 		<FormErrorMessage>{errorMessage}</FormErrorMessage>
 	{/if}
-	<FancyInput id="password_old" type="password">Old Password</FancyInput>
-	<FancyInput id="password_new" type="password">New Password</FancyInput>
-	<FancyInput id="password_confirm" type="password">Confirm Password</FancyInput>
+	<FancyInput 
+		id="password_old" 
+		type="password" 
+		autocomplete="current-password"
+	>Old Password</FancyInput>
+	<FancyInput 
+		id="password_new" 
+		type="password" 
+		autocomplete="new-password"
+	>New Password</FancyInput>
+	<FancyInput 
+		id="password_confirm" 
+		type="password" 
+		autocomplete="new-password"
+	>Confirm Password</FancyInput>
 
 	<FancyButton type="submit">Update Password</FancyButton>
 </form>

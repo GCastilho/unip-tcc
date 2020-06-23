@@ -191,8 +191,8 @@ router.get('/', (_req, res) => {
 	})
 })
 
-router.patch('/', async (req, res): Promise<any> => {
-	if (!req.body.oldPassword || !req.body.newPassword)
+router.patch('/password', async (req, res): Promise<any> => {
+	if (!req.body.old || !req.body.new)
 		return res.status(400).send({
 			error: 'BadRequest',
 			message: 'This request must contain a object with an \'old\' and \'new\' properties'
@@ -200,8 +200,8 @@ router.patch('/', async (req, res): Promise<any> => {
 
 	try {
 		const user = await UserApi.findUser.byCookie(req.cookies['sessionId'])
-		await user.checkPassword(req.body.oldPassword)
-		await user.changePassword(req.body.newPassword)
+		await user.checkPassword(req.body.old)
+		await user.changePassword(req.body.new)
 		res.send({ message: 'Password updated' })
 	} catch (err) {
 		if (err == 'UserNotFound' || err == 'InvalidPassword') {
