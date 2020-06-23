@@ -1,5 +1,5 @@
 <script>
-	import axios from 'axios'
+	import axios from "../utils/axios"
 	import { onMount } from 'svelte'
 	import { goto } from '@sapper/app'
 	import * as auth from '../stores/auth.js'
@@ -21,9 +21,8 @@
 		try {
 			//quando for dar build trocar 'localhost:3001' por ${location.host}
 			const { data: { token } } = await axios.post(
-				`${location.protocol}//api.${location.hostname}:3001/v1/user/authentication`,
-				{ email, password },
-				{ withCredentials: true }
+				'/v1/user/authentication',
+				{ email, password }
 			)
 			/**
 			 * @todo Adicionar handlers para os erros vindos do sistema

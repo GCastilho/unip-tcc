@@ -22,12 +22,11 @@
 		if (newPassword === passwordconfirm) {
 			try {
 				const { token } = await axios.patch(
-					`${location.protocol}//api.${location.hostname}:3001/v1/user/password`,
+					'/v1/user/password',
 					{
 						old: oldPassword,
 						new: newPassword
-					},
-					{ withCredentials: true }
+					}
 				)
 				/**
 				 * @todo Adicionar handlers para os erros vindos do sistema

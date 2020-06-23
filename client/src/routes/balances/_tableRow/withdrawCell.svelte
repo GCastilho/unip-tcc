@@ -1,6 +1,6 @@
 <script>
 	import * as balances from '../../../stores/balances.js'
-	import axios from 'axios'
+	import axios from '../../../utils/axios'
 
 	export let name
 	export let fee
@@ -27,13 +27,12 @@
 		try {
 			//quando for dar build trocar 'localhost:3001' por ${location.hostname}
 			const opid = await axios.post(
-				`${location.protocol}//api.localhost:3001/v1/user/transactions`, 
+				'/v1/user/transactions', 
 				{
 					currency: name,
 					destination,
 					amount
-				},
-				{ withCredentials: true }
+				}
 			)
 			console.log('Withdraw executed, opid is:', opid.data)
 			err = null
