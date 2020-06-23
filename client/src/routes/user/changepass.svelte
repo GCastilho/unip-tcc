@@ -83,21 +83,15 @@
 	{#if errorMessage}
 		<FormErrorMessage>{errorMessage}</FormErrorMessage>
 	{/if}
-	<FancyInput 
-		id="password_old" 
-		type="password" 
-		autocomplete="current-password"
-	>Old Password</FancyInput>
-	<FancyInput 
-		id="password_new" 
-		type="password" 
-		autocomplete="new-password"
-	>New Password</FancyInput>
-	<FancyInput 
-		id="password_confirm" 
-		type="password" 
-		autocomplete="new-password"
-	>Confirm Password</FancyInput>
+	<FancyInput id="password_old" type="password" autocomplete="current-password">
+		Old Password
+	</FancyInput>
+	<FancyInput id="password_new" type="password" autocomplete="new-password">
+		New Password
+	</FancyInput>
+	<FancyInput id="password_confirm" type="password" autocomplete="new-password">
+		Confirm Password
+	</FancyInput>
 
 	<FancyButton type="submit">Update Password</FancyButton>
 </form>

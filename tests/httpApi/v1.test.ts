@@ -454,10 +454,13 @@ describe('Testing version 1 of HTTP API', () => {
 
 				it('Should return an empty array if there is no transactions', async () => {
 					await UserApi.createUser('empty-tx-user@email.com', 'emptyP@ss')
-					const res = await request(app).post('/login').send({
-						email: 'empty-tx-user@email.com',
-						password: 'emptyP@ss'
-					}).expect(200)
+					const res = await request(app)
+						.post('/v1/user/authentication')
+						.set(apiConfig)
+						.send({
+							email: 'empty-tx-user@email.com',
+							password: 'emptyP@ss'
+						}).expect(200)
 					expect(res.header['set-cookie']).to.be.an('array')
 					const _sessionId = res.header['set-cookie']
 						.map(cookieparser.parse)

@@ -3,6 +3,7 @@
 	export let type = 'text'
 	export let placeholder = ' '
 	export let required = true
+	export let autocomplete = ''
 </script>
 
 <style>
@@ -63,7 +64,7 @@
 </style>
 
 <div>
-	<input {type} {id} name={id} {required} {placeholder} />
+	<input {type} {id} name={id} {required} {placeholder} {autocomplete} />
 	<label for={id}>
 		<slot>empty label</slot>
 	</label>
