@@ -58,7 +58,7 @@ export class Bitcoin extends Common {
 				console.log('retring....')
 			}
 			console.log('the block is not updated')
-			await sleep(30000)//30 segundos
+			await sleep(30000) //30 segundos
 		} while (!blockHeight)
 		console.log('block height is updated')
 
