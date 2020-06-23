@@ -25,7 +25,6 @@
 		event.target.amount.value = ''
 
 		try {
-			//quando for dar build trocar 'localhost:3001' por ${location.hostname}
 			const opid = await axios.post(
 				'/v1/user/transactions', 
 				{

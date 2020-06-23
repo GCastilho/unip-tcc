@@ -19,7 +19,6 @@
 		const password = event.target.password.value
 
 		try {
-			//quando for dar build trocar 'localhost:3001' por ${location.host}
 			const { data: { token } } = await axios.post(
 				'/v1/user/authentication',
 				{ email, password }
