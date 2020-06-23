@@ -5,7 +5,7 @@ export interface Meta extends Document {
 	details: string
 }
 
-const Schema = new Schema({
+const MetaSchema = new Schema({
 	info: {
 		type: String,
 		trim: true,
@@ -19,4 +19,4 @@ const Schema = new Schema({
 	}
 })
 
-export default mongoose.model<Meta>('meta', Meta)
+export default mongoose.model<Meta>('meta', MetaSchema)
