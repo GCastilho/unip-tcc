@@ -2,8 +2,8 @@
 	import { onMount, onDestroy } from 'svelte'
 	import { goto } from '@sapper/app'
 	import { subscribe } from '../../stores/auth.js'
-	import * as socket from '../../utils/websocket.js'
 	import TableRow from './_tableRow/index.svelte'
+	import axios from 'axios'
 
 	/** Referência à subscription da store de auth */
 	let unsubscribeAuth
@@ -14,6 +14,28 @@
 			if (!auth) goto('/login')
 		})
 	})
+
+	/**
+	 * retorna uma lista com os detalhes das accounts 
+	 */
+	async function fetchCurrenciesList() {
+		const accounts = await axios.get(
+			`${location.protocol}//api.${location.host}/v1/user/accounts`, 
+			{ withCredentials: true }
+		)
+		const currenciesDetailed = await axios.get(
+			`${location.protocol}//api.${location.host}/v1/currencies`, 
+			{ withCredentials: true }
+		)
+
+		return currenciesDetailed.data.map(currency => ({
+			name:     currency.name,
+			code:     currency.code,
+			fee:      currency.fee,
+			decimals: currency.decimals,
+			accounts: accounts.data[currency.name]
+		}))
+	}
 
 	onDestroy(() => {
 		if (typeof unsubscribeAuth === 'function') unsubscribeAuth()
@@ -55,7 +77,7 @@
 	<title>Balances page</title>
 </svelte:head>
 
-{#await socket.emit('list')}
+{#await fetchCurrenciesList()}
 	<h1>Fetching data...</h1>
 {:then currenciesList}
 	<h1>Balances</h1>

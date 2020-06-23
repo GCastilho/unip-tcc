@@ -97,8 +97,8 @@
 <tr>
 	<td class="coin-cell">{code}</td>
 	<td class="name-cell">{name}</td>
-	<td class="balance-cell">{available.toFixed(8) || 'Loading...'}</td>
-	<td class="balance-cell">{locked.toFixed(8) || 'Loading...'}</td>
+	<td class="balance-cell">{typeof available === 'number' ? available.toFixed(8) : 'Loading...'}</td>
+	<td class="balance-cell">{typeof locked === 'number' ? locked.toFixed(8) : 'Loading...'}</td>
 	<td>
 		<button on:click="{() => openActionCell('deposit')}">Deposit</button>
 		<button on:click="{() => openActionCell('withdraw')}">Withdraw</button>
