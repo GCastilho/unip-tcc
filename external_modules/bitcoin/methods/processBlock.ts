@@ -77,7 +77,7 @@ export function processBlock(this: Bitcoin) {
 		if (typeof block != 'string') return
 		const blockCount = await this.rpc.getBlockCount()
 		if (blockCount < this.blockHeight || !this.canSincronize) return
-		
+
 		await this.rewindTransactions(block)
 		/**
 		 * Faz um request no rpc para saber se ele está respondendo ou não

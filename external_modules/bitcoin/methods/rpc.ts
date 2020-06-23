@@ -60,7 +60,7 @@ export const getRpcInfo = async (): Promise<any> =>
 	await request('getRpcInfo')
 
 export const getBlockChainInfo = async (): Promise<any> =>
-	await request('getBlockchainInformation')
+	await request('getBlockchainInfo')
 
 export const getBlockCount = async (): Promise<any> =>
 	await request('getBlockCount')

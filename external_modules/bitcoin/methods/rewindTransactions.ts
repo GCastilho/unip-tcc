@@ -8,9 +8,9 @@ import { TxReceived } from '../../common'
 
 async function formatTransaction(txInfo: any): Promise<TxReceived|void> {
 	if(txInfo.category != 'receive') return
-	
+
 	const address: TxReceived['account'] = txInfo.address
-	
+
 	/** Verifica se a transação é nossa */
 	const account = await Account.findOne({ account: address })
 	if (!account) return
@@ -36,7 +36,7 @@ export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
 		blockhash = (await this.rpc.blockInfo(newBlockhash))?.previousblockhash
 		if (!blockhash)
 			return
-		
+
 		await meta.updateOne({
 			info: 'lastSyncBlock'
 		}, {
@@ -45,35 +45,33 @@ export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
 			upsert: true
 		})
 	}
-	console.log( blockhash )
-	const  { transactions }: any = await this.rpc.listSinceBlock(blockhash)
-	
+	const { transactions }: any = await this.rpc.listSinceBlock(blockhash)
+
 
 	for (const transaction of transactions) {
 		try {
 			const _transaction = await formatTransaction(transaction)
-			console.log(_transaction)
 			if (!_transaction) return
 			console.log( 'received transaction', _transaction ) //remove
-	
+
 			/** Salva a nova transação no database */
 			await new Transaction({
 				txid : _transaction.txid,
 				type: 'receive',
 				account: _transaction.account
 			}).save().catch()
-	
+
 			/** Salva a nova transação na collection de Tx pendente */
 			await new ReceivedPending({
 				txid: _transaction.txid,
 				transaction: _transaction
 			}).save()
-	
+
 			/**
 			 * opid vai ser undefined caso a transação não tenha sido enviada ao
 			 * main, nesse caso não há mais nada o que fazer aqui
 			 */
-			
+
 			const opid = await this.informMain.newTransaction(_transaction)
 			if (!opid) return
 
@@ -93,7 +91,7 @@ export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
 			if (err.code != 11000)
 				console.error('Transaction processing error:', err)
 		}
-	}	
+	}
 	await meta.updateOne({
 		info: 'lastSyncBlock'
 	}, {

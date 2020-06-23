@@ -24,7 +24,7 @@ export class Bitcoin extends Common {
 
 	async initBlockchainListener() {
 		const app = express()
-		app.use(bodyParser.urlencoded({extended: true}))
+		app.use(bodyParser.urlencoded({ extended: true }))
 
 		/**
 		 * Novas transações são enviadas aqui
@@ -42,15 +42,25 @@ export class Bitcoin extends Common {
 			res.send() // Finaliza a comunicação com o curl do BTC
 		})
 
+		async function sleep(time) {
+			return new Promise(resolve => setTimeout(resolve, time))
+		}
 		let blockHeight = null
+		const teste = await methods.rpc.getBlockCount()
+		console.log('\n\n\n' + teste + '\n\n\n')
 		do {
 			try {
-				blockHeight = (await this.rpc.getRpcInfo())?.blockChainInfo.headers
+				blockHeight = (await this.rpc.getBlockChainInfo())?.headers
 			} catch (e) {
-				console.log('failed to recover block height, retrying...')
-				//console.log presente apenas para motivos de teste
+				console.log('failed to recover block height')
+				if (e.name != 'RpcError' && e.code != 'ECONNREFUSED')
+					console.log(e)
+				console.log('retring....')
 			}
+			console.log('the block is not updated')
+			await sleep(30000)//30 segundos
 		} while (!blockHeight)
+		console.log('block height is updated')
 
 		this.blockHeight = blockHeight
 
