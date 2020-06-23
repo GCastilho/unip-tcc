@@ -5,7 +5,7 @@ export interface Meta extends Document {
 	details: string
 }
 
-const Meta: Schema = new Schema({
+const Schema = new Schema({
 	info: {
 		type: String,
 		trim: true,
