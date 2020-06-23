@@ -1,5 +1,5 @@
 <script>
-	import axios from "../utils/axios"
+	import axios from '../utils/axios'
 	import { onMount } from 'svelte'
 	import { goto } from '@sapper/app'
 	import * as auth from '../stores/auth.js'
