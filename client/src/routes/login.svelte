@@ -1,7 +1,7 @@
 <script>
+	import axios from 'axios'
 	import { onMount } from 'svelte'
 	import { goto } from '@sapper/app'
-	import axios from '../utils/axios.js'
 	import * as auth from '../stores/auth.js'
 	import FancyInput from '../components/FancyInput.svelte'
 	import FancyButton from '../components/FancyButton.svelte'
@@ -19,7 +19,12 @@
 		const password = event.target.password.value
 
 		try {
-			const { token } = await axios.post(window.location, { email, password })
+			//quando for dar build trocar 'localhost:3001' por ${location.host}
+			const { data: { token } } = await axios.post(
+				`${location.protocol}//api.localhost:3001/v1/user/authentication`,
+				{ email, password },
+				{ withCredentials: true }
+			)
 			/**
 			 * @todo Adicionar handlers para os erros vindos do sistema
 			 * de autenticação do websocket
@@ -29,10 +34,10 @@
 			/** Redireciona o usuário para a home */
 			goto('/')
 		} catch(err) {
-			if (err.response.status === 401) {
+			if (err.response && err.response.status === 401) {
 				errorMessage = 'Invalid email or password'
 			} else {
-				errorMessage = err.response.statusText
+				errorMessage = err.response ? err.response.statusText : err
 			}
 		}
 	}

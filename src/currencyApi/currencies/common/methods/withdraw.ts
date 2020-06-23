@@ -36,12 +36,12 @@ export function withdraw(this: Common) {
 			await tx.save()
 
 			if (txUpdate.status === 'confirmed') {
-				const user = await userApi.findUser.byId(tx.user)
+				const user = await userApi.findUser.byId(tx.userId)
 				await user.balanceOps.complete(this.name, tx._id)
 			}
 
 			callback(null, `${txUpdate.opid} updated`)
-			this.events.emit('update_sent_tx', tx.user, txUpdate)
+			this.events.emit('update_sent_tx', tx.userId, txUpdate)
 		} catch(err) {
 			if (err === 'OperationNotFound') {
 				callback({
@@ -88,7 +88,7 @@ export function withdraw(this: Common) {
 				if (!tx) throw `Withdraw error: Transaction ${item.opid} not found!`
 
 				const transaction: TxSend = {
-					opid:    tx._id.toHexString(),
+					opid:    tx.id,
 					account: tx.account,
 					amount:  tx.amount.toFullString()
 				}

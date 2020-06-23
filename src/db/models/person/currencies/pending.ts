@@ -22,17 +22,22 @@ export interface Pending {
  * Schema das operações (que involvem alteração de saldo) pendentes desse
  * usuário, uma vez concluídas elas devem ser removidas da collection
  */
-export const PendingSchema: Schema = new Schema({
+export const PendingSchema = new Schema({
 	opid: {
-		type: Schema.Types.ObjectId,
+		type: ObjectId,
 		required: true
 	},
 	type: {
 		type: String,
+		enum: ['transaction'],
 		required: true
 	},
 	amount: {
 		type: Decimal128,
-		required: true
+		required: true,
+		validate: {
+			validator: v => v != 0,
+			message: props => `Amount can not be zero, found ${props.value}`
+		}
 	}
 })

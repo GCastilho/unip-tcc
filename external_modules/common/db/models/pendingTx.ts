@@ -46,7 +46,11 @@ const PendingReceivedSchema = new Schema({
 		},
 		amount: {
 			type: String,
-			required: true
+			required: true,
+			validate: {
+				validator: v => v > 0,
+				message: props => `${props.value} must be a positive numeric value`
+			}
 		},
 		status: {
 			type: String,
@@ -134,7 +138,11 @@ const PendingSendSchema = new Schema({
 		},
 		amount: {
 			type: String,
-			required: true
+			required: true,
+			validate: {
+				validator: v => v > 0,
+				message: props => `${props.value} must be a positive numeric value`
+			}
 		},
 		status: {
 			type: String,

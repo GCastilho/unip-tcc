@@ -2,8 +2,8 @@ import randomstring from 'randomstring'
 import { ObjectId } from 'mongodb'
 import Session from '../db/models/session'
 import PersonModel from '../db/models/person'
-import * as CurrencyApi from '../currencyApi'
 import User, { hashPassword } from './user'
+import * as CurrencyApi from '../currencyApi'
 
 /**
  * Cria um novo usuário no database com as credenciais informadas
