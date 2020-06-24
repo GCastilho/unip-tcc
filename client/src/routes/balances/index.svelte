@@ -3,7 +3,7 @@
 	import { goto } from '@sapper/app'
 	import { subscribe } from '../../stores/auth.js'
 	import TableRow from './_tableRow/index.svelte'
-	import axios from 'axios'
+	import axios from '../../utils/axios'
 
 	/** Referência à subscription da store de auth */
 	let unsubscribeAuth
@@ -19,14 +19,8 @@
 	 * retorna uma lista com os detalhes das accounts 
 	 */
 	async function fetchCurrenciesList() {
-		const accounts = await axios.get(
-			`${location.protocol}//api.${location.host}/v1/user/accounts`, 
-			{ withCredentials: true }
-		)
-		const currenciesDetailed = await axios.get(
-			`${location.protocol}//api.${location.host}/v1/currencies`, 
-			{ withCredentials: true }
-		)
+		const accounts = await axios.get('/v1/user/accounts')
+		const currenciesDetailed = await axios.get('/v1/currencies')
 
 		return currenciesDetailed.data.map(currency => ({
 			name:     currency.name,

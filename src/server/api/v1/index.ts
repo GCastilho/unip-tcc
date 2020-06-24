@@ -14,6 +14,7 @@ router.use((req, res, next) => {
 
 	res.header('Access-Control-Allow-Origin', `http://${host}:${port}`)
 	res.header('Access-Control-Allow-Credentials','true')
+	res.header('Access-Control-Allow-Methods', 'POST, GET, DELETE, PATCH')
 	res.header('Access-Control-Allow-Headers', 'Content-Type')
 	next()
 })

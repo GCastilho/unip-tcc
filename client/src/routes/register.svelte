@@ -1,5 +1,5 @@
 <script>
-	import axios from 'axios'
+	import axios from '../utils/axios'
 	import { onMount } from 'svelte'
 	import { goto } from '@sapper/app'
 	import * as auth from '../stores/auth.js'
@@ -24,7 +24,7 @@
 			return alert('Confirmation pasword mismatch password')
 
 		try {
-			await axios.post(window.location, { email, password })
+			await axios.post('/v1/user/', { email, password })
 			registered = true
 		} catch(err) {
 			if (err.response.status === 409) {
