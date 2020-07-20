@@ -1,6 +1,42 @@
 import type { Order } from '../db/models/order'
 
 /**
+ * Contém métodos para manipulação e checagem de ordens que serão diferentes de
+ * acordo com o tipo da taker informado
+ */
+class OrderTypeUtils {
+	/** Checa se o preço informado não está maior/menor que o preço atual */
+	public checkPrice: (price: number, currentPrice: number) => boolean
+	/** Atualiza o remaining corretamente */
+	public updateRemaining: (remaining: number, price: number, currentPrice: number) => number
+
+	constructor(type: Order['type']) {
+		if (type == 'buy') {
+			this.checkPrice = (price: number, currentPrice: number) => price > currentPrice
+			this.updateRemaining = (remaining: number, price: number, currentPrice: number) => {
+				return remaining * (price / currentPrice)
+			}
+		} else {
+			this.checkPrice = (price: number, currentPrice: number) => price < currentPrice
+			this.updateRemaining = (remaining: number, price: number, currentPrice: number) => {
+				return remaining / (price / currentPrice)
+			}
+		}
+	}
+}
+
+/**
+ * TODO: matchMakers
+ *
+ * f que recebe uma taker e um array de makers e divide a taker em várias
+ * ordens para combinar com as makers do array; Essa função poderá retornar
+ * uma ordem do valor "restante", sendo ele do array de makers ou da taker,
+ * que agora é uma ordem maker e será recolocada no livro usando unshift
+ *
+ * trade de duas ordens de preço diferente é o preço "da melhor"
+ */
+
+/**
  * O type da linked list dos nodes do orderbook
  *
  * O orderbook contém nodes de uma linked list colocados em um map para permitir
@@ -104,22 +140,49 @@ class Market {
 	 */
 	private execTaker(order: Order) {
 		/**
-		 * TODO:
+		 * Ao fazer trade de uma taker com uma maker de preço mais vantajoso o
+		 * montante que será recebido pelo usuário da taker deverá ser corrigido
+		 * para o novo preço. Essa variável armazena qual das propriedades da ordem
+		 * que contém esse montante
 		 *
-		 * A taker deve ser executada em sua completude, usando múltiplas makers se necessário
-		 * A taker pode fazer o preço oscilar, subindo ou descendo
-		 *
-		 * Um while que vai puxando todas as ordens do array até o amount delas ser
-		 * maior ou igual ao da taker ou o preço de uma maker ser maior que o da
-		 * taker (ou menor, depende do tipo)
-		 *
-		 * f que recebe uma taker e um array de makers e divide a taker em várias
-		 * ordens para combinar com as makers do array; Essa função poderá retornar
-		 * uma ordem do valor "restante", sendo ele do array de makers ou da taker,
-		 * que agora é uma ordem maker e será recolocada no livro usando unshift
-		 *
-		 * trade de duas ordens de preço diferente é o preço "da melhor"
+		 * Em uma ordem tipo 'buy' o total é fixo pois é quanto o usuário irá pagar,
+		 * e o amount é variável, pois é o quanto ele irá receber (no caso de sell,
+		 * é o oposto)
 		 */
+		const propVarQty: keyof Order = order['type'] == 'buy' ? 'amount' : 'total'
+
+		/** O preço atual que está baseando o remaining */
+		let currentPrice = +order['price']
+
+		/**
+		 * O valor corrigido do amount/total restante para o amount/total das ordens
+		 * maker ser equivalente ao que a taker está comprando/vendendo
+		 */
+		let remaining = +order[propVarQty]
+
+		/** Instância da OrderTypeUtils para o type dessa ordem */
+		const utils = new OrderTypeUtils(order['type'])
+
+		/** Vetor de ordens maker que irão fazer trade com essa ordem taker */
+		const makers: Order[] = []
+
+		while (+remaining >= 0) {
+			const makerOrder = this.shiftOrder(order['type'])
+			if (!makerOrder) break // Não tem mais ordens desse tipo
+
+			// Checa se a ordem não está mais cara/barata que o valor da taker
+			if (utils.checkPrice(+order['price'], currentPrice)) break
+
+			remaining = utils.updateRemaining(remaining, +order['price'], currentPrice)
+			// TODO: N atualizar sempre, só caso o preço mude
+			currentPrice = +makerOrder.price
+			// Subtrai do remaining corrigido o amount/total da ordem
+			remaining -= +makerOrder[propVarQty]
+
+			// Adiciona a ordem no array que será enviada a matchMakers
+			makers.push(makerOrder)
+		}
+		// Chama matchMakers
 	}
 
 	/**
