@@ -1,29 +1,45 @@
 import type { Order } from '../db/models/order'
 
 /**
- * Contém métodos para manipulação e checagem de ordens que serão diferentes de
- * acordo com o tipo da taker informado
+ * Retorna uma instancia da OrderTypeUtils, que contém métodos para manipulação
+ * e checagem de ordens que serão diferentes de acordo com o tipo da taker
+ * informado
  */
-class OrderTypeUtils {
-	/** Checa se o preço informado não está maior/menor que o preço atual */
-	public checkPrice: (price: number, currentPrice: number) => boolean
-	/** Atualiza o remaining corretamente */
-	public updateRemaining: (remaining: number, price: number, currentPrice: number) => number
+const orderTypeUtils = (function OrderUtils() {
+	/**
+	 * Contém métodos para manipulação e checagem de ordens que serão diferentes
+	 * de acordo com o tipo da taker informado
+	 */
+	class OrderTypeUtils {
+		/** Checa se o preço da maker está maior/menor que o preço da taker */
+		public invalidPrice: (takerPrice: number, makerPrice: number) => boolean
+		/** Atualiza o remaining corretamente */
+		public updateRemaining: (remaining: number, price: number, currentPrice: number) => number
 
-	constructor(type: Order['type']) {
-		if (type == 'buy') {
-			this.checkPrice = (price: number, currentPrice: number) => price > currentPrice
-			this.updateRemaining = (remaining: number, price: number, currentPrice: number) => {
-				return remaining * (price / currentPrice)
-			}
-		} else {
-			this.checkPrice = (price: number, currentPrice: number) => price < currentPrice
-			this.updateRemaining = (remaining: number, price: number, currentPrice: number) => {
-				return remaining / (price / currentPrice)
+		constructor(type: Order['type']) {
+			if (type == 'buy') {
+				this.invalidPrice = (takerPrice: number, makerPrice: number) => makerPrice > takerPrice
+				this.updateRemaining = (remaining: number, price: number, currentPrice: number) => {
+					return remaining * (price / currentPrice)
+				}
+			} else {
+				this.invalidPrice = (takerPrice: number, makerPrice: number) => makerPrice < takerPrice
+				this.updateRemaining = (remaining: number, price: number, currentPrice: number) => {
+					return remaining / (price / currentPrice)
+				}
 			}
 		}
 	}
-}
+
+	// Mantém instancias da OrderTypeUtils na memória para reduzir garbage
+	const buyInstance = new OrderTypeUtils('buy')
+	const sellInstance = new OrderTypeUtils('sell')
+
+	/** Retorna uma instance da OrderTypeUtils para o type informado */
+	return function getInstance(type: Order['type']) {
+		return type == 'buy' ? buyInstance : sellInstance
+	}
+})()
 
 /**
  * TODO: matchMakers
@@ -70,27 +86,6 @@ class Market {
 		this.buyPrice = 0
 		this.sellPrice = Infinity
 		this.head = null
-	}
-
-	/**
-	 * Retorna a primeira ordem da fila de um tipo específico, ou seja, a ordem
-	 * de venda mais barata ou a ordem de compra mais cara
-	 * @param type O tipo da ordem que deverá ser retornada
-	 */
-	private shiftOrder(type: Order['type']) {
-		const price = type == 'buy' ? this.buyPrice : this.sellPrice
-		const node = this.orderbook.get(price)
-		if (!node) throw new Error(`Node for market price of '${price}' not found!`)
-		const order = node.data.shift()
-		if (node.data.length == 0) {
-			// Removes node from linked list
-			if (!node.previous || !node.next)
-				throw new Error(`Node has missing links: ${node}`)
-			node.previous.next = node.next
-			node.next.previous = node.previous
-			this.orderbook.delete(price)
-		}
-		return order
 	}
 
 	/**
@@ -161,20 +156,47 @@ class Market {
 		let remaining = +order[propVarQty]
 
 		/** Instância da OrderTypeUtils para o type dessa ordem */
-		const utils = new OrderTypeUtils(order['type'])
+		const utils = orderTypeUtils(order.type)
 
 		/** Vetor de ordens maker que irão fazer trade com essa ordem taker */
 		const makers: Order[] = []
 
 		while (+remaining >= 0) {
-			const makerOrder = this.shiftOrder(order['type'])
-			if (!makerOrder) break // Não tem mais ordens desse tipo
+			const price = order.type == 'buy' ? this.buyPrice : this.sellPrice
+			// Checa se o preço está no range válido
+			if (price == 0 || price == Infinity) break
+			const node = this.orderbook.get(price)
+			if (!node) throw new Error(`Node for market price of '${price}' not found!`)
 
-			// Checa se a ordem não está mais cara/barata que o valor da taker
-			if (utils.checkPrice(+order['price'], currentPrice)) break
+			// Checa se o preço da próxima ordem está no limite válido para este type
+			if (utils.invalidPrice(+order['price'], node.price)) break
+
+			const makerOrder = node.data.shift()
+			// Removes node from linked list if data is empty
+			if (node.data.length == 0) {
+				// Atualiza os preços
+				if (order.type == 'buy') {
+					// Atualiza o preço da maior ordem de compra para baixo
+					if (node.previous) this.buyPrice = node.previous.price
+					else this.buyPrice = 0
+				} else {
+					// Atualiza o preço da menor ordem de venda para cima
+					if (node.next) this.sellPrice = node.next.price
+					else this.sellPrice = Infinity
+				}
+				// Remove o node e atualiza head
+				if (node.next)
+					node.next.previous = node.previous
+				if (node.previous) {
+					node.previous.next = node.next
+				} else {
+					this.head = node.next
+				}
+				this.orderbook.delete(price)
+			}
+			if (!makerOrder) continue // Caso tenha um data vazio (por algum motivo)
 
 			remaining = utils.updateRemaining(remaining, +order['price'], currentPrice)
-			// TODO: N atualizar sempre, só caso o preço mude
 			currentPrice = +makerOrder.price
 			// Subtrai do remaining corrigido o amount/total da ordem
 			remaining -= +makerOrder[propVarQty]
