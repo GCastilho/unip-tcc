@@ -55,20 +55,14 @@
 	<title>Balances page</title>
 </svelte:head>
 
-{#await $currencies}
-	<h1>Fetching data...</h1>
-{:then currenciesList}
-	<h1>Balances</h1>
-	<table>
-		<th>Coin</th>
-		<th>Name</th>
-		<th>Available Balance</th>
-		<th>Locked Balance</th>
-		<th>Actions</th>
-		{#each currenciesList as {code, name, fee, accounts}}
-			<TableRow {code} {name} {fee} {accounts} />
-		{/each}
-	</table>
-{:catch err}
-	<h1>Error: {err}</h1>
-{/await}
+<h1>Balances</h1>
+<table>
+	<th>Coin</th>
+	<th>Name</th>
+	<th>Available Balance</th>
+	<th>Locked Balance</th>
+	<th>Actions</th>
+	{#each $currencies as {code, name, fee, accounts}}
+		<TableRow {code} {name} {fee} {accounts} />
+	{/each}
+</table>

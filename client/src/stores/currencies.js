@@ -2,9 +2,9 @@ import { writable } from 'svelte/store'
 import * as auth from '../stores/auth'
 import axios from '../utils/axios'
 
-const { subscribe, set, update } = writable({})
+const { subscribe, set } = writable([])
 
-export { subscribe, set, update }
+export { subscribe }
 
 auth.subscribe(async auth => {
 	if (!auth) return
