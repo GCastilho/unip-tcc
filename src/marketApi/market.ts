@@ -17,8 +17,6 @@ const orderTypeUtils = (function OrderUtils() {
 		public getProps: () => { propConstQty: 'total'|'amount'; propVarQty: 'total'|'amount' }
 		/** Checa se o preço da maker está maior/menor que o preço da taker */
 		public invalidPrice: (takerPrice: number, makerPrice: number) => boolean
-		/** Atualiza o remaining corretamente */
-		public updateRemaining: (remaining: number, price: number, currentPrice: number) => number
 		/** Ao ser passado o valor constante e o preço, retorna o valor variável */
 		public getVarQty: (constQty: number, price: number) => number
 
@@ -26,16 +24,10 @@ const orderTypeUtils = (function OrderUtils() {
 			if (type == 'buy') {
 				this.getProps = () => ({ propConstQty: 'total', propVarQty: 'amount' })
 				this.invalidPrice = (takerPrice: number, makerPrice: number) => makerPrice > takerPrice
-				this.updateRemaining = (remaining: number, price: number, currentPrice: number) => {
-					return remaining * (price / currentPrice)
-				}
 				this.getVarQty = (constQty: number, price: number) => constQty / price
 			} else {
 				this.getProps = () => ({ propConstQty: 'amount', propVarQty: 'total' })
 				this.invalidPrice = (takerPrice: number, makerPrice: number) => makerPrice < takerPrice
-				this.updateRemaining = (remaining: number, price: number, currentPrice: number) => {
-					return remaining / (price / currentPrice)
-				}
 				this.getVarQty = (constQty: number, price: number) => constQty * price
 			}
 		}
@@ -203,36 +195,72 @@ class Market {
 	}
 
 	/**
+	 * Cria um node de um preço especificado e adiciona-o ao orderbook e a
+	 * linkedList
+	 *
+	 * @param price O preço que deverá ser criado um node
+	 */
+	private createNode(price: number) {
+		const node: LinkedList = {
+			price,
+			previous: null,
+			next: null,
+			data: []
+		}
+
+		if (this.head) {
+			// Adiciona o node na posição correta da linked list
+			let previous = this.head
+			while (previous.next != null && previous.price < node.price) {
+				previous = previous.next
+			}
+			node.next = previous.next
+			node.previous = previous
+			node.previous.next = node
+			if (node.next?.previous != null)
+				node.next.previous = node
+		} else {
+			this.head = node
+		}
+		this.orderbook.set(price, node)
+
+		return node
+	}
+
+	/**
+	 * Adiciona uma ordem maker ao inicio da lista de um preço. Essa função NÃO
+	 * altera o marketPrice (buyPrice/SellPrice)
+	 *
+	 * @param order A ordem maker que será adicionada
+	 */
+	private unshiftMaker(order: Order) {
+		let node = this.orderbook.get(+order.price)
+		if (!node)
+			node = this.createNode(+order.price)
+
+		if (
+			order.type == 'buy' && +order.price > this.buyPrice ||
+			order.type == 'sell' && +order.price < this.sellPrice
+		) {
+			throw new RangeError(
+				`Maker order is out of marketPrice: ${order}, prices: ${{
+					buyPrice: this.buyPrice,
+					sellPrice: this.sellPrice
+				}}`
+			)
+		}
+
+		node.data.unshift(order)
+	}
+
+	/**
 	 * Adiciona uma ordem (pré-determinada como) maker ao orderbook
 	 * @param order A ordem maker que será adicionada
 	 */
 	private pushMaker(order: Order) {
 		let node = this.orderbook.get(+order.price)
-		if (!node) {
-			node = {
-				price: +order.price,
-				previous: null,
-				next: null,
-				data: []
-			}
-
-			if (this.head) {
-				// Adiciona o node na posição correta da linked list
-				let previous = this.head
-				while (previous.next != null && previous.price < node.price) {
-					previous = previous.next
-				}
-				node.next = previous.next
-				node.previous = previous
-				node.previous.next = node
-				if (node.next?.previous != null)
-					node.next.previous = node
-			} else {
-				this.head = node
-			}
-
-			this.orderbook.set(+order.price, node)
-		}
+		if (!node)
+			node = this.createNode(+order.price)
 
 		node.data.push(order)
 		if (order.type == 'buy' && +order.price > this.buyPrice) {
@@ -317,15 +345,11 @@ class Market {
 
 		const { matchs, leftovers } = await matchMakers(order, makers)
 
-		/**
-		 * As ordens provavelmente estão no mesmo preço (e são apenas 1), mas não
-		 * se pode presumir
-		 *
-		 * O array de leftovers deve ser recolocado em sua respectiva faixa de preço
-		 * usando unshift, pois elas estavam no começo da fila e devem continuar lá
-		 *
-		 * O array de touples da match deve ser enviado à trade
-		 */
+		/** Readiciona a ordem ao inicio do array deste preço */
+		leftovers.forEach(maker => this.unshiftMaker(maker))
+
+		// Enviar matchs à função de trade
+		console.log(matchs)
 	}
 
 	/**
