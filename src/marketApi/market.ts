@@ -243,34 +243,34 @@ class Market {
 	}
 
 	/**
-	 * Executa uma ordem (pré-determinada como) taker com uma ordem maker
-	 * previamente adicionada ao orderbook
+	 * Executa uma ordem (pré-determinada como) taker com uma ou mais ordens maker
+	 * previamente adicionadas ao orderbook
+	 *
+	 * Uma ordem taker não é trocada com uma maker de mesmo preço, mas sim com
+	 * ordens maker começando pelo buy/sellPrice e indo ATÉ o preço da ordem
+	 *
+	 * Uma ordem taker poderá, portanto, ser trocada por uma maker com um preço
+	 * melhor que o estipulado na ordem (mas nunca pior), o que pode resultar no
+	 * usuário recebendo uma quantidade maior que o esperado na troca
+	 *
 	 * @param order A ordem taker que será executada
 	 */
-	private execTaker(order: Order) {
-		/**
-		 * Ao fazer trade de uma taker com uma maker de preço mais vantajoso o
-		 * montante que será recebido pelo usuário da taker deverá ser corrigido
-		 * para o novo preço. Essa variável armazena qual das propriedades da ordem
-		 * que contém esse montante
-		 *
-		 * Em uma ordem tipo 'buy' o total é fixo pois é quanto o usuário irá pagar,
-		 * e o amount é variável, pois é o quanto ele irá receber (no caso de sell,
-		 * é o oposto)
-		 */
-		const propVarQty: keyof Order = order['type'] == 'buy' ? 'amount' : 'total'
-
-		/** O preço atual que está baseando o remaining */
-		let currentPrice = +order['price']
-
-		/**
-		 * O valor corrigido do amount/total restante para o amount/total das ordens
-		 * maker ser equivalente ao que a taker está comprando/vendendo
-		 */
-		let remaining = +order[propVarQty]
-
+	private async execTaker(order: Order) {
 		/** Instância da OrderTypeUtils para o type dessa ordem */
 		const utils = orderTypeUtils(order.type)
+
+		/**
+		 * Como o quanto o usuário irá receber muda (e é diferente para buy e sell),
+		 * essa variável guarda qual é a propriedade que representa o quanto o
+		 * usuário TEM para executar a ordem (que é constante)
+		 *
+		 * Este valor é usado como base para que uma quantidade correta de ordens
+		 * maker com valor equivalente à taker seja utilizado para fazer o match
+		 */
+		const { propConstQty } = utils.getProps()
+
+		/** A quantidade restante de quanto o usuário TEM para executar a ordem */
+		let remaining = +order[propConstQty]
 
 		/** Vetor de ordens maker que irão fazer trade com essa ordem taker */
 		const makers: Order[] = []
@@ -279,13 +279,12 @@ class Market {
 			const price = order.type == 'buy' ? this.buyPrice : this.sellPrice
 			// Checa se o preço está no range válido
 			if (price == 0 || price == Infinity) break
-			const node = this.orderbook.get(price)
-			if (!node) throw new Error(`Node for market price of '${price}' not found!`)
+			const node = this.orderbook.get(price) as LinkedList
 
 			// Checa se o preço da próxima ordem está no limite válido para este type
 			if (utils.invalidPrice(+order['price'], node.price)) break
 
-			const makerOrder = node.data.shift()
+			const makerOrder = node.data.shift() as Order
 			// Removes node from linked list if data is empty
 			if (node.data.length == 0) {
 				// Atualiza os preços
@@ -308,17 +307,25 @@ class Market {
 				}
 				this.orderbook.delete(price)
 			}
-			if (!makerOrder) continue // Caso tenha um data vazio (por algum motivo)
 
-			remaining = utils.updateRemaining(remaining, +order['price'], currentPrice)
-			currentPrice = +makerOrder.price
-			// Subtrai do remaining corrigido o amount/total da ordem
-			remaining -= +makerOrder[propVarQty]
+			// Atualiza o quanto a taker ainda tem para ser executada completamente
+			remaining -= +makerOrder[propConstQty]
 
 			// Adiciona a ordem no array que será enviada a matchMakers
 			makers.push(makerOrder)
 		}
-		// Chama matchMakers
+
+		const { matchs, leftovers } = await matchMakers(order, makers)
+
+		/**
+		 * As ordens provavelmente estão no mesmo preço (e são apenas 1), mas não
+		 * se pode presumir
+		 *
+		 * O array de leftovers deve ser recolocado em sua respectiva faixa de preço
+		 * usando unshift, pois elas estavam no começo da fila e devem continuar lá
+		 *
+		 * O array de touples da match deve ser enviado à trade
+		 */
 	}
 
 	/**
