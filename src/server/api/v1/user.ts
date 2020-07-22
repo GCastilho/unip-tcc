@@ -16,6 +16,31 @@ router.use(bodyParser.json())
 router.use('/authentication', authentication)
 
 /**
+ * Handler de registros de usuários
+ */
+router.post('/', async (req, res): Promise<any> => {
+	if (!req.body.email || !req.body.password)
+		return res.status(400).send({ error: 'BadRequest' })
+
+	try {
+		await UserApi.createUser(req.body.email, req.body.password)
+
+		/**
+		 * @todo Enviar e-mail de confirmação de... e-mail e só liberar a conta
+		 * quando confirmado
+		 */
+		res.status(201).send({ message: 'Success' })
+	} catch (err) {
+		if (err.code === 11000) {
+			res.status(409).send({ error: 'Email already registered' })
+		} else {
+			res.status(500).send({ error: 'Internal server error' })
+			console.error('Register error:', err)
+		}
+	}
+})
+
+/**
  * Checa se você está logado
  */
 router.use(async (req, res, next) => {
@@ -164,6 +189,32 @@ router.get('/', (_req, res) => {
 	res.send({
 		description: 'Entrypoint for requests specific to a user',
 	})
+})
+
+router.patch('/password', async (req, res): Promise<any> => {
+	if (!req.body.old || !req.body.new)
+		return res.status(400).send({
+			error: 'BadRequest',
+			message: 'This request must contain a object with an \'old\' and \'new\' properties'
+		})
+
+	try {
+		const user = await UserApi.findUser.byCookie(req.cookies['sessionId'])
+		await user.checkPassword(req.body.old)
+		await user.changePassword(req.body.new)
+		res.send({ message: 'Password updated' })
+	} catch (err) {
+		if (err == 'UserNotFound' || err == 'InvalidPassword') {
+			/**
+			 * Diferenciar usuário não encontrado de credenciais inválidas
+			 * faz com que seja possível descobrir quais usuários estão
+			 * cadastrados no database, por isso a mensagem é a mesma
+			 */
+			res.status(401).send({ error: 'NotAuthorized' })
+		} else {
+			res.status(500).send({ error: 'InternalServerError' })
+		}
+	}
 })
 
 /**

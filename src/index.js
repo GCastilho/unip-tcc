@@ -1,8 +1,8 @@
 /** Load libraries */
 require('./libs')
 
-/** Connect to mongodb */
-require('./db/mongoose')
+/** Load MongoDB main model */
+require('./db/models/person')
 
 /** Load CurrencyApi module */
 require('./currencyApi')
