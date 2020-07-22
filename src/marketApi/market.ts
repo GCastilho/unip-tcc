@@ -184,9 +184,9 @@ class Market {
 	/** Head da linked list */
 	private head: null|LinkedList
 	/** Preço da maior ordem de compra */
-	public buyPrice: number
+	private buyPrice: number
 	/** Preço da menor ordem de venda */
-	public sellPrice: number
+	private sellPrice: number
 
 	constructor() {
 		this.orderbook = new Map()
@@ -363,4 +363,24 @@ class Market {
 			this.pushMaker(order)
 		}
 	}
+}
+
+/** Map que armazena todos os mercados de pares de currencies instanciados */
+const markets = new Map<string, Market>()
+
+export function add(order: Order) {
+	/**
+	 * A chave do markets é o string do array das currencies, pois o array não
+	 * pode ser usado como chave. Isso torna a chave simples e determinística
+	 */
+	const currencies = [order.currencies.base, order.currencies.target].sort()
+
+	// Retorna ou cria uma nova instancia da Market para esse par
+	let market = markets.get(currencies.toString())
+	if (!market) {
+		market = new Market()
+		markets.set(currencies.toString(), market)
+	}
+
+	market.add(order)
 }
