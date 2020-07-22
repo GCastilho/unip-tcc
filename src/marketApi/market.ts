@@ -153,6 +153,7 @@ async function matchMakers(taker: Order, makers: Order[]) {
 	// As ordens do resto podem ou não ter sido modificadas, salva todas
 	promises.push(...leftovers.map(order => order.save()))
 
+	// Não há garantia de "all or nothing" nessas operações
 	await Promise.all(promises)
 
 	return { matchs, leftovers }
@@ -195,79 +196,75 @@ class Market {
 	}
 
 	/**
-	 * Cria um node de um preço especificado e adiciona-o ao orderbook e a
-	 * linkedList
-	 *
-	 * @param price O preço que deverá ser criado um node
+	 * Retorna um node de um preço específico. Se esse node não existir, ele será
+	 * criado e adicionado ao orderbook e a linkedList
+	 * @param price O preço do node que deve ser retornado
 	 */
-	private createNode(price: number) {
-		const node: LinkedList = {
-			price,
-			previous: null,
-			next: null,
-			data: []
-		}
-
-		if (this.head) {
-			// Adiciona o node na posição correta da linked list
-			let previous = this.head
-			while (previous.next != null && previous.price < node.price) {
-				previous = previous.next
+	private getNode(price: number) {
+		let node = this.orderbook.get(price)
+		if (!node) {
+			node = {
+				price,
+				previous: null,
+				next: null,
+				data: []
 			}
-			node.next = previous.next
-			node.previous = previous
-			node.previous.next = node
-			if (node.next?.previous != null)
-				node.next.previous = node
-		} else {
-			this.head = node
+
+			if (this.head) {
+			// Adiciona o node na posição correta da linked list
+				let previous = this.head
+				while (previous.next != null && previous.price < node.price) {
+					previous = previous.next
+				}
+				node.next = previous.next
+				node.previous = previous
+				node.previous.next = node
+				if (node.next?.previous != null)
+					node.next.previous = node
+			} else {
+				this.head = node
+			}
+
+			this.orderbook.set(price, node)
 		}
-		this.orderbook.set(price, node)
 
 		return node
 	}
 
 	/**
-	 * Adiciona uma ordem maker ao inicio da lista de um preço. Essa função NÃO
-	 * altera o marketPrice (buyPrice/SellPrice)
-	 *
-	 * @param order A ordem maker que será adicionada
+	 * Checa se uma ordem (pré-determinada como) maker deve ou não alterar o
+	 * marketPrice e, em caso positivo, faz essa alteração
+	 * @param order A orderm maker que foi/será adicionada ao livro
 	 */
-	private unshiftMaker(order: Order) {
-		let node = this.orderbook.get(+order.price)
-		if (!node)
-			node = this.createNode(+order.price)
-
-		if (
-			order.type == 'buy' && +order.price > this.buyPrice ||
-			order.type == 'sell' && +order.price < this.sellPrice
-		) {
-			throw new RangeError(
-				`Maker order is out of marketPrice: ${order}, prices: ${{
-					buyPrice: this.buyPrice,
-					sellPrice: this.sellPrice
-				}}`
-			)
-		}
-
-		node.data.unshift(order)
-	}
-
-	/**
-	 * Adiciona uma ordem (pré-determinada como) maker ao orderbook
-	 * @param order A ordem maker que será adicionada
-	 */
-	private pushMaker(order: Order) {
-		let node = this.orderbook.get(+order.price)
-		if (!node)
-			node = this.createNode(+order.price)
-
-		node.data.push(order)
+	private updateMarketPrice(order: Order) {
 		if (order.type == 'buy' && +order.price > this.buyPrice) {
 			this.buyPrice = +order.price
 		} else if (order.type == 'sell' && +order.price < this.sellPrice) {
 			this.sellPrice = +order.price
 		}
+	}
+
+	/**
+	 * Adiciona uma ordem (pré-determinada como) maker ao orderbook no inicio
+	 * da fila de um preço
+	 *
+	 * @param order A ordem maker que será adicionada
+	 */
+	private unshiftMaker(order: Order) {
+		const node = this.getNode(+order.price)
+		node.data.unshift(order)
+		this.updateMarketPrice(order)
+	}
+
+	/**
+	 * Adiciona uma ordem (pré-determinada como) maker ao orderbook no fim
+	 * da fila de um preço
+	 * @param order A ordem maker que será adicionada
+	 */
+	private pushMaker(order: Order) {
+		const node = this.getNode(+order.price)
+		node.data.push(order)
+		this.updateMarketPrice(order)
 	}
 
 	/**
