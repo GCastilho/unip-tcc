@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { ObjectId, Decimal128 } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import Order from '../../src/db/models/order'
 
 describe('Testing orders collection', () => {
@@ -13,8 +13,8 @@ describe('Testing orders collection', () => {
 				target: 'bitcoin'
 			},
 			price: 1,
-			amount: Decimal128.fromString('1'),
-			total: Decimal128.fromString('1'),
+			amount: 1,
+			total: 1,
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
@@ -31,12 +31,12 @@ describe('Testing orders collection', () => {
 				target: 'nano'
 			},
 			price: -1,
-			amount: Decimal128.fromString('1'),
-			total: Decimal128.fromString('1'),
+			amount: 1,
+			total: 1,
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('price: -1.0 must be a positive number')
+			.rejectedWith('price: -1 must be a positive number')
 	})
 
 	it('Should fail if price is zero', async () => {
@@ -49,12 +49,12 @@ describe('Testing orders collection', () => {
 				target: 'nano'
 			},
 			price: 0,
-			amount: Decimal128.fromString('1'),
-			total: Decimal128.fromString('1'),
+			amount: 1,
+			total: 1,
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('price: 0.0 must be a positive number')
+			.rejectedWith('price: 0 must be a positive number')
 	})
 
 	it('Should fail if amount is a negative value', async () => {
@@ -67,12 +67,12 @@ describe('Testing orders collection', () => {
 				target: 'nano'
 			},
 			price: 1,
-			amount: Decimal128.fromString('-1'),
-			total: Decimal128.fromString('1'),
+			amount: -1,
+			total: 1,
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('amount: -1.0 must be a positive number')
+			.rejectedWith('amount: -1 must be a positive number')
 	})
 
 	it('Should fail if amount is zero', async () => {
@@ -85,12 +85,12 @@ describe('Testing orders collection', () => {
 				target: 'nano'
 			},
 			price: 1,
-			amount: Decimal128.fromString('0'),
-			total: Decimal128.fromString('1'),
+			amount: 0,
+			total: 1,
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('amount: 0.0 must be a positive number')
+			.rejectedWith('amount: 0 must be a positive number')
 	})
 
 	it('Should fail if total is a negative value', async () => {
@@ -103,12 +103,12 @@ describe('Testing orders collection', () => {
 				target: 'nano'
 			},
 			price: 1,
-			amount: Decimal128.fromString('1'),
-			total: Decimal128.fromString('-1'),
+			amount: 1,
+			total: -1,
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('total: -1.0 must be a positive number')
+			.rejectedWith('total: -1 must be a positive number')
 	})
 
 	it('Should fail if total is zero', async () => {
@@ -121,12 +121,12 @@ describe('Testing orders collection', () => {
 				target: 'nano'
 			},
 			price: 1,
-			amount: Decimal128.fromString('1'),
-			total: Decimal128.fromString('0'),
+			amount: 1,
+			total: 0,
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('total: 0.0 must be a positive number')
+			.rejectedWith('total: 0 must be a positive number')
 	})
 
 	it('Should fail if truncated value equals zero', async () => {
@@ -139,12 +139,12 @@ describe('Testing orders collection', () => {
 				target: 'nano'
 			},
 			price: 1,
-			amount: Decimal128.fromString('0.000000001'),
-			total: Decimal128.fromString('1'),
+			amount: '0.000000001', // Presume máximo de 8 casas decimais
+			total: 1,
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('amount: 0E-8 must be a positive number')
+			.rejectedWith('amount: 0 must be a positive number')
 	})
 
 	it('Sould save a document', async () => {
@@ -157,8 +157,8 @@ describe('Testing orders collection', () => {
 				target: 'nano'
 			},
 			price: 1,
-			amount: Decimal128.fromString('1'),
-			total: Decimal128.fromString('1'),
+			amount: 1,
+			total: 1,
 			timestamp: new Date()
 		})
 		await expect(doc.save()).to.eventually.be.fulfilled

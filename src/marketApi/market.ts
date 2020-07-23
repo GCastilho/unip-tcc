@@ -1,5 +1,4 @@
 import OrderDoc from '../db/models/order'
-import { Decimal128 } from 'mongodb'
 import type { Order } from '../db/models/order'
 
 /**
@@ -67,7 +66,7 @@ async function matchMakers(taker: Order, makers: Order[]) {
 	/** propConstQty é quanto o usuário TEM; propVarQty é quanto o usuário QUER */
 	const { propConstQty, propVarQty } = utils.getProps()
 	/** Quantidade da taker[propConstQty] restante para dar match */
-	let remaining = +taker[propConstQty]
+	let remaining = taker[propConstQty]
 	/** Array de touples [maker, taker] */
 	const matchs: [Order, Order][] = []
 	/** Iterable do array de makers */
@@ -91,11 +90,11 @@ async function matchMakers(taker: Order, makers: Order[]) {
 	 */
 	for (const maker of makersIterable) {
 		/** Se remaining < order - A ordem é maior que o restante da taker */
-		if (remaining < +maker[propConstQty]) {
+		if (remaining < maker[propConstQty]) {
 			leftovers.push(maker, ...Array.from(makersIterable))
 			break
 		}
-		remaining -= +maker[propConstQty]
+		remaining -= maker[propConstQty]
 		// Necessário botar a transform function no schema que remove o id e set o new pra true
 		const takerCopy = new OrderDoc(taker.toObject())
 		takerCopy.total = maker.total
@@ -105,10 +104,8 @@ async function matchMakers(taker: Order, makers: Order[]) {
 	}
 
 	// Corrige o amount e total da taker com o valor de remaining
-	taker[propConstQty] = Decimal128.fromNumeric(remaining)
-	taker[propVarQty] = Decimal128.fromNumeric(
-		utils.getVarQty(+taker[propConstQty], +taker.price)
-	)
+	taker[propConstQty] = remaining
+	taker[propVarQty] = utils.getVarQty(taker[propConstQty], taker.price)
 
 	/** Array de promessas de operações no banco de dados */
 	const promises: Promise<Order>[] = []
@@ -126,8 +123,8 @@ async function matchMakers(taker: Order, makers: Order[]) {
 			/** Ordem com os valores da direferença; será reenviada ao leftover */
 			// Necessário botar a transform function no schema que remove o id e set o new pra true
 			const newMaker = new OrderDoc(makerOrder.toObject())
-			newMaker[propConstQty] = Decimal128.fromNumeric(+makerOrder[propConstQty] - +taker[propConstQty])
-			newMaker[propVarQty] = Decimal128.fromNumeric(+makerOrder[propVarQty] - +taker[propVarQty])
+			newMaker[propConstQty] = makerOrder[propConstQty] - taker[propConstQty]
+			newMaker[propVarQty] = makerOrder[propVarQty] - taker[propVarQty]
 			leftovers.unshift(newMaker)
 
 			// Faz a maker ter os valores da taker
@@ -237,10 +234,10 @@ class Market {
 	 * @param order A orderm maker que foi/será adicionada ao livro
 	 */
 	private updateMarketPrice(order: Order) {
-		if (order.type == 'buy' && +order.price > this.buyPrice) {
-			this.buyPrice = +order.price
-		} else if (order.type == 'sell' && +order.price < this.sellPrice) {
-			this.sellPrice = +order.price
+		if (order.type == 'buy' && order.price > this.buyPrice) {
+			this.buyPrice = order.price
+		} else if (order.type == 'sell' && order.price < this.sellPrice) {
+			this.sellPrice = order.price
 		}
 	}
 
@@ -251,7 +248,7 @@ class Market {
 	 * @param order A ordem maker que será adicionada
 	 */
 	private unshiftMaker(order: Order) {
-		const node = this.getNode(+order.price)
+		const node = this.getNode(order.price)
 		node.data.unshift(order)
 		this.updateMarketPrice(order)
 	}
@@ -262,7 +259,7 @@ class Market {
 	 * @param order A ordem maker que será adicionada
 	 */
 	private pushMaker(order: Order) {
-		const node = this.getNode(+order.price)
+		const node = this.getNode(order.price)
 		node.data.push(order)
 		this.updateMarketPrice(order)
 	}
@@ -295,19 +292,19 @@ class Market {
 		const { propConstQty } = utils.getProps()
 
 		/** A quantidade restante de quanto o usuário TEM para executar a ordem */
-		let remaining = +order[propConstQty]
+		let remaining = order[propConstQty]
 
 		/** Vetor de ordens maker que irão fazer trade com essa ordem taker */
 		const makers: Order[] = []
 
-		while (+remaining >= 0) {
+		while (remaining >= 0) {
 			const price = order.type == 'buy' ? this.buyPrice : this.sellPrice
 			// Checa se o preço está no range válido
 			if (price == 0 || price == Infinity) break
 			const node = this.orderbook.get(price) as LinkedList
 
 			// Checa se o preço da próxima ordem está no limite válido para este type
-			if (utils.invalidPrice(+order['price'], node.price)) break
+			if (utils.invalidPrice(order['price'], node.price)) break
 
 			const makerOrder = node.data.shift() as Order
 			// Removes node from linked list if data is empty
@@ -334,7 +331,7 @@ class Market {
 			}
 
 			// Atualiza o quanto a taker ainda tem para ser executada completamente
-			remaining -= +makerOrder[propConstQty]
+			remaining -= makerOrder[propConstQty]
 
 			// Adiciona a ordem no array que será enviada a matchMakers
 			makers.push(makerOrder)
@@ -355,9 +352,9 @@ class Market {
 	 * @param order Documento da ordem que será processado
 	 */
 	add(order: Order) {
-		if (order.type == 'buy' && +order.price >= this.sellPrice) {
+		if (order.type == 'buy' && order.price >= this.sellPrice) {
 			this.execTaker(order)
-		} else if (order.type == 'sell' && +order.price <= this.buyPrice) {
+		} else if (order.type == 'sell' && order.price <= this.buyPrice) {
 			this.execTaker(order)
 		} else {
 			this.pushMaker(order)
@@ -368,6 +365,10 @@ class Market {
 /** Map que armazena todos os mercados de pares de currencies instanciados */
 const markets = new Map<string, Market>()
 
+/**
+ * Adiciona uma ordem sistema do mercado para ser ofertada e trocada
+ * @param order A ordem que será adicionada ao mercado
+ */
 export function add(order: Order) {
 	/**
 	 * A chave do markets é o string do array das currencies, pois o array não

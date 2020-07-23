@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from '../mongoose'
-import { ObjectId, Decimal128 } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import { detailsOf } from '../../currencyApi'
 import type { SuportedCurrencies as SC } from '../../currencyApi'
 
@@ -23,11 +23,11 @@ export interface Order extends Document {
 		target: SC
 	}
 	/** O preço p[base]/1[target], ou seja, o preço em [base] */
-	price: Decimal128
+	price: number
 	/** A quantidade de [target] que o usuário está comprando/vendendo */
-	amount: Decimal128
+	amount: number
 	/** A quantidade de [base] que o usuário irá pagar/receber com a operação */
-	total: Decimal128
+	total: number
 	/** A data que essa operação foi adicionada */
 	timestamp: Date
 }
@@ -68,7 +68,7 @@ const OrderSchema = new Schema({
 		}
 	},
 	price: {
-		type: Decimal128,
+		type: Number,
 		required: true,
 		validate: {
 			validator: v => v > 0,
@@ -76,7 +76,7 @@ const OrderSchema = new Schema({
 		}
 	},
 	amount: {
-		type: Decimal128,
+		type: Number,
 		required: true,
 		validate: {
 			validator: v => v > 0,
@@ -84,7 +84,7 @@ const OrderSchema = new Schema({
 		}
 	},
 	total: {
-		type: Decimal128,
+		type: Number,
 		required: true,
 		validate: {
 			validator: v => v > 0,
@@ -99,9 +99,9 @@ const OrderSchema = new Schema({
 
 // Faz a truncagem dos valores de acordo com a currency que eles se referem
 OrderSchema.pre('validate', function(this: Order) {
-	this.price = this.price.truncate(detailsOf(this.currencies.base).decimals)
-	this.total = this.total.truncate(detailsOf(this.currencies.base).decimals)
-	this.amount = this.amount.truncate(detailsOf(this.currencies.target).decimals)
+	this.price = +this.price.toFixed(detailsOf(this.currencies.base).decimals)
+	this.total = +this.total.toFixed(detailsOf(this.currencies.base).decimals)
+	this.amount = +this.amount.toFixed(detailsOf(this.currencies.target).decimals)
 })
 
 export default mongoose.model<Order>('Order', OrderSchema, 'orderbook')

@@ -67,7 +67,7 @@ describe('Performing basic tests on the MarketApi', () => {
 			type: 'buy',
 			amount: +`0.${'0'.repeat(decimals)}1`,
 			price: 0.5
-		})).to.eventually.be.rejectedWith(`amount: 0E-${decimals} must be a positive number`)
+		})).to.eventually.be.rejectedWith('amount: 0 must be a positive number')
 
 		const ordersAfter = await Order.find()
 		expect(ordersBefore.length).to.equal(ordersAfter.length)
@@ -85,7 +85,7 @@ describe('Performing basic tests on the MarketApi', () => {
 			type: 'buy',
 			amount: 0.5,
 			price: +`0.${'0'.repeat(decimals)}1`
-		})).to.eventually.be.rejectedWith(`price: 0E-${decimals} must be a positive number`)
+		})).to.eventually.be.rejectedWith('price: 0 must be a positive number')
 
 		const ordersAfter = await Order.find()
 		expect(ordersBefore.length).to.equal(ordersAfter.length)
