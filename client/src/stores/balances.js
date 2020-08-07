@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import * as auth from '../stores/auth'
+import * as auth from './auth'
 import * as transactions from '../utils/transactions'
 import { addSocketListener } from '../utils/websocket'
 import axios from '../utils/axios'
