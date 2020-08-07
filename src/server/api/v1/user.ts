@@ -49,7 +49,7 @@ router.use(async (req, res, next) => {
 		req.user = await UserApi.findUser.byCookie(req.cookies.sessionId)
 		res.cookie('sessionId', req.cookies.sessionId,)
 		next()
-	} catch(err) {
+	} catch (err) {
 		res.status(401).send({
 			error: 'NotAuthorized',
 			message: 'A valid cookie \'sessionId\' is required to perform this operation'
@@ -95,17 +95,17 @@ router.get('/transactions/:opid', async (req, res) => {
 		if (tx.userId.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
 		// Formata o objeto da transação
 		res.send({
-			opid:          tx.id,
-			status:        tx.status,
-			currency:      tx.currency,
-			txid:          tx.txid,
-			account:       tx.account,
-			amount:        tx.amount.toFullString(),
-			type:          tx.type,
+			opid: tx.id,
+			status: tx.status,
+			currency: tx.currency,
+			txid: tx.txid,
+			account: tx.account,
+			amount: tx.amount.toFullString(),
+			type: tx.type,
 			confirmations: tx.confirmations,
-			timestamp:     tx.timestamp.getTime()
+			timestamp: tx.timestamp.getTime()
 		})
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotFound') {
 			res.status(404).send({
 				error: 'NotFound',
@@ -140,15 +140,15 @@ router.get('/transactions', async (req, res) => {
 		skip
 	})
 	const formattedTransactions = txs.map(tx => ({
-		opid:          tx.id,
-		status:        tx.status,
-		currency:      tx.currency,
-		txid:          tx.txid,
-		account:       tx.account,
-		amount:        tx.amount.toFullString(),
-		type:          tx.type,
+		opid: tx.id,
+		status: tx.status,
+		currency: tx.currency,
+		txid: tx.txid,
+		account: tx.account,
+		amount: tx.amount.toFullString(),
+		type: tx.type,
 		confirmations: tx.confirmations,
-		timestamp:     tx.timestamp.getTime()
+		timestamp: tx.timestamp.getTime()
 	}))
 	res.send(formattedTransactions)
 })
@@ -168,7 +168,7 @@ router.post('/transactions', async (req, res) => {
 
 		const opid = await CurrencyApi.withdraw(req.user, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotEnoughFunds') {
 			res.status(403).send({
 				error: 'NotEnoughFunds',
