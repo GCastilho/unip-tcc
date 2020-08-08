@@ -4,13 +4,14 @@ import Order from '../db/models/order'
 import { SuportedCurrencies as SC } from '../currencyApi'
 
 interface MarketOrder {
-	currencies: {
-		base: SC
-		target: SC
+	owning: {
+		currency: SC
+		amount: number
 	}
-	type: 'buy'|'sell'
-	amount: number
-	price: number
+	requesting: {
+		currency: SC
+		amount: number
+	}
 }
 
 /**
@@ -20,41 +21,32 @@ interface MarketOrder {
  * @returns Order's opid
  */
 export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
-	if (order.currencies.base === order.currencies.target) throw 'SameCurrencyOperation'
+	if (order.owning.currency === order.requesting.currency) throw 'SameCurrencyOperation'
 
-	const { base, target } = order.currencies
-	const total = order.amount * order.price
 	const opid = new ObjectId()
 
-	const newOrder = await new Order({
+	const orderDoc = await new Order({
 		_id: opid,
 		userId: user.id,
-		type: order.type,
 		status: 'preparing',
-		currencies: {
-			base,
-			target
-		},
-		price: order.price,
-		amount: order.amount,
-		total,
+		...order,
 		timestamp: new Date()
 	}).save()
 
 	try {
-		await user.balanceOps.add(order.type === 'buy' ? base : target, {
+		await user.balanceOps.add(order.owning.currency, {
 			opid,
 			type: 'trade',
-			amount: - Math.abs(order.type === 'buy' ? total : order.amount)
+			amount: - Math.abs(order.owning.amount)
 		})
 	} catch (err) {
 		if (err === 'NotEnoughFunds')
-			await newOrder.remove()
+			await orderDoc.remove()
 		throw err
 	}
 
-	newOrder.status = 'ready'
-	await newOrder.save()
+	orderDoc.status = 'ready'
+	await orderDoc.save()
 
 	return opid
 }

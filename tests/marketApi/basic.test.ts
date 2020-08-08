@@ -21,71 +21,19 @@ describe('Performing basic tests on the MarketApi', () => {
 		await user.person.save()
 	})
 
-	it('Should fail if basic and target currency are the same', async () => {
+	it('Should fail if owning and requesting currency are the same', async () => {
 		const ordersBefore = await Order.find()
 
 		await expect(MarketApi.add(user, {
-			currencies: {
-				base: 'bitcoin',
-				target: 'bitcoin'
+			owning: {
+				currency: 'bitcoin',
+				amount: 1.23,
 			},
-			type: 'buy',
-			amount: 1.23,
-			price: 0.5
+			requesting: {
+				currency: 'bitcoin',
+				amount: 2.46
+			}
 		})).to.eventually.be.rejectedWith('SameCurrencyOperation')
-
-		const ordersAfter = await Order.find()
-		expect(ordersBefore.length).to.equal(ordersAfter.length)
-	})
-
-	it('Should fail if amount is a negative number', async () => {
-		const ordersBefore = await Order.find()
-
-		await expect(MarketApi.add(user, {
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
-			},
-			type: 'buy',
-			amount: -1.23,
-			price: 0.5
-		})).to.eventually.be.rejectedWith('amount: -1.23 must be a positive number')
-
-		const ordersAfter = await Order.find()
-		expect(ordersBefore.length).to.equal(ordersAfter.length)
-	})
-
-	it('Should fail if significant digits of amount are after suported from that currency', async () => {
-		const ordersBefore = await Order.find()
-		const decimals = CurrencyApi.detailsOf('bitcoin').decimals
-
-		await expect(MarketApi.add(user, {
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
-			},
-			type: 'buy',
-			amount: +`0.${'0'.repeat(decimals)}1`,
-			price: 0.5
-		})).to.eventually.be.rejectedWith('amount: 0 must be a positive number')
-
-		const ordersAfter = await Order.find()
-		expect(ordersBefore.length).to.equal(ordersAfter.length)
-	})
-
-	it('Should fail if significant digits of price are after suported from the base currency', async () => {
-		const ordersBefore = await Order.find()
-		const decimals = CurrencyApi.detailsOf('bitcoin').decimals
-
-		await expect(MarketApi.add(user, {
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
-			},
-			type: 'buy',
-			amount: 0.5,
-			price: +`0.${'0'.repeat(decimals)}1`
-		})).to.eventually.be.rejectedWith('price: 0 must be a positive number')
 
 		const ordersAfter = await Order.find()
 		expect(ordersBefore.length).to.equal(ordersAfter.length)
@@ -93,13 +41,14 @@ describe('Performing basic tests on the MarketApi', () => {
 
 	it('Should add an order on the orderbook', async () => {
 		const opid = await MarketApi.add(user, {
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
+			owning: {
+				currency: 'bitcoin',
+				amount: 1.23,
 			},
-			type: 'buy',
-			amount: 2.59,
-			price: 0.3
+			requesting: {
+				currency: 'nano',
+				amount: 2.46
+			}
 		})
 		expect(opid).to.be.instanceOf(ObjectId)
 
@@ -110,43 +59,27 @@ describe('Performing basic tests on the MarketApi', () => {
 	for (let i = 0; i < CurrencyApi.currencies.length; i++) {
 		for (let j = 0; j < CurrencyApi.currencies.length; j++) {
 			if (i == j) continue
-			const base = CurrencyApi.currencies[i]
-			const target = CurrencyApi.currencies[j]
+			const owning = CurrencyApi.currencies[i]
+			const requesting = CurrencyApi.currencies[j]
 
-			describe(`When ${base} is base and ${target} is target`, () => {
-				it(`Should lock ${base}'s balance when buying`, async () => {
-					const opid = await MarketApi.add(user, {
-						currencies: {
-							base,
-							target
-						},
-						type: 'buy',
-						amount: 2.59,
-						price: 0.3
-					})
-					const order = await user.balanceOps.get(base, opid)
-					expect(order.type).to.equal('trade')
-					expect(order.amount.toFullString()).to.equal(
-						Decimal128.fromNumeric(
-							-1 * 0.3 * 2.59, CurrencyApi.detailsOf(base).decimals
-						).toFullString()
-					)
+			it(`Should lock ${owning}'s balance when owning ${owning} and requesting ${requesting}`, async () => {
+				const opid = await MarketApi.add(user, {
+					owning: {
+						currency: owning,
+						amount: 2.5987654321
+					},
+					requesting: {
+						currency: requesting,
+						amount: 0.3
+					}
 				})
-
-				it(`Should lock ${target}'s balance when selling`, async () => {
-					const opid = await MarketApi.add(user, {
-						currencies: {
-							base,
-							target
-						},
-						type: 'sell',
-						amount: 2.59,
-						price: 0.3
-					})
-					const order = await user.balanceOps.get(target, opid)
-					expect(order.type).to.equal('trade')
-					expect(order.amount.toFullString()).to.equal('-2.59')
-				})
+				const order = await user.balanceOps.get(owning, opid)
+				expect(order.type).to.equal('trade')
+				expect(order.amount.toFullString()).to.equal(
+					Decimal128.fromNumeric(
+						-1 * 2.5987654321, CurrencyApi.detailsOf(owning).decimals
+					).toFullString()
+				)
 			})
 		}
 	}

@@ -13,23 +13,28 @@ export interface Order extends Document {
 	 * ready: A ordem está pronta para ser executada
 	 */
 	status: 'preparing'|'ready'
-	/** Se essa ordem está comprando ou vendendo target */
-	type: 'buy'|'sell'
-	/** As currencies envolvidas nessa ordem */
-	currencies: {
-		/** A currency base para cálculo do preço */
-		base: SC
-		/** A currency que o usuário deseja comprar/vender */
-		target: SC
+	/** A currency que usuário está em posse para fazer a operação */
+	owning: {
+		/** O nome da currency que o usuário tem */
+		currency: SC
+		/** A quantidade da currency que o usuário quer utilizar */
+		amount: number
 	}
-	/** O preço p[base]/1[target], ou seja, o preço em [base] */
-	price: number
-	/** A quantidade de [target] que o usuário está comprando/vendendo */
-	amount: number
-	/** A quantidade de [base] que o usuário irá pagar/receber com a operação */
-	total: number
+	/** A currency que o usuário quer ter depois da operação */
+	requesting: {
+		/** O nome da currency que o usuário quer */
+		currency: SC
+		/** A quantidade mínima que o usuário quer receber */
+		amount: number
+	}
 	/** A data que essa operação foi adicionada */
 	timestamp: Date
+	/** O tipo dessa operação no orderbook */
+	type: 'buy'|'sell'
+	/** O preço dessa operação no orderbook */
+	price: number
+	/** Retorna uma string única para identificar o mercado desse par */
+	getMarketKey(): string
 }
 
 const OrderSchema = new Schema({
@@ -40,55 +45,44 @@ const OrderSchema = new Schema({
 	},
 	status: {
 		type: String,
-		enum: [ 'preparing', 'ready' ],
+		enum: ['preparing', 'ready'],
 		required: true
 	},
-	type: {
-		type: String,
-		enum: ['buy', 'sell'],
-		required: true
-	},
-	currencies: {
-		base: {
+	owning: {
+		currency: {
 			type: String,
 			enum: ['bitcoin', 'nano'],
 			required: true,
 			validate: {
-				// Garante que base é diferente de target
-				validator: function(this: Order, base: Order['currencies']['base']) {
-					return this.currencies.target != base
+				// Garante que owning é diferente de requesting
+				validator: function(this: Order, owning: Order['owning']['currency']) {
+					return this.requesting.currency != owning
 				},
-				message: () => 'Currency BASE must be different than currency TARGET'
+				message: () => 'OWNING currency must be different than REQUESTING currency'
 			}
 		},
-		target: {
+		amount: {
+			type: Number,
+			required: true,
+			validate: {
+				validator: v => v > 0,
+				message: props => `${props.value} must be a positive number`
+			}
+		}
+	},
+	requesting: {
+		currency: {
 			type: String,
 			enum: ['bitcoin', 'nano'],
 			required: true
-		}
-	},
-	price: {
-		type: Number,
-		required: true,
-		validate: {
-			validator: v => v > 0,
-			message: props => `${props.value} must be a positive number`
-		}
-	},
-	amount: {
-		type: Number,
-		required: true,
-		validate: {
-			validator: v => v > 0,
-			message: props => `${props.value} must be a positive number`
-		}
-	},
-	total: {
-		type: Number,
-		required: true,
-		validate: {
-			validator: v => v > 0,
-			message: props => `${props.value} must be a positive number`
+		},
+		amount: {
+			type: Number,
+			required: true,
+			validate: {
+				validator: v => v > 0,
+				message: props => `${props.value} must be a positive number`
+			}
 		}
 	},
 	timestamp: {
@@ -97,11 +91,37 @@ const OrderSchema = new Schema({
 	}
 })
 
+/**
+ * Retorna um array com owning e requesting ordenados pelo nome das currencies
+ */
+function getSortedCurrencies(this: Order) {
+	return [this.owning, this.requesting].sort((a, b) => {
+		return a.currency > b.currency ? 1 : a.currency < b.currency ? -1 : 0
+	})
+}
+
+OrderSchema.virtual('type').get(function(this: Order): Order['type'] {
+	const [base] = getSortedCurrencies.call(this)
+	return base.currency == this.owning.currency ? 'buy' : 'sell'
+})
+
+OrderSchema.virtual('price').get(function(this: Order): Order['price'] {
+	const [base, target] = getSortedCurrencies.call(this)
+	return base.amount / target.amount
+})
+
+/**
+ * A chave desse par no mercado é a string do array das currencies em ordem
+ * alfabética, pois isso torna a chave simples e determinística
+ */
+OrderSchema.method('getMarketKey', function(this: Order): ReturnType<Order['getMarketKey']> {
+	return getSortedCurrencies.call(this).map(v => v.currency).toString()
+})
+
 // Faz a truncagem dos valores de acordo com a currency que eles se referem
 OrderSchema.pre('validate', function(this: Order) {
-	this.price = +this.price.toFixed(detailsOf(this.currencies.base).decimals)
-	this.total = +this.total.toFixed(detailsOf(this.currencies.base).decimals)
-	this.amount = +this.amount.toFixed(detailsOf(this.currencies.target).decimals)
+	this.owning.amount = +this.owning.amount.toFixed(detailsOf(this.owning.currency).decimals)
+	this.requesting.amount = +this.requesting.amount.toFixed(detailsOf(this.requesting.currency).decimals)
 })
 
 export default mongoose.model<Order>('Order', OrderSchema, 'orderbook')

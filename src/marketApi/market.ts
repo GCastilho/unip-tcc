@@ -2,47 +2,6 @@ import OrderDoc from '../db/models/order'
 import type { Order } from '../db/models/order'
 
 /**
- * Retorna uma instancia da OrderTypeUtils, que contém métodos para manipulação
- * e checagem de ordens que serão diferentes de acordo com o tipo da taker
- * informado
- */
-const orderTypeUtils = (function OrderUtils() {
-	/**
-	 * Contém métodos para manipulação e checagem de ordens que serão diferentes
-	 * de acordo com o tipo da taker informado
-	 */
-	class OrderTypeUtils {
-		/** Retorna quais são as propriedades contante e variável da ordem */
-		public getProps: () => { propConstQty: 'total'|'amount'; propVarQty: 'total'|'amount' }
-		/** Checa se o preço da maker está maior/menor que o preço da taker */
-		public invalidPrice: (takerPrice: number, makerPrice: number) => boolean
-		/** Ao ser passado o valor constante e o preço, retorna o valor variável */
-		public getVarQty: (constQty: number, price: number) => number
-
-		constructor(type: Order['type']) {
-			if (type == 'buy') {
-				this.getProps = () => ({ propConstQty: 'total', propVarQty: 'amount' })
-				this.invalidPrice = (takerPrice: number, makerPrice: number) => makerPrice > takerPrice
-				this.getVarQty = (constQty: number, price: number) => constQty / price
-			} else {
-				this.getProps = () => ({ propConstQty: 'amount', propVarQty: 'total' })
-				this.invalidPrice = (takerPrice: number, makerPrice: number) => makerPrice < takerPrice
-				this.getVarQty = (constQty: number, price: number) => constQty * price
-			}
-		}
-	}
-
-	// Mantém instancias da OrderTypeUtils na memória para reduzir garbage
-	const buyInstance = new OrderTypeUtils('buy')
-	const sellInstance = new OrderTypeUtils('sell')
-
-	/** Retorna uma instance da OrderTypeUtils para o type informado */
-	return function getInstance(type: Order['type']) {
-		return type == 'buy' ? buyInstance : sellInstance
-	}
-})()
-
-/**
  * Combina uma ordem taker com ordens ordens makers, dividindo a ordem taker em
  * ordens iguais as makers, retornando-as em pares
  *
@@ -50,7 +9,7 @@ const orderTypeUtils = (function OrderUtils() {
  * array de makers, isto é, serem mais baratas para uma taker de compra ou mais
  * caras para uma taker de venda
  *
- * Se a quantidade (amount/total) das ordens forem diferentes, elas serão
+ * Se a quantidade (owning/requesting) das ordens for diferentes, elas serão
  * retornadas em um array de 'leftovers'. Este array pode conter ordens maker
  * que ultrapassaram a quantidade a ser consumida da taker (no caso de 2 makers
  * de 6 a segunda irá ultrapassar uma taker de 10) ou o restante da taker, caso
@@ -62,11 +21,8 @@ const orderTypeUtils = (function OrderUtils() {
  * [maker, taker] e o "resto" irá retornar em um array de leftovers
  */
 async function matchMakers(taker: Order, makers: Order[]) {
-	const utils = orderTypeUtils(taker['type'])
-	/** propConstQty é quanto o usuário TEM; propVarQty é quanto o usuário QUER */
-	const { propConstQty, propVarQty } = utils.getProps()
-	/** Quantidade da taker[propConstQty] restante para dar match */
-	let remaining = taker[propConstQty]
+	/** Quantidade da taker (do que o usuário TEM) restante para dar match */
+	let remaining = taker.owning.amount
 	/** Array de touples [maker, taker] */
 	const matchs: [Order, Order][] = []
 	/** Iterable do array de makers */
@@ -79,68 +35,71 @@ async function matchMakers(taker: Order, makers: Order[]) {
 
 	/**
 	 * Itera pelo array de makers e cria uma cópia da taker com os valores de cada
-	 * ordem. Se o array de makers tiver um amount/total que soma mais que o
-	 * equivalente na taker, a última ordem será colocada no array de leftovers
-	 * e o remaining não será descontado
+	 * ordem. Se o array de makers tiver um amount requesting que soma mais que
+	 * o amount do owning da taker essas ordens serão colocada no array de
+	 * leftovers sem descontar o remaining
 	 *
 	 * Se a Market selecionou as ordens corretamente haverá apenas uma ordem no
 	 * leftovers, alem disso, o preço das makers sempre será "vantajoso" para a
-	 * taker, ou seja, retornará uma quantidade maior ou igual ao "esperado" pela
-	 * ordem (o valor do propVarQty)
+	 * taker, ou seja, retornará uma quantidade maior ou igual ao "requisitado"
+	 * pela ordem
 	 */
 	for (const maker of makersIterable) {
-		/** Se remaining < order - A ordem é maior que o restante da taker */
-		if (remaining < maker[propConstQty]) {
+		/** Se remaining < maker - A maker é maior que o restante da taker */
+		if (remaining < maker.requesting.amount) {
 			leftovers.push(maker, ...Array.from(makersIterable))
 			break
 		}
-		remaining -= maker[propConstQty]
+		remaining -= maker.requesting.amount
 		// Necessário botar a transform function no schema que remove o id e set o new pra true
 		const takerCopy = new OrderDoc(taker.toObject())
-		takerCopy.total = maker.total
-		takerCopy.price = maker.price
-		takerCopy.amount = maker.amount
+		takerCopy.owning.amount = maker.requesting.amount
+		takerCopy.requesting.amount = maker.owning.amount
 		matchs.push([maker, takerCopy])
 	}
 
-	// Corrige o amount e total da taker com o valor de remaining
-	taker[propConstQty] = remaining
-	taker[propVarQty] = utils.getVarQty(taker[propConstQty], taker.price)
+	/**
+	 * Atualiza owning e requesting da taker com os valores de remaining
+	 *
+	 * Owning e requesting devem ficar na mesma proporção, então o requesting
+	 * será atualizado na proporção em que o owning foi reduzido
+	 */
+	taker.requesting.amount = taker.requesting.amount * remaining / taker.owning.amount
+	taker.owning.amount = remaining
 
 	/** Array de promessas de operações no banco de dados */
 	const promises: Promise<Order>[] = []
 
 	if (remaining > 0) {
 		if (leftovers.length > 0) {
-			/**
-			 * A primeira ordem do resto é maior que o remaining. Ela deve ser
-			 * dividida em duas, a primeira com o constProp e varProp da taker e a
-			 * segunda com o resto para ser unshifted no array de leftovers. O preço
-			 * da taker deve ser atualizado para o da maker (como sempre)
+			/*
+			 * A primeira ordem do leftovers é maior que o remaining. Ela deve ser
+			 * dividida em duas: a primeira com os amounts da taker e a segunda com o
+			 * restante que será unshifted no array de leftovers
 			 */
 			const makerOrder = leftovers.shift() as Order
 
 			/** Ordem com os valores da direferença; será reenviada ao leftover */
 			// Necessário botar a transform function no schema que remove o id e set o new pra true
-			const newMaker = new OrderDoc(makerOrder.toObject())
-			newMaker[propConstQty] = makerOrder[propConstQty] - taker[propConstQty]
-			newMaker[propVarQty] = makerOrder[propVarQty] - taker[propVarQty]
-			leftovers.unshift(newMaker)
+			const makerCopy = new OrderDoc(makerOrder.toObject())
+			makerCopy.owning.amount = makerCopy.owning.amount - taker.requesting.amount
+			makerCopy.requesting.amount = makerCopy.requesting.amount - taker.owning.amount
+			leftovers.unshift(makerCopy)
 
 			// Faz a maker ter os valores da taker
-			makerOrder[propConstQty] = taker[propConstQty]
-			makerOrder[propVarQty] = taker[propVarQty]
-			taker.price = makerOrder.price // O preço da taker nunca pode mudar
+			makerOrder.owning.amount = taker.requesting.amount
+			makerOrder.requesting.amount = taker.owning.amount
 			matchs.push([makerOrder, taker])
 		} else {
 			/**
-			 * Taker é maior que o array de makers. varProp e constProp já estão
-			 * atualizadas com o remaining então é só adicioná-la no array de
-			 * leftovers para ser retornada
+			 * Taker tem amount maior que as ordens do array de makers. Os amounts da
+			 * taker já foram atualizados então é só adicioná-la no array de leftovers
+			 * para ser retornada
 			 */
 			leftovers.push(taker)
 		}
 	} else {
+		// A ordem teve um match completo e tem amounts iguais a zero
 		promises.push(taker.remove())
 	}
 
@@ -278,21 +237,8 @@ class Market {
 	 * @param order A ordem taker que será executada
 	 */
 	private async execTaker(order: Order) {
-		/** Instância da OrderTypeUtils para o type dessa ordem */
-		const utils = orderTypeUtils(order.type)
-
-		/**
-		 * Como o quanto o usuário irá receber muda (e é diferente para buy e sell),
-		 * essa variável guarda qual é a propriedade que representa o quanto o
-		 * usuário TEM para executar a ordem (que é constante)
-		 *
-		 * Este valor é usado como base para que uma quantidade correta de ordens
-		 * maker com valor equivalente à taker seja utilizado para fazer o match
-		 */
-		const { propConstQty } = utils.getProps()
-
 		/** A quantidade restante de quanto o usuário TEM para executar a ordem */
-		let remaining = order[propConstQty]
+		let remaining = order.owning.amount
 
 		/** Vetor de ordens maker que irão fazer trade com essa ordem taker */
 		const makers: Order[] = []
@@ -303,8 +249,11 @@ class Market {
 			if (price == 0 || price == Infinity) break
 			const node = this.orderbook.get(price) as LinkedList
 
-			// Checa se o preço da próxima ordem está no limite válido para este type
-			if (utils.invalidPrice(order['price'], node.price)) break
+			// Checa se o preço do node está no limite válido para este type
+			if (
+				order.type == 'buy' && node.price > order.price ||
+				order.type == 'sell' && node.price < order.price
+			) break
 
 			const makerOrder = node.data.shift() as Order
 			// Removes node from linked list if data is empty
@@ -330,8 +279,15 @@ class Market {
 				this.orderbook.delete(price)
 			}
 
-			// Atualiza o quanto a taker ainda tem para ser executada completamente
-			remaining -= makerOrder[propConstQty]
+			/**
+			 * Duas ordens com types diferentes tem requesting e owning de currencies
+			 * iguais já que é isso que define o type (que é virtual). Ou seja, a
+			 * currency que a taker TEM é a currency que a maker QUER (e vice-versa)
+			 *
+			 * Essa linha atualiza quanto da currency que a taker TEM (para "pagar")
+			 * já foi utilizado, subtraindo o amount de mesma currency da maker
+			 */
+			remaining -= makerOrder.requesting.amount
 
 			// Adiciona a ordem no array que será enviada a matchMakers
 			makers.push(makerOrder)
@@ -370,17 +326,11 @@ const markets = new Map<string, Market>()
  * @param order A ordem que será adicionada ao mercado
  */
 export function add(order: Order) {
-	/**
-	 * A chave do markets é o string do array das currencies, pois o array não
-	 * pode ser usado como chave. Isso torna a chave simples e determinística
-	 */
-	const currencies = [order.currencies.base, order.currencies.target].sort()
-
 	// Retorna ou cria uma nova instancia da Market para esse par
-	let market = markets.get(currencies.toString())
+	let market = markets.get(order.getMarketKey())
 	if (!market) {
 		market = new Market()
-		markets.set(currencies.toString(), market)
+		markets.set(order.getMarketKey(), market)
 	}
 
 	market.add(order)

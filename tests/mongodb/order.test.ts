@@ -7,158 +7,122 @@ describe('Testing orders collection', () => {
 		const doc = new Order({
 			userId: new ObjectId(),
 			status: 'ready',
-			type: 'buy',
-			currencies: {
-				base: 'bitcoin',
-				target: 'bitcoin'
+			owning: {
+				currency: 'bitcoin',
+				amount: 1
 			},
-			price: 1,
-			amount: 1,
-			total: 1,
+			requesting: {
+				currency: 'bitcoin',
+				amount: 1
+			},
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('Currency BASE must be different than currency TARGET')
+			.rejectedWith('OWNING currency must be different than REQUESTING currency')
 	})
 
-	it('Should fail if price is a negative value', async () => {
+	it('Should fail if owning amount is a negative value', async () => {
 		const doc = new Order({
 			userId: new ObjectId(),
 			status: 'ready',
-			type: 'buy',
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
+			owning: {
+				currency: 'bitcoin',
+				amount: -1
 			},
-			price: -1,
-			amount: 1,
-			total: 1,
+			requesting: {
+				currency: 'nano',
+				amount: 1
+			},
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('price: -1 must be a positive number')
+			.rejectedWith('owning.amount: -1 must be a positive number')
 	})
 
-	it('Should fail if price is zero', async () => {
+	it('Should fail if owning amount is zero', async () => {
 		const doc = new Order({
 			userId: new ObjectId(),
 			status: 'ready',
-			type: 'buy',
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
+			owning: {
+				currency: 'bitcoin',
+				amount: 0
 			},
-			price: 0,
-			amount: 1,
-			total: 1,
+			requesting: {
+				currency: 'nano',
+				amount: 1
+			},
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('price: 0 must be a positive number')
+			.rejectedWith('owning.amount: 0 must be a positive number')
 	})
 
-	it('Should fail if amount is a negative value', async () => {
+	it('Should fail if requesting amount is a negative value', async () => {
 		const doc = new Order({
 			userId: new ObjectId(),
 			status: 'ready',
-			type: 'buy',
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
+			owning: {
+				currency: 'bitcoin',
+				amount: 1
 			},
-			price: 1,
-			amount: -1,
-			total: 1,
+			requesting: {
+				currency: 'nano',
+				amount: -1
+			},
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('amount: -1 must be a positive number')
+			.rejectedWith('requesting.amount: -1 must be a positive number')
 	})
 
-	it('Should fail if amount is zero', async () => {
+	it('Should fail if requesting amount is zero', async () => {
 		const doc = new Order({
 			userId: new ObjectId(),
 			status: 'ready',
-			type: 'buy',
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
+			owning: {
+				currency: 'bitcoin',
+				amount: 1
 			},
-			price: 1,
-			amount: 0,
-			total: 1,
+			requesting: {
+				currency: 'nano',
+				amount: 0
+			},
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('amount: 0 must be a positive number')
-	})
-
-	it('Should fail if total is a negative value', async () => {
-		const doc = new Order({
-			userId: new ObjectId(),
-			status: 'ready',
-			type: 'buy',
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
-			},
-			price: 1,
-			amount: 1,
-			total: -1,
-			timestamp: new Date()
-		})
-		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('total: -1 must be a positive number')
-	})
-
-	it('Should fail if total is zero', async () => {
-		const doc = new Order({
-			userId: new ObjectId(),
-			status: 'ready',
-			type: 'buy',
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
-			},
-			price: 1,
-			amount: 1,
-			total: 0,
-			timestamp: new Date()
-		})
-		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('total: 0 must be a positive number')
+			.rejectedWith('requesting.amount: 0 must be a positive number')
 	})
 
 	it('Should fail if truncated value equals zero', async () => {
 		const doc = new Order({
 			userId: new ObjectId(),
 			status: 'ready',
-			type: 'buy',
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
+			owning: {
+				currency: 'bitcoin',
+				amount: '0.000000001', // Presume máximo de 8 casas decimais
 			},
-			price: 1,
-			amount: '0.000000001', // Presume máximo de 8 casas decimais
-			total: 1,
+			requesting: {
+				currency: 'nano',
+				amount: 1
+			},
 			timestamp: new Date()
 		})
 		await expect(doc.validate()).to.eventually.be
-			.rejectedWith('amount: 0 must be a positive number')
+			.rejectedWith('owning.amount: 0 must be a positive number')
 	})
 
 	it('Sould save a document', async () => {
 		const doc = new Order({
 			userId: new ObjectId(),
 			status: 'ready',
-			type: 'buy',
-			currencies: {
-				base: 'bitcoin',
-				target: 'nano'
+			owning: {
+				currency: 'bitcoin',
+				amount: 1
 			},
-			price: 1,
-			amount: 1,
-			total: 1,
+			requesting: {
+				currency: 'nano',
+				amount: 1
+			},
 			timestamp: new Date()
 		})
 		await expect(doc.save()).to.eventually.be.fulfilled
