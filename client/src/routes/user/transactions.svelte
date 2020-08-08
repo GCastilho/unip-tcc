@@ -7,8 +7,8 @@
 
 	let transactions = []
 
-	transactionsList.subscribe(value => {transactions = value})
-
+	transactionsList.loadTx()
+	
 	function getDate(timestamp) {
 		const dateTime = new Date(timestamp)
 		return dateTime.toLocaleDateString()+' '+dateTime.toLocaleTimeString()

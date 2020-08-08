@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store'
 import axios from '../utils/axios'
+import { addSocketListener } from '../utils/websocket'
 import * as auth from './auth'
 
 const { subscribe, set } = writable([])
@@ -9,13 +10,30 @@ const { subscribe, set } = writable([])
  */
 export { subscribe }
 
-auth.subscribe(async auth => {
-	if (!auth) return
-	try {
-		const tx = await axios.get('/v1/user/transactions')
-		console.log(tx.data)
-		set(tx.data)
-	} catch(err) {
-		console.log(err)
-	}
+export const loadTx = async () => {
+	auth.subscribe(async auth => {
+		if (!auth) return
+		try {
+			const tx = await axios.get('/v1/user/transactions')
+			console.log(tx.data)
+			set(tx.data)
+		} catch(err) {
+			console.log(err)
+		}
+	})
+}
+
+addSocketListener('new_transaction', async (currency, transaction) => {
+	console.log(transaction)
+	loadTx()
+})
+
+addSocketListener('update_received_tx', async (currency, transaction) => {
+	console.log(transaction)
+	loadTx()
+})
+
+addSocketListener('update_sent_tx', async (currency, transaction) => {
+	console.log(transaction)
+	loadTx()
 })
