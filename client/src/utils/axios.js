@@ -1,8 +1,8 @@
 import axios from 'axios'
 
-export default class AxiosWrapper {
-	static async post(url, data, config) {
-		const res = await axios.post(url, data, config)
-		return res.data
-	}
-}
+const port = process.env.NODE_ENV === 'development' ? 3001 : 3000
+
+export default axios.create({
+	baseURL: `http://api.localhost:${port}`,
+	withCredentials: true
+})

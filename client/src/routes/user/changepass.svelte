@@ -21,11 +21,11 @@
 
 		if (newPassword === passwordconfirm) {
 			try {
-				const { token } = await axios.post(
-					window.location,
+				const { token } = await axios.patch(
+					'/v1/user/password',
 					{
-						oldPassword,
-						newPassword
+						old: oldPassword,
+						new: newPassword
 					}
 				)
 				/**
@@ -82,9 +82,15 @@
 	{#if errorMessage}
 		<FormErrorMessage>{errorMessage}</FormErrorMessage>
 	{/if}
-	<FancyInput id="password_old" type="password" autocomplete="current-password">Old Password</FancyInput>
-	<FancyInput id="password_new" type="password" autocomplete="new-password">New Password</FancyInput>
-	<FancyInput id="password_confirm" type="password" autocomplete="new-password">Confirm Password</FancyInput>
+	<FancyInput id="password_old" type="password" autocomplete="current-password">
+		Old Password
+	</FancyInput>
+	<FancyInput id="password_new" type="password" autocomplete="new-password">
+		New Password
+	</FancyInput>
+	<FancyInput id="password_confirm" type="password" autocomplete="new-password">
+		Confirm Password
+	</FancyInput>
 
 	<FancyButton type="submit">Update Password</FancyButton>
 </form>

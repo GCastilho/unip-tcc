@@ -67,12 +67,12 @@ router.post('/', async (req, res): Promise<any> => {
 router.delete('/', async (req, res) => {
 	try {
 		if (!req.cookies.sessionId) throw 'CookieNotFound'
-		const session = await Session.findOneAndDelete({ cookie: req.cookies.sessionId })
+		const session = await Session.findOneAndDelete({ sessionId: req.cookies.sessionId })
 		if (!session) throw 'CookieNotFound'
 
 		// Seta o cookie para expirar no passado, fazendo com o que browser o delete
-		res.cookie('sessionId', null, { expires: new Date(0) })
-		res.send({ message: 'success' })
+		res.cookie('sessionId', '', { expires: new Date(0) })
+		res.send({ message: 'Success' })
 	} catch(err) {
 		res.status(401).send({
 			error: 'NotAuthorized',
