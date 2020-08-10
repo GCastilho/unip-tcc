@@ -76,7 +76,7 @@ export function processBlock(this: Bitcoin) {
 	const _processBlock = async (block: string) => {
 		if (typeof block != 'string') return
 		const blockCount = await this.rpc.getBlockCount()
-		if (blockCount < this.blockHeight || this.synchronizing) return
+		if (blockCount < this.blockHeight || this.rewinding) return
 
 		await this.rewindTransactions(block)
 		/**

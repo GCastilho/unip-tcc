@@ -15,7 +15,7 @@ export class Bitcoin extends Common {
 	 * informa as funçoes de rewind se o sistema esta sincronizando com transaçoes perdidas
 	 * bloqueia novas tentativas de sincronizar concorrentemente
 	 */
-	synchronizing = false
+	rewinding = false
 	protected rpc = methods.rpc
 
 	rewindTransactions = methods.rewindTransactions
@@ -45,10 +45,15 @@ export class Bitcoin extends Common {
 			this.processBlock(req.body.block)
 			res.end() // Finaliza a comunicação com o curl do BTC
 		})
-
-		async function sleep(time) {
+		async function _sleep(time: number) {
 			return new Promise(resolve => setTimeout(resolve, time))
 		}
+		
+		/**
+		 * loop de busca pelo blockHeight da bitcoin(headers)
+		 * tenta repetidamente chamar getBlockChainInfo para pegar o header
+		 * bloqueia o modulo enquanto esse valor nao é encontrado
+		 */
 		let blockHeight = null
 		do {
 			try {
@@ -58,7 +63,7 @@ export class Bitcoin extends Common {
 				if (err.name != 'RpcError' && err.code != 'ECONNREFUSED')
 					console.error(err)
 				console.error('Retring...')
-				await sleep(30000) // 30 segundos
+				await _sleep(30000) // 30 segundos
 			}
 		} while (!blockHeight)
 
