@@ -48,7 +48,6 @@ export class Bitcoin extends Common {
 		async function _sleep(time: number) {
 			return new Promise(resolve => setTimeout(resolve, time))
 		}
-		
 		/**
 		 * loop de busca pelo blockHeight da bitcoin(headers)
 		 * tenta repetidamente chamar getBlockChainInfo para pegar o header
