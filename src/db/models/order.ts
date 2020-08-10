@@ -12,7 +12,7 @@ export interface Order extends Document {
 	 * preparing: A ordem está na MarketApi, que ainda está processando-a
 	 * ready: A ordem está pronta para ser executada
 	 */
-	status: 'preparing'|'ready'
+	status: 'preparing'|'ready'|'cancelled'
 	/** A currency que usuário está em posse para fazer a operação */
 	owning: {
 		/** O nome da currency que o usuário tem */
@@ -33,8 +33,8 @@ export interface Order extends Document {
 	type: 'buy'|'sell'
 	/** O preço dessa operação no orderbook */
 	price: number
-	/** Retorna uma string única para identificar o mercado desse par */
-	getMarketKey(): string
+	/** Um array com owning e requesting em ordem alfabética de acordo com a currency */
+	orderedPair: [Order['owning'], Order['requesting']]|[Order['requesting'], Order['owning']]
 }
 
 const OrderSchema = new Schema({
@@ -45,7 +45,7 @@ const OrderSchema = new Schema({
 	},
 	status: {
 		type: String,
-		enum: ['preparing', 'ready'],
+		enum: ['preparing', 'ready', 'cancelled'],
 		required: true
 	},
 	owning: {
@@ -94,28 +94,20 @@ const OrderSchema = new Schema({
 /**
  * Retorna um array com owning e requesting ordenados pelo nome das currencies
  */
-function getSortedCurrencies(this: Order) {
+OrderSchema.virtual('orderedPair').get(function(this: Order): Order['orderedPair'] {
 	return [this.owning, this.requesting].sort((a, b) => {
 		return a.currency > b.currency ? 1 : a.currency < b.currency ? -1 : 0
-	})
-}
+	}) as Order['orderedPair']
+})
 
 OrderSchema.virtual('type').get(function(this: Order): Order['type'] {
-	const [base] = getSortedCurrencies.call(this)
+	const [base] = this.orderedPair
 	return base.currency == this.owning.currency ? 'buy' : 'sell'
 })
 
 OrderSchema.virtual('price').get(function(this: Order): Order['price'] {
-	const [base, target] = getSortedCurrencies.call(this)
+	const [base, target] = this.orderedPair
 	return base.amount / target.amount
-})
-
-/**
- * A chave desse par no mercado é a string do array das currencies em ordem
- * alfabética, pois isso torna a chave simples e determinística
- */
-OrderSchema.method('getMarketKey', function(this: Order): ReturnType<Order['getMarketKey']> {
-	return getSortedCurrencies.call(this).map(v => v.currency).toString()
 })
 
 // Faz a truncagem dos valores de acordo com a currency que eles se referem

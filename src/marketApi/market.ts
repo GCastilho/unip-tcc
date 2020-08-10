@@ -1,4 +1,5 @@
 import OrderDoc from '../db/models/order'
+import type { ObjectId } from 'mongodb'
 import type { Order } from '../db/models/order'
 
 /**
@@ -51,8 +52,8 @@ async function matchMakers(taker: Order, makers: Order[]) {
 			break
 		}
 		remaining -= maker.requesting.amount
-		// Necessário botar a transform function no schema que remove o id e set o new pra true
 		const takerCopy = new OrderDoc(taker.toObject())
+		delete takerCopy._id
 		takerCopy.owning.amount = maker.requesting.amount
 		takerCopy.requesting.amount = maker.owning.amount
 		matchs.push([maker, takerCopy])
@@ -80,8 +81,8 @@ async function matchMakers(taker: Order, makers: Order[]) {
 			const makerOrder = leftovers.shift() as Order
 
 			/** Ordem com os valores da direferença; será reenviada ao leftover */
-			// Necessário botar a transform function no schema que remove o id e set o new pra true
 			const makerCopy = new OrderDoc(makerOrder.toObject())
+			delete makerCopy._id
 			makerCopy.owning.amount = makerCopy.owning.amount - taker.requesting.amount
 			makerCopy.requesting.amount = makerCopy.requesting.amount - taker.owning.amount
 			leftovers.unshift(makerCopy)
@@ -152,6 +153,36 @@ class Market {
 	}
 
 	/**
+	 * Remove o node da linked list se o array da data estiver vazio e atualiza
+	 * buy/sellPrice caso o node removido tenha preços iguais a um deles
+	 * @param node O node que deverá ser checado para remoção
+	 */
+	private removeNodeIfEmpty(node: LinkedList) {
+		// Removes node from linked list if data is empty
+		if (node.data.length == 0) {
+			// Atualiza os preços
+			if (node.price == this.buyPrice) {
+				// Atualiza o preço da maior ordem de compra para baixo
+				if (node.previous) this.buyPrice = node.previous.price
+				else this.buyPrice = 0
+			} else if (node.price == this.sellPrice) {
+				// Atualiza o preço da menor ordem de venda para cima
+				if (node.next) this.sellPrice = node.next.price
+				else this.sellPrice = Infinity
+			}
+			// Remove o node e atualiza head
+			if (node.next)
+				node.next.previous = node.previous
+			if (node.previous) {
+				node.previous.next = node.next
+			} else {
+				this.head = node.next
+			}
+			this.orderbook.delete(node.price)
+		}
+	}
+
+	/**
 	 * Retorna um node de um preço específico. Se esse node não existir, ele será
 	 * criado e adicionado ao orderbook e a linkedList
 	 * @param price O preço do node que deve ser retornado
@@ -188,8 +219,8 @@ class Market {
 	}
 
 	/**
-	 * Checa se uma ordem (pré-determinada como) maker deve ou não alterar o
-	 * marketPrice e, em caso positivo, faz essa alteração
+	 * Checa se a inserção de uma ordem (pré-determinada como) maker deve ou não
+	 * alterar o marketPrice e, em caso positivo, faz essa alteração
 	 * @param order A orderm maker que foi/será adicionada ao livro
 	 */
 	private updateMarketPrice(order: Order) {
@@ -247,37 +278,17 @@ class Market {
 			const price = order.type == 'buy' ? this.buyPrice : this.sellPrice
 			// Checa se o preço está no range válido
 			if (price == 0 || price == Infinity) break
-			const node = this.orderbook.get(price) as LinkedList
 
-			// Checa se o preço do node está no limite válido para este type
+			// Checa se o preço de mercado está no limite válido para este type
 			if (
-				order.type == 'buy' && node.price > order.price ||
-				order.type == 'sell' && node.price < order.price
+				order.type == 'buy' && price > order.price ||
+				order.type == 'sell' && price < order.price
 			) break
 
+			const node = this.orderbook.get(price)
+			if (!node) throw new Error('There is no orders on the requested price')
 			const makerOrder = node.data.shift() as Order
-			// Removes node from linked list if data is empty
-			if (node.data.length == 0) {
-				// Atualiza os preços
-				if (order.type == 'buy') {
-					// Atualiza o preço da maior ordem de compra para baixo
-					if (node.previous) this.buyPrice = node.previous.price
-					else this.buyPrice = 0
-				} else {
-					// Atualiza o preço da menor ordem de venda para cima
-					if (node.next) this.sellPrice = node.next.price
-					else this.sellPrice = Infinity
-				}
-				// Remove o node e atualiza head
-				if (node.next)
-					node.next.previous = node.previous
-				if (node.previous) {
-					node.previous.next = node.next
-				} else {
-					this.head = node.next
-				}
-				this.orderbook.delete(price)
-			}
+			this.removeNodeIfEmpty(node)
 
 			/**
 			 * Duas ordens com types diferentes tem requesting e owning de currencies
@@ -316,22 +327,54 @@ class Market {
 			this.pushMaker(order)
 		}
 	}
+
+	/**
+	 * Remove uma ordem do array de um node e atualiza os preços de mercado
+	 * Se a ordem for a última do node ele também será removido do orderbook
+	 * @param order A ordem que deverá ser removida
+	 */
+	remove(order: Order) {
+		const node = this.orderbook.get(order.price) as LinkedList
+		const index = node.data.indexOf(order)
+		if (index == -1) throw 'OrderNotFound'
+		node.data.splice(index, 1)
+		this.removeNodeIfEmpty(node)
+	}
 }
 
 /** Map que armazena todos os mercados de pares de currencies instanciados */
 const markets = new Map<string, Market>()
 
 /**
- * Adiciona uma ordem sistema do mercado para ser ofertada e trocada
+ * Adiciona uma ordem a um mercado para ser ofertada e trocada
  * @param order A ordem que será adicionada ao mercado
  */
 export function add(order: Order) {
 	// Retorna ou cria uma nova instancia da Market para esse par
-	let market = markets.get(order.getMarketKey())
+	let market = markets.get(order.orderedPair.toString())
 	if (!market) {
 		market = new Market()
-		markets.set(order.getMarketKey(), market)
+		/**
+		 * A chave desse par no mercado é a string do array das currencies em ordem
+		 * alfabética, pois isso torna a chave simples e determinística
+		 */
+		markets.set(order.orderedPair.toString(), market)
 	}
 
 	market.add(order)
+}
+
+/**
+ * Remove uma ordem do mercado de ordens e do banco de dados caso ela ainda
+ * não tenha sido executada
+ * @param opid O id da ordem que será removida
+ * @throws OrderNotFound Se a ordem não existir ou já tiver sido executada
+ */
+export async function remove(opid: ObjectId) {
+	const order = await OrderDoc.findByIdAndUpdate(opid, { status: 'cancelled' })
+	if (!order) throw 'OrderNotFound'
+	const market = markets.get(order.orderedPair.toString())
+	if (!market) throw new Error(`Market not found while removing ${order}`)
+	market.remove(order)
+	await order.remove()
 }
