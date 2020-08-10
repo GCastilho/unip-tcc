@@ -3,12 +3,30 @@
 	import { goto } from "@sapper/app"
 	import axios from "../../utils/axios.js"
 	import * as auth from "../../stores/auth.js"
-	import * as transactionsList  from "../../stores/transactions"
+	import * as transactions  from "../../stores/transactions"
 
-	let transactions = []
+	let pages = 0
 
-	transactionsList.loadTx()
+	//Variaveis usadas para pegar a poçisão do scroll
+	let scrollY
+	let innerHeight
+	let body 
+
+	//inicia a store transactions
+	transactions.loadTx()
+
+	/**
+	 * Função para carregar mais transações ao chegar ao final da pagina
+	*/
+	function scrollHandle() {
+		if ((innerHeight+scrollY) >= body.scrollHeight) {
+			transactions.reloadTx(pages += 10)
+		}
+	}
 	
+	/**
+	 * Converte um timestamp para um padrão legivel
+	*/
 	function getDate(timestamp) {
 		const dateTime = new Date(timestamp)
 		return dateTime.toLocaleDateString()+' '+dateTime.toLocaleTimeString()
@@ -49,9 +67,15 @@
 
 </style>
 
+<svelte:window 
+	on:scroll={() => scrollHandle()} 
+	bind:innerHeight={innerHeight} 
+	bind:scrollY={scrollY}
+/>
+
 <h1>Transactions</h1>
 <div class="table_holder">
-<table>
+<table bind:this={body}>
 	<thead>
 		<tr>
 			<th>opid</th>
@@ -66,7 +90,7 @@
 		</tr>
 	</thead>
 	<tbody>
-	{#each $transactionsList as tx}
+	{#each $transactions as tx}
 		<tr>
 			<td>{tx.opid}</td>
 			<td>{tx.status}</td>
