@@ -29,13 +29,12 @@ async function formatTransaction(txInfo: any): Promise<TxReceived|void> {
 
 
 export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
-	this.canSincronize = false
+	
+	this.synchronizing = true
 	let blockhash = (await meta.findOne({info: 'lastSyncBlock'}))?.details
 
 	if (!blockhash) {
-		blockhash = (await this.rpc.blockInfo(newBlockhash))?.previousblockhash
-		if (!blockhash)
-			return
+		blockhash = '0000000000000000000000000000000000000000000000000000000000000000'//(await this.rpc.blockInfo(newBlockhash))?.previousblockhash
 
 		await meta.updateOne({
 			info: 'lastSyncBlock'
@@ -45,14 +44,14 @@ export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
 			upsert: true
 		})
 	}
-	const { transactions }: any = await this.rpc.listSinceBlock(blockhash)
+	const { transactions } = await this.rpc.listSinceBlock(blockhash)
 
 
 	for (const transaction of transactions) {
 		try {
 			const _transaction = await formatTransaction(transaction)
 			if (!_transaction) return
-			console.log( 'received transaction', _transaction ) //remove
+			console.log('received transaction', _transaction) //remove
 
 			/** Salva a nova transação no database */
 			await new Transaction({

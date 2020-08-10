@@ -11,7 +11,11 @@ export class Bitcoin extends Common {
 	mainServerIp = MAIN_SERVER_IP
 	mainServerPort = MAIN_SERVER_PORT
 	blockHeight = 20000000 // Inicializado com um valor extremamente alto
-	canSincronize = true
+	/**
+	 * informa as funçoes de rewind se o sistema esta sincronizando com transaçoes perdidas
+	 * bloqueia novas tentativas de sincronizar concorrentemente
+	 */
+	synchronizing = false
 	protected rpc = methods.rpc
 
 	rewindTransactions = methods.rewindTransactions

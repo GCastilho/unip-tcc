@@ -76,7 +76,7 @@ export function processBlock(this: Bitcoin) {
 	const _processBlock = async (block: string) => {
 		if (typeof block != 'string') return
 		const blockCount = await this.rpc.getBlockCount()
-		if (blockCount < this.blockHeight || !this.canSincronize) return
+		if (blockCount < this.blockHeight || this.synchronizing) return
 
 		await this.rewindTransactions(block)
 		/**
@@ -92,15 +92,12 @@ export function processBlock(this: Bitcoin) {
 		})
 
 		/**
-		 * @todo O handler de DocumentNotFoundError está aí porque ao receber
+		 * handler de DocumentNotFoundError está aí porque ao receber
 		 * vários blocos em seguida, como, por exemplo, ao ligar o node da
 		 * bitcoin (e ele receber todos os blocos não recebidos), pode acontecer
 		 * de os blocos serem recebidos antes do bloco anterior ter sido
 		 * processado, que pode causar essa função tentar acessar uma transação
-		 * pendente que já foi removida, que vai diparar um erro no mongo;
-		 * Seria melhor encontrar uma SOLUÇÃO pra isso ao invés de um workaround
-		 * Aliás, esse workaround não impede que a tx seja informada 2x ao qdo
-		 * confirmada, que dispara um operationNotFound
+		 * pendente que já foi removida, que vai diparar um erro no mongo.
 		 */
 		try {
 			/** Todas as transactions received não confirmadas no database */
