@@ -7,14 +7,13 @@ import { ReceivedPending } from '../../common/db/models/pendingTx'
 import { TxReceived } from '../../common'
 
 async function formatTransaction(txInfo: any): Promise<TxReceived|void> {
-	if(txInfo.category != 'receive') return
+	if (txInfo.category != 'receive') return
 
 	const address: TxReceived['account'] = txInfo.address
 
 	/** Verifica se a transação é nossa */
 	const account = await Account.findOne({ account: address })
 	if (!account) return
-
 	return {
 		txid:          txInfo.txid,
 		status:        'pending',
@@ -41,18 +40,17 @@ export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
 		})
 	}
 	const { transactions } = await this.rpc.listSinceBlock(blockhash) as { transactions: any[] }
-
 	for (const tx of transactions) {
 		try {
 			const transaction = await formatTransaction(tx)
-			if (!transaction) return
+			if (!transaction) continue
 
 			/** Salva a nova transação no database */
 			await new Transaction({
 				txid: transaction.txid,
 				type: 'receive',
 				account: transaction.account
-			}).save().catch()
+			}).save()
 
 			/** Salva a nova transação na collection de Tx pendente */
 			await new ReceivedPending({
@@ -65,7 +63,7 @@ export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
 			 * main, nesse caso não há mais nada o que fazer aqui
 			 */
 			const opid = await this.informMain.newTransaction(transaction)
-			if (!opid) return
+			if (!opid) continue
 
 			await ReceivedPending.updateOne({
 				txid : transaction.txid
