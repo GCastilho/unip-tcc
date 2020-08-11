@@ -4,8 +4,6 @@
 	import * as auth from '../../stores/auth.js'
 	import * as transactions  from '../../stores/transactions'
 
-	let skip = 0
-
 	// Variaveis usadas para pegar a posisão do scroll
 	let scrollY
 	let innerHeight
@@ -17,9 +15,9 @@
 	/**
 	 * Função para carregar mais transações ao chegar ao final da pagina
 	 */
-	function scrollHandle() {
+	function handleScroll() {
 		if ((innerHeight+scrollY) >= body.scrollHeight) {
-			transactions.fetch(skip += 10)
+			transactions.fetch($transactions.length + 10)
 		}
 	}
 	
@@ -61,9 +59,9 @@
 
 </style>
 
-<svelte:window 
-	on:scroll={() => scrollHandle()} 
-	bind:innerHeight={innerHeight} 
+<svelte:window
+	on:scroll={handleScroll}
+	bind:innerHeight={innerHeight}
 	bind:scrollY={scrollY}
 />
 
