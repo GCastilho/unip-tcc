@@ -11,7 +11,18 @@ export class Bitcoin extends Common {
 	mainServerIp = MAIN_SERVER_IP
 	mainServerPort = MAIN_SERVER_PORT
 
+	/** Número do bloco mais recente sincronizado */
+	blockHeight = 0
+
+	/**
+	 * Indica se a função de rewinding de blocos está sendo executada ou não,
+	 * bloqueando novas execuções do rewind
+	 */
+	rewinding = false
+
 	protected rpc = methods.rpc
+
+	rewindTransactions = methods.rewindTransactions
 
 	getNewAccount = this.rpc.getNewAddress
 
@@ -19,7 +30,7 @@ export class Bitcoin extends Common {
 
 	processTransaction = methods.processTransaction.bind(this)
 
-	initBlockchainListener() {
+	async initBlockchainListener() {
 		const app = express()
 		app.use(bodyParser.urlencoded({ extended: true }))
 
@@ -28,7 +39,7 @@ export class Bitcoin extends Common {
 		 */
 		app.post('/transaction', (req, res) => {
 			this.processTransaction(req.body.txid)
-			res.send() // Finaliza a comunicação com o curl do BTC
+			res.end() // Finaliza a comunicação com o curl do BTC
 		})
 
 		/**
@@ -36,8 +47,26 @@ export class Bitcoin extends Common {
 		 */
 		app.post('/block', (req, res) => {
 			this.processBlock(req.body.block)
-			res.send() // Finaliza a comunicação com o curl do BTC
+			res.end() // Finaliza a comunicação com o curl do BTC
 		})
+
+		/**
+		 * Tenta repetidamente buscar pelo blockHeight da bitcoin (headers)
+		 * bloqueia o modulo enquanto esse valor nao é encontrado
+		 */
+		do {
+			try {
+				this.blockHeight = (await this.rpc.getBlockChainInfo())?.headers
+			} catch (err) {
+				process.stdout.write('Failed to recover block height. ')
+				if (err.name != 'RpcError' && err.code != 'ECONNREFUSED')
+					console.error(err)
+				console.error('Retring...')
+				await (async () => new Promise(resolve => setTimeout(resolve, 30000)))()
+			}
+		} while (!this.blockHeight)
+
+		console.log('Block height updated:', this.blockHeight)
 
 		app.listen(this.port, () => {
 			console.log('Bitcoin blockchain listener is up on port', this.port)
@@ -59,7 +88,7 @@ export class Bitcoin extends Common {
 
 	private port: number
 
-	private processBlock = methods.processBlock.bind(this)()
+	private processBlock = methods.processBlock.bind(this)
 }
 
 const bitcoin = new Bitcoin(8091)

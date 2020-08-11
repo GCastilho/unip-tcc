@@ -14,7 +14,7 @@ import { TxReceived } from '../../common'
  * @param getInfo Uma função que recebe um txid e retorna informações brutas da
  * transação da blockchain
  */
-export async function formatTransaction(txid: string, getInfo: Function): Promise<TxReceived|void> {
+async function formatTransaction(txid: string, getInfo: Function): Promise<TxReceived|void> {
 	/**
 	 * Informações da transação pegas da blockchain
 	 */
