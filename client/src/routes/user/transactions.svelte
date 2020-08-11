@@ -1,41 +1,35 @@
 <script>
-	import { onMount } from "svelte"
-	import { goto } from "@sapper/app"
-	import axios from "../../utils/axios.js"
-	import * as auth from "../../stores/auth.js"
-	import * as transactions  from "../../stores/transactions"
+	import { goto } from '@sapper/app'
+	import axios from '../../utils/axios.js'
+	import * as auth from '../../stores/auth.js'
+	import * as transactions  from '../../stores/transactions'
 
-	let pages = 0
+	let skip = 0
 
-	//Variaveis usadas para pegar a poçisão do scroll
+	// Variaveis usadas para pegar a posisão do scroll
 	let scrollY
 	let innerHeight
-	let body 
+	let body
 
-	//inicia a store transactions
-	transactions.loadTx()
+	// Garante que a store de transactions tenha as últimas tx p/ mostrar na tela
+	transactions.fetch()
 
 	/**
 	 * Função para carregar mais transações ao chegar ao final da pagina
-	*/
+	 */
 	function scrollHandle() {
 		if ((innerHeight+scrollY) >= body.scrollHeight) {
-			transactions.reloadTx(pages += 10)
+			transactions.fetch(skip += 10)
 		}
 	}
 	
 	/**
 	 * Converte um timestamp para um padrão legivel
-	*/
+	 */
 	function getDate(timestamp) {
 		const dateTime = new Date(timestamp)
-		return dateTime.toLocaleDateString()+' '+dateTime.toLocaleTimeString()
+		return `${dateTime.toLocaleDateString()} ${dateTime.toLocaleTimeString()}`
 	}
-
-	onMount(() => {
-		// Redireciona para home caso não esteja autenticado
-		if (!$auth) goto('/')
-	})
 </script>
 
 <style>

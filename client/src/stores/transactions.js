@@ -1,42 +1,38 @@
-import { writable, get } from 'svelte/store'
+import { writable } from 'svelte/store'
 import axios from '../utils/axios'
-import * as auth from './auth'
 import { addSocketListener } from '../utils/websocket'
 
-const { subscribe, set, update } = writable([])
+const transactions = []
 
-/**
- * Exporta a store para permitir modificação da lista de transactions
- */
+const { subscribe, update } = writable(transactions)
+
+/** Exporta o subscribe para esse módulo ser uma store */
 export { subscribe }
 
-/** Faz um request de um array de transações e seta na store */
-export async function loadTx() {
-	if (!get(auth)) return
-	try {
-		const tx = await axios.get('/v1/user/transactions')
-		set(tx.data)
-	} catch(err) {
-		console.error(err)
-	}
-}
-
 /**
- * Faz um request de um array de transações pulando um certo numero de transações
- * e concatena na store existente
- * @param {number} skip numero de transações que sera puladas
+ * Busca por mais 10 transações caso a quantidade pedida não esteja na store
+ * @param {number} [skip] O número de transações que devem ser puladas
  */
-export async function reloadTx(skip) {
-	try {
-		const tx = await axios.get('/v1/user/transactions', { params: {skip} })
-		update(value => value.concat(tx.data))
-	} catch(err) {
-		console.log(err)
+export async function fetch(skip = 0) {
+	if (transactions.length < skip + 10) {
+		/** @type {{data:any[]}} */
+		const { data } = await axios.get('/v1/user/transactions', { params: { skip }})
+		for (let tx of data) {
+			const index = transactions.findIndex(v =>
+				v.opid === tx.opid ||
+				v.txid === tx.txid
+			)
+			if (index == -1)
+				transactions.push(tx)
+		}
+		// Dá trigger na atualização da store
+		update(txs => txs)
 	}
 }
 
 /** Atualiza a store ao receber uma nova transação */
 addSocketListener('new_transaction', async (currency, transaction) => {
+	console.log('new_transaction', transaction)
 	update(tx => [transaction, ...tx])
 })
 
