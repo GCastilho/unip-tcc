@@ -10,12 +10,16 @@ export class Bitcoin extends Common {
 	name = 'bitcoin'
 	mainServerIp = MAIN_SERVER_IP
 	mainServerPort = MAIN_SERVER_PORT
-	blockHeight = 20000000 // Inicializado com um valor extremamente alto
+
+	/** Número do bloco mais recente sincronizado */
+	blockHeight = 0
+
 	/**
-	 * informa as funçoes de rewind se o sistema esta sincronizando com transaçoes perdidas
-	 * bloqueia novas tentativas de sincronizar concorrentemente
+	 * Indica se a função de rewinding de blocos está sendo executada ou não,
+	 * bloqueando novas execuções do rewind
 	 */
 	rewinding = false
+
 	protected rpc = methods.rpc
 
 	rewindTransactions = methods.rewindTransactions
@@ -45,28 +49,23 @@ export class Bitcoin extends Common {
 			this.processBlock(req.body.block)
 			res.end() // Finaliza a comunicação com o curl do BTC
 		})
-		async function _sleep(time: number) {
-			return new Promise(resolve => setTimeout(resolve, time))
-		}
+
 		/**
-		 * loop de busca pelo blockHeight da bitcoin(headers)
-		 * tenta repetidamente chamar getBlockChainInfo para pegar o header
+		 * Tenta repetidamente buscar pelo blockHeight da bitcoin (headers)
 		 * bloqueia o modulo enquanto esse valor nao é encontrado
 		 */
-		let blockHeight = null
 		do {
 			try {
-				blockHeight = (await this.rpc.getBlockChainInfo())?.headers
+				this.blockHeight = (await this.rpc.getBlockChainInfo())?.headers
 			} catch (err) {
 				process.stdout.write('Failed to recover block height. ')
 				if (err.name != 'RpcError' && err.code != 'ECONNREFUSED')
 					console.error(err)
 				console.error('Retring...')
-				await _sleep(30000) // 30 segundos
+				await (async () => new Promise(resolve => setTimeout(resolve, 30000)))()
 			}
-		} while (!blockHeight)
+		} while (!this.blockHeight)
 
-		this.blockHeight = blockHeight
 		console.log('Block height updated:', this.blockHeight)
 
 		app.listen(this.port, () => {
@@ -89,7 +88,7 @@ export class Bitcoin extends Common {
 
 	private port: number
 
-	private processBlock = methods.processBlock.bind(this)()
+	private processBlock = methods.processBlock.bind(this)
 }
 
 const bitcoin = new Bitcoin(8091)

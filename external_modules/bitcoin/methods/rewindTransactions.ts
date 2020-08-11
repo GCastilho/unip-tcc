@@ -15,7 +15,7 @@ async function formatTransaction(txInfo: any): Promise<TxReceived|void> {
 	const account = await Account.findOne({ account: address })
 	if (!account) return
 
-	const formattedTransaction: TxReceived = {
+	return {
 		txid:          txInfo.txid,
 		status:        'pending',
 		confirmations: txInfo.confirmations,
@@ -23,57 +23,52 @@ async function formatTransaction(txInfo: any): Promise<TxReceived|void> {
 		amount:        txInfo.amount,
 		timestamp:     txInfo.time * 1000 // O timestamp do bitcoin é em segundos
 	}
-
-	return formattedTransaction
 }
-
 
 export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
 	this.rewinding = true
-	let blockhash = (await meta.findOne({info: 'lastSyncBlock'}))?.details
 
+	let blockhash = (await meta.findOne({ info: 'lastKnowHash' }))?.details
 	if (!blockhash) {
 		//the first VALID bitcoin BlockHash
-		blockhash = '000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943'//(await this.rpc.blockInfo(newBlockhash))?.previousblockhash
+		blockhash = '000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943'
 		await meta.updateOne({
-			info: 'lastSyncBlock'
+			info: 'lastKnowHash'
 		}, {
 			details: blockhash
 		}, {
 			upsert: true
 		})
 	}
-	const { transactions } = await this.rpc.listSinceBlock(blockhash)
+	const { transactions } = await this.rpc.listSinceBlock(blockhash) as { transactions: any[] }
 
-	for (const transaction of transactions) {
+	for (const tx of transactions) {
 		try {
-			const _transaction = await formatTransaction(transaction)
-			if (!_transaction) return
-			console.log('received transaction', _transaction) //remove
+			const transaction = await formatTransaction(tx)
+			if (!transaction) return
 
 			/** Salva a nova transação no database */
 			await new Transaction({
-				txid : _transaction.txid,
+				txid: transaction.txid,
 				type: 'receive',
-				account: _transaction.account
+				account: transaction.account
 			}).save().catch()
 
 			/** Salva a nova transação na collection de Tx pendente */
 			await new ReceivedPending({
-				txid: _transaction.txid,
-				transaction: _transaction
+				txid: transaction.txid,
+				transaction: transaction
 			}).save()
 
 			/**
 			 * opid vai ser undefined caso a transação não tenha sido enviada ao
 			 * main, nesse caso não há mais nada o que fazer aqui
 			 */
-
-			const opid = await this.informMain.newTransaction(_transaction)
+			const opid = await this.informMain.newTransaction(transaction)
 			if (!opid) return
 
 			await ReceivedPending.updateOne({
-				txid : _transaction.txid
+				txid : transaction.txid
 			}, {
 				$set: {
 					'transaction.opid': new ObjectId(opid)
@@ -89,16 +84,15 @@ export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
 				console.error('Transaction processing error:', err)
 		}
 	}
+
 	await meta.updateOne({
-		info: 'lastSyncBlock'
+		info: 'lastKnowHash'
 	}, {
 		details: newBlockhash
 	}, {
 		upsert: true
 	})
+
 	this.blockHeight = (await this.rpc.getBlockChainInfo())?.height
 	this.rewinding = false
-
 }
-
-

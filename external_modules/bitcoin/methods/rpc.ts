@@ -51,7 +51,7 @@ export const listSinceBlock = async (block: string): Promise<any> =>
 	await request('listSinceBlock', block)
 
 export const blockInfo = async (block): Promise<any> =>
-	await request('getBlock', block)
+	await request('getBlock', block, 1)
 
 export const getNewAddress = async (): Promise<string> =>
 	await request('getNewAddress')
