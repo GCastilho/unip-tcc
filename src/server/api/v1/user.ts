@@ -1,5 +1,7 @@
 import express from 'express'
+import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
+import authentication from './authentication'
 import Transaction from '../../../db/models/transaction'
 import * as UserApi from '../../../userApi'
 import * as CurrencyApi from '../../../currencyApi'
@@ -8,7 +10,35 @@ const router = express.Router()
 
 // Parsers
 router.use(cookieParser())
-router.use(express.json())
+router.use(bodyParser.json())
+
+/** Hanlder de autenticação de usuários */
+router.use('/authentication', authentication)
+
+/**
+ * Handler de registros de usuários
+ */
+router.post('/', async (req, res): Promise<any> => {
+	if (!req.body.email || !req.body.password)
+		return res.status(400).send({ error: 'BadRequest' })
+
+	try {
+		await UserApi.createUser(req.body.email, req.body.password)
+
+		/**
+		 * @todo Enviar e-mail de confirmação de... e-mail e só liberar a conta
+		 * quando confirmado
+		 */
+		res.status(201).send({ message: 'Success' })
+	} catch (err) {
+		if (err.code === 11000) {
+			res.status(409).send({ error: 'Email already registered' })
+		} else {
+			res.status(500).send({ error: 'Internal server error' })
+			console.error('Register error:', err)
+		}
+	}
+})
 
 /**
  * Checa se você está logado
@@ -21,7 +51,7 @@ router.use(async (req, res, next) => {
 	} catch(err) {
 		res.status(401).send({
 			error: 'NotAuthorized',
-			message: 'A valid cookie \'sessionId\' needs to be informed to perform this operation'
+			message: 'A valid cookie \'sessionId\' is required to perform this operation'
 		})
 	}
 })
@@ -29,10 +59,10 @@ router.use(async (req, res, next) => {
 /**
  * Retorna todas as contas do usuario
  */
-router.get('/accounts', (req, res) => {
+router.get('/accounts', async (req, res) => {
 	const account = {}
 	for (const currency of CurrencyApi.currencies) {
-		account[currency] = req.user?.getAccounts(currency)
+		account[currency] = await req.user?.getAccounts(currency)
 	}
 	res.send(account)
 })
@@ -40,10 +70,10 @@ router.get('/accounts', (req, res) => {
 /**
  * Retorna todos os saldos do usuario
  */
-router.get('/balances', (req, res) => {
+router.get('/balances', async (req, res) => {
 	const balance = {}
 	for (const currency of CurrencyApi.currencies) {
-		balance[currency] = req.user?.getBalance(currency, true)
+		balance[currency] = await req.user?.getBalance(currency, true)
 	}
 	res.send(balance)
 })
@@ -61,10 +91,10 @@ router.get('/transactions/:opid', async (req, res) => {
 		const tx = await Transaction.findById(req.params.opid)
 		if (!tx) throw 'NotFound'
 		// Checa se o usuario da transação é o mesmo que esta logado
-		if (tx.user.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
+		if (tx.userId.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
 		// Formata o objeto da transação
 		res.send({
-			opid:          tx._id.toHexString(),
+			opid:          tx.id,
 			status:        tx.status,
 			currency:      tx.currency,
 			txid:          tx.txid,
@@ -98,7 +128,7 @@ router.get('/transactions', async (req, res) => {
 	/** Filtro de transações por currency */
 	const currency = CurrencyApi.currencies.find(currency => currency === req.query.currency)
 	/** Filtro da query do mongo */
-	const query = currency ? { user: req.user?.id, currency } : { user: req.user?.id }
+	const query = currency ? { userId: req.user?.id, currency } : { userId: req.user?.id }
 	/**
 	 * As 10 mais recentes transações do usuário,
 	 * filtrado de acordo com a query e pulando de acordo com skip
@@ -109,7 +139,7 @@ router.get('/transactions', async (req, res) => {
 		skip
 	})
 	const formattedTransactions = txs.map(tx => ({
-		opid:          tx._id.toHexString(),
+		opid:          tx.id,
 		status:        tx.status,
 		currency:      tx.currency,
 		txid:          tx.txid,
@@ -159,6 +189,32 @@ router.get('/', (_req, res) => {
 	res.send({
 		description: 'Entrypoint for requests specific to a user',
 	})
+})
+
+router.patch('/password', async (req, res): Promise<any> => {
+	if (!req.body.old || !req.body.new)
+		return res.status(400).send({
+			error: 'BadRequest',
+			message: 'This request must contain a object with an \'old\' and \'new\' properties'
+		})
+
+	try {
+		const user = await UserApi.findUser.byCookie(req.cookies['sessionId'])
+		await user.checkPassword(req.body.old)
+		await user.changePassword(req.body.new)
+		res.send({ message: 'Password updated' })
+	} catch (err) {
+		if (err == 'UserNotFound' || err == 'InvalidPassword') {
+			/**
+			 * Diferenciar usuário não encontrado de credenciais inválidas
+			 * faz com que seja possível descobrir quais usuários estão
+			 * cadastrados no database, por isso a mensagem é a mesma
+			 */
+			res.status(401).send({ error: 'NotAuthorized' })
+		} else {
+			res.status(500).send({ error: 'InternalServerError' })
+		}
+	}
 })
 
 /**

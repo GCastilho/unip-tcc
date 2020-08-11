@@ -1,7 +1,8 @@
 import { writable } from 'svelte/store'
 import * as auth from '../stores/auth'
 import * as transactions from '../utils/transactions'
-import { emit, addSocketListener } from '../utils/websocket'
+import { addSocketListener } from '../utils/websocket'
+import axios from '../utils/axios'
 
 const { subscribe, set, update } = writable({})
 
@@ -16,7 +17,14 @@ export { subscribe, set, update }
 auth.subscribe(async auth => {
 	if (!auth) return
 	try {
-		const balances = await emit('fetch_balances')
+		const balanceObj = await axios.get('/v1/user/balances')
+		let balances = {}
+		for (const balance of Object.entries(balanceObj.data)) {
+			balances[balance[0]] = {
+				available: +balance[1].available,
+				locked: +balance[1].locked
+			}
+		}
 		set(balances)
 	} catch(err) {
 		console.error('Error while fetching balances:', err)

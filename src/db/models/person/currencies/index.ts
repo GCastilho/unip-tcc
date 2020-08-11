@@ -1,46 +1,55 @@
 /*
- * Esse módulo exporta um schema com cada propriedade sendo um schema de uma
- * currency individual suportada
+ * Exporta um schema com cada propriedade sendo um schema de uma currency
+ * individual suportada
  */
 
-import { Schema } from 'mongoose'
-import * as validators from './validators'
-import { CurrencySchema } from './generic'
-import type { Currency } from './generic'
+import { Schema, Document } from 'mongoose'
+import { CurrencySchema } from './currencySchema'
+import * as WAValidator from 'multicoin-address-validator'
+import type { Currency } from './currencySchema'
 
 /**
  * A interface do sub-documento 'currencies' da collection people
  */
-export interface Currencies {
+export interface Currencies extends Document {
 	bitcoin: Currency
 	nano: Currency
 }
 
 /*
- * Adiciona a função de validação de address na currency e monta o novo schema
+ * Schema das currencies individuais
  */
-export const Bitcoin: Schema = new Schema({
-	...CurrencySchema.obj,
-	accounts: {
-		...CurrencySchema.obj.accounts,
-		validate: validators.bitcoin
-	}
+const Bitcoin = new CurrencySchema('bitcoin', {
+	validator: (accounts: string[]) => {
+		return accounts.every(account => WAValidator.validate(account, 'bitcoin', 'testnet'))
+	},
+	message: 'Invalid bitcoin account address'
 })
 
-export const Nano: Schema = new Schema({
-	...CurrencySchema.obj,
-	accounts: {
-		...CurrencySchema.obj.accounts,
-		validate: validators.nano
-	}
+const Nano = new CurrencySchema('nano', {
+	validator: (accounts: string[]) => {
+		return accounts.every(account => WAValidator.validate(account, 'nano', 'testnet'))
+	},
+	message: 'Invalid nano account address'
 })
 
 /**
  * Sub-schema 'currencies' do Schema Person
  */
-const CurrenciesSchema: Schema = new Schema({
-	nano: Nano.obj,
-	bitcoin: Bitcoin.obj
+const CurrenciesSchema = new Schema({
+	nano: Nano,
+	bitcoin: Bitcoin
+}, {
+	_id: false
+})
+
+CurrenciesSchema.pre('validate', function(this: Currencies) {
+	// Ao criar o documento, as props dos sub-schemas serão undefined
+	if (!this.isNew) return
+	for (const currency of Object.keys(CurrenciesSchema.obj)) {
+		if (typeof this[currency] == 'undefined')
+			this[currency] = {}
+	}
 })
 
 export default CurrenciesSchema

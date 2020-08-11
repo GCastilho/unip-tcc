@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte'
 	import { goto } from '@sapper/app'
 	import { subscribe } from '../../stores/auth.js'
-	import * as socket from '../../utils/websocket.js'
+	import * as currencies from '../../stores/currencies.js'
 	import TableRow from './_tableRow/index.svelte'
 
 	/** Referência à subscription da store de auth */
@@ -55,20 +55,14 @@
 	<title>Balances page</title>
 </svelte:head>
 
-{#await socket.emit('list')}
-	<h1>Fetching data...</h1>
-{:then currenciesList}
-	<h1>Balances</h1>
-	<table>
-		<th>Coin</th>
-		<th>Name</th>
-		<th>Available Balance</th>
-		<th>Locked Balance</th>
-		<th>Actions</th>
-		{#each currenciesList as {code, name, fee, accounts}}
-			<TableRow {code} {name} {fee} {accounts} />
-		{/each}
-	</table>
-{:catch err}
-	<h1>Error: {err}</h1>
-{/await}
+<h1>Balances</h1>
+<table>
+	<th>Coin</th>
+	<th>Name</th>
+	<th>Available Balance</th>
+	<th>Locked Balance</th>
+	<th>Actions</th>
+	{#each $currencies as {code, name, fee, accounts}}
+		<TableRow {code} {name} {fee} {accounts} />
+	{/each}
+</table>
