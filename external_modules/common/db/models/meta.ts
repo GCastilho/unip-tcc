@@ -19,4 +19,4 @@ const MetaSchema = new Schema({
 	}
 })
 
-export default mongoose.model<Meta>('meta', MetaSchema, 'Meta')
+export default mongoose.model<Meta>('meta', MetaSchema, 'meta')
