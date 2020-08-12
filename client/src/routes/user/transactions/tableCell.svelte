@@ -8,6 +8,7 @@
 	export let timestamp
 
 	const coin = currency === 'bitcoin' ? ' BTC': ' NANO'
+	const txColor = status === 'confirmed' ? 'green' : '#c2c21c'
 
 	function getDate(timestamp) {
 		const dateTime = new Date(timestamp)
@@ -16,31 +17,41 @@
 </script>
 
 <style>
-	div {
-		display: flex;
-		flex-direction: column;
-	}
-	td {
-		padding-left: 10px;
-	}
-	tr {
+	.table-row {
+		display: grid;
+		grid-template-columns: 10% 13% 57% 20%;
+		overflow: visible;
 		background-color: #fdf9f9;
 		border-bottom: 1px solid var(--table-borders);
 	}
-	tr:nth-child(2n) {
+	.table-row:nth-child(2n) {
 		background-color: #FFF7F3;
+	}
+	.table-row:last-of-type{
+		border-bottom: 0;
+	}
+	.table-row > div {
+		display: flex;
+		flex-direction: column;
+		padding-left: 10px;
+	}
+	.status-tx {
+		border-left: 3px solid var(--txColor)
+	}
+	.status-tx > div:last-child {
+		color: var(--txColor);
 	}
 </style>
 
-<tr>
-	<div>
-		<td>{type}</td>
-		<td>{status}</td>
+<div class="table-row">
+	<div class="status-tx" style="--txColor:{txColor}">
+		<div>{type}</div>
+		<div>{status}</div>
 	</div>
-	<td>{amount+coin}</td>
+	<div>{amount+coin}</div>
 	<div>
-		<td>{account}</td>
-		<td>{txid || '--'}</td>
+		<div>{account}</div>
+		<div>{txid || '--'}</div>
 	</div>
-	<td style="text-align: center">{getDate(timestamp)}</td>
-</tr>
+	<div style="text-align: center">{getDate(timestamp)}</div>
+</div>

@@ -31,22 +31,31 @@
 </script>
 
 <style>
-	table {
+	.table {
 		--table-borders: #f19e82;
 		font-family: arial, sans-serif;
-		border-collapse: collapse;
 		border: 1px solid var(--table-borders);
+		border-radius: 5px;
+		border-spacing: 0;
 		border-top: 0;
-		border-collapse: collapse;
+		border-left: 0;
 		margin-right:20px;
 		width: 100%;
+		overflow: hidden;
+	}
+	.table > div:first-of-type {
+		display: grid;
+		grid-template-columns: 10% 13% 57% 20%;
 	}
 	th {
 		background-color: rgba(255,62,0,0.7);
-		border-left: 1px solid var(--table-borders);
+		border-left: 1px solid #f19e82;
 		border-top: 0;
 	}
-	div {
+	th:first-child {
+		border-left: 0;
+	}
+	.background-table {
 		width: calc(100vw - 100px);
 		min-width: 630px;
 		min-height: calc(100vh - 220px);
@@ -68,17 +77,14 @@
 />
 
 <h1>Transactions</h1>
-<div class="table_holder">
-	<table bind:this={body}>
-		<thead>
-			<tr>
-				<th>Type</th>
-				<th>Amount</th>
-				<th>Account / Transaction ID</th>
-				<th>Date</th>
-			</tr>
-		</thead>
-		<tbody>
+<div class="background-table">
+	<div class="table" bind:this={body}>
+		<div>
+			<th>Type</th>
+			<th>Amount</th>
+			<th>Account / Transaction ID</th>
+			<th>Date</th>
+		</div>
 		{#each $transactions as transaction}
 			<TableCell
 				type={transaction.type}
@@ -96,6 +102,5 @@
 				</td>
 			</tr>
 		{/each}
-		</tbody>
-	</table>
+	</div>
 </div>

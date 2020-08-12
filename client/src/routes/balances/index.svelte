@@ -22,7 +22,7 @@
 
 <style>
 	table {
-		--table-borders: #FF3E00
+		--table-borders: #f19e82
 	}
 
 	h1 {
