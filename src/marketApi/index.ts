@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import User from '../userApi/user'
 import Order from '../db/models/order'
+import * as market from './market'
 import { SuportedCurrencies as SC } from '../currencyApi'
 
 interface MarketOrder {
@@ -47,6 +48,8 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
 
 	orderDoc.status = 'ready'
 	await orderDoc.save()
+
+	market.add(orderDoc)
 
 	return opid
 }

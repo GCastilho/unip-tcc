@@ -1,4 +1,5 @@
 import OrderDoc from '../db/models/order'
+import trade from './trade'
 import type { ObjectId } from 'mongodb'
 import type { Order } from '../db/models/order'
 
@@ -309,8 +310,8 @@ class Market {
 		/** Readiciona a ordem ao inicio do array deste preço */
 		leftovers.forEach(maker => this.unshiftMaker(maker))
 
-		// Enviar matchs à função de trade
-		console.log(matchs)
+		// Envia os matchs à função de trade
+		await trade(matchs)
 	}
 
 	/**
@@ -335,7 +336,7 @@ class Market {
 	 */
 	remove(order: Order) {
 		const node = this.orderbook.get(order.price) as LinkedList
-		const index = node.data.indexOf(order)
+		const index = node.data.findIndex(v => v.id == order.id)
 		if (index == -1) throw 'OrderNotFound'
 		node.data.splice(index, 1)
 		this.removeNodeIfEmpty(node)
