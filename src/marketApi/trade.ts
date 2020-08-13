@@ -1,12 +1,15 @@
+import assert from 'assert'
 // import { ObjectId } from 'mongodb'
 // import TradeDoc from '../db/models/trade'
 import type { Order } from '../db/models/order'
 
 export default function trade(matchs: [Order, Order][]) {
-	if (
-		matchs.some(([maker, taker]) =>
-			maker.type != 'buy' && taker.type != 'sell' ||
-			taker.type != 'buy' && maker.type != 'sell'
-		)
-	) throw new Error(`Some orders are not of type 'buy' and 'sell' on: ${matchs}`)
+	assert(
+		matchs.length > 0 &&
+		matchs.every(match =>
+			match.length == 2 &&
+			match[0]?.type == 'buy' && match[1]?.type == 'sell' ||
+			match[1]?.type == 'buy' && match[0]?.type == 'sell'
+		), `Fail to assert conditions on matchs: ${JSON.stringify(matchs)}`
+	)
 }

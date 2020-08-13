@@ -53,3 +53,13 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
 
 	return opid
 }
+
+/**
+ * Remove uma ordem do mercado de ordens e do banco de dados caso ela ainda
+ * não tenha sido executada
+ * @param opid O id da ordem que será removida
+ * @throws OrderNotFound Se a ordem não existir ou já tiver sido executada
+ */
+export async function remove(opid: ObjectId) {
+	await market.remove(opid)
+}

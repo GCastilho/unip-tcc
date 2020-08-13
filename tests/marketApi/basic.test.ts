@@ -56,6 +56,23 @@ describe('Performing basic tests on the MarketApi', () => {
 		expect(order.status).to.equal('ready')
 	})
 
+	it('Should remove an order from the orderbook', async () => {
+		const opid = await MarketApi.add(user, {
+			owning: {
+				currency: 'bitcoin',
+				amount: 1.23,
+			},
+			requesting: {
+				currency: 'nano',
+				amount: 2.46
+			}
+		})
+		expect(await Order.findById(opid)).to.be.an('object', 'Order was not found in the database')
+
+		await MarketApi.remove(opid)
+		expect(await Order.findById(opid)).to.be.a('null', 'Order was not removed from the database')
+	})
+
 	for (let i = 0; i < CurrencyApi.currencies.length; i++) {
 		for (let j = 0; j < CurrencyApi.currencies.length; j++) {
 			if (i == j) continue
