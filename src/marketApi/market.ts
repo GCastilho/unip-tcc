@@ -1,3 +1,4 @@
+import assert from 'assert'
 import OrderDoc from '../db/models/order'
 import trade from './trade'
 import type { ObjectId } from 'mongodb'
@@ -23,6 +24,8 @@ import type { Order } from '../db/models/order'
  * [maker, taker] e o "resto" irá retornar em um array de leftovers
  */
 async function matchMakers(taker: Order, makers: Order[]) {
+	assert(makers.length > 0, 'Makers array must have at least one item')
+
 	/** Quantidade da taker (do que o usuário TEM) restante para dar match */
 	let remaining = taker.owning.amount
 	/** Array de touples [maker, taker] */
@@ -276,7 +279,7 @@ class Market {
 		const makers: Order[] = []
 
 		while (remaining >= 0) {
-			const price = order.type == 'buy' ? this.buyPrice : this.sellPrice
+			const price = order.type == 'buy' ? this.sellPrice : this.buyPrice
 			// Checa se o preço está no range válido
 			if (price == 0 || price == Infinity) break
 
@@ -319,11 +322,11 @@ class Market {
 	 * market order ou executando-a imediatamente caso seja uma taker order
 	 * @param order Documento da ordem que será processado
 	 */
-	add(order: Order) {
+	async add(order: Order) {
 		if (order.type == 'buy' && order.price >= this.sellPrice) {
-			this.execTaker(order)
+			await this.execTaker(order)
 		} else if (order.type == 'sell' && order.price <= this.buyPrice) {
-			this.execTaker(order)
+			await this.execTaker(order)
 		} else {
 			this.pushMaker(order)
 		}
@@ -350,7 +353,7 @@ const markets = new Map<string, Market>()
  * Adiciona uma ordem a um mercado para ser ofertada e trocada
  * @param order A ordem que será adicionada ao mercado
  */
-export function add(order: Order) {
+export async function add(order: Order) {
 	// Retorna ou cria uma nova instancia da Market para esse par
 	let market = markets.get(order.orderedPair.toString())
 	if (!market) {
@@ -362,7 +365,7 @@ export function add(order: Order) {
 		markets.set(order.orderedPair.toString(), market)
 	}
 
-	market.add(order)
+	await market.add(order)
 }
 
 /**

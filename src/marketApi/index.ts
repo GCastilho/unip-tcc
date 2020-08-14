@@ -49,7 +49,7 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
 	orderDoc.status = 'ready'
 	await orderDoc.save()
 
-	market.add(orderDoc)
+	await market.add(orderDoc)
 
 	return opid
 }
