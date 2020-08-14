@@ -9,6 +9,7 @@
 
 	const coin = currency === 'bitcoin' ? ' BTC': ' NANO'
 	const txColor = status === 'confirmed' ? 'green' : '#c2c21c'
+	const tablePropotions = status === 'processing' ? '10% 13% 55% auto 20%' : '10% 13% 57% 20%'
 
 	function getDate(timestamp) {
 		const dateTime = new Date(timestamp)
@@ -19,7 +20,7 @@
 <style>
 	.table-row {
 		display: grid;
-		grid-template-columns: 10% 13% 57% 20%;
+		grid-template-columns: var(--tablePropotions);
 		overflow: visible;
 		background-color: #fdf9f9;
 		border-bottom: 1px solid var(--table-borders);
@@ -43,7 +44,7 @@
 	}
 </style>
 
-<div class="table-row">
+<div class="table-row" style="--tablePropotions:{tablePropotions}">
 	<div class="status-tx" style="--txColor:{txColor}">
 		<div>{type}</div>
 		<div>{status}</div>
@@ -53,5 +54,9 @@
 		<div>{account}</div>
 		<div>{txid || '--'}</div>
 	</div>
+	{#if status === 'processing'}
+		<object title="svg" data="./assets/cross-icon.svg" type="image/svg+xml"/>
+
+	{/if}
 	<div style="text-align: center">{getDate(timestamp)}</div>
 </div>
