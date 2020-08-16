@@ -14,6 +14,7 @@ export { subscribe }
  * @param {number} [skip] O número de transações que devem ser puladas
  */
 export async function fetch(skip = 0) {
+	console.log(transactions)
 	if (transactions.length < skip + 10) {
 		/** @type {{data:any[]}} */
 		const { data } = await axios.get('/v1/user/transactions', { params: { skip }})

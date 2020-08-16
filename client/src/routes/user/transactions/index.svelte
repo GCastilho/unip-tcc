@@ -2,7 +2,7 @@
 	import axios from '../../../utils/axios.js'
 	import * as auth from '../../../stores/auth.js'
 	import * as transactions  from '../../../stores/transactions'
-	import TableCell from './tableCell.svelte'
+	import TableCell from './_tableCell.svelte'
 
 	// Variaveis usadas para pegar a posisão do scroll
 	let scrollY
@@ -45,7 +45,7 @@
 	}
 	.table > div:first-of-type {
 		display: grid;
-		grid-template-columns: 10% 13% 57% 20%;
+		grid-template-columns: 10% 13% 59% 18%;
 	}
 	th {
 		background-color: rgba(255,62,0,0.7);

@@ -415,7 +415,7 @@ describe('Testing version 1 of HTTP API', () => {
 						const txAmount = CurrencyApi.detailsOf(currency).fee * 2 * Math.pow(i, Math.E)
 						amounts.push([currency, txAmount])
 
-						const sum = amountsSum.get(currency) | 0
+						const sum = amountsSum.get(currency) || 0
 						amountsSum.set(currency, sum + txAmount)
 					}
 				}
@@ -495,7 +495,7 @@ describe('Testing version 1 of HTTP API', () => {
 						expect(tx_received.currency).to.equals(tx_stored.currency)
 						expect(tx_received.txid).to.equals(tx_stored.txid)
 						expect(tx_received.account).to.equals(tx_stored.account)
-						expect(tx_received.amount).to.equals(tx_stored.amount.toFullString())
+						expect(tx_received.amount).to.equals(+tx_stored.amount.toFullString())
 						expect(tx_received.type).to.equals(tx_stored.type)
 						expect(tx_received.confirmations).to.equals(tx_stored.confirmations)
 						expect(tx_received.timestamp).to.equals(tx_stored.timestamp.getTime())
@@ -524,7 +524,7 @@ describe('Testing version 1 of HTTP API', () => {
 						expect(tx_received.currency).to.equals(tx_stored.currency)
 						expect(tx_received.txid).to.equals(tx_stored.txid)
 						expect(tx_received.account).to.equals(tx_stored.account)
-						expect(tx_received.amount).to.equals(tx_stored.amount.toFullString())
+						expect(tx_received.amount).to.equals(+tx_stored.amount.toFullString())
 						expect(tx_received.type).to.equals(tx_stored.type)
 						expect(tx_received.confirmations).to.equals(tx_stored.confirmations)
 						expect(tx_received.timestamp).to.equals(tx_stored.timestamp.getTime())
@@ -555,7 +555,7 @@ describe('Testing version 1 of HTTP API', () => {
 								expect(tx_received.currency).to.equals(tx_stored.currency)
 								expect(tx_received.txid).to.equals(tx_stored.txid)
 								expect(tx_received.account).to.equals(tx_stored.account)
-								expect(tx_received.amount).to.equals(tx_stored.amount.toFullString())
+								expect(tx_received.amount).to.equals(+tx_stored.amount.toFullString())
 								expect(tx_received.type).to.equals(tx_stored.type)
 								expect(tx_received.confirmations).to.equals(tx_stored.confirmations)
 								expect(tx_received.timestamp).to.equals(tx_stored.timestamp.getTime())
