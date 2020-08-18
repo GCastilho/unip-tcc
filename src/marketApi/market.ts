@@ -1,7 +1,7 @@
 import assert from 'assert'
+import { ObjectId } from 'mongodb'
 import OrderDoc from '../db/models/order'
 import trade from './trade'
-import type { ObjectId } from 'mongodb'
 import type { Order } from '../db/models/order'
 
 /**
@@ -39,77 +39,68 @@ async function matchMakers(taker: Order, makers: Order[]) {
 	const leftovers: Order[] = []
 
 	/**
-	 * Itera pelo array de makers e cria uma cópia da taker com os valores de cada
-	 * ordem. Se o array de makers tiver um amount requesting que soma mais que
-	 * o amount do owning da taker essas ordens serão colocada no array de
-	 * leftovers sem descontar o remaining
+	 * Itera pelo array de makers criando cópias da taker para fazer match com
+	 * cada uma das makers. Quando/se uma maker for maior que o restante divide
+	 * a maker para fazer o match com o restante da taker, se elas forem iguais,
+	 * o match já está feito
 	 *
 	 * Se a Market selecionou as ordens corretamente haverá apenas uma ordem no
 	 * leftovers, alem disso, o preço das makers sempre será "vantajoso" para a
-	 * taker, ou seja, retornará uma quantidade maior ou igual ao "requisitado"
-	 * pela ordem
+	 * taker, ou seja, o amount do requesting da taker no match será maior que o
+	 * que originalmente estava na taker
 	 */
 	for (const maker of makersIterable) {
-		/** Se remaining < maker - A maker é maior que o restante da taker */
-		if (remaining < maker.requesting.amount) {
-			leftovers.push(maker, ...Array.from(makersIterable))
+		if (remaining > maker.requesting.amount) {
+			remaining -= maker.requesting.amount
+
+			const takerCopy = new OrderDoc(taker)
+			takerCopy._id = new ObjectId()
+			takerCopy.isNew = true
+
+			takerCopy.owning.amount = maker.requesting.amount
+			takerCopy.requesting.amount = maker.owning.amount
+			matchs.push([maker, takerCopy])
+		} else {
+			if (remaining < maker.requesting.amount) {
+				/*
+				 * A maker é maior que o restante da taker. Ela deve ser
+				 * dividida em duas:
+				 * a primeira com os amounts da taker para ser enviada ao match
+				 * e a segunda com o restante que deverá retornar ao orderbook
+				 */
+
+				// Ordem com os valores da diferença entre maker e taker
+				maker.owning.amount = maker.owning.amount - taker.requesting.amount
+				maker.requesting.amount = maker.requesting.amount - taker.owning.amount
+				leftovers.push(maker)
+
+				/** Ordem com os valores da taker (para o match) */
+				const makerCopy = new OrderDoc(maker)
+				makerCopy._id = new ObjectId()
+				makerCopy.isNew = true
+				makerCopy.owning.amount = taker.requesting.amount
+				makerCopy.requesting.amount = taker.owning.amount
+
+				matchs.push([makerCopy, taker])
+			} else {
+				// remaining == maker.requesting.amount
+				taker.owning.amount = maker.requesting.amount
+				taker.requesting.amount = maker.owning.amount
+				matchs.push([maker, taker])
+			}
+			leftovers.push(...Array.from(makersIterable))
 			break
 		}
-		remaining -= maker.requesting.amount
-		const takerCopy = new OrderDoc(taker.toObject())
-		delete takerCopy._id
-		takerCopy.owning.amount = maker.requesting.amount
-		takerCopy.requesting.amount = maker.owning.amount
-		matchs.push([maker, takerCopy])
 	}
-
-	/**
-	 * Atualiza owning e requesting da taker com os valores de remaining
-	 *
-	 * Owning e requesting devem ficar na mesma proporção, então o requesting
-	 * será atualizado na proporção em que o owning foi reduzido
-	 */
-	taker.requesting.amount = taker.requesting.amount * remaining / taker.owning.amount
-	taker.owning.amount = remaining
 
 	/** Array de promessas de operações no banco de dados */
 	const promises: Promise<Order>[] = []
 
-	if (remaining > 0) {
-		if (leftovers.length > 0) {
-			/*
-			 * A primeira ordem do leftovers é maior que o remaining. Ela deve ser
-			 * dividida em duas: a primeira com os amounts da taker e a segunda com o
-			 * restante que será unshifted no array de leftovers
-			 */
-			const makerOrder = leftovers.shift() as Order
-
-			/** Ordem com os valores da direferença; será reenviada ao leftover */
-			const makerCopy = new OrderDoc(makerOrder.toObject())
-			delete makerCopy._id
-			makerCopy.owning.amount = makerCopy.owning.amount - taker.requesting.amount
-			makerCopy.requesting.amount = makerCopy.requesting.amount - taker.owning.amount
-			leftovers.unshift(makerCopy)
-
-			// Faz a maker ter os valores da taker
-			makerOrder.owning.amount = taker.requesting.amount
-			makerOrder.requesting.amount = taker.owning.amount
-			matchs.push([makerOrder, taker])
-		} else {
-			/**
-			 * Taker tem amount maior que as ordens do array de makers. Os amounts da
-			 * taker já foram atualizados então é só adicioná-la no array de leftovers
-			 * para ser retornada
-			 */
-			leftovers.push(taker)
-		}
-	} else {
-		// A ordem teve um match completo e tem amounts iguais a zero
-		promises.push(taker.remove())
-	}
-
-	// As makers do array de match não foram modificadas, não precisa salvar elas
-	promises.push(...matchs.map(orders => orders[1].save()))
+	// Salva as ordens do match no banco de dados com o journaling atualizado
+	promises.push(...matchs.flatMap(orders => orders.map(order => {
+		order.status = 'matched'
+		return order.save()
+	})))
 
 	// As ordens do resto podem ou não ter sido modificadas, salva todas
 	promises.push(...leftovers.map(order => order.save()))
@@ -349,20 +340,25 @@ class Market {
 /** Map que armazena todos os mercados de pares de currencies instanciados */
 const markets = new Map<string, Market>()
 
+/** Retorna a string chave do mercado de um par */
+function getMarketKey(orderedPair: Order['orderedPair']) {
+	return orderedPair.map(item => item.currency).toString()
+}
+
 /**
  * Adiciona uma ordem a um mercado para ser ofertada e trocada
  * @param order A ordem que será adicionada ao mercado
  */
 export async function add(order: Order) {
 	// Retorna ou cria uma nova instancia da Market para esse par
-	let market = markets.get(order.orderedPair.toString())
+	let market = markets.get(getMarketKey(order.orderedPair))
 	if (!market) {
 		market = new Market()
 		/**
 		 * A chave desse par no mercado é a string do array das currencies em ordem
 		 * alfabética, pois isso torna a chave simples e determinística
 		 */
-		markets.set(order.orderedPair.toString(), market)
+		markets.set(getMarketKey(order.orderedPair), market)
 	}
 
 	await market.add(order)
@@ -373,11 +369,13 @@ export async function add(order: Order) {
  * não tenha sido executada
  * @param opid O id da ordem que será removida
  * @throws OrderNotFound Se a ordem não existir ou já tiver sido executada
+ * @throws Error - "Market not found"
  */
 export async function remove(opid: ObjectId) {
-	const order = await OrderDoc.findByIdAndUpdate(opid, { status: 'cancelled' })
+	// Há uma race entre a ordem ser selecionada na execTaker e o trigger no update para status 'matched'
+	const order = await OrderDoc.findOneAndUpdate({ _id: opid, status: 'ready' }, { status: 'cancelled' })
 	if (!order) throw 'OrderNotFound'
-	const market = markets.get(order.orderedPair.toString())
+	const market = markets.get(getMarketKey(order.orderedPair))
 	if (!market) throw new Error(`Market not found while removing ${order}`)
 	market.remove(order)
 	await order.remove()

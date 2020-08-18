@@ -3,15 +3,29 @@ import { ObjectId, Decimal128 } from 'mongodb'
 import { expect } from 'chai'
 import User from '../../src/userApi/user'
 import Order from '../../src/db/models/order'
+import Person from '../../src/db/models/person'
 import * as UserApi from '../../src/userApi'
 import * as MarketApi from '../../src/marketApi'
 import * as CurrencyApi from '../../src/currencyApi'
+
+async function clearOrderbook() {
+	await Order.deleteMany({ status: 'matched' })
+	for (const order of await Order.find({ status: 'ready' })) {
+		try {
+			await MarketApi.remove(order._id)
+		} catch (err) {
+			if (err?.message.includes('Market not found')) await order.remove()
+			else throw err
+		}
+	}
+}
 
 describe('Performing basic tests on the MarketApi', () => {
 	let user: User
 
 	before(async () => {
-		await Order.deleteMany({})
+		await clearOrderbook()
+		await Person.deleteMany({})
 		user = await UserApi.createUser('basic-test-marketApi@email.com', 'userP@ss')
 
 		// Manualmente seta o saldo disponível para 10
@@ -19,6 +33,10 @@ describe('Performing basic tests on the MarketApi', () => {
 			user.person.currencies[currency].balance.available = Decimal128.fromNumeric(10)
 		}
 		await user.person.save()
+	})
+
+	beforeEach(async () => {
+		await clearOrderbook()
 	})
 
 	it('Should fail if owning and requesting currency are the same', async () => {

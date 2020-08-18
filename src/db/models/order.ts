@@ -12,7 +12,7 @@ export interface Order extends Document {
 	 * preparing: A ordem está na MarketApi, que ainda está processando-a
 	 * ready: A ordem está pronta para ser executada
 	 */
-	status: 'preparing'|'ready'|'cancelled'
+	status: 'preparing'|'ready'|'cancelled'|'matched'
 	/** A currency que usuário está em posse para fazer a operação */
 	owning: {
 		/** O nome da currency que o usuário tem */
@@ -45,7 +45,7 @@ const OrderSchema = new Schema({
 	},
 	status: {
 		type: String,
-		enum: ['preparing', 'ready', 'cancelled'],
+		enum: ['preparing', 'ready', 'cancelled', 'matched'],
 		required: true
 	},
 	owning: {
