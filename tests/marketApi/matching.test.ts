@@ -26,9 +26,12 @@ describe('Performing match tests on the MarketApi', () => {
 		await user.person.save()
 
 		// Remove as ordens do orderbook para impedir que um teste influencie outro
-		await Order.deleteMany({ $or: [{ status: 'matched' }, { status: 'cancelled' }] })
 		for (const order of await Order.find({ status: 'ready' }))
-			await MarketApi.remove(order._id)
+			await MarketApi.remove(user, order._id).catch(err => {
+				if (err != 'OrderNotFound' && err != 'OperationNotFound' && !err?.message?.includes('Market not found'))
+					throw err
+			})
+		await Order.deleteMany({})
 		spy = ImportMock.mockFunction(Trade) as SinonStub<Parameters<typeof Trade['default']>>
 	})
 

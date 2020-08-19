@@ -2,6 +2,7 @@ import assert from 'assert'
 import { ObjectId } from 'mongodb'
 import OrderDoc from '../db/models/order'
 import trade from './trade'
+import type User from '../userApi/user'
 import type { Order } from '../db/models/order'
 
 /**
@@ -385,7 +386,7 @@ export async function add(order: Order) {
  * @throws OrderNotFound Se a ordem não existir ou já tiver sido executada
  * @throws Error - "Market not found"
  */
-export async function remove(opid: ObjectId) {
+export async function remove(user: User, opid: ObjectId) {
 	// Há uma race entre a ordem ser selecionada na execTaker e o trigger no update para status 'matched'
 	const order = await OrderDoc.findOneAndUpdate({ _id: opid, status: 'ready' }, { status: 'cancelled' })
 	if (!order) throw 'OrderNotFound'
@@ -393,4 +394,5 @@ export async function remove(opid: ObjectId) {
 	if (!market) throw new Error(`Market not found while removing ${order}`)
 	market.remove(order)
 	await order.remove()
+	await user.balanceOps.cancel(order.owning.currency, opid)
 }

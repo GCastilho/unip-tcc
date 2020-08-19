@@ -8,35 +8,28 @@ import * as UserApi from '../../src/userApi'
 import * as MarketApi from '../../src/marketApi'
 import * as CurrencyApi from '../../src/currencyApi'
 
-async function clearOrderbook() {
-	await Order.deleteMany({ status: 'matched' })
-	for (const order of await Order.find({ status: 'ready' })) {
-		try {
-			await MarketApi.remove(order._id)
-		} catch (err) {
-			if (err?.message.includes('Market not found')) await order.remove()
-			else throw err
-		}
-	}
-}
-
 describe('Performing basic tests on the MarketApi', () => {
 	let user: User
 
 	before(async () => {
-		await clearOrderbook()
 		await Person.deleteMany({})
 		user = await UserApi.createUser('basic-test-marketApi@email.com', 'userP@ss')
-
-		// Manualmente seta o saldo disponível para 10
-		for (const currency of CurrencyApi.currencies) {
-			user.person.currencies[currency].balance.available = Decimal128.fromNumeric(10)
-		}
-		await user.person.save()
 	})
 
 	beforeEach(async () => {
-		await clearOrderbook()
+		// Remove as ordens do orderbook para impedir que um teste influencie outro
+		for (const order of await Order.find({ status: 'ready' }))
+			await MarketApi.remove(user, order._id).catch(err => {
+				if (err != 'OrderNotFound' && err != 'OperationNotFound' && !err?.message?.includes('Market not found'))
+					throw err
+			})
+		await Order.deleteMany({})
+
+		// Manualmente seta o saldo disponível para 10
+		for (const currency of CurrencyApi.currencies)
+			// @ts-expect-error
+			user.person.currencies[currency].balance.available = 10
+		await user.person.save()
 	})
 
 	it('Should fail if owning and requesting currency are the same', async () => {
@@ -72,6 +65,11 @@ describe('Performing basic tests on the MarketApi', () => {
 
 		const order = await Order.findById(opid)
 		expect(order.status).to.equal('ready')
+
+		const pending = await user.balanceOps.get('bitcoin', opid)
+		expect(pending).to.be.an('object')
+		expect(+pending.amount.toFullString()).to.equal(-1.23)
+		expect(pending.type).to.equal('trade')
 	})
 
 	it('Should remove an order from the orderbook', async () => {
@@ -87,8 +85,11 @@ describe('Performing basic tests on the MarketApi', () => {
 		})
 		expect(await Order.findById(opid)).to.be.an('object', 'Order was not found in the database')
 
-		await MarketApi.remove(opid)
+		await MarketApi.remove(user, opid)
 		expect(await Order.findById(opid)).to.be.a('null', 'Order was not removed from the database')
+
+		// Checa se a operação de alteração de saldo foi cancelada
+		expect(user.balanceOps.get('bitcoin', opid)).to.eventually.be.rejectedWith('OperationNotFound')
 	})
 
 	for (let i = 0; i < CurrencyApi.currencies.length; i++) {

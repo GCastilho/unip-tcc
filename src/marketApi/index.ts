@@ -60,6 +60,6 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
  * @param opid O id da ordem que será removida
  * @throws OrderNotFound Se a ordem não existir ou já tiver sido executada
  */
-export async function remove(opid: ObjectId) {
-	await market.remove(opid)
+export async function remove(user: User, opid: ObjectId) {
+	await market.remove(user, opid)
 }
