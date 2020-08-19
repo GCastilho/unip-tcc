@@ -81,7 +81,7 @@
 	<div class="table" bind:this={body}>
 		<div>
 			<th>Type</th>
-			<th>Amount</th>
+			<th>Amount / Fee</th>
 			<th>Account / Transaction ID</th>
 			<th>Date</th>
 		</div>
@@ -92,6 +92,7 @@
 				amount={transaction.amount}
 				currency={transaction.currency}
 				account={transaction.account}
+				confirmations={transaction.confirmations}
 				txid={transaction.txid}
 				timestamp={transaction.timestamp}
 			/>

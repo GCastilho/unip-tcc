@@ -4,16 +4,23 @@
 
 	export let type
 	export let status
-	export let amount = 0
+	export let amount
 	export let currency
 	export let account
+	export let confirmations
 	export let txid
 	export let timestamp
 
-	const coin = $currencies.find(value => currency === value.name)
-	const txColor = status === 'confirmed' ? 'green' : '#c2c21c'
-	const tablePropotions = status === 'processing' ? '10% 13% 57% 16% auto' : '10% 13% 57% 16%'
-	console.log(coin)
+	let txColor
+	let tablePropotions
+
+	const coin = $currencies.find(value => currency === value.name) //reminder: fix this thing it's broken
+
+	$: {
+		txColor = status === 'confirmed' ? 'green' : '#c2c21c'
+		tablePropotions = status === 'processing' ? '10% 13% 57% 16% auto' : '10% 13% 57% 16%'
+	}
+
 	function cancelTx() {
 		console.log('Voce clicou em mim!!, o que significa que vc quer cancelar, VOCÊ NÃO DEVIA CANCELAR A OPERAÇÃO')
 	}
@@ -41,16 +48,11 @@
 		border-bottom: 0;
 	}
 
-	.table-row > div {
+	.status-tx, .account-tx {
 		display: flex;
 		flex-direction: column;
 		padding-left: 10px;
 		white-space: nowrap;
-	}
-
-	.table-row > div:last-child {
-		flex-direction: row;
-		justify-content: flex-end;
 	}
 
 	.status-tx {
@@ -59,6 +61,21 @@
 
 	.status-tx > div:last-child {
 		color: var(--txColor);
+	}
+
+	.amount-tx {
+		display: grid;
+		grid-template-columns: auto 26%;
+	}
+
+	.amount-tx > span:nth-child(2n) {
+		text-align: start;
+		padding-left: 5px;
+	}
+
+	.date-tx {
+		flex-direction: row;
+		justify-content: flex-end;
 	}
 
 	button {
@@ -89,16 +106,19 @@
 <div class="table-row" style="--tablePropotions:{tablePropotions}">
 	<div class="status-tx" style="--txColor:{txColor}">
 		<div title="Type">{type}</div>
-		<div title="Status">{status}</div>
+		<div title="Status">{status + (typeof confirmations  === 'number' ? ` (${confirmations})` : '')}</div>
 	</div>
-	<div title="Amount" style="text-align: end">
-		{`${amount.toFixed(coin.decimals || 0)} ${coin.code.toUpperCase()}`}
+	<div class="amount-tx" title="Amount" style="text-align: end">
+		<span title="Amount">{amount.toFixed(coin.decimals)}</span>
+		<span title={coin.name}>{coin.code.toUpperCase()}</span>
+		<span title="Fee">{coin.fee.toFixed(coin.decimals)}</span>
+		<span title="Fee">Fee</span>
 	</div>
-	<div style="padding-left: end">
+	<div class="account-tx" style="padding-left: end">
 		<div title="Account">{account}</div>
 		<div title="Transaction ID">{txid || '--'}</div>
 	</div>
-	<div style="text-align: end">
+	<div class="date-tx" title="Date" style="text-align: end">
 		{getDate(timestamp)}
 	</div>
 	{#if status === 'processing'}
