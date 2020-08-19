@@ -16,16 +16,17 @@ describe('Performing match tests on the MarketApi', () => {
 
 	before(async () => {
 		user = await UserApi.createUser('match-test-marketApi@email.com', 'userP@ss')
+	})
 
+	beforeEach(async () => {
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of CurrencyApi.currencies)
 			// @ts-expect-error
 			user.person.currencies[currency].balance.available = 10
 		await user.person.save()
-	})
 
-	beforeEach(async () => {
-		await Order.deleteMany({ status: 'matched' })
+		// Remove as ordens do orderbook para impedir que um teste influencie outro
+		await Order.deleteMany({ $or: [{ status: 'matched' }, { status: 'cancelled' }] })
 		for (const order of await Order.find({ status: 'ready' }))
 			await MarketApi.remove(order._id)
 		spy = ImportMock.mockFunction(Trade) as SinonStub<Parameters<typeof Trade['default']>>
@@ -69,7 +70,7 @@ describe('Performing match tests on the MarketApi', () => {
 		expect(taker.id).to.equals(takerOpid.toHexString(), 'Second item\'s id mismatch expected taker opid')
 	})
 
-	describe('If the maker is bigger than the taker', () => {
+	describe('If maker is bigger than taker', () => {
 		const makerOrder: Parameters<typeof MarketApi['add']>[1] = {
 			owning: {
 				currency: 'bitcoin',
@@ -119,6 +120,59 @@ describe('Performing match tests on the MarketApi', () => {
 			const remainingOrder = await Order.findById(makerOpid)
 			expect(remainingOrder.owning.amount).to.equal(makerOrder.owning.amount - takerOrder.requesting.amount)
 			expect(remainingOrder.requesting.amount).to.equal(makerOrder.requesting.amount - takerOrder.owning.amount)
+		})
+	})
+
+	describe('If taker is bigger than maker', () => {
+		const makerOrder: Parameters<typeof MarketApi['add']>[1] = {
+			owning: {
+				currency: 'nano',
+				amount: 2
+			},
+			requesting: {
+				currency: 'bitcoin',
+				amount: 1
+			}
+		}
+
+		const takerOrder: Parameters<typeof MarketApi['add']>[1] = {
+			owning: {
+				currency: 'bitcoin',
+				amount: 3
+			},
+			requesting: {
+				currency: 'nano',
+				amount: 6
+			}
+		}
+
+		it('Should split the taker order in two and send to trade a pair with the same amount', async () => {
+			const makerOpid = await MarketApi.add(user, makerOrder)
+			const takerOpid = await MarketApi.add(user, takerOrder)
+
+			sinon.assert.calledOnce(spy)
+
+			const args = spy.getCall(0).args[0]
+			expect(args).to.have.lengthOf(1, 'Trade function should have received precisely one match')
+			expect(args[0]).to.have.lengthOf(2, 'Trade function was not called with a touple')
+
+			const [maker, taker] = args[0]
+
+			// Testa se as ordens foram enviadas com o valor correto
+			expect(maker.id).to.equals(makerOpid.toHexString(), 'First item\'s id mismatch expected maker opid')
+			expect(taker.id).to.not.equals(takerOpid.toHexString(), 'Second item\'s id mismatch expected taker opid')
+			expect(maker.owning.currency).to.equals(taker.requesting.currency)
+			expect(maker.owning.amount).to.equals(taker.requesting.amount)
+			expect(maker.requesting.amount).to.equals(taker.owning.amount)
+			expect(maker.requesting.currency).to.equals(taker.owning.currency)
+
+			// Testa se a taker está salva no banco
+			expect(await Order.findById(taker.id)).to.be.an('object')
+
+			// Testa se a taker original está no banco com os amounts de maker - taker
+			const remainingOrder = await Order.findById(takerOpid)
+			expect(remainingOrder.owning.amount).to.equal(takerOrder.owning.amount - makerOrder.requesting.amount)
+			expect(remainingOrder.requesting.amount).to.equal(takerOrder.requesting.amount - makerOrder.owning.amount)
 		})
 	})
 })

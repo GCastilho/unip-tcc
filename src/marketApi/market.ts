@@ -12,26 +12,19 @@ import type { Order } from '../db/models/order'
  * array de makers, isto é, serem mais baratas para uma taker de compra ou mais
  * caras para uma taker de venda
  *
- * Se a quantidade (owning/requesting) das ordens for diferentes, elas serão
- * retornadas em um array de 'leftovers'. Este array pode conter ordens maker
- * que ultrapassaram a quantidade a ser consumida da taker (no caso de 2 makers
- * de 6 a segunda irá ultrapassar uma taker de 10) ou o restante da taker, caso
- * o array de makers não tenha ordens suficientes para consumir a taker
- * completamente
- *
- * As ordens serão salvas no db, a taker será deletada (ou modificada), as
- * ordens que foram feitos matchs retornarão em um array de touples
- * [maker, taker] e o "resto" irá retornar em um array de leftovers
+ * Se o amount owning da taker for diferente da soma dos amounts requesting das
+ * makers, uma ordem com a diferença será retornada em um array de 'leftovers',
+ * sendo esta o restante da taker ou das makers
  */
 async function matchMakers(taker: Order, makers: Order[]) {
 	assert(makers.length > 0, 'Makers array must have at least one item')
 
 	/** Quantidade da taker (do que o usuário TEM) restante para dar match */
 	let remaining = taker.owning.amount
+
 	/** Array de touples [maker, taker] */
 	const matchs: [Order, Order][] = []
-	/** Iterable do array de makers */
-	const makersIterable = makers.values()
+
 	/**
 	 * Array de 'resto', ordens que não foram feitas match e devem ser
 	 * recolocadas no orderbook
@@ -40,28 +33,46 @@ async function matchMakers(taker: Order, makers: Order[]) {
 
 	/**
 	 * Itera pelo array de makers criando cópias da taker para fazer match com
-	 * cada uma das makers. Quando/se uma maker for maior que o restante divide
-	 * a maker para fazer o match com o restante da taker, se elas forem iguais,
-	 * o match já está feito
+	 * cada uma das makers. Quando/se uma maker for maior que o restante coloca-a
+	 * no array de leftovers junto com o resto do array sem descontar o remaining
 	 *
 	 * Se a Market selecionou as ordens corretamente haverá apenas uma ordem no
 	 * leftovers, alem disso, o preço das makers sempre será "vantajoso" para a
 	 * taker, ou seja, o amount do requesting da taker no match será maior que o
 	 * que originalmente estava na taker
+	 *
+	 * O for irá rodar enquando
+	 * 'i < makers.length && remaining > maker.requesting.amount' for true,
+	 * qdo isso não for mais verdade, executa o push e retorna 0
 	 */
-	for (const maker of makersIterable) {
-		if (remaining > maker.requesting.amount) {
-			remaining -= maker.requesting.amount
+	for (
+		let i = 0, maker = makers[0];
+		i < makers.length && remaining > maker.requesting.amount || leftovers.push(...makers.slice(i)) & 0;
+		i++, remaining -= maker.requesting.amount
+	) {
+		const takerCopy = new OrderDoc(taker)
+		takerCopy._id = new ObjectId()
+		takerCopy.isNew = true
 
-			const takerCopy = new OrderDoc(taker)
-			takerCopy._id = new ObjectId()
-			takerCopy.isNew = true
+		takerCopy.owning.amount = maker.requesting.amount
+		takerCopy.requesting.amount = maker.owning.amount
+		matchs.push([maker, takerCopy])
+	}
 
-			takerCopy.owning.amount = maker.requesting.amount
-			takerCopy.requesting.amount = maker.owning.amount
-			matchs.push([maker, takerCopy])
-		} else {
-			if (remaining < maker.requesting.amount) {
+	/**
+	 * Atualiza owning e requesting da taker com os valores do remaining
+	 *
+	 * Owning e requesting devem ficar na mesma proporção, então o requesting
+	 * será atualizado na proporção em que o owning foi reduzido
+	 */
+	taker.requesting.amount = taker.requesting.amount * remaining / taker.owning.amount
+	taker.owning.amount = remaining
+
+	/** Se owning.amount > 0: A taker não foi executada completamente */
+	if (taker.owning.amount > 0) {
+		if (leftovers.length > 0) {
+			const maker = leftovers.shift() as Order
+			if (taker.owning.amount < maker.requesting.amount) {
 				/*
 				 * A maker é maior que o restante da taker. Ela deve ser
 				 * dividida em duas:
@@ -83,13 +94,16 @@ async function matchMakers(taker: Order, makers: Order[]) {
 
 				matchs.push([makerCopy, taker])
 			} else {
-				// remaining == maker.requesting.amount
-				taker.owning.amount = maker.requesting.amount
-				taker.requesting.amount = maker.owning.amount
+				// taker.owning.amount == maker.requesting.amount
 				matchs.push([maker, taker])
 			}
-			leftovers.push(...Array.from(makersIterable))
-			break
+		} else {
+			/**
+			 * Taker tem amount maior que as ordens do array de makers. Os amounts da
+			 * taker já foram atualizados então é só adicioná-la no array de leftovers
+			 * para ser retornada e adicionada ao livro
+			 */
+			leftovers.push(taker)
 		}
 	}
 
