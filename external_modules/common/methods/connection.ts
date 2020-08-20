@@ -111,8 +111,14 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 			const doc = await SendPending.findOneAndRemove({ opid })
 
 			if (doc) {
-				callback(null, `Transaction '${opid}' was cancelled`)
+				callback(null, `Withdraw cancelled`)
 			} else {
+				await new Transaction({
+					opid: opid,
+					account: '0000000-CANCELLED-000000',
+					type: 'send'
+				}).save()
+
 				callback({
 					code: 'OperationNotFound',
 					message: 'The transaction was not found on the pending list'

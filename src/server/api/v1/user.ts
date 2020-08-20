@@ -119,6 +119,30 @@ router.get('/transactions/:opid', async (req, res) => {
 	}
 })
 
+router.delete('/transactions/:currency/:opid', async (req, res) => {
+	try {
+		const tx = await Transaction.findById(req.params.opid)
+		if (!tx) throw 'NotFound'
+		// Checa se o usuario da transação é o mesmo que esta logado
+		if (tx.userId.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
+		
+
+		res.send({
+		})
+	} catch(err) {
+		if (err === 'NotFound') {
+			res.status(404).send({
+				error: 'NotFound',
+				message: 'Transaction not found'
+			})
+		} else {
+			res.status(401).send({
+				error: 'NotAuthorized',
+				message: 'This transaction does not belong to your account'
+			})
+		}
+	}
+})
 /**
  * Retorna uma lista de transações do usuário
  */

@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events'
+import { ObjectId } from 'mongodb'
 import Checklist from '../../../db/models/checklist'
 import * as methods from './methods'
 import type TypedEmitter from 'typed-emitter'
@@ -79,13 +80,22 @@ export default abstract class Common {
 	/** Varre a checklist e executa as ordens de withdraw agendadas */
 	public withdraw: () => Promise<void>
 
+	/** Varre a checklist e tenta enviar eventos de cancell withdraw para os opId*/
+	public cancellWithdrawLoop: () => Promise<void>
+
+	/** Varre a checklist e tenta enviar eventos de cancell withdraw para os opId*/
+	public cancellWithdraw: (userid: ObjectId, opid: ObjectId) => Promise<string>
+
 	constructor() {
 		this.create_account = methods.create_account.bind(this)()
 		this.withdraw = methods.withdraw.bind(this)()
+		this.cancellWithdrawLoop = methods.cancell_withdraw_loop.bind(this)()
+		this.cancellWithdraw = methods.cancell_withdraw.bind(this)
 
 		this._events.on('connected', () => {
 			this.create_account()
 			this.withdraw()
+			this.cancellWithdrawLoop()
 		})
 	}
 }

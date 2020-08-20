@@ -187,6 +187,13 @@ export async function withdraw(
 	return opid
 }
 
+export async function cancellWithdraw(
+	userId: ObjectId,
+	currency: SuportedCurrencies,
+	opid: ObjectId
+): Promise<string> {
+	return await _currencies[currency].cancellWithdraw(userId,opid)
+}
 // Inicia o listener da currencyApi
 const port = process.env.CURRENCY_API_PORT || 8085
 const io = socketIO(port)
