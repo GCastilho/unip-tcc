@@ -2,29 +2,40 @@
 	import Close from './cross-icon.svg'
 	import * as currencies  from '../../../stores/currencies'	
 
-	export let type
-	export let status
-	export let amount
-	export let currency
-	export let account
-	export let confirmations
-	export let txid
-	export let timestamp
+	export let type,
+			   status,
+			   amount,
+			   currency,
+			   account,
+			   confirmations,
+			   txid,
+			   timestamp
 
-	let txColor
-	let tablePropotions
 
-	const coin = $currencies.find(value => currency === value.name) //reminder: fix this thing it's broken
+	let txColor, tablePropotions
+
+	let coin, name, code, decimals, fee
 
 	$: {
+		coin = $currencies.find(value => currency === value.name)
 		txColor = status === 'confirmed' ? 'green' : '#c2c21c'
 		tablePropotions = status === 'processing' ? '10% 13% 57% 16% auto' : '10% 13% 57% 16%'
+
+		if (coin) {
+			name = coin.name
+			code = coin.code.toUpperCase()
+			amount = amount.toFixed(coin.decimals)
+			fee = coin.fee.toFixed(coin.decimals)
+		}
 	}
 
 	function cancelTx() {
 		console.log('Voce clicou em mim!!, o que significa que vc quer cancelar, VOCÊ NÃO DEVIA CANCELAR A OPERAÇÃO')
 	}
 
+	/**
+	 * Converte um timestamp para um padrão legivel
+	 */
 	function getDate(timestamp) {
 		const dateTime = new Date(timestamp)
 		return dateTime.toLocaleDateString()+' '+dateTime.toLocaleTimeString()
@@ -109,9 +120,9 @@
 		<div title="Status">{status + (typeof confirmations  === 'number' ? ` (${confirmations})` : '')}</div>
 	</div>
 	<div class="amount-tx" title="Amount" style="text-align: end">
-		<span title="Amount">{amount.toFixed(coin.decimals)}</span>
-		<span title={coin.name}>{coin.code.toUpperCase()}</span>
-		<span title="Fee">{coin.fee.toFixed(coin.decimals)}</span>
+		<span title="Amount">{amount}</span>
+		<span title={name}>{code}</span>
+		<span title="Fee">{fee}</span>
 		<span title="Fee">Fee</span>
 	</div>
 	<div class="account-tx" style="padding-left: end">

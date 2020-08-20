@@ -20,14 +20,6 @@
 			transactions.fetch($transactions.length + 10)
 		}
 	}
-	
-	/**
-	 * Converte um timestamp para um padrão legivel
-	 */
-	function getDate(timestamp) {
-		const dateTime = new Date(timestamp)
-		return `${dateTime.toLocaleDateString()} ${dateTime.toLocaleTimeString()}`
-	}
 </script>
 
 <style>
@@ -43,18 +35,22 @@
 		width: 100%;
 		overflow: hidden;
 	}
+
 	.table > div:first-of-type {
 		display: grid;
 		grid-template-columns: 10% 13% 59% 18%;
 	}
+
 	th {
 		background-color: rgba(255,62,0,0.7);
 		border-left: 1px solid #f19e82;
 		border-top: 0;
 	}
+
 	th:first-child {
 		border-left: 0;
 	}
+
 	.background-table {
 		width: calc(100vw - 100px);
 		min-width: 630px;
