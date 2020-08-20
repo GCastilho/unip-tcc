@@ -2,24 +2,26 @@
 	import Close from './cross-icon.svg'
 	import * as currencies  from '../../../stores/currencies'	
 
-	export let type,
-			   status,
-			   amount,
-			   currency,
-			   account,
-			   confirmations,
-			   txid,
-			   timestamp
-
+	export let status
+	export let currency
+	export let txid
+	export let account
+	export let amount
+	export let type
+	export let confirmations
+	export let timestamp
 
 	let txColor, tablePropotions
 
 	let coin, name, code, decimals, fee
 
 	$: {
+		txColor = status == 'confirmed' ? 'green' : '#c2c21c'
+		tablePropotions = status == 'processing' ? '10% 13% 57% 16% auto' : '10% 13% 57% 16%'
+	}
+
+	$: {
 		coin = $currencies.find(value => currency === value.name)
-		txColor = status === 'confirmed' ? 'green' : '#c2c21c'
-		tablePropotions = status === 'processing' ? '10% 13% 57% 16% auto' : '10% 13% 57% 16%'
 
 		if (coin) {
 			name = coin.name
@@ -30,7 +32,7 @@
 	}
 
 	function cancelTx() {
-		console.log('Voce clicou em mim!!, o que significa que vc quer cancelar, VOCÊ NÃO DEVIA CANCELAR A OPERAÇÃO')
+		console.log('Voce clicou em mim!!! o que significa que vc quer cancelar, VOCÊ NÃO DEVIA CANCELAR A OPERAÇÃO')
 	}
 
 	/**
@@ -117,7 +119,7 @@
 <div class="table-row" style="--tablePropotions:{tablePropotions}">
 	<div class="status-tx" style="--txColor:{txColor}">
 		<div title="Type">{type}</div>
-		<div title="Status">{status + (typeof confirmations  === 'number' ? ` (${confirmations})` : '')}</div>
+		<div title="Status">{status + (typeof confirmations  == 'number' ? ` (${confirmations})` : '')}</div>
 	</div>
 	<div class="amount-tx" title="Amount" style="text-align: end">
 		<span title="Amount">{amount}</span>
