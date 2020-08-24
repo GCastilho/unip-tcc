@@ -1,5 +1,6 @@
 <script>
 	import Close from './cross-icon.svg'
+	import { format } from 'light-date'
 	import * as currencies  from '../../../stores/currencies'	
 
 	export let status
@@ -40,7 +41,7 @@
 	 */
 	function getDate(timestamp) {
 		const dateTime = new Date(timestamp)
-		return dateTime.toLocaleDateString()+' '+dateTime.toLocaleTimeString()
+		return format(dateTime, '{HH}:{mm} - {dd}/{MM}/{yyyy}')
 	}
 </script>
 

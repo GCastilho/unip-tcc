@@ -15,6 +15,7 @@
     "axios": "^0.19.2",
     "compression": "^1.7.1",
     "express": "^4.17.1",
+    "light-date": "^1.0.1",
     "qrious": "^4.0.2",
     "sirv": "^0.4.0",
     "socket.io-client": "^2.3.0"
