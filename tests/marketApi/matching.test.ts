@@ -290,4 +290,108 @@ describe('Performing match tests on the MarketApi', () => {
 			}
 		})
 	})
+
+	describe('If adding an order that is beyond the market price', () => {
+		it('Should match with the order at the buy price', async () => {
+			// Ordem de compra com preço 0.5
+			const buyOrder: Parameters<typeof MarketApi['add']>[1] = {
+				owning: {
+					currency: 'bitcoin',
+					amount: 3
+				},
+				requesting: {
+					currency: 'nano',
+					amount: 6
+				}
+			}
+
+			// Ordem de venda com preço 3/8 -> 0.375
+			const sellOrder: Parameters<typeof MarketApi['add']>[1] = {
+				owning: {
+					currency: 'nano',
+					amount: 8
+				},
+				requesting: {
+					currency: 'bitcoin',
+					amount: 3
+				}
+			}
+
+			const buyOpid = await MarketApi.add(user, buyOrder)
+			const sellOpid = await MarketApi.add(user, sellOrder)
+
+			sinon.assert.calledOnce(spy)
+
+			const args = spy.getCall(0).args[0]
+			expect(args).to.have.lengthOf(1, 'Trade function should have received precisely one match')
+			expect(args[0]).to.have.lengthOf(2, 'Trade function was not called with a touple')
+
+			const [maker, taker] = args[0]
+
+			// Testa se as ordens foram enviadas com o valor correto
+			expect(maker.id).to.equals(buyOpid.toHexString(), 'First item\'s id mismatch expected maker opid')
+			expect(taker.id).to.not.equals(sellOpid.toHexString(), 'Second item\'s id mismatch expected taker opid')
+			expect(maker.owning.currency).to.equals(taker.requesting.currency)
+			expect(maker.owning.amount).to.equals(taker.requesting.amount)
+			expect(maker.requesting.amount).to.equals(taker.owning.amount)
+			expect(maker.requesting.currency).to.equals(taker.owning.currency)
+
+			// Testa se o resto da sell está salva no banco
+			const remaining = await Order.findById(sellOpid)
+			expect(remaining).to.be.an('object')
+			expect(remaining.owning.amount).to.equal(sellOrder.owning.amount - buyOrder.requesting.amount)
+			expect(remaining.price).to.equal(new Order(sellOrder).price)
+		})
+
+		it('Should match with the order at the sell price', async () => {
+			// Ordem de venda com preço 3/8 -> 0.375
+			const sellOrder: Parameters<typeof MarketApi['add']>[1] = {
+				owning: {
+					currency: 'nano',
+					amount: 8
+				},
+				requesting: {
+					currency: 'bitcoin',
+					amount: 3
+				}
+			}
+
+			// Ordem de compra com preço 0.5
+			const buyOrder: Parameters<typeof MarketApi['add']>[1] = {
+				owning: {
+					currency: 'bitcoin',
+					amount: 6
+				},
+				requesting: {
+					currency: 'nano',
+					amount: 12
+				}
+			}
+
+			const sellOpid = await MarketApi.add(user, sellOrder)
+			const buyOpid = await MarketApi.add(user, buyOrder)
+
+			sinon.assert.calledOnce(spy)
+
+			const args = spy.getCall(0).args[0]
+			expect(args).to.have.lengthOf(1, 'Trade function should have received precisely one match')
+			expect(args[0]).to.have.lengthOf(2, 'Trade function was not called with a touple')
+
+			const [maker, taker] = args[0]
+
+			// Testa se as ordens foram enviadas com o valor correto
+			expect(maker.id).to.equals(sellOpid.toHexString(), 'First item\'s id mismatch expected maker opid')
+			expect(taker.id).to.not.equals(buyOpid.toHexString(), 'Second item\'s id mismatch expected taker opid')
+			expect(maker.owning.currency).to.equals(taker.requesting.currency)
+			expect(maker.owning.amount).to.equals(taker.requesting.amount)
+			expect(maker.requesting.amount).to.equals(taker.owning.amount)
+			expect(maker.requesting.currency).to.equals(taker.owning.currency)
+
+			// Testa se o resto da buy está salva no banco
+			const remaining = await Order.findById(buyOpid)
+			expect(remaining).to.be.an('object')
+			expect(remaining.owning.amount).to.equal(buyOrder.owning.amount - sellOrder.requesting.amount)
+			expect(remaining.price).to.equal(new Order(buyOrder).price)
+		})
+	})
 })
