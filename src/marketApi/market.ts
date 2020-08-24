@@ -49,7 +49,7 @@ async function matchMakers(taker: Order, makers: Order[]) {
 	for (
 		let i = 0, maker = makers[0];
 		i < makers.length && remaining > maker.requesting.amount || leftovers.push(...makers.slice(i)) & 0;
-		i++, remaining -= maker.requesting.amount
+		i++, remaining -= maker.requesting.amount, maker = makers[i]
 	) {
 		const takerCopy = new OrderDoc(taker)
 		takerCopy._id = new ObjectId()

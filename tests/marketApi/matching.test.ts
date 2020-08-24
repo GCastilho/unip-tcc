@@ -253,5 +253,41 @@ describe('Performing match tests on the MarketApi', () => {
 			// Testa se todas as ordens 'ready' foram executadas
 			expect(await Order.find({ status: 'ready' })).to.have.lengthOf(0)
 		})
+
+		it('Should match multiple makers on the same request and send them to trade', async () => {
+			const makersOpid: Parameters<Parameters<ReturnType<typeof MarketApi['add']>['then']>[0]>[0][] = []
+
+			// Indica quantas ordens maker são necessárias para ter o amount mínimo da maker
+			const matchs = takerOrder.owning.amount / makerOrder.requesting.amount
+
+			// Adiciona a quantidade de makers necessária para ter amount igual (ou maior) a taker
+			for (let i = matchs; i > 0; i--)
+				makersOpid.push(await MarketApi.add(user, makerOrder))
+
+			const takerOpid = await MarketApi.add(user, takerOrder)
+
+			sinon.assert.calledOnce(spy)
+
+			const args = spy.getCall(0).args[0]
+			expect(args).to.have.lengthOf(matchs, `Trade function should have received precisely ${matchs} match(s)`)
+			for (let i = 0; i < args.length; i++) {
+				expect(args[i]).to.have.lengthOf(2, 'Trade function was not called with a touple')
+
+				// Testa se os opids enviados estão corretos
+				const [maker, taker] = args[i]
+				expect(maker.id).to.equal(makersOpid[i].toHexString())
+				if (i == args.length - 1) expect(taker.id).to.equal(takerOpid.toHexString())
+				else expect(taker.id).to.not.equal(takerOpid.toHexString())
+
+				// Testa se as ordens foram enviadas com o valor correto
+				expect(maker.owning.currency).to.equals(taker.requesting.currency)
+				expect(maker.owning.amount).to.equals(taker.requesting.amount)
+				expect(maker.requesting.amount).to.equals(taker.owning.amount)
+				expect(maker.requesting.currency).to.equals(taker.owning.currency)
+
+				// Testa se a taker está salva no banco
+				expect(await Order.findById(taker.id)).to.be.an('object')
+			}
+		})
 	})
 })
