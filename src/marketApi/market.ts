@@ -95,7 +95,18 @@ async function matchMakers(taker: Order, makers: Order[]) {
 
 				matchs.push([makerCopy, taker])
 			} else {
-				// taker.owning.amount == maker.requesting.amount
+				/**
+				 * Se o código cair aqui, então
+				 * taker.owning.amount == maker.requesting.amount
+				 * Entretando, se as ordens tiverem preços diferentes, o reverso não é
+				 * válido
+				 *
+				 * Como a maker nunca tem um owning que é desvantajoso ao requesting da
+				 * taker, então essa linha garante que os valores sejam iguais sem
+				 * prejudicar a taker, garantindo o preço igual que as ordens precisam
+				 * ter para um 'match' ser feito
+				 */
+				taker.requesting.amount = maker.owning.amount
 				matchs.push([maker, taker])
 			}
 		} else {
@@ -208,16 +219,22 @@ class Market {
 			}
 
 			if (this.head) {
-			// Adiciona o node na posição correta da linked list
-				let previous = this.head
-				while (previous.next != null && previous.price < node.price) {
-					previous = previous.next
+				// Adiciona o node na posição correta da linked list
+				if (node.price < this.head.price) {
+					node.next = this.head
+					this.head.previous = node
+					this.head = node
+				} else {
+					let previous = this.head
+					while (previous.next != null && node.price > previous.next.price) {
+						previous = previous.next
+					}
+					node.next = previous.next
+					node.previous = previous
+					node.previous.next = node
+					if (node.next?.previous != null)
+						node.next.previous = node
 				}
-				node.next = previous.next
-				node.previous = previous
-				node.previous.next = node
-				if (node.next?.previous != null)
-					node.next.previous = node
 			} else {
 				this.head = node
 			}
@@ -284,7 +301,7 @@ class Market {
 		/** Vetor de ordens maker que irão fazer trade com essa ordem taker */
 		const makers: Order[] = []
 
-		while (remaining >= 0) {
+		while (remaining > 0) {
 			const price = order.type == 'buy' ? this.sellPrice : this.buyPrice
 			// Checa se o preço está no range válido
 			if (price == 0 || price == Infinity) break

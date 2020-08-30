@@ -1,6 +1,5 @@
 import sinon from 'sinon'
 import { expect } from 'chai'
-// import { ObjectId, Decimal128 } from 'mongodb'
 import { ImportMock } from 'ts-mock-imports'
 import User from '../../src/userApi/user'
 import Order from '../../src/db/models/order'
@@ -344,27 +343,27 @@ describe('Performing match tests on the MarketApi', () => {
 		})
 
 		it('Should match with the order at the sell price', async () => {
-			// Ordem de venda com preço 3/8 -> 0.375
+			// Ordem de venda com preço 0.5/1 -> 0.5
 			const sellOrder: Parameters<typeof MarketApi['add']>[1] = {
 				owning: {
 					currency: 'nano',
-					amount: 8
+					amount: 1
 				},
 				requesting: {
 					currency: 'bitcoin',
-					amount: 3
+					amount: 0.5
 				}
 			}
 
-			// Ordem de compra com preço 0.5
+			// Ordem de compra com preço 1
 			const buyOrder: Parameters<typeof MarketApi['add']>[1] = {
 				owning: {
 					currency: 'bitcoin',
-					amount: 6
+					amount: 0.5
 				},
 				requesting: {
 					currency: 'nano',
-					amount: 12
+					amount: 0.5
 				}
 			}
 
@@ -381,17 +380,139 @@ describe('Performing match tests on the MarketApi', () => {
 
 			// Testa se as ordens foram enviadas com o valor correto
 			expect(maker.id).to.equals(sellOpid.toHexString(), 'First item\'s id mismatch expected maker opid')
-			expect(taker.id).to.not.equals(buyOpid.toHexString(), 'Second item\'s id mismatch expected taker opid')
+			expect(taker.id).to.equals(buyOpid.toHexString(), 'Second item\'s id mismatch expected taker opid')
 			expect(maker.owning.currency).to.equals(taker.requesting.currency)
 			expect(maker.owning.amount).to.equals(taker.requesting.amount)
 			expect(maker.requesting.amount).to.equals(taker.owning.amount)
 			expect(maker.requesting.currency).to.equals(taker.owning.currency)
+		})
+	})
 
-			// Testa se o resto da buy está salva no banco
-			const remaining = await Order.findById(buyOpid)
-			expect(remaining).to.be.an('object')
-			expect(remaining.owning.amount).to.equal(buyOrder.owning.amount - sellOrder.requesting.amount)
-			expect(remaining.price).to.equal(new Order(buyOrder).price)
+	describe('Testing if taker matchs orders on multiple prices', () => {
+		const baseAmount = 1
+		const prices = [0.5, 1, 1.5] as const
+
+		it('Should move the price UP', async () => {
+			// type sell
+			const makers: Parameters<typeof MarketApi['add']>[1][] = prices.map(p => ({
+				owning: {
+					currency: 'nano',
+					amount: baseAmount
+				},
+				requesting: {
+					currency: 'bitcoin',
+					amount: baseAmount * p
+				}
+			}))
+
+			/** Deve ser igual a soma dos requesting da maker menos o último */
+			const takerOwningAmount = prices
+				.slice(0, prices.length - 1)
+				.map(p => baseAmount * p)
+				.reduce((acc, cur) => acc + cur)
+			const taker: Parameters<typeof MarketApi['add']>[1] = {
+				owning: {
+					currency: 'bitcoin',
+					amount: takerOwningAmount
+				},
+				requesting: {
+					currency: 'nano',
+					amount: takerOwningAmount / prices[prices.length - 2]
+				}
+			}
+
+			const makersOpid = await Promise.all(makers.map(maker => MarketApi.add(user, maker)))
+			const takerOpid = await MarketApi.add(user, taker)
+
+			sinon.assert.calledOnce(spy)
+
+			const args = spy.getCall(0).args[0]
+			expect(args).to.have.lengthOf(prices.length - 1, `Trade function should have received ${prices.length - 1} matchs`)
+
+			for (let i = 0; i < args.length; i++) {
+				expect(args[i]).to.have.lengthOf(2, 'Trade function was not called with a touple')
+
+				// Testa se os opids enviados estão corretos
+				const [maker, taker] = args[i]
+				expect(maker.id).to.equal(makersOpid[i].toHexString())
+				if (i == args.length - 1) expect(taker.id).to.equal(takerOpid.toHexString())
+				else expect(taker.id).to.not.equal(takerOpid.toHexString())
+
+				// Testa se as ordens foram enviadas com o valor correto
+				expect(maker.owning.currency).to.equals(taker.requesting.currency)
+				expect(maker.owning.amount).to.equals(taker.requesting.amount)
+				expect(maker.requesting.amount).to.equals(taker.owning.amount)
+				expect(maker.requesting.currency).to.equals(taker.owning.currency)
+			}
+
+			// Testa se a úlima maker ainda está no livro com status ready
+			expect(await Order.findOne({
+				_id: makersOpid[makersOpid.length - 1],
+				status: 'ready'
+			})).to.be.an('object')
+
+			// Testa se existe apenas uma ordem ready no livro
+			expect(await Order.find({ status: 'ready' })).to.have.lengthOf(1)
+		})
+
+		it('Should move the price DOWN', async () => {
+			// type buy
+			const makers: Parameters<typeof MarketApi['add']>[1][] = prices.map(p => ({
+				owning: {
+					currency: 'bitcoin',
+					amount: baseAmount * p
+				},
+				requesting: {
+					currency: 'nano',
+					amount: baseAmount
+				}
+			})).reverse() as Parameters<typeof MarketApi['add']>[1][]
+
+			/** Deve ser igual a soma dos requesting da maker menos o último */
+			const takerOwningAmount = baseAmount * prices.length - 1
+			const taker: Parameters<typeof MarketApi['add']>[1] = {
+				owning: {
+					currency: 'nano',
+					amount: takerOwningAmount
+				},
+				requesting: {
+					currency: 'bitcoin',
+					amount: takerOwningAmount / prices[1]
+				}
+			}
+
+			const makersOpid = await Promise.all(makers.map(maker => MarketApi.add(user, maker)))
+			const takerOpid = await MarketApi.add(user, taker)
+
+			sinon.assert.calledOnce(spy)
+
+			const args = spy.getCall(0).args[0]
+			expect(args).to.have.lengthOf(prices.length - 1, `Trade function should have received ${prices.length - 1} matchs`)
+
+			for (let i = 0; i < args.length; i++) {
+				expect(args[i]).to.have.lengthOf(2, 'Trade function was not called with a touple')
+
+				// Testa se os opids enviados estão corretos
+				const [maker, taker] = args[i]
+				expect(maker.id).to.equal(makersOpid[i].toHexString())
+				if (i == args.length - 1) expect(taker.id).to.equal(takerOpid.toHexString())
+				else expect(taker.id).to.not.equal(takerOpid.toHexString())
+
+				// Testa se as ordens foram enviadas com o valor correto
+				expect(maker.owning.currency).to.equals(taker.requesting.currency)
+				expect(maker.owning.amount).to.equals(taker.requesting.amount)
+				expect(maker.requesting.amount).to.equals(taker.owning.amount)
+				expect(maker.requesting.currency).to.equals(taker.owning.currency)
+			}
+
+			// Testa se a úlima maker ainda está no livro com status ready
+			expect(await Order.findOne({
+				_id: makersOpid[makersOpid.length - 1],
+				status: 'ready'
+			})).to.be.an('object')
+
+			// Testa se existe apenas uma ordem ready no livro
+			expect(await Order.find({ status: 'ready' })).to.have.lengthOf(1)
 		})
 	})
 })
