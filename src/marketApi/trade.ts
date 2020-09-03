@@ -1,6 +1,6 @@
 import assert from 'assert'
 import TradeDoc from '../db/models/trade'
-import * as UserApi from '../../src/userApi'
+import * as UserApi from '../userApi'
 import type { Order } from '../db/models/order'
 
 export default async function trade(matchs: [Order, Order][]) {

@@ -1,8 +1,9 @@
 import { ObjectId } from 'mongodb'
+import Market from './market'
 import User from '../userApi/user'
-import Order from '../db/models/order'
-import * as market from './market'
-import { SuportedCurrencies as SC } from '../currencyApi'
+import OrderDoc from '../db/models/order'
+import type { SuportedCurrencies as SC } from '../currencyApi'
+import type { Order } from '../db/models/order'
 
 interface MarketOrder {
 	owning: {
@@ -13,6 +14,22 @@ interface MarketOrder {
 		currency: SC
 		amount: number
 	}
+}
+
+/** Classe do objeto do erro de mercado não encontrado */
+class MarketNotFound extends Error {
+	constructor(message: string) {
+		super(message)
+		this.name = 'MarketNotFound'
+	}
+}
+
+/** Map que armazena todos os mercados de pares de currencies instanciados */
+const markets = new Map<string, Market>()
+
+/** Retorna a string chave do mercado de um par */
+function getMarketKey(orderedPair: Order['orderedPair']) {
+	return orderedPair.map(item => item.currency).toString()
 }
 
 /**
@@ -26,7 +43,7 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
 
 	const opid = new ObjectId()
 
-	const orderDoc = await new Order({
+	const orderDoc = await new OrderDoc({
 		_id: opid,
 		userId: user.id,
 		status: 'preparing',
@@ -49,6 +66,17 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
 	orderDoc.status = 'ready'
 	await orderDoc.save()
 
+	// Retorna ou cria uma nova instancia da Market para esse par
+	let market = markets.get(getMarketKey(orderDoc.orderedPair))
+	if (!market) {
+		market = new Market()
+		/**
+		 * A chave desse par no mercado é a string do array das currencies em ordem
+		 * alfabética, pois isso torna a chave simples e determinística
+		 */
+		markets.set(getMarketKey(orderDoc.orderedPair), market)
+	}
+
 	await market.add(orderDoc)
 
 	return opid
@@ -58,8 +86,16 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
  * Remove uma ordem do mercado de ordens e do banco de dados caso ela ainda
  * não tenha sido executada
  * @param opid O id da ordem que será removida
- * @throws OrderNotFound Se a ordem não existir ou já tiver sido executada
+ * @throws 'OrderNotFound' Se a ordem não existir ou já tiver sido executada
+ * @throws MarketNotFound
  */
 export async function remove(user: User, opid: ObjectId) {
-	await market.remove(user, opid)
+	// Há uma race entre a ordem ser selecionada na execTaker e o trigger no update para status 'matched'
+	const order = await OrderDoc.findOneAndUpdate({ _id: opid, status: 'ready' }, { status: 'cancelled' })
+	if (!order) throw 'OrderNotFound'
+	const market = markets.get(getMarketKey(order.orderedPair))
+	if (!market) throw new MarketNotFound(`Market not found while removing: ${order}`)
+	market.remove(order)
+	await order.remove()
+	await user.balanceOps.cancel(order.owning.currency, opid)
 }
