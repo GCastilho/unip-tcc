@@ -1,7 +1,7 @@
 <script>
 	import Close from './cross-icon.svg'
 	import { format } from 'light-date'
-	import * as currencies  from '../../../stores/currencies'	
+	import * as currencies  from '../../../stores/currencies'
 
 	export let status
 	export let currency
@@ -17,13 +17,12 @@
 	let coin, name, code, decimals, fee
 
 	$: {
-		txColor = status == 'confirmed' ? (
-			confirmations = null,
-			'green'
-		) : status == 'canceled' ?
-			'#e64d51'
-		: status == 'processing' ? '#89a1c1' : '#c2c21c'
+		if (status == 'confirmed') confirmations = null
+		txColor = status == 'confirmed' ? 'green' :
+		status == 'canceled' ? '#e64d51' :
+		status == 'processing' ? '#89a1c1' : '#c2c21c'
 		tablePropotions = status == 'processing' ? '10% 13% 57% 16% auto' : '10% 13% 57% 16%'
+		console.log(confirmations)
 	}
 
 	$: {
