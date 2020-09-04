@@ -1,4 +1,5 @@
 <script>
+	import { afterUpdate } from 'svelte';
 	import Close from './cross-icon.svg'
 	import { format } from 'light-date'
 	import * as currencies  from '../../../stores/currencies'
@@ -16,8 +17,11 @@
 
 	let coin, name, code, decimals, fee
 
-	$: {
+	afterUpdate(() => {
 		if (status == 'confirmed') confirmations = null
+	})
+
+	$: {
 		txColor = status == 'confirmed' ? 'green' :
 		status == 'canceled' ? '#e64d51' :
 		status == 'processing' ? '#89a1c1' : '#c2c21c'
