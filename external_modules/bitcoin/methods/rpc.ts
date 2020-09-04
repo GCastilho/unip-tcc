@@ -47,14 +47,23 @@ const sendToAddress = async (account: string, amount: number): Promise<string> =
 export const transactionInfo = async (txid: string): Promise<any> =>
 	await request('getTransaction', txid)
 
+export const listSinceBlock = async (block: string): Promise<any> =>
+	await request('listSinceBlock', block)
+
 export const blockInfo = async (block): Promise<any> =>
-	await request('getBlock', block)
+	await request('getBlock', block, 1)
 
 export const getNewAddress = async (): Promise<string> =>
 	await request('getNewAddress')
 
 export const getRpcInfo = async (): Promise<any> =>
 	await request('getRpcInfo')
+
+export const getBlockChainInfo = async (): Promise<any> =>
+	await request('getBlockchainInfo')
+
+export const getBlockCount = async (): Promise<any> =>
+	await request('getBlockCount')
 
 /**
  * Executa uma transação na rede da bitcoin
@@ -100,7 +109,7 @@ export async function send(pSend: PSent): Promise<UpdtSent> {
  */
 setTimeout(() => {
 	getRpcInfo().catch(err => {
-		if (err !== 'ECONNREFUSED')
+		if (err?.code != 'ECONNREFUSED')
 			console.error('Error sendig ping to bitcoin', err)
 	})
 }, 5000)
