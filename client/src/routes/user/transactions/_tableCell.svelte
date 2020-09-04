@@ -17,7 +17,12 @@
 	let coin, name, code, decimals, fee
 
 	$: {
-		txColor = status == 'confirmed' ? 'green' : '#c2c21c'
+		txColor = status == 'confirmed' ? (
+			confirmations = null,
+			'green'
+		) : status == 'canceled' ?
+			'#e64d51'
+		: status == 'processing' ? '#89a1c1' : '#c2c21c'
 		tablePropotions = status == 'processing' ? '10% 13% 57% 16% auto' : '10% 13% 57% 16%'
 	}
 
@@ -90,6 +95,7 @@
 	.date-tx {
 		flex-direction: row;
 		justify-content: flex-end;
+		align-self: center;
 	}
 
 	button {
