@@ -146,6 +146,7 @@ router.get('/transactions', async (req, res) => {
 		txid: tx.txid,
 		account: tx.account,
 		amount: +tx.amount.toFullString(),
+		fee: tx.fee,
 		type: tx.type,
 		confirmations: tx.confirmations,
 		timestamp: tx.timestamp.getTime()
