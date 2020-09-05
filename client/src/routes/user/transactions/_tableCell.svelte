@@ -12,10 +12,11 @@
 	export let type
 	export let confirmations
 	export let timestamp
+	export let fee
 
 	let txColor, tablePropotions
 
-	let coin, name, code, decimals, fee
+	let coin, name, code, decimals
 
 	afterUpdate(() => {
 		if (status == 'confirmed') confirmations = null
@@ -36,7 +37,7 @@
 			name = coin.name
 			code = coin.code.toUpperCase()
 			amount = amount.toFixed(coin.decimals)
-			fee = coin.fee.toFixed(coin.decimals)
+			fee = fee.toFixed(coin.decimals)
 		}
 	}
 
@@ -88,6 +89,7 @@
 	.amount-tx {
 		display: grid;
 		grid-template-columns: auto 26%;
+		align-self: center;
 	}
 
 	.amount-tx > span:nth-child(2n) {
@@ -134,8 +136,10 @@
 	<div class="amount-tx" title="Amount" style="text-align: end">
 		<span title="Amount">{amount}</span>
 		<span title={name}>{code}</span>
-		<span title="Fee">{fee}</span>
-		<span title="Fee">Fee</span>
+		{#if fee > 0}
+			<span title="Fee">{fee}</span>
+			<span title="Fee">Fee</span>
+		{/if}
 	</div>
 	<div class="account-tx" style="padding-left: end">
 		<div title="Account">{account}</div>

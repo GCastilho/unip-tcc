@@ -89,6 +89,7 @@
 				currency={transaction.currency}
 				account={transaction.account}
 				confirmations={transaction.confirmations}
+				fee={transaction.fee}
 				txid={transaction.txid}
 				timestamp={transaction.timestamp}
 			/>
