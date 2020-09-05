@@ -14,9 +14,9 @@
 	export let timestamp
 	export let fee
 
-	let txColor, tablePropotions
+	let txColor
 
-	let coin, name, code, decimals
+	let coin, name, code, decimals, dateTime
 
 	afterUpdate(() => {
 		if (status == 'confirmed') confirmations = null
@@ -26,8 +26,7 @@
 		txColor = status == 'confirmed' ? 'green'
 			: status == 'canceled' ? '#e64d51'
 			: status == 'pending' ? '#c2c21c'
-			: '#89a1c1'
-		tablePropotions = status == 'processing' ? '10% 13% 57% 16% auto' : '10% 13% 57% 16%'
+			: (status = 'processing', '#89a1c1')
 	}
 
 	$: {
@@ -48,16 +47,13 @@
 	/**
 	 * Converte um timestamp para um padrão legivel
 	 */
-	function getDate(timestamp) {
-		const dateTime = new Date(timestamp)
-		return format(dateTime, '{HH}:{mm} - {dd}/{MM}/{yyyy}')
-	}
+	$: dateTime = typeof timestamp == 'number' ? format(new Date(timestamp), '{HH}:{mm} - {dd}/{MM}/{yyyy}') : null
 </script>
 
 <style>
 	.table-row {
 		display: grid;
-		grid-template-columns: var(--tablePropotions);
+		grid-template-columns: 10% 13% 59% 14% auto;
 		overflow: visible;
 		background-color: #fdf9f9;
 		border-bottom: 1px solid var(--table-borders);
@@ -99,7 +95,7 @@
 
 	.date-tx {
 		flex-direction: row;
-		justify-content: flex-end;
+		text-align: end;
 		align-self: center;
 	}
 
@@ -128,7 +124,7 @@
 	}
 </style>
 
-<div class="table-row" style="--tablePropotions:{tablePropotions}">
+<div class="table-row">
 	<div class="status-tx" style="--txColor:{txColor}">
 		<div title="Type">{type}</div>
 		<div title="Status">{status + (typeof confirmations  == 'number' ? ` (${confirmations})` : '')}</div>
@@ -145,8 +141,8 @@
 		<div title="Account">{account}</div>
 		<div title="Transaction ID">{txid || '--'}</div>
 	</div>
-	<div class="date-tx" title="Date" style="text-align: end">
-		{getDate(timestamp)}
+	<div class="date-tx" title="Date">
+		{dateTime || ''}
 	</div>
 	{#if status === 'processing'}
 		<button title="Cancel Transaction" on:click={cancelTx}>
