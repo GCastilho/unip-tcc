@@ -47,7 +47,7 @@
 	/**
 	 * Converte um timestamp para um padrão legivel
 	 */
-	$: dateTime = typeof timestamp == 'number' ? format(new Date(timestamp), '{HH}:{mm} - {dd}/{MM}/{yyyy}') : null
+	$: dateTime = timestamp ? format(new Date(timestamp), '{HH}:{mm} - {dd}/{MM}/{yyyy}') : null
 </script>
 
 <style>
