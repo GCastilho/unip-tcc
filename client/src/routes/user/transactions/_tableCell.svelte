@@ -2,7 +2,7 @@
 	import { afterUpdate } from 'svelte';
 	import Close from './cross-icon.svg'
 	import { format } from 'light-date'
-	import * as currencies  from '../../../stores/currencies'
+	import * as currencies from '../../../stores/currencies'
 
 	export let status
 	export let currency
@@ -36,7 +36,7 @@
 			name = coin.name
 			code = coin.code.toUpperCase()
 			amount = amount.toFixed(coin.decimals)
-			fee = fee.toFixed(coin.decimals)
+			fee = (fee || 0).toFixed(coin.decimals)
 		}
 	}
 

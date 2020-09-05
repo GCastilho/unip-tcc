@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store'
+import { writable, get as getStoreValue } from 'svelte/store'
 import * as auth from '../stores/auth'
 import axios from '../utils/axios'
 
@@ -19,3 +19,11 @@ auth.subscribe(async auth => {
 		accounts: accounts.data[currency.name]
 	})))
 })
+
+/**
+ * Retorna o objeto de informações de uma currency, o mesmo retornado pela API
+ * @param {string} currency A currency para retornar informações
+ */
+export function get(currency) {
+	return getStoreValue({ subscribe }).find(v => v.name == currency)
+}
