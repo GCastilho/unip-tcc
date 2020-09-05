@@ -75,10 +75,12 @@ export async function withdraw(currency, destination, amount) {
 		destination,
 		amount
 	})
+	console.log('new transaction sent, opid is:', data.opid)
 
 	update(txs => ([
 		{
-			opid: data,
+			opid: data.opid,
+			type: 'send',
 			currency,
 			account: destination,
 			amount,
