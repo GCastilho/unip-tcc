@@ -27,7 +27,6 @@
 		status == 'canceled' ? '#e64d51' :
 		status == 'processing' ? '#89a1c1' : '#c2c21c'
 		tablePropotions = status == 'processing' ? '10% 13% 57% 16% auto' : '10% 13% 57% 16%'
-		console.log(confirmations)
 	}
 
 	$: {

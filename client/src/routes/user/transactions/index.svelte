@@ -1,23 +1,16 @@
 <script>
 	import axios from '../../../utils/axios.js'
 	import * as auth from '../../../stores/auth.js'
-	import * as transactions  from '../../../stores/transactions'
+	import * as transactions from '../../../stores/transactions'
 	import TableCell from './_tableCell.svelte'
 
-	// Variaveis usadas para pegar a posisão do scroll
-	let scrollY
-	let innerHeight
-	let body
-
-	// Garante que a store de transactions tenha as últimas tx p/ mostrar na tela
-	transactions.fetch()
-
 	/**
-	 * Função para carregar mais transações ao chegar ao final da pagina
+	 * Função para carregar mais transações ao chegar perto do final da página
 	 */
 	function handleScroll() {
-		if ((innerHeight+scrollY) >= body.scrollHeight) {
-			transactions.fetch($transactions.length + 10)
+		// Checa se chegou a 80% do fim da página
+		if ((window.innerHeight + window.pageYOffset) >= 0.8 * document.body.offsetHeight) {
+			transactions.fetch()
 		}
 	}
 </script>
@@ -66,15 +59,11 @@
 	}
 </style>
 
-<svelte:window
-	on:scroll={handleScroll}
-	bind:innerHeight={innerHeight}
-	bind:scrollY={scrollY}
-/>
+<svelte:window on:scroll={handleScroll} />
 
 <h1>Transactions</h1>
 <div class="background-table">
-	<div class="table" bind:this={body}>
+	<div class="table">
 		<div>
 			<th>Type</th>
 			<th>Amount / Fee</th>
