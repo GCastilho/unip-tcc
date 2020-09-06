@@ -1,7 +1,8 @@
 import { writable } from 'svelte/store'
 import axios from '../utils/axios'
-import { addSocketListener } from '../utils/websocket'
 import { updateBalances } from './balances'
+import { get as getCurrency } from './currencies'
+import { addSocketListener } from '../utils/websocket'
 import * as auth from './auth'
 
 const { subscribe, update, set } = writable([])
@@ -33,10 +34,7 @@ export async function fetch() {
 
 	update(transactions => {
 		for (let tx of data) {
-			const index = transactions.findIndex(v =>
-				v.opid === tx.opid ||
-				v.txid === tx.txid
-			)
+			const index = transactions.findIndex(v => v.opid === tx.opid)
 			if (index == -1)
 				transactions.push(tx)
 		}
@@ -81,10 +79,11 @@ export async function withdraw(currency, destination, amount) {
 		{
 			opid: data.opid,
 			type: 'send',
+			status: 'processing',
 			currency,
 			account: destination,
 			amount,
-			fee: 0 // Fix
+			fee: getCurrency(currency).fee
 		},
 		...txs
 	]))
@@ -107,14 +106,12 @@ addSocketListener('new_transaction', (currency, transaction) => {
 addSocketListener('update_received_tx', async (currency, txUpdate) => {
 	console.log('update_received_tx', txUpdate)
 	update(tx => {
-		const index = tx.findIndex(tx =>
-			tx.opid === txUpdate.opid ||
-			tx.txid === txUpdate.txid
-		)
-		if (index >= 0)
+		const index = tx.findIndex(tx => tx.opid === txUpdate.opid)
+		if (index >= 0) {
 			tx[index] = {...tx[index], ...txUpdate}
-		if (txUpdate.status == 'confirmed')
-			updateBalances(currency, txUpdate.amount, -txUpdate.amount)
+			if (txUpdate.status == 'confirmed')
+				updateBalances(currency, tx[index].amount, -tx[index].amount)
+		}
 		return tx
 	})
 })
@@ -123,14 +120,12 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
 addSocketListener('update_sent_tx', async (currency, txUpdate) => {
 	console.log('update_sent_tx', txUpdate)
 	update(tx => {
-		const index = tx.findIndex(tx =>
-			tx.opid === txUpdate.opid ||
-			tx.txid === txUpdate.txid
-		)
-		if (index >= 0)
+		const index = tx.findIndex(tx => tx.opid === txUpdate.opid)
+		if (index >= 0) {
 			tx[index] = {...tx[index], ...txUpdate}
-		if (txUpdate.status == 'confirmed')
-			updateBalances(currency, 0, -txUpdate.amount)
+			if (txUpdate.status == 'confirmed')
+				updateBalances(currency, 0, -tx[index].amount)
+		}
 		return tx
 	})
 })

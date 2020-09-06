@@ -14,20 +14,16 @@
 	export let timestamp
 	export let fee
 
-	let txColor
-
 	let coin, name, code, decimals, dateTime
 
 	afterUpdate(() => {
 		if (status == 'confirmed') confirmations = null
 	})
 
-	$: {
-		txColor = status == 'confirmed' ? 'green'
-			: status == 'canceled' ? '#e64d51'
-			: status == 'pending' ? '#c2c21c'
-			: (status = 'processing', '#89a1c1')
-	}
+	$: txColor = status == 'confirmed' ? 'green'
+		: status == 'canceled' ? '#e64d51'
+		: status == 'pending' ? '#c2c21c'
+		: '#89a1c1'
 
 	$: {
 		coin = $currencies.find(value => currency === value.name)
@@ -127,7 +123,7 @@
 <div class="table-row">
 	<div class="status-tx" style="--txColor:{txColor}">
 		<div title="Type">{type}</div>
-		<div title="Status">{status + (typeof confirmations  == 'number' ? ` (${confirmations})` : '')}</div>
+		<div title="Status">{status + (typeof confirmations == 'number' ? ` (${confirmations})` : '')}</div>
 	</div>
 	<div class="amount-tx" title="Amount" style="text-align: end">
 		<span title="Amount">{amount}</span>
