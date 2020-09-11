@@ -52,7 +52,9 @@
 		grid-template-columns: 10% 13% 59% 14% auto;
 		overflow: visible;
 		background-color: #fdf9f9;
-		border-bottom: 1px solid var(--table-borders);
+		border: 1px solid var(--table-borders);
+		border-bottom: 0;
+		border-left: 0;
 	}
 
 	.table-row:nth-child(2n) {
@@ -67,15 +69,20 @@
 		display: flex;
 		flex-direction: column;
 		padding-left: 10px;
-		white-space: nowrap;
 	}
 
 	.status-tx {
-		border-left: 3px solid var(--txColor)
+		border-left: 3px solid var(--txColor);
 	}
 
-	.status-tx > div:last-child {
+	.status-tx > span:last-child {
 		color: var(--txColor);
+	}
+
+	.status-tx > span, .account-tx > span {
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		overflow: hidden;
 	}
 
 	.amount-tx {
@@ -90,7 +97,6 @@
 	}
 
 	.date-tx {
-		flex-direction: row;
 		text-align: end;
 		align-self: center;
 	}
@@ -118,12 +124,67 @@
 		transition: 0s;
 		fill: black;
 	}
+
+	.mobile {
+		display: none;
+		background-color: rgba(255,62,0,0.7);
+	}
+
+	@media only screen and (max-width: 900px){
+		.table-row {
+			grid-template-columns: 50% 50%;
+			grid-template-rows: repeat(n, 1fr);
+			text-align: center;
+		}
+
+		.table-row > div {
+			border-left: 0;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			overflow: hidden;
+		}
+
+		.status-tx {
+			padding: 0;
+		}
+
+		.amount-tx {
+			grid-template-columns: auto min-content;
+		}
+
+		.amount-tx > span:nth-child(2n) {
+			text-align: start;
+			padding: 0 5px;
+		}
+
+		.date-tx {
+			text-align: center;
+		}
+
+		.mobile {
+			display: flex;
+			flex-direction: column;
+			flex-grow: 1;
+			border-left: 1px solid var(--table-borders) !important;
+			align-self: center;
+		}
+	}
 </style>
 
-<div class="table-row">
-	<div class="status-tx" style="--txColor:{txColor}">
-		<div title="Type">{type}</div>
-		<div title="Status">{status + (typeof confirmations == 'number' ? ` (${confirmations})` : '')}</div>
+<div class="table-row" style="--txColor:{txColor}">
+	<div class="mobile">
+		<span>Type</span>
+		<span>Status</span>
+	</div>
+	<div class="status-tx">
+		<span title="Type">{type}</span>
+		<span title="Status">{status + (typeof confirmations == 'number' ? ` (${confirmations})` : '')}</span>
+	</div>
+	<div class="mobile">
+		<span>Amount</span>
+		{#if fee > 0}
+			<span>Fee</span>
+		{/if}
 	</div>
 	<div class="amount-tx" title="Amount" style="text-align: end">
 		<span title="Amount">{amount}</span>
@@ -133,14 +194,24 @@
 			<span title="Fee">Fee</span>
 		{/if}
 	</div>
+	<div class="mobile">
+		<span>Account</span>
+		<span>Transaction ID</span>
+	</div>
 	<div class="account-tx" style="padding-left: end">
-		<div title="Account">{account}</div>
-		<div title="Transaction ID">{txid || '--'}</div>
+		<span title="Account">{account}</span>
+		<span title="Transaction ID">{txid || '--'}</span>
+	</div>
+	<div class="mobile">
+		<span>Date</span>
 	</div>
 	<div class="date-tx" title="Date">
-		{dateTime || ''}
+		<span>{dateTime || ''}</span>
 	</div>
 	{#if status === 'processing'}
+		<div class="mobile">
+			<span>Cancel Transaction</span>
+		</div>
 		<button title="Cancel Transaction" on:click={cancelTx}>
 			<Close width="20px" height="20px"/>
 		</button>

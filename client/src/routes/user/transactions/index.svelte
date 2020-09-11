@@ -22,7 +22,7 @@
 		border: 1px solid var(--table-borders);
 		border-radius: 5px;
 		border-spacing: 0;
-		border-top: 0;
+		border-right: 0;
 		border-left: 0;
 		margin-right:20px;
 		width: 100%;
@@ -46,7 +46,6 @@
 
 	.background-table {
 		width: calc(100vw - 100px);
-		min-width: 630px;
 		min-height: calc(100vh - 220px);
 		border: 1px solid lightgray;
 		margin-top: 1.5em;
@@ -56,6 +55,18 @@
 		border-radius: 15px;
 		box-shadow: 0px 5px 50px 0px rgba(18, 89, 93, 0.15);
 		line-height: 30px;
+	}
+
+	@media only screen and (max-width: 900px){
+		.table {
+			border-top: 0;
+		}
+
+		.table > div:first-of-type {
+			display: none;
+			grid-template-columns: auto;
+			grid-template-rows: auto auto auto auto;
+		}
 	}
 </style>
 
