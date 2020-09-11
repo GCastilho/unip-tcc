@@ -27,8 +27,12 @@ describe('Performing match tests on the MarketApi', () => {
 		// Remove as ordens do orderbook para impedir que um teste influencie outro
 		for (const order of await Order.find({ status: 'ready' }))
 			await MarketApi.remove(user, order._id).catch(err => {
-				if (err != 'OrderNotFound' && err != 'OperationNotFound' && !err?.message?.includes('Market not found'))
-					throw err
+				if (
+					err != 'OrderNotFound' &&
+					err != 'OperationNotFound' &&
+					err != 'PriceNotFound' &&
+					!err?.message?.includes('Market not found')
+				) throw err
 			})
 		await Order.deleteMany({})
 		spy = ImportMock.mockFunction(Trade) as SinonStub<Parameters<typeof Trade['default']>>
@@ -70,6 +74,64 @@ describe('Performing match tests on the MarketApi', () => {
 		const [maker, taker] = args[0]
 		expect(maker.id).to.equals(makerOpid.toHexString(), 'First item\'s id mismatch expected maker opid')
 		expect(taker.id).to.equals(takerOpid.toHexString(), 'Second item\'s id mismatch expected taker opid')
+	})
+
+	// Insere 2 makers iguais e uma taker com amount que deve dar match apenas na primeira delas
+	it('Should not match more orders than owning amount', async () => {
+		const makerOrder: Parameters<typeof MarketApi['add']>[1] = {
+			owning: {
+				currency: 'bitcoin',
+				amount: 3
+			},
+			requesting: {
+				currency: 'nano',
+				amount: 6
+			}
+		}
+
+		const takerOrder: Parameters<typeof MarketApi['add']>[1] = {
+			owning: {
+				currency: 'nano',
+				amount: 6
+			},
+			requesting: {
+				currency: 'bitcoin',
+				amount: 3
+			}
+		}
+
+		const makersOpid: Parameters<Parameters<ReturnType<typeof MarketApi['add']>['then']>[0]>[0][] = []
+		makersOpid.push(await MarketApi.add(user, makerOrder))
+		makersOpid.push(await MarketApi.add(user, makerOrder))
+
+		const takerOpid = await MarketApi.add(user, takerOrder)
+
+		sinon.assert.calledOnce(spy)
+
+		const args = spy.getCall(0).args[0]
+		expect(args).to.have.lengthOf(1, 'Trade function should have received precisely one match')
+		expect(args[0]).to.have.lengthOf(2, 'Trade function was not called with a touple')
+
+		const [maker, taker] = args[0]
+
+		// Testa se as ordens foram enviadas com o valor correto
+		expect(maker.id).to.equals(makersOpid[0].toHexString(), 'First item\'s id mismatch expected maker opid')
+		expect(taker.id).to.equals(takerOpid.toHexString(), 'Second item\'s id mismatch expected taker opid')
+		expect(maker.owning.currency).to.equals(taker.requesting.currency)
+		expect(maker.owning.amount).to.equals(taker.requesting.amount)
+		expect(maker.requesting.amount).to.equals(taker.owning.amount)
+		expect(maker.requesting.currency).to.equals(taker.owning.currency)
+		expect(maker.status).to.equals('matched')
+		expect(taker.status).to.equals('matched')
+
+		// Testa se a segunda maker está salva no banco
+		expect(await Order.findOne({
+			_id: makersOpid[1],
+			status: 'ready'
+		})).to.be.an('object')
+
+		// Testa se nenhuma ordem foi dividida
+		expect(await Order.find({})).to.have.lengthOf(3)
 	})
 
 	describe('If maker is bigger than taker', () => {

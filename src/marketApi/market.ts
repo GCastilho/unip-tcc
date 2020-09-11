@@ -1,140 +1,7 @@
-import assert from 'assert'
 import { ObjectId } from 'mongodb'
 import OrderDoc from '../db/models/order'
 import trade from './trade'
 import type { Order } from '../db/models/order'
-
-/**
- * Combina uma ordem taker com ordens ordens makers, dividindo a ordem taker em
- * ordens iguais as makers, retornando-as em pares
- *
- * A ordem taker deve ter um preço igual ou "mais vantajoso" que as ordens do
- * array de makers, isto é, serem mais baratas para uma taker de compra ou mais
- * caras para uma taker de venda
- *
- * Se o amount owning da taker for diferente da soma dos amounts requesting das
- * makers, uma ordem com a diferença será retornada em um array de 'leftovers',
- * sendo esta o restante da taker ou das makers
- */
-async function matchMakers(taker: Order, makers: Order[]) {
-	assert(makers.length > 0, 'Makers array must have at least one item')
-
-	/** Quantidade da taker (do que o usuário TEM) restante para dar match */
-	let remaining = taker.owning.amount
-
-	/** Array de touples [maker, taker] */
-	const matchs: [Order, Order][] = []
-
-	/**
-	 * Array de 'resto', ordens que não foram feitas match e devem ser
-	 * recolocadas no orderbook
-	 */
-	const leftovers: Order[] = []
-
-	/**
-	 * Itera pelo array de makers criando cópias da taker para fazer match com
-	 * cada uma das makers. Quando/se uma maker for maior que o restante coloca-a
-	 * no array de leftovers junto com o resto do array sem descontar o remaining
-	 *
-	 * Se a Market selecionou as ordens corretamente haverá apenas uma ordem no
-	 * leftovers, alem disso, o preço das makers sempre será "vantajoso" para a
-	 * taker, ou seja, o amount do requesting da taker no match será maior que o
-	 * que originalmente estava na taker
-	 *
-	 * O for irá rodar enquando
-	 * 'i < makers.length && remaining > maker.requesting.amount' for true,
-	 * qdo isso não for mais verdade, executa o push e retorna 0
-	 */
-	for (
-		let i = 0, maker = makers[0];
-		i < makers.length && remaining > maker.requesting.amount || leftovers.push(...makers.slice(i)) & 0;
-		i++, remaining -= maker.requesting.amount, maker = makers[i]
-	) {
-		const takerCopy = new OrderDoc(taker)
-		takerCopy._id = new ObjectId()
-		takerCopy.isNew = true
-
-		takerCopy.owning.amount = maker.requesting.amount
-		takerCopy.requesting.amount = maker.owning.amount
-		matchs.push([maker, takerCopy])
-	}
-
-	/**
-	 * Atualiza owning e requesting da taker com os valores do remaining
-	 *
-	 * Owning e requesting devem ficar na mesma proporção, então o requesting
-	 * será atualizado na proporção em que o owning foi reduzido
-	 */
-	taker.requesting.amount = taker.requesting.amount * remaining / taker.owning.amount
-	taker.owning.amount = remaining
-
-	/** Se owning.amount > 0: A taker não foi executada completamente */
-	if (taker.owning.amount > 0) {
-		if (leftovers.length > 0) {
-			const maker = leftovers.shift() as Order
-			if (taker.owning.amount < maker.requesting.amount) {
-				/*
-				 * A maker é maior que o restante da taker. Ela deve ser
-				 * dividida em duas:
-				 * a primeira com os amounts da taker para ser enviada ao match
-				 * e a segunda com o restante que deverá retornar ao orderbook
-				 */
-
-				// Ordem com os valores da diferença entre maker e taker
-				maker.owning.amount = maker.owning.amount - taker.requesting.amount
-				maker.requesting.amount = maker.requesting.amount - taker.owning.amount
-				leftovers.push(maker)
-
-				/** Ordem com os valores da taker (para o match) */
-				const makerCopy = new OrderDoc(maker)
-				makerCopy._id = new ObjectId()
-				makerCopy.isNew = true
-				makerCopy.owning.amount = taker.requesting.amount
-				makerCopy.requesting.amount = taker.owning.amount
-
-				matchs.push([makerCopy, taker])
-			} else {
-				/**
-				 * Se o código cair aqui, então
-				 * taker.owning.amount == maker.requesting.amount
-				 * Entretando, se as ordens tiverem preços diferentes, o reverso não é
-				 * válido
-				 *
-				 * Como a maker nunca tem um owning que é desvantajoso ao requesting da
-				 * taker, então essa linha garante que os valores sejam iguais sem
-				 * prejudicar a taker, garantindo o preço igual que as ordens precisam
-				 * ter para um 'match' ser feito
-				 */
-				taker.requesting.amount = maker.owning.amount
-				matchs.push([maker, taker])
-			}
-		} else {
-			/**
-			 * Taker tem amount maior que as ordens do array de makers. Os amounts da
-			 * taker já foram atualizados então é só adicioná-la no array de leftovers
-			 * para ser retornada e adicionada ao livro
-			 */
-			leftovers.push(taker)
-		}
-	}
-
-	/** Array de promessas de operações no banco de dados */
-	const promises: Promise<Order>[] = []
-
-	// Salva as ordens do match no banco de dados com o journaling atualizado
-	promises.push(...matchs.flatMap(orders => orders.map(order => {
-		order.status = 'matched'
-		return order.save()
-	})))
-
-	// As ordens do resto podem ou não ter sido modificadas, salva todas
-	promises.push(...leftovers.map(order => order.save()))
-
-	// Não há garantia de "all or nothing" nessas operações
-	await Promise.all(promises)
-
-	return { matchs, leftovers }
-}
 
 /**
  * O type da linked list dos nodes do orderbook
@@ -170,36 +37,6 @@ export default class Market {
 		this.buyPrice = 0
 		this.sellPrice = Infinity
 		this.head = null
-	}
-
-	/**
-	 * Remove o node da linked list se o array da data estiver vazio e atualiza
-	 * buy/sellPrice caso o node removido tenha preços iguais a um deles
-	 * @param node O node que deverá ser checado para remoção
-	 */
-	private removeNodeIfEmpty(node: LinkedList) {
-		// Removes node from linked list if data is empty
-		if (node.data.length == 0) {
-			// Atualiza os preços
-			if (node.price == this.buyPrice) {
-				// Atualiza o preço da maior ordem de compra para baixo
-				if (node.previous) this.buyPrice = node.previous.price
-				else this.buyPrice = 0
-			} else if (node.price == this.sellPrice) {
-				// Atualiza o preço da menor ordem de venda para cima
-				if (node.next) this.sellPrice = node.next.price
-				else this.sellPrice = Infinity
-			}
-			// Remove o node e atualiza head
-			if (node.next)
-				node.next.previous = node.previous
-			if (node.previous) {
-				node.previous.next = node.next
-			} else {
-				this.head = node.next
-			}
-			this.orderbook.delete(node.price)
-		}
 	}
 
 	/**
@@ -245,6 +82,41 @@ export default class Market {
 	}
 
 	/**
+	 * Remove uma ordem de uma posição arbitrária do array de ordens e a retorna
+	 * Se o array resultante estiver vazio ele será removido do orderbook
+	 * @param node O node da ordem que será retornado
+	 * @param index O index da ordem será retornada
+	 */
+	private getOrderFromIndex(node: LinkedList, index: number) {
+		const order = node.data.splice(index, 1)[0]
+
+		// Removes node from linked list if data is empty
+		if (node.data.length == 0) {
+			// Atualiza os preços
+			if (node.price == this.buyPrice) {
+				// Atualiza o preço da maior ordem de compra para baixo
+				if (node.previous) this.buyPrice = node.previous.price
+				else this.buyPrice = 0
+			} else if (node.price == this.sellPrice) {
+				// Atualiza o preço da menor ordem de venda para cima
+				if (node.next) this.sellPrice = node.next.price
+				else this.sellPrice = Infinity
+			}
+			// Remove o node e atualiza head
+			if (node.next)
+				node.next.previous = node.previous
+			if (node.previous) {
+				node.previous.next = node.next
+			} else {
+				this.head = node.next
+			}
+			this.orderbook.delete(node.price)
+		}
+
+		return order
+	}
+
+	/**
 	 * Checa se a inserção de uma ordem (pré-determinada como) maker deve ou não
 	 * alterar o marketPrice e, em caso positivo, faz essa alteração
 	 * @param order A orderm maker que foi/será adicionada ao livro
@@ -272,12 +144,12 @@ export default class Market {
 	/**
 	 * Adiciona uma ordem (pré-determinada como) maker ao orderbook no fim
 	 * da fila de um preço
-	 * @param order A ordem maker que será adicionada
+	 * @param maker A ordem maker que será adicionada
 	 */
-	private pushMaker(order: Order) {
-		const node = this.getNode(order.price)
-		node.data.push(order)
-		this.updateMarketPrice(order)
+	private pushMaker(maker: Order) {
+		const node = this.getNode(maker.price)
+		node.data.push(maker)
+		this.updateMarketPrice(maker)
 	}
 
 	/**
@@ -291,30 +163,104 @@ export default class Market {
 	 * melhor que o estipulado na ordem (mas nunca pior), o que pode resultar no
 	 * usuário recebendo uma quantidade maior que o esperado na troca
 	 *
-	 * @param order A ordem taker que será executada
+	 * @param taker A ordem taker que será executada
 	 */
-	private async execTaker(order: Order) {
+	private async execTaker(taker: Order) {
+		/** Array de touples [maker, taker] */
+		const matchs: [Order, Order][] = []
+
+		/**
+		 * Array de 'resto' de ordens que não foram feitas match completamente e
+		 * devem ser recolocadas no orderbook
+		 */
+		const leftovers: Order[] = []
+
 		/** A quantidade restante de quanto o usuário TEM para executar a ordem */
-		let remaining = order.owning.amount
+		let remaining = taker.owning.amount
 
-		/** Vetor de ordens maker que irão fazer trade com essa ordem taker */
-		const makers: Order[] = []
-
-		while (remaining > 0) {
-			const price = order.type == 'buy' ? this.sellPrice : this.buyPrice
-			// Checa se o preço está no range válido
-			if (price == 0 || price == Infinity) break
-
-			// Checa se o preço de mercado está no limite válido para este type
-			if (
-				order.type == 'buy' && price > order.price ||
-				order.type == 'sell' && price < order.price
-			) break
-
+		/**
+		 * Faz match da taker com as ordens maker que estão no livro
+		 *
+		 * O match será feito na faixa entre buy/sellPrice e o preço da ordem, sendo
+		 * sempre o preço mais vantajoso ou igual ao que a taker requisitou. Como
+		 * resultado, o amount do requesting da taker no match poderá será maior
+		 * que o que originalmente estava na taker, mas nunca menor
+		 *
+		 * Uma ordem que for feito match parcial será colocada no array de leftovers
+		 * para ser retornada ao livro
+		 *
+		 * O for irá rodar enquando o preço estiver em uma faixa aceitável
+		 * (> 0 e < Infinity), enquanto a taker ainda tiver owning para fazer match
+		 * e enquanto o preço for mais barato ou igual para uma ordem de compra ou
+		 * mais caro ou igual em uma ordem de venda
+		 */
+		for (
+			let price = taker.type == 'buy' ? this.sellPrice : this.buyPrice;
+			price > 0 && price < Infinity && (
+				taker.type == 'buy' && price <= taker.price ||
+				taker.type == 'sell' && price >= taker.price
+			) && remaining > 0;
+			price = taker.type == 'buy' ? this.sellPrice : this.buyPrice
+		) {
 			const node = this.orderbook.get(price)
 			if (!node) throw new Error('There is no orders on the requested price')
-			const makerOrder = node.data.shift() as Order
-			this.removeNodeIfEmpty(node)
+			const maker = this.getOrderFromIndex(node, 0)
+
+			if (remaining > maker.requesting.amount) {
+				const takerCopy = new OrderDoc(taker)
+				takerCopy._id = new ObjectId()
+				takerCopy.isNew = true
+
+				takerCopy.owning.amount = maker.requesting.amount
+				takerCopy.requesting.amount = maker.owning.amount
+				matchs.push([maker, takerCopy])
+			} else {
+				/**
+				 * Atualiza owning e requesting da taker com os valores do remaining
+				 *
+				 * Owning e requesting devem ficar na mesma proporção, então o
+				 * requesting será atualizado na proporção em que o owning foi reduzido
+				 */
+				taker.requesting.amount = taker.requesting.amount * remaining / taker.owning.amount
+				taker.owning.amount = remaining
+
+				if (taker.owning.amount < maker.requesting.amount) {
+					/*
+					 * A maker é maior que o restante da taker. Ela deve ser
+					 * dividida em duas:
+					 * a primeira com os amounts da taker para ser enviada ao match
+					 * e a segunda com o restante que deverá retornar ao orderbook
+					 */
+
+					// Ordem com os valores da diferença entre maker e taker
+					maker.owning.amount = maker.owning.amount - taker.requesting.amount
+					maker.requesting.amount = maker.requesting.amount - taker.owning.amount
+					leftovers.push(maker)
+
+					/** Ordem com os valores da taker (para o match) */
+					const makerCopy = new OrderDoc(maker)
+					makerCopy._id = new ObjectId()
+					makerCopy.isNew = true
+					makerCopy.owning.amount = taker.requesting.amount
+					makerCopy.requesting.amount = taker.owning.amount
+
+					matchs.push([makerCopy, taker])
+				} else {
+					/**
+					 * Se o código cair aqui, então
+					 * taker.owning.amount == maker.requesting.amount
+					 * Entretando, se as ordens tiverem preços diferentes, o reverso
+					 * (requesting da taker e owning da maker) não  válido
+					 *
+					 * Como a maker nunca tem um owning que é desvantajoso ao requesting
+					 * da taker, então essa linha garante que os valores sejam iguais sem
+					 * prejudicar a taker, garantindo o preço igual que as ordens precisam
+					 * ter para um 'match' ser feito
+					 */
+					taker.requesting.amount = maker.owning.amount
+					matchs.push([maker, taker])
+				}
+			}
 
 			/**
 			 * Duas ordens com types diferentes tem requesting e owning de currencies
@@ -324,16 +270,35 @@ export default class Market {
 			 * Essa linha atualiza quanto da currency que a taker TEM (para "pagar")
 			 * já foi utilizado, subtraindo o amount de mesma currency da maker
 			 */
-			remaining -= makerOrder.requesting.amount
-
-			// Adiciona a ordem no array que será enviada a matchMakers
-			makers.push(makerOrder)
+			remaining -= maker.requesting.amount
 		}
 
-		const { matchs, leftovers } = await matchMakers(order, makers)
+		// Taker não executou completamente
+		if (remaining > 0) {
+			// Atualiza owning e requesting da taker com os valores do remaining
+			taker.requesting.amount = taker.requesting.amount * remaining / taker.owning.amount
+			taker.owning.amount = remaining
+
+			leftovers.push(taker)
+		}
+
+		/** Array de promessas de operações no banco de dados */
+		const promises: Promise<Order>[] = []
+
+		// Salva as ordens do match no banco de dados com o journaling atualizado
+		promises.push(...matchs.flatMap(orders => orders.map(order => {
+			order.status = 'matched'
+			return order.save()
+		})))
+
+		// As ordens do resto podem ou não ter sido modificadas, salva todas
+		promises.push(...leftovers.map(order => order.save()))
 
 		/** Readiciona a ordem ao inicio do array deste preço */
 		leftovers.forEach(maker => this.unshiftMaker(maker))
+
+		// Não há garantia de "all or nothing" nessas operações
+		await Promise.all(promises)
 
 		// Envia os matchs à função de trade
 		await trade(matchs)
@@ -360,10 +325,10 @@ export default class Market {
 	 * @param order A ordem que deverá ser removida
 	 */
 	remove(order: Order) {
-		const node = this.orderbook.get(order.price) as LinkedList
+		const node = this.orderbook.get(order.price)
+		if (!node) throw 'PriceNotFound'
 		const index = node.data.findIndex(v => v.id == order.id)
 		if (index == -1) throw 'OrderNotFound'
-		node.data.splice(index, 1)
-		this.removeNodeIfEmpty(node)
+		this.getOrderFromIndex(node, index)
 	}
 }
