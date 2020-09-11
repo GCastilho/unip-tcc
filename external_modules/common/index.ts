@@ -37,7 +37,7 @@ export default abstract class Common {
 	/**
 	 * Inicia o listener de requests da blockchain
 	 */
-	abstract initBlockchainListener(): void
+	abstract initBlockchainListener(): void|Promise<void>
 
 	/**
 	 * Processa novas transações recebidas e as envia ao servidor principal

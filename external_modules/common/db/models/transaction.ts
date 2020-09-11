@@ -11,8 +11,7 @@ export interface Transaction extends Document {
 const TransactionSchema = new Schema({
 	opid: {
 		type: ObjectId,
-		unique: true,
-		required: false,
+		required: false
 	},
 	txid: {
 		type: String,
@@ -29,8 +28,18 @@ const TransactionSchema = new Schema({
 	}
 })
 
+/* Faz o index existir apenas se tiver um opid */
+TransactionSchema.index({
+	opid: 1
+}, {
+	unique: true,
+	partialFilterExpression: {
+		opid: { $exists: true }
+	}
+})
+
 /*
- * Adicionado txid e type como indice composto caso o txid não seja nulo
+ * Faz o index composto do txid e type existir apenas caso o txid não seja nulo
  */
 TransactionSchema.index({
 	txid: 1,
