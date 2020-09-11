@@ -250,7 +250,7 @@ export default class Market {
 					 * Se o código cair aqui, então
 					 * taker.owning.amount == maker.requesting.amount
 					 * Entretando, se as ordens tiverem preços diferentes, o reverso
-					 * (requesting da taker e owning da maker) não  válido
+					 * (requesting da taker e owning da maker) não é válido
 					 *
 					 * Como a maker nunca tem um owning que é desvantajoso ao requesting
 					 * da taker, então essa linha garante que os valores sejam iguais sem
@@ -291,7 +291,7 @@ export default class Market {
 			return order.save()
 		})))
 
-		// As ordens do resto podem ou não ter sido modificadas, salva todas
+		/** Salva as ordens do leftovers */
 		promises.push(...leftovers.map(order => order.save()))
 
 		/** Readiciona a ordem ao inicio do array deste preço */

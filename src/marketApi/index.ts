@@ -27,7 +27,7 @@ class MarketNotFound extends Error {
 /** Map que armazena todos os mercados de pares de currencies instanciados */
 const markets = new Map<string, Market>()
 
-/** Retorna a string chave do mercado de um par */
+/** Retorna a string chave de mercado de um par */
 function getMarketKey(orderedPair: Order['orderedPair']) {
 	return orderedPair.map(item => item.currency).toString()
 }
@@ -36,6 +36,7 @@ function getMarketKey(orderedPair: Order['orderedPair']) {
  * Adiciona uma nova ordem ao livro de ordens do mercado
  * @param order A nova odem que deve ser adicionada ao livro de ordens
  * @throws ValidationError from mongoose
+ * @throws 'SameCurrencyOperation' if owning and requesting currency are the same
  * @returns Order's opid
  */
 export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
@@ -87,7 +88,8 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
  * não tenha sido executada
  * @param opid O id da ordem que será removida
  * @throws 'OrderNotFound' Se a ordem não existir ou já tiver sido executada
- * @throws MarketNotFound
+ * @throws OperationNotFound if UserApi could not found the locked operation
+ * @throws MarketNotFound if the market was not found in the markets map
  */
 export async function remove(user: User, opid: ObjectId) {
 	// Há uma race entre a ordem ser selecionada na execTaker e o trigger no update para status 'matched'
