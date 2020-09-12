@@ -61,7 +61,7 @@ auth.subscribe(v => {
 })
 
 /**
- * Realiza um request de saque e atualiza a store de transactions
+ * Realiza um request de saque
  * @param {string} currency A currency que será sacada
  * @param {string} destination O endereço de destino que as moedas devem ser enviadas
  * @param {number} amount A quantidade dessa currency que será sacada
@@ -91,6 +91,23 @@ export async function withdraw(currency, destination, amount) {
 	updateBalances(currency, -amount, amount)
 }
 
+/**
+ * Cancela uma operação de saque caso ela ainda não tenha sido executada
+ * @param {string} opid O opid da transação que será cancelada
+ */
+export async function cancell(opid) {
+	try {
+		await axios.delete(`/v1/user/transactions/${opid}`)
+		update(txs => {
+			const index = txs.findIndex(v => v.opid == opid)
+			txs.splice(index, 1)
+			return txs
+		})
+	} catch (err) {
+		console.error('Error cancelling transaction', err)
+	}
+}
+
 /** Atualiza a store ao receber uma nova transação */
 addSocketListener('new_transaction', (currency, transaction) => {
 	console.log('new_transaction', transaction)
@@ -105,27 +122,27 @@ addSocketListener('new_transaction', (currency, transaction) => {
 /** Atualiza uma transação 'receive' existente na store */
 addSocketListener('update_received_tx', async (currency, txUpdate) => {
 	console.log('update_received_tx', txUpdate)
-	update(tx => {
-		const index = tx.findIndex(tx => tx.opid === txUpdate.opid)
+	update(txs => {
+		const index = txs.findIndex(tx => tx.opid === txUpdate.opid)
 		if (index >= 0) {
-			tx[index] = {...tx[index], ...txUpdate}
+			txs[index] = {...txs[index], ...txUpdate}
 			if (txUpdate.status == 'confirmed')
-				updateBalances(currency, tx[index].amount, -tx[index].amount)
+				updateBalances(currency, txs[index].amount, -txs[index].amount)
 		}
-		return tx
+		return txs
 	})
 })
 
 /** Atualiza uma transação 'send' existente na store */
 addSocketListener('update_sent_tx', async (currency, txUpdate) => {
 	console.log('update_sent_tx', txUpdate)
-	update(tx => {
-		const index = tx.findIndex(tx => tx.opid === txUpdate.opid)
+	update(txs => {
+		const index = txs.findIndex(tx => tx.opid === txUpdate.opid)
 		if (index >= 0) {
-			tx[index] = {...tx[index], ...txUpdate}
+			txs[index] = {...txs[index], ...txUpdate}
 			if (txUpdate.status == 'confirmed')
-				updateBalances(currency, 0, -tx[index].amount)
+				updateBalances(currency, 0, -txs[index].amount)
 		}
-		return tx
+		return txs
 	})
 })
