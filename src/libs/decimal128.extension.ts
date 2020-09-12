@@ -9,7 +9,7 @@ declare module 'mongodb' {
 		 */
 		toFullString(): string
 		/**
-		 * Returns the absolute value of this Decimal28 (the value without
+		 * Returns the absolute value of this Decimal128 (the value without
 		 * regard to whether it is positive or negative). For example, the
 		 * absolute value of -5 is the same as the absolute value of 5
 		 */
@@ -128,7 +128,13 @@ Decimal128.prototype.truncate = function truncate(decimals) {
  * @param decimals Um valor opcional de casas decimais para truncar
  */
 Decimal128.fromNumeric = function toDecimal128(value, decimals = 0) {
-	let _value = value.toString()
+	if (Number.isNaN(+value)) throw {
+		name: 'ValidationError',
+		message: `${value} is not numeric`
+	}
+
+	// Garante que números em notação científica serão corretamente processados
+	let _value = Decimal128.prototype.toFullString.call(value)
 	// Corta as casas que vão alem da quantidade de decimais estabelecidos
 	if (decimals) {
 		// eslint-disable-next-line
