@@ -82,17 +82,7 @@
 			<th>Date</th>
 		</div>
 		{#each $transactions as transaction}
-			<TableCell
-				type={transaction.type}
-				status={transaction.status}
-				amount={transaction.amount}
-				currency={transaction.currency}
-				account={transaction.account}
-				confirmations={transaction.confirmations}
-				fee={transaction.fee}
-				txid={transaction.txid}
-				timestamp={transaction.timestamp}
-			/>
+			<TableCell transaction={transaction}/>
 		{:else}
 			<tr>
 				<td colspan="100%" style="border-right:none">

@@ -3,18 +3,24 @@
 	import Close from './cross-icon.svg'
 	import { format } from 'light-date'
 	import * as currencies from '../../../stores/currencies'
+	import * as transactions from '../../../stores/transactions'
 
-	export let status
-	export let currency
-	export let txid
-	export let account
-	export let amount
-	export let type
-	export let confirmations
-	export let timestamp
-	export let fee
+	export let transaction
 
-	let coin, name, code, decimals, dateTime
+	let {
+		status,
+		opid,
+		currency,
+		txid,
+		account,
+		amount,
+		type,
+		confirmations,
+		timestamp,
+		fee
+	} = transaction
+
+	let coin, name, code, dateTime
 
 	afterUpdate(() => {
 		if (status == 'confirmed') confirmations = null
@@ -37,7 +43,7 @@
 	}
 
 	function cancelTx() {
-		console.log('Voce clicou em mim!!! o que significa que vc quer cancelar, VOCÊ NÃO DEVIA CANCELAR A OPERAÇÃO')
+		transactions.cancell(opid)
 	}
 
 	/**
