@@ -1,5 +1,5 @@
 <script>
-	import { afterUpdate } from 'svelte';
+	import { afterUpdate } from 'svelte'
 	import Close from './cross-icon.svg'
 	import { format } from 'light-date'
 	import * as currencies from '../../../stores/currencies'

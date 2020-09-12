@@ -10,11 +10,22 @@ const { subscribe, update, set } = writable([])
 /** Exporta o subscribe para esse módulo ser uma store */
 export { subscribe }
 
+/** Reseta a store de transações quando o usuário faz logout */
+auth.subscribe(v => !v && set([]))
+
 /** Flag que indica se a função de fetch está sendo executada */
 let inSync = false
 
 /** Indica se o cliente está sincronizado com as transações do servidor */
-export let fullySync = false
+let fullySync = false
+
+/**
+ * Exporta uma store em synchronized q indica se essa store está sincronizada
+ * ou não; Essa store também mantém a variável fullySync atualizada
+ */
+const { subscribe: subFullySync, set: setFullySync } = writable(false)
+export const synchronized = { subscribe: subFullySync }
+subFullySync(v => fullySync = v)
 
 /** Quantidade de transações presentes na store */
 let storeLength = 0
@@ -27,38 +38,32 @@ export async function fetch() {
 	if (fullySync || inSync) return
 	inSync = true
 
-	/** @type {{data: any[]}} */
-	const { data } = await axios.get('/v1/user/transactions', {
-		params: { skip: storeLength }
-	})
+	try {
+		/** @type {{data: any[]}} */
+		const { data } = await axios.get('/v1/user/transactions', {
+			params: { skip: storeLength }
+		})
 
-	update(transactions => {
-		for (let tx of data) {
-			const index = transactions.findIndex(v => v.opid === tx.opid)
-			if (index == -1)
-				transactions.push(tx)
-		}
+		update(transactions => {
+			for (let tx of data) {
+				const index = transactions.findIndex(v => v.opid === tx.opid)
+				if (index == -1)
+					transactions.push(tx)
+			}
 
-		/**
-		 * storeLength só é atualizada quando essa função retorna, então aqui ela
-		 * ainda está com o length antigo
-		 */
-		if (storeLength == transactions.length)
-			fullySync = true
-		return transactions
-	})
+			/**
+			 * storeLength só é atualizada quando essa função retorna, então aqui ela
+			 * ainda está com o length antigo
+			 */
+			if (storeLength == transactions.length) setFullySync(true)
+			return transactions
+		})
+	} catch (err) {
+		console.error('Error fetching transactions', err)
+	}
 
 	inSync = false
 }
-
-/**
- * Inicializa a store com as transações mais recentes quando o usuário faz
- * login e reseta-a quando o usuário faz logout
- */
-auth.subscribe(v => {
-	if (v) fetch()
-	else set([])
-})
 
 /**
  * Realiza um request de saque
@@ -119,6 +124,33 @@ addSocketListener('new_transaction', (currency, transaction) => {
 	}
 })
 
+/**
+ * Requisita da API e adiciona ao array uma transação que não está
+ * na store de transações
+ * @param {string} opid O opid da transação que não está na store
+ */
+async function insertMissingTx(opid) {
+	if (typeof opid != 'string')
+		throw new TypeError(`opid must be a string, got ${typeof opid}`)
+
+	try {
+		const { data } = await axios.get(`/v1/user/transactions/${opid}`)
+		if (typeof data != 'object')
+			throw new TypeError(`Invalid response type: expected 'object', got ${typeof data}`)
+		update(txs => {
+			// Adiciona a transação na posição correta do array
+			const index = txs.findIndex(tx => tx.timestamp < data.timestamp)
+			if (index > 0) {
+				txs.splice(index, 0, res.data)
+			} else {
+				txs.unshift(data)
+			}
+		})
+	} catch (err) {
+		console.error('Error fetching transaction', err)
+	}
+}
+
 /** Atualiza uma transação 'receive' existente na store */
 addSocketListener('update_received_tx', async (currency, txUpdate) => {
 	console.log('update_received_tx', txUpdate)
@@ -128,6 +160,8 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
 			txs[index] = {...txs[index], ...txUpdate}
 			if (txUpdate.status == 'confirmed')
 				updateBalances(currency, txs[index].amount, -txs[index].amount)
+		} else {
+			insertMissingTx(txUpdate.opid)
 		}
 		return txs
 	})
@@ -142,6 +176,8 @@ addSocketListener('update_sent_tx', async (currency, txUpdate) => {
 			txs[index] = {...txs[index], ...txUpdate}
 			if (txUpdate.status == 'confirmed')
 				updateBalances(currency, 0, -txs[index].amount)
+		} else {
+			insertMissingTx(txUpdate.opid)
 		}
 		return txs
 	})
