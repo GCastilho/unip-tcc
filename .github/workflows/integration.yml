@@ -18,7 +18,6 @@ jobs:
         uses: supercharge/mongodb-github-action@1.1.0
         with:
           mongodb-version: 4.2
-
       - run: npm ci
       - run: npm test
       - run: npm run dep-install
