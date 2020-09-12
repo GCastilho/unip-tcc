@@ -1,8 +1,13 @@
 <script>
+	import { onMount } from 'svelte'
 	import axios from '../../../utils/axios.js'
 	import * as auth from '../../../stores/auth.js'
 	import * as transactions from '../../../stores/transactions'
 	import TableCell from './_tableCell.svelte'
+
+	onMount(() => {
+		if ($transactions.length == 0) transactions.fetch()
+	})
 
 	/**
 	 * Função para carregar mais transações ao chegar perto do final da página

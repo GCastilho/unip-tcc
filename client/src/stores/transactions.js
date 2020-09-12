@@ -14,7 +14,7 @@ export { subscribe }
 let inSync = false
 
 /** Indica se o cliente está sincronizado com as transações do servidor */
-let fullySync = false
+export let fullySync = false
 
 /** Quantidade de transações presentes na store */
 let storeLength = 0
