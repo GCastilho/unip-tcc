@@ -10,7 +10,7 @@ export default async function trade(matchs: [Order, Order][]) {
 		const [maker, taker] = match
 		assert(
 			maker.type == 'buy' && taker.type == 'sell' ||
-			taker.type == 'buy' && maker.type == 'sell'
+			maker.type == 'sell' && taker.type == 'buy'
 			, `Orders must be of type BUY and SELL, received: ${JSON.stringify(match)}`
 		)
 		assert(maker.owning.amount == taker.requesting.amount, `A maker order must have owning amount equal to taker order's requesting amount, found ${maker.owning.amount} and ${taker.requesting.amount} on [${maker.id}, ${taker.id}]`)
