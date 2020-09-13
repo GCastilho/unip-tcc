@@ -102,12 +102,17 @@ export async function withdraw(currency, destination, amount) {
  */
 export async function cancell(opid) {
 	try {
-		await axios.delete(`/v1/user/transactions/${opid}`)
-		update(txs => {
-			const index = txs.findIndex(v => v.opid == opid)
-			txs.splice(index, 1)
-			return txs
-		})
+		/** @type {{data: string}} */
+		const { data } = await axios.delete(`/v1/user/transactions/${opid}`)
+		if (data == 'cancelled') {
+			update(txs => {
+				const index = txs.findIndex(v => v.opid == opid)
+				txs.splice(index, 1)
+				return txs
+			})
+		} else {
+			console.log('The cancell request returned:', data)
+		}
 	} catch (err) {
 		console.error('Error cancelling transaction', err)
 	}
@@ -173,9 +178,14 @@ addSocketListener('update_sent_tx', async (currency, txUpdate) => {
 	update(txs => {
 		const index = txs.findIndex(tx => tx.opid === txUpdate.opid)
 		if (index >= 0) {
-			txs[index] = {...txs[index], ...txUpdate}
-			if (txUpdate.status == 'confirmed')
-				updateBalances(currency, 0, -txs[index].amount)
+			if (txUpdate.status == 'cancelled') {
+				txs.splice(index, 1)
+				updateBalances(currency, txs[index].amount, -txs[index].amount)
+			} else {
+				txs[index] = {...txs[index], ...txUpdate}
+				if (txUpdate.status == 'confirmed')
+					updateBalances(currency, 0, -txs[index].amount)
+			}
 		} else {
 			insertMissingTx(txUpdate.opid)
 		}
