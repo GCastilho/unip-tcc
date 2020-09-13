@@ -1,7 +1,7 @@
 import '../../src/libs'
 import io from 'socket.io-client'
 import { expect } from 'chai'
-import { Decimal128, ObjectId } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import Person from '../../src/db/models/person'
 import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
@@ -24,7 +24,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 	beforeEach(async () => {
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of CurrencyApi.currencies) {
-			// @ts-ignore
+			// @ts-expect-error
 			user.person.currencies[currency].balance.available = 10
 		}
 		await user.person.save()
