@@ -21,10 +21,11 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 		await Checklist.deleteMany({})
 	})
 
-	beforeEach(async ()=> {
+	beforeEach(async () => {
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of CurrencyApi.currencies) {
-			user.person.currencies[currency].balance.available = Decimal128.fromNumeric(10)
+			// @ts-ignore
+			user.person.currencies[currency].balance.available = 10
 		}
 		await user.person.save()
 	})
@@ -82,7 +83,6 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 			})
 
 			it('Should receive a cancell_withdraw request', done => {
-				//return done()
 				const amount = 3.456
 				let _opid: string
 
@@ -180,7 +180,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					.catch(done)
 			})
 
-			it('Shold receive a request for cancell withdraw immediate after requested', done => {
+			it('Shold receive a request for cancell_withdraw immediate after requested', done => {
 				const amount = 4
 				let _opid: ObjectId
 				client.once('cancell_withdraw', async (
