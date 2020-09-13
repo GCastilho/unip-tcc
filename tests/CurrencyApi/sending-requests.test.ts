@@ -1,7 +1,7 @@
 import '../../src/libs'
 import io from 'socket.io-client'
 import { expect } from 'chai'
-import { Decimal128 } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import Person from '../../src/db/models/person'
 import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
@@ -19,10 +19,13 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 
 		user = await UserApi.createUser('sending_request@example.com', 'userP@ss')
 		await Checklist.deleteMany({})
+	})
 
+	beforeEach(async () => {
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of CurrencyApi.currencies) {
-			user.person.currencies[currency].balance.available = Decimal128.fromNumeric(10)
+			// @ts-expect-error
+			user.person.currencies[currency].balance.available = 10
 		}
 		await user.person.save()
 	})
@@ -78,6 +81,53 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					})
 				}).catch(done)
 			})
+
+			it('Should receive a cancell_withdraw request', done => {
+				const amount = 3.456
+				let _opid: string
+
+				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount).then(opid => {
+					_opid = opid.toHexString()
+					return CurrencyApi.cancellWithdraw(user.id, currency, opid)
+				}).then(response => {
+					expect(response).to.be.a('string').that.equals('requested')
+					return Checklist.findOne({
+						opid: _opid,
+						command: 'cancell_withdraw',
+					})
+				}).then(check => {
+					expect(check).to.be.a('object')
+					expect(check.opid.toHexString()).to.equals(_opid)
+
+					client = io(url + '/' + currency)
+
+					// Responde o evento de withdraw para evitar timeout
+					client.once('withdraw', (
+						request: TxSend,
+						callback: (err: any, response?: string) => void
+					) => {
+						callback(null, 'request received for' + currency)
+					})
+
+					client.once('cancell_withdraw', async (
+						opid: string,
+						callback: (err: any, response?: string) => void
+					) => {
+						try {
+							const tx = await Transaction.findById(_opid)
+
+							expect(tx).to.be.an('object')
+							expect(opid).to.be.a('string')
+								.that.equals(tx._id.toHexString())
+
+							done()
+						} catch (err) {
+							done(err)
+						}
+						callback(null, `request received for ${currency}`)
+					})
+				}).catch(done)
+			})
 		})
 
 		describe(`If the ${currency} module is already connected`, () => {
@@ -128,6 +178,33 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 
 				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount)
 					.catch(done)
+			})
+
+			it('Shold receive a request for cancell_withdraw immediate after requested', done => {
+				const amount = 4
+				let _opid: ObjectId
+				client.once('cancell_withdraw', async (
+					opid: string,
+					callback: (err: any, response?: string) => void
+				) => {
+					try {
+						const tx = await Transaction.findById(_opid)
+
+						expect(tx).to.be.an('object')
+
+						expect(opid).to.be.a('string')
+							.that.equals(tx._id.toHexString())
+						done()
+					} catch (err) {
+						done(err)
+					}
+					callback(null, `request received for ${currency}`)
+				})
+
+				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount).then(opid => {
+					_opid = opid
+					return CurrencyApi.cancellWithdraw(user.id, currency, opid)
+				}).catch(done)
 			})
 		})
 	}
