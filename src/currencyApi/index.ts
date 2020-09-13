@@ -187,6 +187,15 @@ export async function withdraw(
 	return opid
 }
 
+/**
+ * Cancela uma transação se ela ainda não foi enviada para a rede
+ *
+ * @param userId O id do usuário que requisitou o cancelamento
+ * @param currency A currency da transação que deve ser cancelada
+ * @param opid O id da transação que será cancelada
+ * @returns {string} 'cancelled' Caso a transação tenha sido cancelada com sucesso
+ * @returns {string} 'requested' Caso o a transação tenha sido agendada para cancelamento
+ */
 export async function cancellWithdraw(
 	userId: ObjectId,
 	currency: SuportedCurrencies,
@@ -194,6 +203,7 @@ export async function cancellWithdraw(
 ): Promise<string> {
 	return await _currencies[currency].cancellWithdraw(userId,opid)
 }
+
 // Inicia o listener da currencyApi
 const port = process.env.CURRENCY_API_PORT || 8085
 const io = socketIO(port)

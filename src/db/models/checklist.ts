@@ -9,7 +9,7 @@ export interface Checklist extends Document {
 	userId: ObjectId
 	command: 'create_account'|'withdraw'|'cancell_withdraw'
 	currency: 'nano'|'bitcoin'
-	status: 'preparing'|'requested'|'completed'
+	status: 'preparing'|'requested'|'completed'|'cancelled'
 }
 
 const ChecklistSchema = new Schema({
@@ -33,7 +33,7 @@ const ChecklistSchema = new Schema({
 	},
 	status: {
 		type: String,
-		enum: ['preparing', 'requested', 'completed'],
+		enum: ['preparing', 'requested', 'completed', 'cancelled'],
 		required: true
 	}
 })

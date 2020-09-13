@@ -3,21 +3,21 @@ import { ObjectId } from 'mongodb'
 import Common from '../index'
 
 /**
- * Retorna uma função que varre a collection checklist procurando por accounts
- * para criar e depois executa o checklistCleaner
+ * Retorna uma função que varre a collection checklist procurando por request
+ * de cancelamento de saque para executar e depois executa o checklistCleaner
  *
  * Essa função também garante uma única instância do loop por curency para
  * impedir problemas de race condition
  */
 export function cancell_withdraw_loop(this: Common) {
-	/** Varíavel de contole das instâncias da create_account */
+	/** Varíavel de contole das instâncias da cancell_withdraw */
 	let looping = false
 
 	const _cancell_withdraw = async () => {
-        if (!this.isOnline || looping) return
+		if (!this.isOnline || looping) return
 		looping = true
 		try {
-			/** Cursor com os itens create_accounts 'requested' da checklist */
+			/** Cursor com os itens cancell_withdraw 'requested' da checklist */
 			const checklist = Checklist.find({
 				currency: this.name,
 				command: 'cancell_withdraw',
@@ -26,17 +26,22 @@ export function cancell_withdraw_loop(this: Common) {
 
 			let item: Ck
 			while (this.isOnline && (item = await checklist.next())) {
-				const response: string = await this.emit('cancell_withdraw', item.opid)
-				if(response == 'sucess'){
+				try {
+					await this.emit('cancell_withdraw', item.opid)
 					item.status = 'completed'
 					await item.save()
-				}else if(response == 'failled to cancell'){
-
+				} catch (err) {
+					if (err.code == 'OperationNotFound') {
+						item.status = 'completed'
+						await item.save()
+					} else {
+						throw err
+					}
 				}
 			}
 			await this.checklistCleaner()
 		} catch(err) {
-			console.error('Error on create_account_loop:', err)
+			console.error('Error on cancell_withdraw_loop:', err)
 		}
 		looping = false
 	}
@@ -45,9 +50,20 @@ export function cancell_withdraw_loop(this: Common) {
 }
 
 export async function cancell_withdraw(this: Common, userId: ObjectId, opid: ObjectId) {
-	try{
-		const response: string = await this.emit('cancell_withdraw', opid)
-		if(!response){
+	try {
+		return await this.emit('cancell_withdraw', opid)
+	} catch (err) {
+		if (err == 'SocketDisconnected') {
+			await Checklist.updateOne({
+				opid,
+				command: 'withdraw',
+				status: 'requested'
+			}, {
+				status: 'cancelled'
+			}).catch(err => {
+				if (err.name != 'DocumentNotFoundError') throw err
+			})
+
 			await new Checklist({
 				opid,
 				userId,
@@ -55,10 +71,10 @@ export async function cancell_withdraw(this: Common, userId: ObjectId, opid: Obj
 				currency: this.name,
 				status: 'requested'
 			}).save()
-			return'requested'
+
+			return 'requested'
+		} else {
+			throw err
 		}
-		return response
-	}catch(err){
-		throw err
 	}
 }

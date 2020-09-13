@@ -42,7 +42,12 @@ export default abstract class Common {
 
 	/** Limpa os comandos com status 'completed' da checklist */
 	protected checklistCleaner = async (): Promise<void> => {
-		await Checklist.deleteMany({ status: 'completed' })
+		await Checklist.deleteMany({
+			$or: [
+				{ status: 'completed' },
+				{ status: 'cancelled' }
+			]
+		})
 	}
 
 	/**
@@ -81,7 +86,7 @@ export default abstract class Common {
 	public withdraw: () => Promise<void>
 
 	/** Varre a checklist e tenta enviar eventos de cancell withdraw para os opId*/
-	public cancellWithdrawLoop: () => Promise<void>
+	private cancellWithdrawLoop: () => Promise<void>
 
 	/** Varre a checklist e tenta enviar eventos de cancell withdraw para os opId*/
 	public cancellWithdraw: (userid: ObjectId, opid: ObjectId) => Promise<string>
