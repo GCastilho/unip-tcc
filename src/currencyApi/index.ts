@@ -8,7 +8,7 @@ import Transaction from '../db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
 import type Common from './currencies/common'
 import type { Person } from '../db/models/person'
-import type { TxInfo, UpdtReceived, UpdtSent } from '../db/models/transaction'
+import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../db/models/transaction'
 
 /** Tipo para variáveis/argumentos que precisam ser uma currency suportada */
 export type SuportedCurrencies = Common['name']
@@ -17,9 +17,9 @@ export type SuportedCurrencies = Common['name']
  * Interface para padronizar os eventos públicos
  */
 interface PublicEvents {
-	new_transaction: (id: User['id'], currency: SuportedCurrencies, transaction: TxInfo) => void
-	update_received_tx: (id: User['id'], currency: SuportedCurrencies, updtReceived: UpdtReceived) => void
-	update_sent_tx: (id: User['id'], currency: SuportedCurrencies, updtSent: UpdtSent) => void
+	new_transaction: (userId: User['id'], currency: SuportedCurrencies, transaction: TxInfo) => void
+	update_received_tx: (userId: User['id'], currency: SuportedCurrencies, updtReceived: UpdtReceived) => void
+	update_sent_tx: (userId: User['id'], currency: SuportedCurrencies, updtSent: UpdtSent|CancelledSentTx) => void
 }
 
 /** Módulos das currencies individuais (devem extender a common) */

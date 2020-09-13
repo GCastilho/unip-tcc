@@ -104,6 +104,11 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 	socket.on('cancell_withdraw', async (opid: TxSend['opid'], callback: Function) => {
 		console.log('received cancell_withdraw request', opid)
 		try {
+			/**
+			 * Se a transação for cancellada mas não foi informada ao main server, ela
+			 * vai ter sido deletada daqui, então requests futuros vão var opNotFound
+			 * mas não vai ter op para cancelar mais, então ela vai estar no limbo
+			 */
 			const doc = await SendPending.findOneAndRemove({ opid })
 			if (doc) {
 				callback(null, 'cancelled')

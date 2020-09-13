@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb'
 import Checklist from '../../../db/models/checklist'
 import * as methods from './methods'
 import type TypedEmitter from 'typed-emitter'
-import type { TxInfo, UpdtReceived, UpdtSent } from '../../../db/models/transaction'
+import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../db/models/transaction'
 import type User from '../../../userApi/user'
 
 /**
@@ -12,7 +12,7 @@ import type User from '../../../userApi/user'
 interface PublicEvents {
 	new_transaction: (id: User['id'], transaction: TxInfo) => void
 	update_received_tx: (id: User['id'], txUpdate: UpdtReceived) => void
-	update_sent_tx: (id: User['id'], txUpdate: UpdtSent) => void
+	update_sent_tx: (id: User['id'], txUpdate: UpdtSent|CancelledSentTx) => void
 }
 
 /**
