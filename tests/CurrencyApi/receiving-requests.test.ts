@@ -144,6 +144,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 
 				client.emit('new_transaction', transaction, () => {
 					Person.findById(user.id, (err, doc) => {
+						expect(doc).to.be.an('object')
 						expect(doc.currencies[currency].balance.available.toFullString())
 							.to.equals(transaction.amount.toString())
 						expect(doc.currencies[currency].balance.locked.toFullString())

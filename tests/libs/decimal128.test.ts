@@ -51,6 +51,7 @@ describe('Testing decimal128\'s extension library', () => {
 		expect(Decimal128.fromNumeric(2, 0).toFullString()).to.equals('2.0')
 		expect(Decimal128.fromNumeric(-2, 0).toFullString()).to.equals('-2.0')
 		expect(Decimal128.fromNumeric(2e-2, 1).toFullString()).to.equals('0.0')
+		expect(Decimal128.fromNumeric(0.000000001, 8).toFullString()).to.equals('0.0')
 		expect(Decimal128.fromNumeric(8431674351687314e-5, 3).toFullString()).to.equals('84316743516.873')
 		expect(Decimal128.fromNumeric(-8431674351687314e-5, 1).toFullString()).to.equals('-84316743516.8')
 		expect(Decimal128.fromNumeric(87315664.21657893e4, 6).toFullString()).to.equals('873156642165.7893')
@@ -67,11 +68,33 @@ describe('Testing decimal128\'s extension library', () => {
 	})
 
 	it('Should fail to convert non-numeric strings', () => {
-		expect(() => Decimal128.fromNumeric('2,5')).to.throw()
-		expect(() => Decimal128.fromNumeric('235n')).to.throw()
-		expect(() => Decimal128.fromNumeric('23.5.')).to.throw()
-		expect(() => Decimal128.fromNumeric('235 78')).to.throw()
-		expect(() => Decimal128.fromNumeric('abacaxi')).to.throw()
+		expect(() => Decimal128.fromNumeric('2,5')).to.throw('2,5 is not numeric')
+		expect(() => Decimal128.fromNumeric('235n')).to.throw('235n is not numeric')
+		expect(() => Decimal128.fromNumeric('23.5.')).to.throw('23.5. is not numeric')
+		expect(() => Decimal128.fromNumeric('235 78')).to.throw('235 78 is not numeric')
+		expect(() => Decimal128.fromNumeric('abacaxi')).to.throw('abacaxi is not numeric')
+	})
+
+	it('Should return the opposite value', () => {
+		expect(Decimal128.fromNumeric(1).opposite().toFullString()).to.equals('-1.0')
+		expect(Decimal128.fromNumeric(-1).opposite().toFullString()).to.equals('1.0')
+		expect(Decimal128.fromNumeric(0).opposite().toFullString()).to.equals('-0.0')
+		expect(Decimal128.fromNumeric(-0).opposite().toFullString()).to.equals('-0.0')
+		expect(Decimal128.fromNumeric(159.27).opposite().toFullString()).to.equals('-159.27')
+		expect(Decimal128.fromNumeric(-159.27).opposite().toFullString()).to.equals('159.27')
+	})
+
+	it('Should truncate decimals beyond specified', () => {
+		expect(Decimal128.fromNumeric(2).truncate(0).toFullString()).to.equals('2.0')
+		expect(Decimal128.fromNumeric(-2).truncate(0).toFullString()).to.equals('-2.0')
+		expect(Decimal128.fromNumeric(2e-2).truncate(1).toFullString()).to.equals('0.0')
+		expect(Decimal128.fromNumeric(0.000000001).truncate(8).toFullString()).to.equals('0.0')
+		expect(Decimal128.fromNumeric(51687314e-5).truncate(3).toFullString()).to.equals('516.873')
+		expect(Decimal128.fromNumeric(-51687314e-5).truncate(1).toFullString()).to.equals('-516.8')
+		expect(Decimal128.fromNumeric(4.21657893e4).truncate(6).toFullString()).to.equals('42165.7893')
+		expect(Decimal128.fromNumeric(15664.21657893e-4).truncate(4).toFullString()).to.equals('1.5664')
+		expect(Decimal128.fromNumeric(15664.21657893e-4).truncate(0).toFullString()).to.equals('1.566421657893')
+		expect(Decimal128.fromNumeric(14E10).truncate(0).toFullString()).to.equals('140000000000.0')
 	})
 
 	it('Should truncate decimals beyond specified', () => {

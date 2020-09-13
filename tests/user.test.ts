@@ -82,8 +82,6 @@ describe('Testing UserApi', () => {
 					expect(person.currencies[currency].pending[0].type).to.equals('transaction')
 				})
 
-				it('Should add a completed operation')
-
 				it('Should decrement from the available balance', async () => {
 					await user.balanceOps.add(currency, {
 						opid: new ObjectId('89fb0d1b05c505618b81ce5e'),
@@ -179,6 +177,157 @@ describe('Testing UserApi', () => {
 							.slice(0, CurrencyApi.detailsOf(currency).decimals)
 						expect(person.currencies[currency].balance.available.toFullString())
 							.to.equals('71.' + truncatedDecimals)
+					})
+
+					describe('And is requested to partially complete it', () => {
+						const rfOpid = new ObjectId()
+
+						it('Should partially complete a pending operation that increases balance', async () => {
+							const partialAmount = Decimal128.fromNumeric(10)
+
+							await user.balanceOps.complete(currency, opid, rfOpid, partialAmount)
+							const person = await Person.findById(user.id)
+							expect(person.currencies[currency].pending).to.have.lengthOf(1)
+							expect(person.currencies[currency].balance.available.toFullString())
+								.to.equals(Decimal128.fromNumeric(60).toFullString())
+							expect(person.currencies[currency].balance.locked.toFullString())
+								.to.equals(Decimal128.fromNumeric(10).toFullString())
+							expect(person.currencies[currency].pending[0].amount.toFullString())
+								.to.equals(Decimal128.fromNumeric(10).toFullString())
+						})
+
+						it('Should partially complete a pending operation that reduces balance', async () => {
+							const opid = new ObjectId('89fb0d1b05c509518b81ce3e')
+							await user.balanceOps.add(currency, {
+								opid,
+								type: 'trade',
+								amount: -20
+							})
+
+							const partialAmount = Decimal128.fromNumeric(10)
+
+							await user.balanceOps.complete(currency, opid, rfOpid, partialAmount)
+							const person = await Person.findById(user.id)
+							expect(person.currencies[currency].pending).to.have.lengthOf(2)
+							expect(person.currencies[currency].balance.available.toFullString())
+								.to.equals(Decimal128.fromNumeric(30).toFullString())
+							expect(person.currencies[currency].balance.locked.toFullString())
+								.to.equals(Decimal128.fromNumeric(30).toFullString())
+							expect(person.currencies[currency].pending[1].amount.toFullString())
+								.to.equals(Decimal128.fromNumeric(-10).toFullString())
+							// Checa se nãõ alterou a outra ordem
+							expect(person.currencies[currency].pending[0].amount.toFullString())
+								.to.equals(Decimal128.fromNumeric(20).toFullString())
+						})
+
+						it('Should complete an operation that was partially completed', async () => {
+							const partialAmount = Decimal128.fromNumeric(10)
+							await user.balanceOps.complete(currency, opid, rfOpid, partialAmount)
+
+							await user.balanceOps.complete(currency, opid)
+							const person = await Person.findById(user.id)
+							expect(person.currencies[currency].pending).to.have.lengthOf(0)
+							expect(person.currencies[currency].balance.available.toFullString())
+								.to.equals(Decimal128.fromNumeric(70).toFullString())
+							expect(person.currencies[currency].balance.locked.toFullString())
+								.to.equals(Decimal128.fromNumeric(0).toFullString())
+						})
+
+						it('Should fail when the amount is bigger than the operation', async () => {
+							const partialAmount = Decimal128.fromNumeric(21)
+
+							await expect(user.balanceOps.complete(currency, opid, rfOpid, partialAmount))
+								.to.eventually.be.rejectedWith('Amount provided is greater or equal than amount in order')
+						})
+
+						it('Should fail when the amount is the same as the operation', async () => {
+							const partialAmount = Decimal128.fromNumeric(20)
+
+							await expect(user.balanceOps.complete(currency, opid, rfOpid, partialAmount))
+								.to.eventually.be.rejectedWith('Amount provided is greater or equal than amount in order')
+						})
+
+						it('Should append the opid of the responsable operation', async () => {
+							const partialAmount = Decimal128.fromNumeric(10)
+
+							await user.balanceOps.complete(currency, opid, rfOpid, partialAmount)
+							const { completions } = await user.balanceOps.get(currency, opid)
+							expect(completions.find(v => v.toHexString() === rfOpid.toHexString()))
+								.to.be.an.instanceOf(ObjectId)
+						})
+					})
+
+					describe('Testing operation locks', () => {
+						it('Should lock an operation', async () => {
+							const lockOpid = new ObjectId()
+							await user.balanceOps.lock(currency, opid, lockOpid)
+							const pending = await user.balanceOps.get(currency, opid)
+							expect(pending.opid.toHexString()).to.equals(opid.toHexString())
+							expect(pending.locked?.byOpid.toHexString())
+								.to.equals(lockOpid.toHexString())
+							expect(pending.locked?.timestamp).to.be.an.instanceOf(Date)
+						})
+
+						describe('When there is a locked operation', () => {
+							const lockOpid = new ObjectId()
+
+							beforeEach(async () => {
+								await user.balanceOps.lock(currency, opid, lockOpid)
+								const pending = await user.balanceOps.get(currency, opid)
+								expect(pending.locked?.byOpid.toHexString())
+									.to.equals(lockOpid.toHexString())
+								expect(pending.locked?.timestamp).to.be.an.instanceOf(Date)
+							})
+
+							it('Should unlock an operation', async () => {
+								await user.balanceOps.unlock(currency, opid, lockOpid)
+								const pending = await user.balanceOps.get(currency, opid)
+								expect(Object.keys(pending.locked).length).to.equals(0)
+							})
+
+							it('Should not unlock if opid was not informed', async () => {
+								await expect(user.balanceOps.unlock(currency, opid, undefined))
+									.to.eventually.be.rejectedWith('OperationNotFound')
+							})
+
+							it('Should unlock an operation using the forced mode', async () => {
+								await user.balanceOps.unlock(currency, opid, null, true)
+								const pending = await user.balanceOps.get(currency, opid)
+								expect(Object.keys(pending.locked).length).to.equals(0)
+							})
+
+							it('Should fail when trying to complete it without the unlock key', async () => {
+								await expect(user.balanceOps.complete(currency, opid))
+									.to.eventually.be.rejectedWith('OperationNotFound')
+							})
+
+							it('Should fail when trying to complete it with an invalid opid', async () => {
+								await expect(user.balanceOps.complete(currency, opid, new ObjectId()))
+									.to.eventually.be.rejectedWith('OperationNotFound')
+							})
+
+							it('Should complete the operation if informed the correct unlock key', async () => {
+								await user.balanceOps.complete(currency, opid, lockOpid)
+							})
+
+							it('Should fail when trying to partially complete it without the unlock key', async () => {
+								const amount = Decimal128.fromString('1')
+								await expect(user.balanceOps.complete(currency, opid, undefined, amount))
+									.to.eventually.be
+									.rejectedWith('rfOpid needs to be informed to partially complete an operation')
+							})
+
+							it('Should fail when trying to partially complete it with an invalid opid', async () => {
+								const amount = Decimal128.fromString('1')
+								await expect(user.balanceOps.complete(currency, opid, new ObjectId(), amount))
+									.to.eventually.be.rejectedWith('OperationNotFound')
+							})
+
+							it('Should partially complete the operation if informed the correct unlock key', async () => {
+								const amount = Decimal128.fromString('1')
+								await user.balanceOps.complete(currency, opid, lockOpid, amount)
+							})
+						})
 					})
 				})
 			})
