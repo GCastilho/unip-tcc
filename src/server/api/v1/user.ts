@@ -120,6 +120,37 @@ router.get('/transactions/:opid', async (req, res) => {
 	}
 })
 
+router.delete('/transactions/:opid', async (req, res) => {
+	try {
+		const tx = await Transaction.findById(req.params.opid, {
+			userId: true,
+			currency: true
+		})
+		if (!tx) throw 'NotFound'
+		// Checa se o usuario da transação é o mesmo que esta logado
+		if (tx.userId.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
+
+		res.send({
+			message: await CurrencyApi.cancellWithdraw(tx.userId, tx.currency, tx._id)
+		})
+	} catch(err) {
+		if (err === 'NotFound') {
+			res.status(404).send({
+				error: 'NotFound',
+				message: 'No transactions was found with given opid'
+			})
+		} else if (err == 'NotAuthorized') {
+			res.status(401).send({
+				error: 'NotAuthorized',
+				message: 'This transaction does not belong to your account'
+			})
+		} else if (err.code == 'OperationNotFound') {
+			res.status(404).send(err)
+		} else {
+			res.status(500).send({ code: 'InternalServerError' })
+		}
+	}
+})
 /**
  * Retorna uma lista de transações do usuário
  */
