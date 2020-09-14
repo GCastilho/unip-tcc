@@ -110,13 +110,22 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 			 * mas não vai ter op para cancelar mais, então ela vai estar no limbo
 			 */
 			const doc = await SendPending.findOneAndRemove({ opid })
+			const tx = await Transaction.findOne({ opid })
 			if (doc) {
 				callback(null, 'cancelled')
-			} else {
+				tx?.remove()
+			} else if(tx) {
 				callback({
-					code: 'OperationNotFound',
-					message: 'The transaction was not found on the pending list'
+					code: 'AlreadyExecuted',
+					message: 'The transaction cold not be cancelled because it was already sent to it\'s destination'
 				})
+			} else {
+				await new Transaction({
+					opid: opid,
+					account: '0000000-CANCELLED-000000',
+					type: 'send'
+				}).save()
+				callback(null, 'cancelled')
 			}
 		} catch (err) {
 			console.error('Error cancelling request:', err)

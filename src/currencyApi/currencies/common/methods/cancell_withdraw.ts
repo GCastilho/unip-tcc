@@ -5,6 +5,17 @@ import * as UserApi from '../../../../userApi'
 import Transaction from '../../../../db/models/transaction'
 
 /**
+ * funçao que remove os resquicios que sobraram no main 
+ * de uma transaçao cancelada no external
+ */
+async function cancelInMain(this: Common, userId: ObjectId, opid: ObjectId) {
+	const user = await UserApi.findUser.byId(userId)
+	// Pode dar throw em OperationNotFound (não tem handler)
+	await user.balanceOps.cancel(this.name, opid)
+	await Transaction.deleteOne({ _id: opid })
+}
+
+/**
  * Retorna uma função que varre a collection checklist procurando por request
  * de cancelamento de saque para executar e depois executa o checklistCleaner
  *
@@ -30,17 +41,19 @@ export function cancell_withdraw_loop(this: Common) {
 			while (this.isOnline && (item = await checklist.next())) {
 				try {
 					await this.emit('cancell_withdraw', item.opid)
+					await cancelInMain.call(this, item.userId, item.opid)
 					item.status = 'completed'
 					await item.save()
-					const user = await UserApi.findUser.byId(item.userId)
-					await user.balanceOps.cancel(this.name, item.opid)
-					await Transaction.deleteOne({ _id: item.opid })
 					this.events.emit('update_sent_tx', item.userId, {
 						opid: item.opid.toHexString(),
 						status: 'cancelled'
 					})
 				} catch (err) {
-					if (err.code == 'OperationNotFound') {
+					if (err.code == 'AlreadyExecuted') {
+						item.status = 'completed'
+						await item.save()
+					} else if (err.code == 'OperationNotFound') {
+						await cancelInMain.call(this, item.userId, item.opid)
 						item.status = 'completed'
 						await item.save()
 					} else {
@@ -61,15 +74,10 @@ export function cancell_withdraw_loop(this: Common) {
 export async function cancell_withdraw(this: Common, userId: ObjectId, opid: ObjectId) {
 	try {
 		const response = await this.emit('cancell_withdraw', opid)
-
-		const user = await UserApi.findUser.byId(userId)
-		// Pode dar throw em OperationNotFound (não tem handler)
-		await user.balanceOps.cancel(this.name, opid)
-		await Transaction.deleteOne({ _id: opid })
-
+		await cancelInMain.call(this, userId, opid)
 		return response
 	} catch (err) {
-		if (err == 'SocketDisconnected') {
+		if (err == 'SocketDisconnected' ) {
 			await Checklist.updateOne({
 				opid,
 				command: 'withdraw',
