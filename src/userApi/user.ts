@@ -297,7 +297,7 @@ class BalanceOps {
 							input: `$currencies.${currency}.pending`,
 							as: 'operations',
 							cond: {
-								$eq: [ '$$operations.opid', opid ]
+								$eq: ['$$operations.opid', opid]
 							}
 						}
 					}

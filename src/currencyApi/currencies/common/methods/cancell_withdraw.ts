@@ -39,7 +39,7 @@ export function cancell_withdraw_loop(this: Common) {
 						opid: item.opid.toHexString(),
 						status: 'cancelled'
 					})
-				} catch (err) {
+				} catch(err) {
 					if (err.code == 'OperationNotFound') {
 						item.status = 'completed'
 						await item.save()
@@ -68,7 +68,7 @@ export async function cancell_withdraw(this: Common, userId: ObjectId, opid: Obj
 		await Transaction.deleteOne({ _id: opid })
 
 		return response
-	} catch (err) {
+	} catch(err) {
 		if (err == 'SocketDisconnected') {
 			await Checklist.updateOne({
 				opid,

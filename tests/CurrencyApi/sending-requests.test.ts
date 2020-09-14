@@ -74,7 +74,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 								.that.equals(tx.amount.toFullString())
 
 							done()
-						} catch (err) {
+						} catch(err) {
 							done(err)
 						}
 						callback(null, 'request received for' + currency)
@@ -121,7 +121,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 								.that.equals(tx._id.toHexString())
 
 							done()
-						} catch (err) {
+						} catch(err) {
 							done(err)
 						}
 						callback(null, `request received for ${currency}`)
@@ -170,7 +170,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 							.that.equals(tx.amount.toFullString())
 
 						done()
-					} catch (err) {
+					} catch(err) {
 						done(err)
 					}
 					callback(null, 'request received for' + currency)
@@ -195,7 +195,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						expect(opid).to.be.a('string')
 							.that.equals(tx._id.toHexString())
 						done()
-					} catch (err) {
+					} catch(err) {
 						done(err)
 					}
 					callback(null, `request received for ${currency}`)

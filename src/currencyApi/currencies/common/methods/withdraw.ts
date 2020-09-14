@@ -99,7 +99,7 @@ export function withdraw(this: Common) {
 
 					item.status = 'completed'
 					await item.save()
-				} catch (err) {
+				} catch(err) {
 					if (err === 'SocketDisconnected') {
 						item.status = 'requested'
 						await item.save()

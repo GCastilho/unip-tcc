@@ -161,7 +161,7 @@ export async function withdraw(
 			type: 'transaction',
 			amount: - Math.abs(amount) // Garante que o amount será negativo
 		})
-	} catch (err) {
+	} catch(err) {
 		if (err === 'NotEnoughFunds') {
 			// Remove a transação da collection e o item da checklist
 			await Promise.all([
@@ -201,7 +201,7 @@ export async function cancellWithdraw(
 	currency: SuportedCurrencies,
 	opid: ObjectId
 ): Promise<string> {
-	return await _currencies[currency].cancellWithdraw(userId,opid)
+	return await _currencies[currency].cancellWithdraw(userId, opid)
 }
 
 // Inicia o listener da currencyApi

@@ -51,7 +51,7 @@ export default async function trade(matchs: [Order, Order][]) {
 		// Da unlock na descida de saldo do owning de ambas
 		try {
 			await makerUser.balanceOps.complete(maker.owning.currency, maker._id)
-		} catch (err) {
+		} catch(err) {
 			if (err == 'OperationNotFound') {
 				const error = new Error()
 				error.message = `Maker order does not have a locked balance for order ${maker.id}`
@@ -62,7 +62,7 @@ export default async function trade(matchs: [Order, Order][]) {
 		}
 		try {
 			await takerUser.balanceOps.complete(taker.owning.currency, taker._id)
-		} catch (err) {
+		} catch(err) {
 			if (err == 'OperationNotFound') {
 				const error = new Error()
 				error.message = `Taker order does not have a locked balance for order ${taker.id}`

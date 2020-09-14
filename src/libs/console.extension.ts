@@ -3,13 +3,13 @@ import log from 'loglevel'
 let log_level: keyof log.LogLevel
 
 switch (process.env.NODE_ENV) {
-case('production'):
-case('test'):
-	log_level = 'WARN'
-	break
-default:
-	log_level = 'TRACE'
-	break
+	case('production'):
+	case('test'):
+		log_level = 'WARN'
+		break
+	default:
+		log_level = 'TRACE'
+		break
 }
 
 log.setLevel(log_level)

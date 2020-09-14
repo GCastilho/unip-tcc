@@ -14,13 +14,53 @@
         "ecmaVersion": 2020
     },
     "rules": {
+        "no-trailing-spaces": "error",
+        "space-infix-ops": "error",
+        "array-bracket-spacing": [
+            "error",
+            "never"
+        ],
+        "arrow-spacing": ["error", {
+            "before": true,
+            "after": true
+        }],
+        "block-spacing": [
+            "error",
+            "always"
+        ],
+        "computed-property-spacing": [
+            "error",
+            "never"
+        ],
+        "comma-spacing": ["error", {
+            "before": false,
+            "after": true
+        }],
         "indent": [
             "error",
-            "tab"
+            "tab",
+            {
+                "SwitchCase": 1
+            }
         ],
+        "keyword-spacing": ["error", {
+            "before": true,
+            "after": true,
+            "overrides": {
+                "catch": {
+                    "after": false
+                },
+                "case": {
+                    "after": false
+                }
+            }
+        }],
         "linebreak-style": [
             "off",
             "unix"
+        ],
+        "no-undef": [
+            "off"
         ],
         "quotes": [
             "error",
@@ -30,16 +70,11 @@
             "error",
             "never"
         ],
-        "no-undef": [
-            "off"
-        ],
         "space-before-function-paren": ["error", {
             "anonymous": "never",
             "named": "never",
             "asyncArrow": "always"
         }],
-        "space-infix-ops": "error",
-        "no-trailing-spaces": "error",
         "no-multi-spaces": ["error", {
             "ignoreEOLComments": true,
             "exceptions": { "Property": true }

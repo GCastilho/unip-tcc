@@ -67,7 +67,7 @@ export function withdraw_pending(this: Common) {
 			let transaction: true|UpdtSent
 			try {
 				transaction = await this.withdraw(doc, updateAndSendTxs)
-			} catch (err) {
+			} catch(err) {
 				if (err.code === 'NotSent') {
 					doc.journaling = 'requested'
 					await doc.save()

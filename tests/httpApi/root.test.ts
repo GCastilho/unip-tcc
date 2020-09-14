@@ -10,7 +10,7 @@ describe('Testing root of the HTTP API', () => {
 			.expect(200)
 		expect(body).to.be.an('object').that.deep.equals({
 			description: 'HTTP API subdomain',
-			entries: [ 'v1' ]
+			entries: ['v1']
 		})
 	})
 })

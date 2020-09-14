@@ -41,7 +41,7 @@ router.post('/', async (req, res): Promise<any> => {
 		 */
 		res.cookie('sessionId', session.sessionId, { httpOnly: true })
 		res.send({ token: session.token })
-	} catch (err) {
+	} catch(err) {
 		if (err === 'UserNotFound' || err === 'InvalidPassword') {
 			/**
 			 * Diferenciar usuário não encontrado de credenciais inválidas

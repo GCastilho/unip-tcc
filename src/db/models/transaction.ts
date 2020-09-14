@@ -207,7 +207,7 @@ const TransactionSchema: Schema = new Schema({
 	},
 	status: {
 		type: String,
-		enum: [ 'processing', 'pending', 'confirmed' ],
+		enum: ['processing', 'pending', 'confirmed'],
 		required: true
 	},
 	confirmations: {

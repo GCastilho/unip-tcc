@@ -54,7 +54,7 @@ const PendingReceivedSchema = new Schema({
 		},
 		status: {
 			type: String,
-			enum: [ 'pending', 'confirmed' ],
+			enum: ['pending', 'confirmed'],
 			required: true
 		},
 		confirmations: {
@@ -146,7 +146,7 @@ const PendingSendSchema = new Schema({
 		},
 		status: {
 			type: String,
-			enum: [ 'pending', 'confirmed' ],
+			enum: ['pending', 'confirmed'],
 			required: false
 		},
 		confirmations: {

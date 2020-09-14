@@ -30,7 +30,7 @@ router.post('/', async (req, res): Promise<any> => {
 		 * quando confirmado
 		 */
 		res.status(201).send({ message: 'Success' })
-	} catch (err) {
+	} catch(err) {
 		if (err.code === 11000) {
 			res.status(409).send({ error: 'Email already registered' })
 		} else {
@@ -234,7 +234,7 @@ router.patch('/password', async (req, res): Promise<any> => {
 		await user.checkPassword(req.body.old)
 		await user.changePassword(req.body.new)
 		res.send({ message: 'Password updated' })
-	} catch (err) {
+	} catch(err) {
 		if (err == 'UserNotFound' || err == 'InvalidPassword') {
 			/**
 			 * Diferenciar usuário não encontrado de credenciais inválidas

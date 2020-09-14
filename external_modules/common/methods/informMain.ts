@@ -36,7 +36,7 @@ export function informMain(this: Common) {
 			}
 
 			return opid
-		} catch (err) {
+		} catch(err) {
 			if (err === 'SocketDisconnected') {
 				/**
 				 * Salva a Tx no database para ser enviada quando
@@ -72,7 +72,7 @@ export function informMain(this: Common) {
 	const updateReceivedTx = async (txUpdate: UpdtReceived): Promise<void> => {
 		try {
 			await this.module('update_received_tx', txUpdate)
-		} catch (err) {
+		} catch(err) {
 			if (err === 'SocketDisconnected') return
 			/**
 			 * OperationNotFound significa ou que a transação não existe
@@ -159,7 +159,7 @@ export function informMain(this: Common) {
 		}).cursor()
 
 		let doc: PSent
-		while((doc = await transactions.next())) {
+		while ((doc = await transactions.next())) {
 			const { txid, status, timestamp, opid } = doc.transaction
 			/** Checa se a transação foi enviada e salva sem erros */
 			if (!txid || !status || !timestamp) continue
@@ -173,7 +173,7 @@ export function informMain(this: Common) {
 	 * transações pendentes
 	 */
 	this._events.on('connected', () => {
-		const operations = [ _updateAllReceived, _updateAllsended ]
+		const operations = [_updateAllReceived, _updateAllsended]
 		const promises = operations.map(op => op())
 		Promise.all(promises).catch(err => {
 			console.error('Error on informMain:', err)

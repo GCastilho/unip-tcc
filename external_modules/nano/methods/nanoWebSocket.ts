@@ -46,7 +46,7 @@ export function nanoWebSocket(this: Nano) {
 
 		try {
 			this.processTransaction(data)
-		} catch (err) {
+		} catch(err) {
 			console.error('Error while processing socket message', err)
 		}
 	}

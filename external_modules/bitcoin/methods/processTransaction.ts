@@ -31,7 +31,7 @@ async function formatTransaction(txid: string, getInfo: Function): Promise<TxRec
 	const received = txInfo.details.find(details =>
 		details.category === 'receive'
 	)
-	if(!received) return
+	if (!received) return
 
 	const address: TxReceived['account'] = received.address
 
@@ -90,7 +90,7 @@ export async function processTransaction(this: Bitcoin, txid: TxReceived['txid']
 				'transaction.opid': new ObjectId(opid)
 			}
 		})
-	} catch (err) {
+	} catch(err) {
 		/**
 		 * O evento de transação recebida acontece quando a transação é
 		 * recebida e quando ela recebe a primeira confimação, o que causa um

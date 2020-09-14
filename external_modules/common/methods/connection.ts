@@ -60,7 +60,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 			const account = await this.getNewAccount()
 			await new Account({ account }).save()
 			callback(null, account)
-		} catch (err) {
+		} catch(err) {
 			callback(err)
 		}
 	})
@@ -84,7 +84,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 			}).save()
 
 			callback(null, `received withdraw request for '${request.opid}'`)
-		} catch (err) {
+		} catch(err) {
 			if (err.code === 11000) {
 				callback({
 					code: 'OperationExists',
@@ -118,7 +118,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 					message: 'The transaction was not found on the pending list'
 				})
 			}
-		} catch (err) {
+		} catch(err) {
 			console.error('Error cancelling request:', err)
 			callback(err)
 		}

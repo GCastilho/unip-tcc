@@ -204,7 +204,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 							expect(err.transaction.amount).to.equals(transaction.amount.toString())
 							expect(err.transaction.account).to.equals(transaction.account)
 							done()
-						} catch (err) {
+						} catch(err) {
 							done(err)
 						}
 					})
@@ -268,7 +268,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 							expect(err.code).to.equals('ValidationError')
 							expect(opid).to.be.undefined
 							done()
-						} catch (err) {
+						} catch(err) {
 							done(err)
 						}
 					})
@@ -285,7 +285,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 							expect(err.message).to.be.a('string')
 							expect(opid).to.be.undefined
 							done()
-						} catch (err) {
+						} catch(err) {
 							done(err)
 						}
 					})
@@ -301,7 +301,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 							expect(err.code).to.equals('ValidationError')
 							expect(opid).to.be.undefined
 							done()
-						} catch (err) {
+						} catch(err) {
 							done(err)
 						}
 					})
@@ -317,7 +317,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 							expect(err.code).to.equals('ValidationError')
 							expect(opid).to.be.undefined
 							done()
-						} catch (err) {
+						} catch(err) {
 							done(err)
 						}
 					})
@@ -349,7 +349,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 							expect(_opid).to.be.a('string')
 							opid = _opid
 							done()
-						} catch (err) {
+						} catch(err) {
 							done(err)
 						}
 					})
@@ -431,7 +431,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 									expect(err.code).to.equals('UserNotFound')
 									expect(err.message).to.be.a('string')
 									done()
-								} catch (err) {
+								} catch(err) {
 									done(err)
 								}
 							})
@@ -693,7 +693,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 									expect(err.code).to.equals('UserNotFound')
 									expect(err.message).to.be.a('string')
 									done()
-								} catch (err) {
+								} catch(err) {
 									done(err)
 								}
 							})

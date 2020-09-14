@@ -45,7 +45,7 @@ export const PendingSchema = new Schema({
 	},
 	type: {
 		type: String,
-		enum: ['transaction','trade'],
+		enum: ['transaction', 'trade'],
 		required: true
 	},
 	amount: {

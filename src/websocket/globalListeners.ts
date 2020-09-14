@@ -37,7 +37,7 @@ GlobalListeners.add('authenticate', async function(this: SocketIO.Socket,
 			this.user = await userApi.findUser.byToken(token)
 			connectedUsers.add(this)
 			callback(null, 'authenticated')
-		} catch (err) {
+		} catch(err) {
 			this.user = undefined
 			if (err === 'TokenNotFound' || err === 'UserNotFound') {
 				callback('TokenNotFound')
