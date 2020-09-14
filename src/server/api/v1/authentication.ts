@@ -14,7 +14,7 @@ router.use(bodyParser.json())
 /**
  * Handler do request de autenticação
  */
-router.post('/', async (req, res): Promise<any> => {
+router.post('/authentication', async (req, res): Promise<any> => {
 	if (!req.body.email || !req.body.password)
 		return res.status(400).send({ error: 'BadRequest' })
 
@@ -62,17 +62,14 @@ router.post('/', async (req, res): Promise<any> => {
 })
 
 /**
- * Handler do request de desautenticação
+ * Handler de autenticação
  */
-router.delete('/', async (req, res) => {
+router.use(async (req, res, next) => {
 	try {
-		if (!req.cookies.sessionId) throw 'CookieNotFound'
-		const session = await Session.findOneAndDelete({ sessionId: req.cookies.sessionId })
-		if (!session) throw 'CookieNotFound'
-
-		// Seta o cookie para expirar no passado, fazendo com o que browser o delete
-		res.cookie('sessionId', '', { expires: new Date(0) })
-		res.send({ message: 'Success' })
+		if (!req.cookies.sessionId) throw 'Cookie Not Found'
+		const user = await UserApi.findUser.byCookie(req.cookies.sessionId)
+		req.userId = user.id
+		next()
 	} catch(err) {
 		res.status(401).send({
 			error: 'NotAuthorized',
@@ -82,21 +79,26 @@ router.delete('/', async (req, res) => {
 })
 
 /**
- * Retorna informações sobre os subpath de /user
+ * Retorna se o usuário está autenticado ou não
  */
-router.get('/', (_req, res) => {
-	res.send({
-		description: 'Entrypoint for authentication requests. POST do authenticate, DELETE to deauthenticate'
-	})
+router.get('/authentication', (_req, res) => {
+	res.send({ message: 'Authenticated' })
 })
 
 /**
- * Retorna NotFound se não for encontrado o path
+ * Handler do request de desautenticação
  */
-router.all('/*', (_req, res) => {
-	res.status(404).send({
-		error: 'NotFound',
-		message: 'Endpoint not found'
-	})
+router.delete('/authentication', async (req, res) => {
+	try {
+		const session = await Session.findOneAndDelete({ userId: req.userId })
+		if (!session) throw 'CookieNotFound'
+
+		// Seta o cookie para expirar no passado, fazendo com o que browser o delete
+		res.cookie('sessionId', '', { expires: new Date(0) })
+		res.send({ message: 'Success' })
+	} catch(err) {
+		res.status(500).send({ error: 'InternalServerError' })
+	}
 })
+
 export default router

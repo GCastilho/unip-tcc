@@ -1,8 +1,8 @@
-import type User from '../../src/userApi/user'
+import { ObjectId } from 'mongodb'
 
 declare module 'express-serve-static-core' {
 	interface Request {
-		/** Instância da User caso o request seja de um usuário autenticado */
-		user?: User
+		/** UserId do request de um usuário autenticado */
+		userId: ObjectId
 	}
 }

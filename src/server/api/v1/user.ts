@@ -1,3 +1,4 @@
+import cors from 'cors'
 import express from 'express'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
@@ -8,12 +9,12 @@ import * as CurrencyApi from '../../../currencyApi'
 
 const router = express.Router()
 
+/** Habilita o CORS para requests autenticados vindos de qualquer endereço */
+router.use(cors({ credentials: true, origin: true }))
+
 // Parsers
 router.use(cookieParser())
 router.use(bodyParser.json())
-
-/** Hanlder de autenticação de usuários */
-router.use('/authentication', authentication)
 
 /**
  * Handler de registros de usuários
@@ -40,29 +41,17 @@ router.post('/', async (req, res): Promise<any> => {
 	}
 })
 
-/**
- * Checa se você está logado
- */
-router.use(async (req, res, next) => {
-	try {
-		if (!req.cookies.sessionId) throw 'Cookie Not Found'
-		req.user = await UserApi.findUser.byCookie(req.cookies.sessionId)
-		next()
-	} catch(err) {
-		res.status(401).send({
-			error: 'NotAuthorized',
-			message: 'A valid cookie \'sessionId\' is required to perform this operation'
-		})
-	}
-})
+/** Hanlder de autenticação de usuários */
+router.use(authentication)
 
 /**
  * Retorna todas as contas do usuario
  */
 router.get('/accounts', async (req, res) => {
+	const user = await UserApi.findUser.byId(req.userId)
 	const account = {}
 	for (const currency of CurrencyApi.currencies) {
-		account[currency] = await req.user?.getAccounts(currency)
+		account[currency] = await user.getAccounts(currency)
 	}
 	res.send(account)
 })
@@ -71,9 +60,10 @@ router.get('/accounts', async (req, res) => {
  * Retorna todos os saldos do usuario
  */
 router.get('/balances', async (req, res) => {
+	const user = await UserApi.findUser.byId(req.userId)
 	const balance = {}
 	for (const currency of CurrencyApi.currencies) {
-		balance[currency] = await req.user?.getBalance(currency, true)
+		balance[currency] = await user.getBalance(currency, true)
 	}
 	res.send(balance)
 })
@@ -88,10 +78,11 @@ router.get('/info', async (_req, res) => {
  */
 router.get('/transactions/:opid', async (req, res) => {
 	try {
+		const user = await UserApi.findUser.byId(req.userId)
 		const tx = await Transaction.findById(req.params.opid)
 		if (!tx) throw 'NotFound'
 		// Checa se o usuario da transação é o mesmo que esta logado
-		if (tx.userId.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
+		if (tx.userId.toHexString() !== user.id.toHexString()) throw 'NotAuthorized'
 		// Formata o objeto da transação
 		res.send({
 			opid:          tx.id,
@@ -120,6 +111,7 @@ router.get('/transactions/:opid', async (req, res) => {
 })
 
 router.delete('/transactions/:opid', async (req, res) => {
+	const user = await UserApi.findUser.byId(req.userId)
 	try {
 		const tx = await Transaction.findById(req.params.opid, {
 			userId: true,
@@ -127,7 +119,7 @@ router.delete('/transactions/:opid', async (req, res) => {
 		})
 		if (!tx) throw 'NotFound'
 		// Checa se o usuario da transação é o mesmo que esta logado
-		if (tx.userId.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
+		if (tx.userId.toHexString() !== user.id.toHexString()) throw 'NotAuthorized'
 
 		res.send({
 			message: await CurrencyApi.cancellWithdraw(tx.userId, tx.currency, tx._id)
@@ -154,12 +146,13 @@ router.delete('/transactions/:opid', async (req, res) => {
  * Retorna uma lista de transações do usuário
  */
 router.get('/transactions', async (req, res) => {
+	const user = await UserApi.findUser.byId(req.userId)
 	/** Numero de transações que sera puladas */
 	const skip: number = +req.query.skip || 0
 	/** Filtro de transações por currency */
 	const currency = CurrencyApi.currencies.find(currency => currency === req.query.currency)
 	/** Filtro da query do mongo */
-	const query = currency ? { userId: req.user?.id, currency } : { userId: req.user?.id }
+	const query = currency ? { userId: user?.id, currency } : { userId: user.id }
 	/**
 	 * As 10 mais recentes transações do usuário,
 	 * filtrado de acordo com a query e pulando de acordo com skip
@@ -187,16 +180,17 @@ router.get('/transactions', async (req, res) => {
  * Faz o request 'withdraw' usando as informações do req.body
  */
 router.post('/transactions', async (req, res) => {
+	const user = await UserApi.findUser.byId(req.userId)
 	try {
 		const currency = CurrencyApi.currencies.find(currency => currency === req.body.currency)
 		/** Checa se os dados dados enviados pelo o usuario são do type correto */
 		if (!currency
-			|| !req.user
+			|| !user
 			|| typeof req.body.destination !== 'string'
 			|| isNaN(+req.body.amount)
 		) throw 'BadRequest'
 
-		const opid = await CurrencyApi.withdraw(req.user, currency, req.body.destination, +req.body.amount)
+		const opid = await CurrencyApi.withdraw(user, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
 	} catch(err) {
 		if (err === 'NotEnoughFunds') {
@@ -251,7 +245,7 @@ router.patch('/password', async (req, res): Promise<any> => {
 /**
  * Retorna NotFound se não for encontrado o path
  */
-router.all('/*', (_req, res) => {
+router.all('*', (_req, res) => {
 	res.status(404).send({
 		error: 'NotFound',
 		message: 'Endpoint not found'

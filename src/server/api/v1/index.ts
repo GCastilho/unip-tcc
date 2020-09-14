@@ -1,12 +1,8 @@
 import express from 'express'
-import cors from 'cors'
 import user from './user'
 import * as CurrencyApi from '../../../currencyApi'
 
 const router = express.Router()
-
-/** Habilita o CORS para requests autenticados vindos de qualquer endereço */
-router.use(cors({ credentials: true, origin: true }))
 
 /**
  * Retorna as currencies suportadas

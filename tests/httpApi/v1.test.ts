@@ -9,8 +9,7 @@ import Person from '../../src/db/models/person'
 import Session from '../../src/db/models/session'
 import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const app = require('../../src/server')
+import app from '../../src/server/api'
 
 describe('Testing version 1 of HTTP API', () => {
 	const apiConfig = { host: 'api.site.com' }
