@@ -1,6 +1,7 @@
 import socketIOClient from 'socket.io-client'
+import { apiServerUrl } from './axios'
 
-const socket = socketIOClient()
+const socket = socketIOClient(apiServerUrl)
 
 socket.on('connect', () => {
 	console.log('Connected to the socket')
@@ -41,10 +42,8 @@ export function emit(event, ...args) {
 	return new Promise((resolve, reject) => {
 		checkConnection().then(() => {
 			socket.emit(event, ...args, ((error, response) => {
-				if (error)
-					reject(error)
-				else
-					resolve(response)
+				if (error) reject(error)
+				else resolve(response)
 			}))
 		})
 	})

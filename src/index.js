@@ -10,14 +10,5 @@ require('./currencyApi')
 /** Load MarketApi module */
 require('./marketApi')
 
-/** Load express webserver */
-const server = require('./server')
-
-/** Load Websocket */
-require('./websocket')(server)
-
-const port = process.env.PORT || 3000
-
-server.listen(port, () => {
-	console.info('Server is up on port', port)
-})
+/** Load http server */
+require('./server')

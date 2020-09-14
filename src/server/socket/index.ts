@@ -7,7 +7,7 @@ import './emitters'
 /**
  * Função de inicialização do websocket
  */
-export = function(server: Server) {
+export default function(server: Server) {
 	const io = socket(server)
 
 	io.on('connection', function(socket) {

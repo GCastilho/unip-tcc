@@ -1,8 +1,11 @@
 import axios from 'axios'
 
-const port = process.env.NODE_ENV === 'development' ? 3001 : 3000
+/** URL do servidor da API, diferente para o sapper e o browser */
+export const apiServerUrl = typeof window == 'undefined' ?
+	'http://localhost:3000' :
+	`http://${window.location.hostname}:3001`
 
 export default axios.create({
-	baseURL: `http://api.localhost:${port}`,
+	baseURL: apiServerUrl,
 	withCredentials: true
 })

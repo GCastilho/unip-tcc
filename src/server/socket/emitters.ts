@@ -3,7 +3,7 @@
  * este esteja conectado
  */
 
-import * as currencyApi from '../currencyApi'
+import * as currencyApi from '../../currencyApi'
 import * as connectedUsers from './connectedUsers'
 
 currencyApi.events.on('new_transaction', (userId, currency, transaction) => {

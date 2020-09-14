@@ -1,27 +1,20 @@
 import express from 'express'
-import root from './root'
+import { Server } from 'http'
 import api from './api'
+import initSocket from './socket'
 
 const app = express()
-const server = require('http').Server(app)
+app.use(api)
 
-// Permite subdomain funcionar no localhost
-if (process.env.NODE_ENV !== 'production') {
-	app.set('subdomain offset', 1)
-}
+/** HTTP server */
+const server = new Server(app)
 
-// Redireciona para o subdomain adequado
-app.use((req, res, next) => {
-	switch (req.subdomains.pop()) {
-		case(undefined):
-		/** Request to the root domain */
-			return root(req, res, next)
-		case('api'):
-		/** Request to the api subdomain */
-			return api(req, res, next)
-		default:
-			return res.status(404).send()
-	}
+// Bind websocket to http server
+initSocket(server)
+
+/** Porta que o servidor HTTP irá ouvir por conexões */
+const port = +(process.env.PORT || 3001)
+
+server.listen(port, () => {
+	console.info('Server is up on port', port)
 })
-
-module.exports = server

@@ -1,11 +1,11 @@
-import * as userApi from '../userApi'
-import * as CurrencyApi from '../currencyApi'
+import * as userApi from '../../userApi'
+import * as CurrencyApi from '../../currencyApi'
 import * as connectedUsers from './connectedUsers'
 import { GlobalListeners } from './router'
-import Transaction from '../db/models/transaction'
-import type { Person } from '../db/models/person'
-import type { TxInfo } from '../db/models/transaction'
-import type { SuportedCurrencies as SC } from '../currencyApi'
+import Transaction from '../../db/models/transaction'
+import type { Person } from '../../db/models/person'
+import type { TxInfo } from '../../db/models/transaction'
+import type { SuportedCurrencies as SC } from '../../currencyApi'
 
 /** O Objeto 'balance' do usuário com os saldos em string */
 type StringifiedBalanceObject = {

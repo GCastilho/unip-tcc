@@ -1,4 +1,4 @@
-import * as CurrencyApi from '../../currencyApi'
+import * as CurrencyApi from '../../../currencyApi'
 
 /** Interface do retorno do socket ao receber 'list' */
 export interface List {

@@ -1,4 +1,4 @@
-import User from '../userApi/user'
+import User from '../../userApi/user'
 
 /**
  * Map de usuários conectados no sistema, a chave é o userId do usuário e o
