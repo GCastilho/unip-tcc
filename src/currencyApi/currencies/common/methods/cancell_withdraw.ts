@@ -52,8 +52,7 @@ export function cancell_withdraw_loop(this: Common) {
 					if (err.code == 'AlreadyExecuted') {
 						item.status = 'completed'
 						await item.save()
-					} else if (err.code == 'OperationNotFound') {
-						await cancelInMain.call(this, item.userId, item.opid)
+					} else if (err == 'OperationNotFound') {
 						item.status = 'completed'
 						await item.save()
 					} else {
