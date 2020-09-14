@@ -1,30 +1,12 @@
 import express from 'express'
+import cors from 'cors'
 import user from './user'
 import * as CurrencyApi from '../../../currencyApi'
 
 const router = express.Router()
 
-/**
- * Autoriza requests autenticados vindos da URL base
- */
-router.use((req, res, next) => {
-	// Workaround do CORS em diferentes ips; Remover qdo for para prod
-	const host = req.hostname.replace('api.', '')
-	const port = process.env.PORT == '3001' ? '3000' : process.env.PORT || 3000
-
-	res.header('Access-Control-Allow-Origin', `http://${host}:${port}`)
-	res.header('Access-Control-Allow-Credentials', 'true')
-	res.header('Access-Control-Allow-Methods', 'POST, GET, DELETE, PATCH')
-	res.header('Access-Control-Allow-Headers', 'Content-Type')
-	next()
-})
-
-/**
- * Handler do preflight request
- */
-router.options('*', function(_req, res) {
-	res.sendStatus(200)
-})
+/** Habilita o CORS para requests autenticados vindos de qualquer endereço */
+router.use(cors({ credentials: true, origin: true }))
 
 /**
  * Retorna as currencies suportadas
