@@ -114,17 +114,19 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 			if (doc) {
 				callback(null, 'cancelled')
 				tx?.remove()
-			} else if(tx) {
+			} else if (tx?.txid) {
 				callback({
 					code: 'AlreadyExecuted',
 					message: 'The transaction cold not be cancelled because it was already sent to it\'s destination'
 				})
 			} else {
-				await new Transaction({
-					opid: opid,
-					account: '0000000-CANCELLED-000000',
-					type: 'send'
-				}).save()
+				if (!tx) {
+					await new Transaction({
+						opid: opid,
+						account: '0000000-CANCELLED-000000',
+						type: 'send'
+					}).save()
+				}
 				callback(null, 'cancelled')
 			}
 		} catch (err) {

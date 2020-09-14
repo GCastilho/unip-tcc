@@ -5,7 +5,7 @@ import * as UserApi from '../../../../userApi'
 import Transaction from '../../../../db/models/transaction'
 
 /**
- * funçao que remove os resquicios que sobraram no main 
+ * funçao que remove os resquicios que sobraram no main
  * de uma transaçao cancelada no external
  */
 async function cancelInMain(this: Common, userId: ObjectId, opid: ObjectId) {
