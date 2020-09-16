@@ -2,7 +2,7 @@
 	"recommendations": [
 		"waderyan.nodejs-extension-pack",
 		"dbaeumer.vscode-eslint",
-		"jamesbirtles.svelte-vscode",
+		"svelte.svelte-vscode",
 		"mikestead.dotenv",
 		"formulahendry.terminal"
 	]

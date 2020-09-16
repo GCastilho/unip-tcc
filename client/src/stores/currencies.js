@@ -7,7 +7,7 @@ const { subscribe, set } = writable([])
 export { subscribe }
 
 auth.subscribe(async auth => {
-	if (!auth) return
+	if (!auth || typeof window == 'undefined') return
 	const accounts = await axios.get('/v1/user/accounts')
 	const currenciesDetailed = await axios.get('/v1/currencies')
 

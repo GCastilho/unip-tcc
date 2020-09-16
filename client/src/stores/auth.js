@@ -1,61 +1,48 @@
 import { writable } from 'svelte/store'
+import axios from '../utils/axios'
 import { emit, addSocketListener } from '../utils/websocket'
 
 /**
- * Função helper para retornar o token do localStorage
+ * Store que armazena se o cliente está autenticado ou não
+ */
+const { subscribe, set } = writable(false)
+
+/** Exporta o subscribe para esse módulo ser uma store */
+export { subscribe }
+
+/**
+ * Seta a store de autenticação e emite um evento de autenticação com o soket
+ * usando o token fornecido. A autenticação com a API é presumida como feita
+ * pela função que fizer o init
  *
- * @returns {string} o item 'socket-auth-token' do localStorage
+ * @param {string} token O token de autenticação com o webosocket
  */
-const getToken = () => localStorage.getItem('socket-auth-token')
-
-/**
- * Função helper para armazenar o token 'socket-auth-token' no localStorage
- *
- * @param {string} token O valor token 'socket-auth-token' para ser armazenado
- * no localStorage
- */
-const setToken = token => localStorage.setItem('socket-auth-token', token)
-
-/**
- * Função helper para remover o token 'socket-auth-token' do localStorage
- */
-const removeToken = () => localStorage.removeItem('socket-auth-token')
-
-/**
- * Caso exista um token salvo, presume que está autenticado (mesmo que
- * desconectado) até o socket emitir um evento de falha de conexão ou de
- * autenticação
- *
- * @type {boolean} Indica se deve presumir autenticado ou não na inicialização
- */
-const initialState = typeof window !== 'undefined'
-	&& window.localStorage
-	&& !!getToken()
-
-/**
- * Store que armazena se o socket está autenticado ou não
- */
-const { subscribe, set } = writable(initialState)
-
-/**
- * Ao usar a store como $auth, o compilador reclama que o método 'set' não
- * existe. Isso é resolvível usando uma readable ou derived, que é uma melhor
- * alternativa do que deixar como está
- */
-export { subscribe, set }
-
-/**
- * Autentica uma conexão com o websocket usando o token fornecido
- * @param {string} token O token de autenticação com o websocket
- */
-export async function authenticate(token) {
+export async function init(token) {
+	if (typeof token != 'string') return
 	try {
 		await emit('authenticate', token)
-		setToken(token)
 		console.log('Authentication successful')
 		set(true)
 	} catch(err) {
-		console.error('autentication error', err)
+		if (err != 'InvalidToken')
+			console.error('Error authenticating with websocket', err)
+	}
+}
+
+/**
+ * Autentica uma conexão com o websocket usando o token fornecido
+ * @param {string} email O email do usuário
+ * @param {string} password A senha do usuário
+ */
+export async function authenticate(email, password) {
+	try {
+		/** @type {{data: {token: string}}} */
+		const { data } = await axios.post('/v1/user/authentication', {
+			email, password
+		})
+		await init(data.token)
+	} catch(err) {
+		console.error('Authentication error', err)
 		set(false)
 	}
 }
@@ -65,8 +52,8 @@ export async function authenticate(token) {
  */
 export async function deauthenticate() {
 	try {
-		await emit('deauthenticate')
-		removeToken()
+		await axios.delete('/v1/user/authentication')
+		emit('deauthenticate')
 		console.log('Deauthentication successful')
 		set(false)
 	} catch(err) {
@@ -76,9 +63,15 @@ export async function deauthenticate() {
 }
 
 /**
- * Tenta autenticar o socket assim que conectado
+ * Tenta inicializar a store assim que conectado
  */
-addSocketListener('connect', () => {
-	const token = getToken()
-	if (typeof token === 'string') authenticate(token)
+addSocketListener('connect', async () => {
+	try {
+		/** @type {{data: {token: string}}} */
+		const { data } = await axios.get('/v1/user/authentication')
+		await init(data.token)
+	} catch(err) {
+		if (!err.response || err.response.status == 401) set(false)
+		else throw err
+	}
 })

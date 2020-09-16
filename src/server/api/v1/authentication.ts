@@ -81,8 +81,9 @@ router.use(async (req, res, next) => {
 /**
  * Retorna se o usuário está autenticado ou não
  */
-router.get('/authentication', (_req, res) => {
-	res.send({ message: 'Authenticated' })
+router.get('/authentication', async (req, res) => {
+	const session = await Session.findOne({ userId: req.userId }, { token: true })
+	res.send({ token: session?.token })
 })
 
 /**
@@ -94,7 +95,7 @@ router.delete('/authentication', async (req, res) => {
 		if (!session) throw 'CookieNotFound'
 
 		// Seta o cookie para expirar no passado, fazendo com o que browser o delete
-		res.cookie('sessionId', '', { expires: new Date(0) })
+		res.cookie('sessionId', '', { httpOnly: true, expires: new Date(0) })
 		res.send({ message: 'Success' })
 	} catch(err) {
 		res.status(500).send({ error: 'InternalServerError' })
