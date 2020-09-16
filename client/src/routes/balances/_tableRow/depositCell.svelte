@@ -1,10 +1,11 @@
 <script>
 	import QRious from 'qrious'
 	import { onMount } from 'svelte'
+	import * as accountsStore from '../../../stores/accounts'
 
-	export let name
-	export let accounts = []
+	export let currency
 
+	const accounts = $accountsStore[currency]
 	let selectedAccount = ''
 
 	// Qr Code stuff
@@ -18,12 +19,12 @@
 		// Desenha o QR Code
 		qrious = new QRious({
 			element: canvas,
-			value: `${name}:${selectedAccount}`
+			value: `${currency}:${selectedAccount}`
 		})
 	})
 
 	/** Atualiza o valor do qr code com o selectedAccount */
-	const setQrCode = () => qrious.set({ value: `${name}:${selectedAccount}` })
+	const setQrCode = () => qrious.set({ value: `${currency}:${selectedAccount}` })
 </script>
 
 <style>
