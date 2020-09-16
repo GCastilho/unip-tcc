@@ -1,5 +1,4 @@
 <script>
-	import { onMount } from "svelte"
 	import { goto } from "@sapper/app"
 	import axios from "../../utils/axios.js"
 	import * as auth from "../../stores/auth.js"
@@ -8,11 +7,6 @@
 	import FormErrorMessage from "../../components/FormErrorMessage.svelte"
 
 	let errorMessage = undefined
-
-	onMount(() => {
-		// Redireciona para home caso não esteja autenticado
-		if (!$auth) goto('/')
-	})
 
 	async function handleSubmit(event) {
 		const oldPassword = event.target.password_old.value

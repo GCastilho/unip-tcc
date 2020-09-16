@@ -13,15 +13,15 @@
 				await init(token)
 			}
 		} catch (err) {
-			console.error('Error fetching credentials in preload function', err)
+			console.error('Error fetching credentials in preload function:', err.code)
 		}
 	}
 </script>
 
 <script>
-	import Nav from '../components/Nav.svelte';
+	import Nav from '../components/Nav.svelte'
 
-	export let segment;
+	export let segment
 </script>
 
 <style>

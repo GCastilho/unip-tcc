@@ -62,7 +62,7 @@
 	<th>Available Balance</th>
 	<th>Locked Balance</th>
 	<th>Actions</th>
-	{#each $currencies as {code, name, fee, accounts}}
-		<TableRow {code} {name} {fee} {accounts} />
+	{#each $currencies as {code, name, decimals, fee, accounts}}
+		<TableRow {code} {name} {decimals} {fee} {accounts} />
 	{/each}
 </table>
