@@ -7,7 +7,9 @@ import { emit, addSocketListener } from '../utils/websocket'
  */
 const { subscribe, set } = writable(false)
 
-/** Exporta o subscribe para esse módulo ser uma store */
+/**
+ * Exporta o subscribe para esse módulo ser uma store
+ */
 export { subscribe }
 
 /**
@@ -30,7 +32,7 @@ export async function init(token) {
 }
 
 /**
- * Autentica uma conexão com o websocket usando o token fornecido
+ * Autentica o usuário na API e no websocket
  * @param {string} email O email do usuário
  * @param {string} password A senha do usuário
  */
@@ -48,7 +50,7 @@ export async function authenticate(email, password) {
 }
 
 /**
- * Desautentica uma conexão com o websocket
+ * Desautentica uma conexão com a API e com o websocket
  */
 export async function deauthenticate() {
 	try {
@@ -63,15 +65,31 @@ export async function deauthenticate() {
 }
 
 /**
- * Tenta inicializar a store assim que conectado
+ * Adiciona um listener de connect no socket quando ele desconectar da primeira
+ * vez, para que ele cheque pela autenticação a cada vez que ele se conectar
+ *
+ * Se o listener for colocado diretamente ele fará um check em seguida, e
+ * já que a preload do _layout principal já inicializa a store, isso causa
+ * uma requisição duplicada na API
  */
-addSocketListener('connect', async () => {
-	try {
-		/** @type {{data: {token: string}}} */
-		const { data } = await axios.get('/v1/user/authentication')
-		await init(data.token)
-	} catch(err) {
-		if (!err.response || err.response.status == 401) set(false)
-		else throw err
-	}
+const removeListener = addSocketListener('disconnect', () => {
+	/**
+	 * Remove o listener para evitar que vários listeners de connect sejam
+	 * colocados a cada disconnect
+	 */
+	removeListener()
+
+	/**
+	 * Tenta inicializar a store assim que conectado
+	 */
+	addSocketListener('connect', async () => {
+		try {
+			/** @type {{data: {token: string}}} */
+			const { data } = await axios.get('/v1/user/authentication')
+			await init(data.token)
+		} catch(err) {
+			if (!err.response || err.response.status == 401) set(false)
+			else throw err
+		}
+	})
 })

@@ -50,19 +50,20 @@ export function emit(event, ...args) {
 }
 
 /**
- * Adiciona um event listener no socket para um evento específico
- * @param {string} event O nome do evento que será ouvido
- * @param {function} fn A função que deverá ser chamada quando o evento ocorrer
- */
-export function addSocketListener(event, fn) {
-	socket.on(event, fn)
-}
-
-/**
  * Remove uma função específica do array de listeners de um evento
  * @param {string} event O nome do evento que estava sendo ouvido
  * @param {function} fn A função que deverá ser removida do listener
  */
 export function removeSocketListner(event, fn) {
 	socket.removeListener(event, fn)
+}
+
+/**
+ * Adiciona um event listener no socket para um evento específico
+ * @param {string} event O nome do evento que será ouvido
+ * @param {function} fn A função que deverá ser chamada quando o evento ocorrer
+ */
+export function addSocketListener(event, fn) {
+	socket.on(event, fn)
+	return () => removeSocketListner(event, fn)
 }
