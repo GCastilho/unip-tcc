@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import axios from '../utils/axios'
+import axios, { apiServerUrl } from '../utils/axios'
 import { emit, addSocketListener } from '../utils/websocket'
 
 /**
@@ -19,8 +19,9 @@ export { subscribe }
  *
  * @param {string} token O token de autenticação com o webosocket
  */
-export async function init(token) {
-	if (typeof token != 'string') return
+async function authentication(token) {
+	if (typeof token != 'string') return set(false)
+
 	try {
 		await emit('authenticate', token)
 		console.log('Authentication successful')
@@ -32,17 +33,40 @@ export async function init(token) {
 }
 
 /**
- * Autentica o usuário na API e no websocket
+ * Inicializa a store de autenticação no modo SSR
+ *
+ * @param {fetch} fetch A instância do fetch que permite requisições
+ * autenticadas com a API
+ */
+export async function init(fetch) {
+	try {
+		const res = await fetch(`${apiServerUrl}/v1/user/authentication`, {
+			method: 'GET',
+			credentials: 'include'
+		})
+		if (res.ok) {
+			const { token } = await res.json()
+			await authentication(token)
+		} else {
+			await authentication(null)
+		}
+	} catch(err) {
+		console.error('Error fetching credentials in init function:', err.code)
+	}
+}
+
+/**
+ * Loga o usuário na API e no websocket
  * @param {string} email O email do usuário
  * @param {string} password A senha do usuário
  */
-export async function authenticate(email, password) {
+export async function login(email, password) {
 	try {
 		/** @type {{data: {token: string}}} */
 		const { data } = await axios.post('/v1/user/authentication', {
 			email, password
 		})
-		await init(data.token)
+		await authentication(data.token)
 	} catch(err) {
 		console.error('Authentication error', err)
 		set(false)
@@ -50,9 +74,9 @@ export async function authenticate(email, password) {
 }
 
 /**
- * Desautentica uma conexão com a API e com o websocket
+ * Desloga o usuário da API e com o websocket
  */
-export async function deauthenticate() {
+export async function logout() {
 	try {
 		await axios.delete('/v1/user/authentication')
 		emit('deauthenticate')
@@ -86,7 +110,7 @@ const removeListener = addSocketListener('disconnect', () => {
 		try {
 			/** @type {{data: {token: string}}} */
 			const { data } = await axios.get('/v1/user/authentication')
-			await init(data.token)
+			await authentication(data.token)
 		} catch(err) {
 			if (!err.response || err.response.status == 401) set(false)
 			else throw err

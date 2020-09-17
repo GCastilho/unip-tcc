@@ -19,7 +19,7 @@
 		const password = event.target.password.value
 
 		try {
-			await auth.authenticate(email, password)
+			await auth.login(email, password)
 
 			/** Redireciona o usuário para a home */
 			goto('/')

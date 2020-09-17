@@ -3,18 +3,7 @@
 	import { apiServerUrl } from '../utils/axios'
 
 	export async function preload() {
-		try {
-			const res = await this.fetch(`${apiServerUrl}/v1/user/authentication`, {
-				method: 'GET',
-				credentials: 'include'
-			})
-			if (res.ok) {
-				const { token } = await res.json()
-				await init(token)
-			}
-		} catch (err) {
-			console.error('Error fetching credentials in preload function:', err.code)
-		}
+		await init(this.fetch)
 	}
 </script>
 

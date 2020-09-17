@@ -114,7 +114,7 @@
 					</div>
 				</li>
 				<li>
-					<a on:click={auth.deauthenticate} href="/">
+					<a on:click={auth.logout} href="/">
 						<img alt="Logout" title="Logout" src="./assets/logout-icon.svg" />
 					</a>
 				</li>
