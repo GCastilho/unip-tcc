@@ -1,23 +1,12 @@
+<script context="module">
+	export function preload(page, session) {
+		if (!session.loggedIn) this.redirect(303, '/login')
+	}
+</script>
+
 <script>
-	import { onMount, onDestroy } from 'svelte'
-	import { goto } from '@sapper/app'
-	import { subscribe } from '../../stores/auth.js'
 	import * as currencies from '../../stores/currencies.js'
 	import TableRow from './_tableRow/index.svelte'
-
-	/** Referência à subscription da store de auth */
-	let unsubscribeAuth
-
-	onMount(() => {
-		// Redireciona para login caso não autenticado
-		unsubscribeAuth = subscribe(auth => {
-			if (!auth) goto('/login')
-		})
-	})
-
-	onDestroy(() => {
-		if (typeof unsubscribeAuth === 'function') unsubscribeAuth()
-	})
 </script>
 
 <style>

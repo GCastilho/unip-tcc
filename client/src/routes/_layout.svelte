@@ -1,5 +1,11 @@
 <script>
+	import { stores } from '@sapper/app'
+	import { init } from '../stores/auth'
 	import Nav from '../components/Nav.svelte'
+
+	// Inicializa a store de autenticação
+	const { session } = stores()
+	init(session)
 
 	export let segment
 </script>

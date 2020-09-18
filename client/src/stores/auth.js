@@ -1,5 +1,5 @@
-import { writable } from 'svelte/store'
-import axios, { apiServerUrl } from '../utils/axios'
+import { writable, get } from 'svelte/store'
+import axios from '../utils/axios'
 import { emit, addSocketListener } from '../utils/websocket'
 
 /**
@@ -11,6 +11,30 @@ const { subscribe, set } = writable(false)
  * Exporta o subscribe para esse módulo ser uma store
  */
 export { subscribe }
+
+/**
+ * Referência à store de sessão que o sapper não deixa eu instanciar ela aqui
+ *
+ * @type {ReturnType<writable<{}>>}
+ */
+let sessionStore = writable({})
+
+/**
+ * Inicializa a store de autenticação no modo SSR
+ *
+ * @param {ReturnType<writable<{}>>} session A instância da store de sessões
+ */
+export async function init(session) {
+	sessionStore.update(() => get(session))
+	set(get(session).loggedIn)
+
+	subscribe(auth => {
+		sessionStore.update(v => {
+			v.loggedIn = auth
+			return v
+		})
+	})
+}
 
 /**
  * Seta a store de autenticação e emite um evento de autenticação com o soket
@@ -29,29 +53,6 @@ async function authentication(token) {
 	} catch(err) {
 		if (err != 'InvalidToken')
 			console.error('Error authenticating with websocket', err)
-	}
-}
-
-/**
- * Inicializa a store de autenticação no modo SSR
- *
- * @param {fetch} fetch A instância do fetch que permite requisições
- * autenticadas com a API
- */
-export async function init(fetch) {
-	try {
-		const res = await fetch(`${apiServerUrl}/v1/user/authentication`, {
-			method: 'GET',
-			credentials: 'include'
-		})
-		if (res.ok) {
-			const { token } = await res.json()
-			await authentication(token)
-		} else {
-			await authentication(null)
-		}
-	} catch(err) {
-		console.error('Error fetching credentials in init function:', err.code)
 	}
 }
 
