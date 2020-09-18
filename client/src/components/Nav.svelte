@@ -55,7 +55,13 @@
 	a {
 		text-decoration: none;
 		padding: 1em 0.5em;
-		display: block;
+		display: flex;
+		align-items: center;
+		white-space: nowrap;
+	}
+
+	a > img {
+		padding-right: 6px;
 	}
 
 	img {
@@ -116,7 +122,7 @@
 									class:selected="{segment === 'user/transactions'}"
 									on:click="{() => userdropdown = 'hide'}"
 									href="user/transactions"
-								><img alt="Transactions" title="Transactions" src="./assets/key-icon.svg" />
+								><img alt="Transactions" title="Transactions" src="./assets/list.svg" />
 									Transactions
 								</a>
 							</td></tr>
