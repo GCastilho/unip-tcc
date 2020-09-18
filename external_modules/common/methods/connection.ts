@@ -100,4 +100,38 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		/** Faz o withdraw de todas as transações ainda não enviadas */
 		this.withdraw_pending()
 	})
+
+	socket.on('cancell_withdraw', async (opid: TxSend['opid'], callback: Function) => {
+		console.log('received cancell_withdraw request', opid)
+		try {
+			/**
+			 * Se a transação for cancellada mas não foi informada ao main server, ela
+			 * vai ter sido deletada daqui, então requests futuros vão var opNotFound
+			 * mas não vai ter op para cancelar mais, então ela vai estar no limbo
+			 */
+			const doc = await SendPending.findOneAndRemove({ opid })
+			const tx = await Transaction.findOne({ opid })
+			if (doc) {
+				callback(null, 'cancelled')
+				tx?.remove()
+			} else if (tx?.txid) {
+				callback({
+					code: 'AlreadyExecuted',
+					message: 'The transaction cold not be cancelled because it was already sent to it\'s destination'
+				})
+			} else {
+				if (!tx) {
+					await new Transaction({
+						opid: opid,
+						account: '0000000-CANCELLED-000000',
+						type: 'send'
+					}).save()
+				}
+				callback(null, 'cancelled')
+			}
+		} catch (err) {
+			console.error('Error cancelling request:', err)
+			callback(err)
+		}
+	})
 }

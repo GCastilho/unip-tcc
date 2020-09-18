@@ -60,7 +60,7 @@ export function withdraw_pending(this: Common) {
 		}).cursor()
 
 		let doc: PSent
-		while((doc = await pendingTx.next())) {
+		while ((doc = await pendingTx.next())) {
 			doc.journaling = 'picked'
 			await doc.save()
 

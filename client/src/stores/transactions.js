@@ -102,9 +102,9 @@ export async function withdraw(currency, destination, amount) {
  */
 export async function cancell(opid) {
 	try {
-		/** @type {{data: string}} */
+		/** @type {{data: {message: string}}} */
 		const { data } = await axios.delete(`/v1/user/transactions/${opid}`)
-		if (data == 'cancelled') {
+		if (data.message == 'cancelled') {
 			update(txs => {
 				const index = txs.findIndex(v => v.opid == opid)
 				txs.splice(index, 1)

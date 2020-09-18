@@ -114,6 +114,12 @@ export interface UpdtSent {
 	timestamp: ExternalModuleTransaction['timestamp']
 }
 
+export interface CancelledSentTx {
+	/** Identificador da operação da transação que foi cancelada */
+	opid: ExternalModuleTransaction['opid']
+	status: 'cancelled'
+}
+
 /**
  * Interface Transaction do que o servidor principal usa para se comunicar
  * entre seus módulos internos

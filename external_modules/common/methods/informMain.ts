@@ -169,7 +169,7 @@ export function informMain(this: Common) {
 	}
 
 	/**
-	 * Atualzia o main server de todas as transações nas collections de
+	 * Atualiza o main server de todas as transações nas collections de
 	 * transações pendentes
 	 */
 	this._events.on('connected', () => {
