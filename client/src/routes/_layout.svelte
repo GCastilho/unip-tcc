@@ -1,12 +1,3 @@
-<script context="module">
-	import { init } from '../stores/auth'
-	import { apiServerUrl } from '../utils/axios'
-
-	export async function preload() {
-		await init(this.fetch)
-	}
-</script>
-
 <script>
 	import Nav from '../components/Nav.svelte'
 
