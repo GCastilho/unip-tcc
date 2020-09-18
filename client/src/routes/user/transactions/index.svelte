@@ -65,14 +65,22 @@
 	}
 
 	@media only screen and (max-width: 900px){
+		.background-table{
+			width: 100%;
+			margin-right: 0;
+			padding: 0;
+			border-radius: 0;
+		}
+		h1 {
+			margin: 0;
+		}
 		.table {
 			border-top: 0;
+			border-radius: 0;
 		}
-
 		.table > div:first-of-type {
 			display: none;
-			grid-template-columns: auto;
-			grid-template-rows: auto auto auto auto;
+			grid-template-columns: 10% 13% 59% 18%;
 		}
 	}
 </style>
@@ -88,7 +96,7 @@
 			<th>Account / Transaction ID</th>
 			<th>Date</th>
 		</div>
-		{#each $transactions as transaction}
+		{#each $transactions as transaction (transaction.opid)}
 			<TableCell transaction={transaction}/>
 		{:else}
 			<tr>

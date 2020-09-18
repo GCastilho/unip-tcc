@@ -4,6 +4,8 @@
 	import { format } from 'light-date'
 	import * as currencies from '../../../stores/currencies'
 	import * as transactions from '../../../stores/transactions'
+	import { slide } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
 
 	export let transaction
 
@@ -20,7 +22,9 @@
 		fee
 	} = transaction
 
-	let coin, name, code, dateTime
+	let coin, name, code, date, time, tableWidth
+
+	let disable = false
 
 	afterUpdate(() => {
 		if (status == 'confirmed') confirmations = null
@@ -33,7 +37,6 @@
 
 	$: {
 		coin = $currencies.find(value => currency === value.name)
-
 		if (coin) {
 			name = coin.name
 			code = coin.code.toUpperCase()
@@ -46,16 +49,24 @@
 		transactions.cancell(opid)
 	}
 
+	function handlerMobile() {
+		if(tableWidth > 850) return
+		disable = !disable
+	}
+
+	$: disable = tableWidth >= 850 ? false : disable
+
 	/**
 	 * Converte um timestamp para um padrão legivel
 	 */
-	$: dateTime = timestamp ? format(new Date(timestamp), '{HH}:{mm} - {dd}/{MM}/{yyyy}') : null
+	$: time = timestamp ? format(new Date(timestamp), '{HH}:{mm} ') : null
+	$: date = timestamp ? format(new Date(timestamp), ' {dd}/{MM}/{yyyy}') : null
 </script>
 
 <style>
 	.table-row {
-		display: grid;
-		grid-template-columns: 10% 13% 59% 14% auto;
+		display: flex;
+		flex-direction: column;
 		overflow: visible;
 		background-color: #fdf9f9;
 		border: 1px solid var(--table-borders);
@@ -69,6 +80,12 @@
 
 	.table-row:last-of-type{
 		border-bottom: 0;
+	}
+
+	.desktop-row {
+		display: grid;
+		grid-template-columns: 10% 13% 59% 14% auto;
+		overflow: visible;
 	}
 
 	.status-tx, .account-tx {
@@ -93,7 +110,11 @@
 
 	.amount-tx {
 		display: grid;
+		height: 100%;
 		grid-template-columns: auto 26%;
+	}
+
+	.amount-tx > span {
 		align-self: center;
 	}
 
@@ -105,9 +126,10 @@
 	.date-tx {
 		text-align: end;
 		align-self: center;
+		word-spacing: 5px;
 	}
 
-	button {
+	.desktop-row > button {
 		align-self: center;
 		background-color: transparent;
 		width: 20px;
@@ -131,95 +153,135 @@
 		fill: black;
 	}
 
-	.mobile {
+	.mobile-row {
 		display: none;
-		background-color: rgba(255,62,0,0.7);
+	}
+
+	.mobile-row > button {
+		color: white;
+		background-color: #ff3e00;
+		opacity: 1;
+		height: 35px;
+		width: 150px;
+		border: 0;
+		border-radius: 5px;
+		outline: 0;
+		margin: 10px;
+		align-self: center;
+		animation: 4s;
+		animation-delay: 4s;
+	}
+
+	.mobile-row > button:hover {
+		opacity: 0.9;
+	}
+
+	.mobile-row > button:active {
+		background-color: #b52d02;
+	}
+
+	.mobile-account-tx {
+		display: flex;
+		padding: 10px;
+		flex-direction: column;
+	}
+
+	.mobile-account-tx > span {
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		overflow: hidden;
 	}
 
 	@media only screen and (max-width: 900px){
 		.table-row {
-			grid-template-columns: 50% 50%;
-			grid-template-rows: repeat(n, 1fr);
-			text-align: center;
+			font-size: 15px;
+			cursor: pointer;
 		}
 
-		.table-row > div {
-			border-left: 0;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-			overflow: hidden;
+		.table-row:hover {
+			background-color:#f5ede9;
+		}
+
+		.desktop-row {
+			grid-template-columns: 1fr 1fr 1fr;
+			top: 3;
 		}
 
 		.status-tx {
-			padding: 0;
+			border-left: 4px solid var(--txColor);
 		}
 
-		.amount-tx {
-			grid-template-columns: auto min-content;
-		}
-
-		.amount-tx > span:nth-child(2n) {
-			text-align: start;
-			padding: 0 5px;
+		.account-tx {
+			display: none;
 		}
 
 		.date-tx {
 			text-align: center;
+			word-spacing: 15px;
 		}
 
-		.mobile {
+		span > span {
+			display: none;
+		}
+
+		.mobile-row {
 			display: flex;
 			flex-direction: column;
-			flex-grow: 1;
-			border-left: 1px solid var(--table-borders) !important;
-			align-self: center;
+			border-left: 4px solid var(--txColor);
+			opacity: 1;	
+		}
+
+		.desktop-row > button {
+			display: none;
 		}
 	}
 </style>
 
-<div class="table-row" style="--txColor:{txColor}">
-	<div class="mobile">
-		<span>Type</span>
-		<span>Status</span>
-	</div>
-	<div class="status-tx">
-		<span title="Type">{type}</span>
-		<span title="Status">{status + (typeof confirmations == 'number' ? ` (${confirmations})` : '')}</span>
-	</div>
-	<div class="mobile">
-		<span>Amount</span>
-		{#if fee > 0}
-			<span>Fee</span>
-		{/if}
-	</div>
-	<div class="amount-tx" title="Amount" style="text-align: end">
-		<span title="Amount">{amount}</span>
-		<span title={name}>{code}</span>
-		{#if fee > 0}
-			<span title="Fee">{fee}</span>
-			<span title="Fee">Fee</span>
-		{/if}
-	</div>
-	<div class="mobile">
-		<span>Account</span>
-		<span>Transaction ID</span>
-	</div>
-	<div class="account-tx" style="padding-left: end">
-		<span title="Account">{account}</span>
-		<span title="Transaction ID">{txid || '--'}</span>
-	</div>
-	<div class="mobile">
-		<span>Date</span>
-	</div>
-	<div class="date-tx" title="Date">
-		<span>{dateTime || ''}</span>
-	</div>
-	{#if status === 'processing'}
-		<div class="mobile">
-			<span>Cancel Transaction</span>
+<div 
+	class="table-row"
+	style="--txColor:{txColor}"	
+	bind:offsetWidth={tableWidth}
+>
+	<div class="desktop-row" on:click={handlerMobile} >		
+		<div class="status-tx">
+			<span title="Type">{type}</span>
+			<span title="Status">{status + (typeof confirmations == 'number' ? ` (${confirmations})` : '')}</span>
 		</div>
-		<button title="Cancel Transaction" on:click={cancelTx}>
-			<Close width="20px" height="20px"/>
-		</button>
+		
+		<div class="amount-tx" title="Amount" style="text-align: end">
+			<span title="Amount">{amount}</span>
+			<span title={name}>{code}</span>
+			{#if fee > 0}
+				<span title="Fee">{fee}</span>
+				<span title="Fee">Fee</span>
+			{/if}
+		</div>
+		
+		<div class="account-tx" style="padding-left: end">
+			<span title="Account">{account}</span>
+			<span title="Transaction ID">{txid || '--'}</span>
+		</div>
+		
+		<div class="date-tx" title="Date">
+			<span>{#if time}{time}<span>-</span>{date}{/if}</span>
+		</div>
+		{#if status === 'processing'}
+			<button title="Cancel Transaction" on:click={cancelTx}>
+				<Close width="20px" height="20px"/>
+			</button>
+		{/if}
+	</div>
+	{#if disable}
+		<div class="mobile-row" transition:slide="{{delay: 250, duration: 250, easing: quintOut }}">
+			<div class="mobile-account-tx" style="padding-left: end" on:click={handlerMobile}>
+				<span title="Account"><b>Account:</b> {account}</span>
+				<span title="Transaction ID"><b>Transaction ID:</b> {txid || '--'}</span>
+			</div>
+			{#if status === 'processing'}
+				<button title="Cancel Transaction" on:click={cancelTx}>
+					Cancel Transaction
+				</button>
+			{/if}
+		</div>
 	{/if}
 </div>
