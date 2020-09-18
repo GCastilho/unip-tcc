@@ -13,23 +13,15 @@ const { subscribe, set } = writable(false)
 export { subscribe }
 
 /**
- * Referência à store de sessão que o sapper não deixa eu instanciar ela aqui
- *
- * @type {ReturnType<writable<{}>>}
- */
-let sessionStore = writable({})
-
-/**
  * Inicializa a store de autenticação no modo SSR
  *
  * @param {ReturnType<writable<{}>>} session A instância da store de sessões
  */
 export async function init(session) {
-	sessionStore.update(() => get(session))
 	set(get(session).loggedIn)
 
 	subscribe(auth => {
-		sessionStore.update(v => {
+		session.update(v => {
 			v.loggedIn = auth
 			return v
 		})
