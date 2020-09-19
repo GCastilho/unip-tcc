@@ -1,9 +1,9 @@
 import { ObjectId } from 'mongodb'
 import Account from '../db/models/account'
 import Transaction from '../db/models/transaction'
-import Common, { TxReceived, UpdtReceived } from '../index'
-import { UpdtSent } from '../../../src/db/models/transaction'
 import { ReceivedPending, PReceived, PSent, SendPending } from '../db/models/pendingTx'
+import type Common from '../index'
+import type { UpdtSent, TxReceived, UpdtReceived } from '../../../interfaces/transaction'
 
 /**
  * Contém métodos para atualizar o main server de transações

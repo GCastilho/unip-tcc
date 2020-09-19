@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { Nano } from '../index'
-import { UpdtSent } from '../../common'
 import { PSent } from '../../common/db/models/pendingTx'
 import { fromNanoToRaw } from '../utils/unitConverter'
+import type { UpdtSent } from '../../../interfaces/transaction'
 
 export function nanoRpc(this: Nano) {
 	const request = async (command: any): Promise<any> => {

@@ -3,7 +3,7 @@ import Account from '../../common/db/models/account'
 import Transaction from '../../common/db/models/transaction'
 import { ReceivedPending } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
-import { TxReceived } from '../../common'
+import type { TxReceived } from '../../../interfaces/transaction'
 
 /**
  * Recebe um txid e uma função para pegar informações brutas dessa transação

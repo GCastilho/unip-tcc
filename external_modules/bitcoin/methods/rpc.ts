@@ -1,7 +1,7 @@
 import Client from 'bitcoin-core'
 import { EventEmitter } from 'events'
-import { UpdtSent } from '../../common'
 import { PSent } from '../../common/db/models/pendingTx'
+import type { UpdtSent } from '../../../interfaces/transaction'
 
 /** EventEmmiter genérico */
 class Events extends EventEmitter {}

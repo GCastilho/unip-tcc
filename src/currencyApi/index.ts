@@ -8,7 +8,7 @@ import Transaction from '../db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
 import type Common from './currencies/common'
 import type { Person } from '../db/models/person'
-import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../db/models/transaction'
+import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../interfaces/transaction'
 
 /** Tipo para variáveis/argumentos que precisam ser uma currency suportada */
 export type SuportedCurrencies = Common['name']

@@ -1,7 +1,8 @@
 import Checklist, { Checklist as Ck } from '../../../../db/models/checklist'
-import Transaction, { TxSend, UpdtSent } from '../../../../db/models/transaction'
+import Transaction from '../../../../db/models/transaction'
 import * as userApi from '../../../../userApi'
 import Common from '../index'
+import type { TxSend, UpdtSent } from '../../../../../interfaces/transaction'
 
 /**
  * Retorna uma função que varre a collection da checklist e executa os requests

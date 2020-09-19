@@ -3,8 +3,8 @@ const ss = require('socket.io-stream')
 import Common from '../index'
 import Account from '../db/models/account'
 import Transaction from '../db/models/transaction'
-import { TxSend } from '../index'
 import { SendPending } from '../db/models/pendingTx'
+import type { TxSend } from '../../../interfaces/transaction'
 
 /**
  * Essa função é o handler de requests vindos do servidor principal

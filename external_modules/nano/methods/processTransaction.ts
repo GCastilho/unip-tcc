@@ -1,8 +1,8 @@
 import Transaction from '../../common/db/models/transaction'
 import Account from '../../common/db/models/account'
 import { Nano } from '../index'
-import { TxReceived } from '../../common'
 import { fromRawToNano, fromNanoToRaw } from '../utils/unitConverter'
+import type { TxReceived } from '../../../interfaces/transaction'
 
 /**
  * Processa blocos de receive da nano

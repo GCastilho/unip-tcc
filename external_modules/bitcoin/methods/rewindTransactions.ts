@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import Account from '../../common/db/models/account'
 import Transaction from '../../common/db/models/transaction'
 import { ReceivedPending } from '../../common/db/models/pendingTx'
-import { TxReceived } from '../../common'
+import type { TxReceived } from '../../../interfaces/transaction'
 
 async function formatTransaction(txInfo: any): Promise<TxReceived|void> {
 	if (txInfo.category != 'receive') return

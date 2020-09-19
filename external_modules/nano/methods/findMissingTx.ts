@@ -1,6 +1,6 @@
-import { TxReceived } from '../../common'
 import { Nano } from '../index'
 import { fromRawToNano } from '../utils/unitConverter'
+import type { TxReceived } from '../../../interfaces/transaction'
 
 /**
  * Procura por transações não computadas até a última transação salva no db

@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose'
-import { UpdtSent } from '../../../common'
+import { UpdtSent } from '../../../../interfaces/transaction'
 import { ObjectId } from 'mongodb'
 
 export interface PReceived extends Document {

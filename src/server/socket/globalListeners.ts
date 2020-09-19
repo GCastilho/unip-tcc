@@ -4,7 +4,7 @@ import * as connectedUsers from './connectedUsers'
 import { GlobalListeners } from './router'
 import Transaction from '../../db/models/transaction'
 import type { Person } from '../../db/models/person'
-import type { TxInfo } from '../../db/models/transaction'
+import type { TxInfo } from '../../../interfaces/transaction'
 import type { SuportedCurrencies as SC } from '../../currencyApi'
 
 /** O Objeto 'balance' do usuário com os saldos em string */

@@ -1,6 +1,6 @@
 import { ReceivedPending, PReceived, PSent, SendPending } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
-import { UpdtSent, UpdtReceived } from '../../common'
+import type { UpdtSent, UpdtReceived } from '../../../interfaces/transaction'
 
 /**
  * Verifica a quantidade de confirmações de uma transação recebida e informa

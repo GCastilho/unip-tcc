@@ -1,7 +1,7 @@
 import Common from '../index'
 import { SendPending, PSent } from '../db/models/pendingTx'
-import { UpdtSent } from '../index'
 import Transaction from '../db/models/transaction'
+import type { UpdtSent } from '../../../interfaces/transaction'
 
 export function withdraw_pending(this: Common) {
 	/**

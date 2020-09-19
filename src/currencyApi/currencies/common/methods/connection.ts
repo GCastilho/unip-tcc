@@ -3,9 +3,10 @@ import ss = require('socket.io-stream')
 import { ObjectId } from 'mongodb'
 import Common from '../index'
 import Person from '../../../../db/models/person'
+import Tx from '../../../../db/models/transaction'
 import * as userApi from '../../../../userApi'
-import User from '../../../../userApi/user'
-import { default as Tx, TxReceived, UpdtReceived } from '../../../../db/models/transaction'
+import type User from '../../../../userApi/user'
+import type { TxReceived, UpdtReceived } from '../../../../../interfaces/transaction'
 
 export function connection(this: Common, socket: socketIO.Socket) {
 	/*

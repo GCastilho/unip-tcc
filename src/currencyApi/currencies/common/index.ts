@@ -3,8 +3,8 @@ import { ObjectId } from 'mongodb'
 import Checklist from '../../../db/models/checklist'
 import * as methods from './methods'
 import type TypedEmitter from 'typed-emitter'
-import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../db/models/transaction'
 import type User from '../../../userApi/user'
+import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../../interfaces/transaction'
 
 /**
  * Interface para padronizar os eventos públicos
