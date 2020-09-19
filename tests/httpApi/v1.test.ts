@@ -1,4 +1,5 @@
 import '../../src/libs'
+import express from 'express'
 import request from 'supertest'
 import { expect } from 'chai'
 import { ObjectId, Decimal128 } from 'mongodb'
@@ -9,10 +10,12 @@ import Person from '../../src/db/models/person'
 import Session from '../../src/db/models/session'
 import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
-import app from '../../src/server/api'
+import api from '../../src/server/api'
+
+const app = express()
+app.use(api)
 
 describe('Testing version 1 of HTTP API', () => {
-	const apiConfig = { host: 'api.site.com' }
 	const user = {
 		email: 'v1-test@example.com',
 		password: 'userP@ss'
@@ -32,7 +35,7 @@ describe('Testing version 1 of HTTP API', () => {
 	})
 
 	it('Should return information about the API', async () => {
-		const { body } = await request(app).get('/v1').set(apiConfig).send()
+		const { body } = await request(app).get('/v1').send()
 			.expect('Content-Type', /json/)
 			.expect(200)
 		expect(body).to.be.an('object').that.deep.equals({
@@ -47,7 +50,7 @@ describe('Testing version 1 of HTTP API', () => {
 	it('Should return Not Found if the path for the request was not found', async () => {
 		const { body } = await request(app)
 			.post('/v1/notFoundPath')
-			.set(apiConfig)
+
 			.send()
 			.expect('Content-Type', /json/)
 			.expect(404)
@@ -56,7 +59,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 	describe('/currencies', () => {
 		it('Should return information about the suported currencies', async () => {
-			const { body } = await request(app).get('/v1/currencies').set(apiConfig).send()
+			const { body } = await request(app).get('/v1/currencies').send()
 				.expect('Content-Type', /json/)
 				.expect(200)
 			const currenciesDetailed = CurrencyApi.currencies.map(currency => ({
@@ -92,7 +95,7 @@ describe('Testing version 1 of HTTP API', () => {
 		beforeEach(async () => {
 			const res = await request(app)
 				.post('/v1/user/authentication')
-				.set(apiConfig)
+
 				.send(user)
 				.expect(200)
 			expect(res.header['set-cookie']).to.be.an('array')
@@ -102,7 +105,7 @@ describe('Testing version 1 of HTTP API', () => {
 		})
 
 		it('Should return information about the subpath', async () => {
-			const { body } = await request(app).get('/v1/user').set(apiConfig).send()
+			const { body } = await request(app).get('/v1/user').send()
 				.expect('Content-Type', /json/)
 				.set('Cookie', [`sessionId=${sessionId}`])
 				.expect(200)
@@ -115,7 +118,7 @@ describe('Testing version 1 of HTTP API', () => {
 			const { body } = await request(app)
 				.post('/v1/user/notFoundPath')
 				.set('Cookie', [`sessionId=${sessionId}`])
-				.set(apiConfig)
+
 				.send()
 				.expect('Content-Type', /json/)
 				.expect(404)
@@ -131,7 +134,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if sending empty object', async () => {
 				await request(app)
 					.post('/v1/user')
-					.set(apiConfig)
+
 					.send({})
 					.expect(400)
 			})
@@ -140,7 +143,7 @@ describe('Testing version 1 of HTTP API', () => {
 				const usersBefore = await Person.estimatedDocumentCount()
 				await request(app)
 					.post('/v1/user')
-					.set(apiConfig)
+
 					.send({ password: 'null_email' })
 					.expect(400)
 				const usersAfter = await Person.estimatedDocumentCount()
@@ -150,7 +153,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if password is null', async () => {
 				await request(app)
 					.post('/v1/user')
-					.set(apiConfig)
+
 					.send({ email: 'null_pass@example.com' })
 					.expect(400)
 
@@ -161,7 +164,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if email and password are null', async () => {
 				await request(app)
 					.post('/v1/user')
-					.set(apiConfig)
+
 					.send({ email: '', password: '' })
 					.expect(400)
 			})
@@ -169,7 +172,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should signup new users', async () => {
 				await request(app)
 					.post('/v1/user')
-					.set(apiConfig)
+
 					.send(user)
 					.expect(201)
 
@@ -186,7 +189,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if user already exists', async () => {
 				await request(app)
 					.post('/v1/user')
-					.set(apiConfig)
+
 					.send(user)
 					.expect(409)
 
@@ -214,7 +217,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should authenticate an existing users', async () => {
 				const res = await request(app)
 					.post('/v1/user/authentication')
-					.set(apiConfig)
+
 					.send(user)
 					.expect(200)
 				expect(res.header['set-cookie']).not.to.be.undefined
@@ -233,7 +236,7 @@ describe('Testing version 1 of HTTP API', () => {
 				const res = await request(app)
 					.delete('/v1/user/authentication')
 					.set('Cookie', [`sessionId=${sessionId}`])
-					.set(apiConfig)
+
 					.send()
 					.expect(200)
 				const cookie: string = res.header['set-cookie'][0]
@@ -244,7 +247,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if sending empty object', async () => {
 				await request(app)
 					.post('/v1/user/authentication')
-					.set(apiConfig)
+
 					.send({})
 					.expect(400)
 			})
@@ -252,7 +255,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if email is null', async () => {
 				await request(app)
 					.post('/v1/user/authentication')
-					.set(apiConfig)
+
 					.send({ password: 'null_email' })
 					.expect(400)
 					.expect(res => {
@@ -266,7 +269,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if password is null', async () => {
 				await request(app)
 					.post('/v1/user/authentication')
-					.set(apiConfig)
+
 					.send({ email: 'null_password@example.com' })
 					.expect(400)
 					.expect(res => {
@@ -280,7 +283,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if email and password are null', async () => {
 				await request(app)
 					.post('/v1/user/authentication')
-					.set(apiConfig)
+
 					.send({ email: '', password: '' })
 					.expect(400)
 					.expect(res => {
@@ -294,7 +297,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if non-existent user', async () => {
 				await request(app)
 					.post('/v1/user/authentication')
-					.set(apiConfig)
+
 					.send({
 						email: 'undefined@example.com',
 						password: 'undefined_pass'
@@ -311,7 +314,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if user with wrong password', async () => {
 				await request(app)
 					.post('/v1/user/authentication')
-					.set(apiConfig)
+
 					.send({
 						email: user.email,
 						password: 'not_user.password'
@@ -328,7 +331,7 @@ describe('Testing version 1 of HTTP API', () => {
 			it('Should fail if valid password but wrong user', async () => {
 				await request(app)
 					.post('/v1/user/authentication')
-					.set(apiConfig)
+
 					.send({
 						email: 'undefined@example.com',
 						password: user.password
@@ -344,7 +347,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 		describe('/info', () => {
 			it('Should return Not Authorized if invalid or missing sessionId', async () => {
-				const { body } = await request(app).get('/v1/user/info').set(apiConfig).send()
+				const { body } = await request(app).get('/v1/user/info').send()
 					.expect(401)
 				expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 			})
@@ -354,7 +357,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 		describe('/accounts', () => {
 			it('Should return Not Authorized if invalid or missing sessionId', async () => {
-				const { body } = await request(app).get('/v1/user/accounts').set(apiConfig).send()
+				const { body } = await request(app).get('/v1/user/accounts').send()
 					.expect(401)
 				expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 			})
@@ -364,7 +367,7 @@ describe('Testing version 1 of HTTP API', () => {
 				const { body } = await request(app)
 					.get('/v1/user/accounts')
 					.set('Cookie', [`sessionId=${sessionId}`])
-					.set(apiConfig)
+
 					.send()
 					.expect(200)
 				expect(body).to.be.an('object')
@@ -379,7 +382,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 		describe('/balances', () => {
 			it('Should return Not Authorized if invalid or missing sessionId', async () => {
-				const { body } = await request(app).get('/v1/user/balances').set(apiConfig).send()
+				const { body } = await request(app).get('/v1/user/balances').send()
 					.expect(401)
 				expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 			})
@@ -389,7 +392,7 @@ describe('Testing version 1 of HTTP API', () => {
 				const { body } = await request(app)
 					.get('/v1/user/balances')
 					.set('Cookie', [`sessionId=${sessionId}`])
-					.set(apiConfig)
+
 					.send()
 					.expect(200)
 				expect(body).to.be.an('object')
@@ -446,7 +449,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 			describe('Testing fetch of multiple transactions', () => {
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
-					const { body } = await request(app).get('/v1/user/transactions').set(apiConfig).send()
+					const { body } = await request(app).get('/v1/user/transactions').send()
 						.expect(401)
 					expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 				})
@@ -455,7 +458,7 @@ describe('Testing version 1 of HTTP API', () => {
 					await UserApi.createUser('empty-tx-user@email.com', 'emptyP@ss')
 					const res = await request(app)
 						.post('/v1/user/authentication')
-						.set(apiConfig)
+
 						.send({
 							email: 'empty-tx-user@email.com',
 							password: 'emptyP@ss'
@@ -467,7 +470,7 @@ describe('Testing version 1 of HTTP API', () => {
 					const { body } = await request(app)
 						.get('/v1/user/transactions')
 						.set('Cookie', [`sessionId=${_sessionId}`])
-						.set(apiConfig)
+
 						.send()
 						.expect(200)
 					expect(body).to.be.an('array').that.have.lengthOf(0)
@@ -480,7 +483,7 @@ describe('Testing version 1 of HTTP API', () => {
 					const { body } = await request(app)
 						.get('/v1/user/transactions')
 						.set('Cookie', [`sessionId=${sessionId}`])
-						.set(apiConfig)
+
 						.send()
 						.expect(200)
 					expect(body).to.be.an('array')
@@ -508,7 +511,7 @@ describe('Testing version 1 of HTTP API', () => {
 					const { body } = await request(app)
 						.get('/v1/user/transactions')
 						.set('Cookie', [`sessionId=${sessionId}`])
-						.set(apiConfig)
+
 						.query({ skip: 10 })
 						.send()
 						.expect(200)
@@ -539,7 +542,7 @@ describe('Testing version 1 of HTTP API', () => {
 							const { body } = await request(app)
 								.get('/v1/user/transactions')
 								.set('Cookie', [`sessionId=${sessionId}`])
-								.set(apiConfig)
+
 								.query({ currency })
 								.send()
 								.expect(200)
@@ -566,7 +569,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 			describe('Testing fetch of specific transaction', () => {
 				it('Should return Not Authorized if invalid or missing sessionId', async () => {
-					const { body } = await request(app).get('/v1/user/transactions/a-opid').set(apiConfig).send()
+					const { body } = await request(app).get('/v1/user/transactions/a-opid').send()
 						.expect(401)
 					expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
 				})
@@ -589,7 +592,7 @@ describe('Testing version 1 of HTTP API', () => {
 						const { body } = await request(app)
 							.get(`/v1/user/transactions/${opid.toHexString()}`)
 							.set('Cookie', [`sessionId=${sessionId}`])
-							.set(apiConfig)
+
 							.send()
 							.expect(401)
 						expect(body).to.be.an('object').that.deep.equals({
@@ -606,7 +609,7 @@ describe('Testing version 1 of HTTP API', () => {
 						const { body } = await request(app)
 							.get(`/v1/user/transactions/${tx._id.toHexString()}`)
 							.set('Cookie', [`sessionId=${sessionId}`])
-							.set(apiConfig)
+
 							.send()
 							.expect('Content-Type', /json/)
 							.expect(200)
@@ -633,7 +636,7 @@ describe('Testing version 1 of HTTP API', () => {
 						const txSavedBefore = (await Transaction.find({})).length
 						const { body } = await request(app)
 							.post('/v1/user/transactions')
-							.set(apiConfig)
+
 							.send({
 								currency,
 								destination: `account-destination-${currency}`,
@@ -653,7 +656,7 @@ describe('Testing version 1 of HTTP API', () => {
 						const { body } = await request(app)
 							.post('/v1/user/transactions')
 							.set('Cookie', [`sessionId=${sessionId}`])
-							.set(apiConfig)
+
 							.send({
 								currency,
 								destination: `account-destination-${currency}`,
@@ -671,7 +674,7 @@ describe('Testing version 1 of HTTP API', () => {
 						const { body } = await request(app)
 							.post('/v1/user/transactions')
 							.set('Cookie', [`sessionId=${sessionId}`])
-							.set(apiConfig)
+
 							.send({
 								currency,
 								destination: `account-destination-${currency}`,
@@ -704,7 +707,7 @@ describe('Testing version 1 of HTTP API', () => {
 					const { body } = await request(app)
 						.patch('/v1/user/password')
 						.set('Cookie', [`sessionId=${sessionId}`])
-						.set(apiConfig)
+
 						.send({})
 						.expect(400)
 
@@ -718,7 +721,7 @@ describe('Testing version 1 of HTTP API', () => {
 					const { body } = await request(app)
 						.patch('/v1/user/password')
 						.set('Cookie', [`sessionId=${sessionId}`])
-						.set(apiConfig)
+
 						.send({ new: 'aNewPassword' })
 						.expect(400)
 
@@ -732,7 +735,7 @@ describe('Testing version 1 of HTTP API', () => {
 					const { body } = await request(app)
 						.patch('/v1/user/password')
 						.set('Cookie', [`sessionId=${sessionId}`])
-						.set(apiConfig)
+
 						.send({ oldPassword: user.password })
 						.expect(400)
 
@@ -745,7 +748,7 @@ describe('Testing version 1 of HTTP API', () => {
 				it('Should fail if not authenticated', async () => {
 					const { body } = await request(app)
 						.patch('/v1/user/password')
-						.set(apiConfig)
+
 						.send({
 							old: user.password,
 							new: 'aNewPassword'
@@ -759,7 +762,7 @@ describe('Testing version 1 of HTTP API', () => {
 					const { body } = await request(app)
 						.patch('/v1/user/password')
 						.set('Cookie', [`sessionId=${sessionId}`])
-						.set(apiConfig)
+
 						.send({
 							old: user.password,
 							new: 'aNewPassword'
