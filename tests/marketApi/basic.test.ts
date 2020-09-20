@@ -4,9 +4,9 @@ import { expect } from 'chai'
 import User from '../../src/userApi/user'
 import Order from '../../src/db/models/order'
 import Person from '../../src/db/models/person'
+import { currencyNames, currenciesObj } from '../../src/libs/currencies'
 import * as UserApi from '../../src/userApi'
 import * as MarketApi from '../../src/marketApi'
-import * as CurrencyApi from '../../src/currencyApi'
 
 describe('Performing basic tests on the MarketApi', () => {
 	let user: User
@@ -26,7 +26,7 @@ describe('Performing basic tests on the MarketApi', () => {
 		await Order.deleteMany({})
 
 		// Manualmente seta o saldo disponível para 10
-		for (const currency of CurrencyApi.currencies)
+		for (const currency of currencyNames)
 			// @ts-expect-error
 			user.person.currencies[currency].balance.available = 10
 		await user.person.save()
@@ -92,11 +92,11 @@ describe('Performing basic tests on the MarketApi', () => {
 		expect(user.balanceOps.get('bitcoin', opid)).to.eventually.be.rejectedWith('OperationNotFound')
 	})
 
-	for (let i = 0; i < CurrencyApi.currencies.length; i++) {
-		for (let j = 0; j < CurrencyApi.currencies.length; j++) {
+	for (let i = 0; i < currencyNames.length; i++) {
+		for (let j = 0; j < currencyNames.length; j++) {
 			if (i == j) continue
-			const owning = CurrencyApi.currencies[i]
-			const requesting = CurrencyApi.currencies[j]
+			const owning = currencyNames[i]
+			const requesting = currencyNames[j]
 
 			it(`Should lock ${owning}'s balance when owning ${owning} and requesting ${requesting}`, async () => {
 				const opid = await MarketApi.add(user, {
@@ -113,7 +113,7 @@ describe('Performing basic tests on the MarketApi', () => {
 				expect(order.type).to.equal('trade')
 				expect(order.amount.toFullString()).to.equal(
 					Decimal128.fromNumeric(
-						-1 * 2.5987654321, CurrencyApi.detailsOf(owning).decimals
+						-1 * 2.5987654321, currenciesObj[owning].decimals
 					).toFullString()
 				)
 			})

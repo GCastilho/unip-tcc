@@ -6,7 +6,7 @@ import Order from '../../src/db/models/order'
 import * as Trade from '../../src/marketApi/trade'
 import * as UserApi from '../../src/userApi'
 import * as MarketApi from '../../src/marketApi'
-import * as CurrencyApi from '../../src/currencyApi'
+import { currencyNames } from '../../src/libs/currencies'
 import type { SinonStub } from 'sinon'
 
 describe('Performing match tests on the MarketApi', () => {
@@ -19,7 +19,7 @@ describe('Performing match tests on the MarketApi', () => {
 
 	beforeEach(async () => {
 		// Manualmente seta o saldo disponível para 10
-		for (const currency of CurrencyApi.currencies)
+		for (const currency of currencyNames)
 			// @ts-expect-error
 			user.person.currencies[currency].balance.available = 10
 		await user.person.save()

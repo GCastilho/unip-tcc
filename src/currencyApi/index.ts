@@ -1,17 +1,15 @@
-import socketIO = require('socket.io')
+import socketIO from 'socket.io'
 import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
 import { Nano, Bitcoin } from './currencies'
+import { currencyNames, currenciesObj } from '../libs/currencies'
 import User from '../userApi/user'
 import Checklist from '../db/models/checklist'
 import Transaction from '../db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
-import type Common from './currencies/common'
 import type { Person } from '../db/models/person'
+import type { SuportedCurrencies } from '../libs/currencies'
 import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../interfaces/transaction'
-
-/** Tipo para variáveis/argumentos que precisam ser uma currency suportada */
-export type SuportedCurrencies = Common['name']
 
 /**
  * Interface para padronizar os eventos públicos
@@ -28,37 +26,6 @@ const _currencies = {
 	bitcoin: new Bitcoin()
 }
 
-/** Lista das currencies suportadas pela currencyApi */
-export const currencies = Object.values(_currencies).map(currency => currency.name)
-
-/**
- * Retorna informações detalhadas sobre uma currency suportada pela API
- */
-export const detailsOf = (function() {
-	const detailsMap = new Map<SuportedCurrencies, {
-		code: Common['code']
-		decimals: Common['supportedDecimals']
-		fee: Common['fee']
-	}>()
-
-	for (const currency of currencies) {
-		detailsMap.set(currency, {
-			code: _currencies[currency].code,
-			decimals: _currencies[currency].supportedDecimals,
-			fee: _currencies[currency].fee
-		})
-	}
-
-	return function currenciesDetailed(currency: SuportedCurrencies) {
-		const details = detailsMap.get(currency)
-		if (!details) throw new Error(`The currency '${currency}' was not found`)
-		return details
-	}
-})()
-
-/** EventEmmiter para eventos internos */
-// const _events = new EventEmitter()
-
 /** EventEmmiter para eventos públicos */
 export const events = new EventEmitter() as TypedEmitter<PublicEvents>
 
@@ -72,7 +39,7 @@ export const events = new EventEmitter() as TypedEmitter<PublicEvents>
  */
 export async function create_accounts(
 	userId: Person['_id'],
-	currenciesToCreate: SuportedCurrencies[] = currencies
+	currenciesToCreate: SuportedCurrencies[] = currencyNames
 ): Promise<void> {
 	const itemsToSave = currenciesToCreate.map(currency => {
 		return new Checklist({
@@ -117,7 +84,7 @@ export async function withdraw(
 	account: string,
 	amount: number
 ): Promise<ObjectId> {
-	const { decimals, fee } = detailsOf(currency)
+	const { decimals, fee } = currenciesObj[currency]
 	if (amount < 2 * fee) throw {
 		error: 'AmountOutOfRange',
 		message: `Withdraw amount for ${currency} must be at least '${2 * fee}', but got ${amount}`
@@ -215,7 +182,7 @@ console.log('CurrencyApi listener is up on port', port)
  * Ao receber uma conexão em '/<currency>' do socket, chama a função connection
  * do módulo desta currency
  */
-currencies.forEach(currency => {
+currencyNames.forEach(currency => {
 	io.of(currency).on('connection', (socket: socketIO.Socket) => {
 		console.log(`Connected to the '${currency}' module`)
 		_currencies[currency].connection(socket)
@@ -226,7 +193,7 @@ currencies.forEach(currency => {
  * Monitora os eventEmitters dos módulos individuais por eventos relevantes
  * e os reemite no eventEmitter público da currencyApi
  */
-currencies.forEach(currency => {
+currencyNames.forEach(currency => {
 	_currencies[currency].events
 		.on('new_transaction', (userId, transaction) => {
 			events.emit('new_transaction', userId, currency, transaction)

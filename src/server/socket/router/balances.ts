@@ -1,17 +1,10 @@
 import * as CurrencyApi from '../../../currencyApi'
-
-/** Interface do retorno do socket ao receber 'list' */
-export interface List {
-	name: CurrencyApi.SuportedCurrencies
-	code: ReturnType<typeof CurrencyApi['detailsOf']>['code']
-	fee: ReturnType<typeof CurrencyApi['detailsOf']>['fee']
-	decimals: ReturnType<typeof CurrencyApi['detailsOf']>['decimals']
-	accounts: string[]|undefined
-}
+import { currencies } from '../../../libs/currencies'
+import type { SuportedCurrencies } from '../../../libs/currencies'
 
 /** Interface do objeto experado nos requests de withdraw */
 export interface Withdraw {
-	currency: CurrencyApi.SuportedCurrencies
+	currency: SuportedCurrencies
 	destination: string
 	amount: string|number
 }
@@ -25,21 +18,17 @@ export default function balances(socket: SocketIO.Socket) {
 	 * Retorna um array com a lista dos códigos, nomes, decimais e accounts de
 	 * todas as currencies
 	 */
-	socket.on('list', async function(callback: (err: any, list?: List[]) => void) {
+	socket.on('list', async function(callback: (err: any, list?) => void) {
 		if (!socket.user) return callback('NotLoggedIn')
 
 		console.log('requested list')
-		const list: List[] = []
-		for (const currency of CurrencyApi.currencies) {
-			const details = CurrencyApi.detailsOf(currency)
-			list.push({
-				name:     currency,
-				code:     details.code,
-				fee:      details.fee,
-				decimals: details.decimals,
-				accounts: await socket.user?.getAccounts(currency)
-			})
-		}
+		const list = currencies.map(async currency => ({
+			name: currency.name,
+			code: currency.code,
+			decimals: currency.decimals,
+			fee: currency.fee,
+			accounts: await socket.user?.getAccounts(currency.name)
+		}))
 
 		callback(null, list)
 	})

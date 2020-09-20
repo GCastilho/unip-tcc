@@ -5,6 +5,7 @@ import { ObjectId } from 'mongodb'
 import Person from '../../src/db/models/person'
 import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
+import { currencyNames } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
 import * as UserApi from '../../src/userApi'
 import type User from '../../src/userApi/user'
@@ -23,7 +24,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 
 	beforeEach(async () => {
 		// Manualmente seta o saldo disponível para 10
-		for (const currency of CurrencyApi.currencies) {
+		for (const currency of currencyNames) {
 			// @ts-expect-error
 			user.person.currencies[currency].balance.available = 10
 		}
@@ -31,7 +32,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 	})
 
 	const url = `http://127.0.0.1:${port}`
-	for (const currency of CurrencyApi.currencies) {
+	for (const currency of currencyNames) {
 		describe(`Once the ${currency} module connects`, () => {
 			let client: SocketIOClient.Socket
 

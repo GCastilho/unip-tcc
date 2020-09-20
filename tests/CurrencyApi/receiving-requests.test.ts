@@ -4,11 +4,12 @@ import { expect } from 'chai'
 import { Decimal128 } from 'mongodb'
 import Person from '../../src/db/models/person'
 import Checklist from '../../src/db/models/checklist'
-import Transaction, { TxSend, UpdtSent } from '../../src/db/models/transaction'
+import Transaction from '../../src/db/models/transaction'
+import { currencyNames } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
 import * as UserApi from '../../src/userApi'
 import type User from '../../src/userApi/user'
-import type { TxReceived, UpdtReceived } from '../../src/db/models/transaction'
+import type { TxReceived, UpdtReceived, TxSend, UpdtSent } from '../../interfaces/transaction'
 
 describe('Testing the receival of events on the CurrencyApi', () => {
 	let user: User
@@ -21,7 +22,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 		await Checklist.deleteMany({})
 
 		// Seta dummy accounts para serem usadas nos testes
-		for (const currency of CurrencyApi.currencies) {
+		for (const currency of currencyNames) {
 			await Person.findByIdAndUpdate(user.id, {
 				$push: {
 					[`currencies.${currency}.accounts`]: `${currency}-account`
@@ -30,7 +31,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 		}
 	})
 
-	for (const currency of CurrencyApi.currencies) {
+	for (const currency of currencyNames) {
 		const CURRENCY_API_PORT = process.env.CURRENCY_API_PORT || 5808
 		let client: SocketIOClient.Socket
 		let account_counter = 0

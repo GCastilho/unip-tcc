@@ -3,7 +3,7 @@ import randomstring from 'randomstring'
 import { expect } from 'chai'
 import { Decimal128, ObjectId } from 'mongodb'
 import Person, { Person as P } from '../../src/db/models/person'
-import * as CurrencyApi from '../../src/currencyApi'
+import { currencyNames, currenciesObj } from '../../src/libs/currencies'
 
 describe('Testing person model', () => {
 	const db_name = Person.db.name
@@ -89,7 +89,7 @@ describe('Testing person model', () => {
 			}).save()
 		})
 
-		for (const currency of CurrencyApi.currencies) {
+		for (const currency of currencyNames) {
 			describe(`And is requested an operation on ${currency}`, () => {
 				it('Should not save available balance less than zero', async () => {
 					person.currencies[currency].balance.available = Decimal128.fromString('-1')
@@ -104,7 +104,7 @@ describe('Testing person model', () => {
 				})
 
 				it('Should truncate the available balance beyond supported decimals', async () => {
-					const decimals = CurrencyApi.detailsOf(currency).decimals
+					const decimals = currenciesObj[currency].decimals
 					const originalNumber = '1.1234567891011121314151617181920'
 					const truncatedNumber = originalNumber.slice(0, decimals + 2) // +2 pcausa do '1.'
 					person.currencies[currency].balance.available = Decimal128.fromString(originalNumber)
@@ -114,7 +114,7 @@ describe('Testing person model', () => {
 				})
 
 				it('Should truncate the locked balance beyond supported decimals', async () => {
-					const decimals = CurrencyApi.detailsOf(currency).decimals
+					const decimals = currenciesObj[currency].decimals
 					const originalNumber = '1.1234567891011121314151617181920'
 					const truncatedNumber = originalNumber.slice(0, decimals + 2) // +2 pcausa do '1.'
 					person.currencies[currency].balance.locked = Decimal128.fromString(originalNumber)

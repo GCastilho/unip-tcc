@@ -1,10 +1,10 @@
 import { sha512 } from 'js-sha512'
 import { ObjectId, Decimal128 } from 'mongodb'
-import { detailsOf } from '../currencyApi'
+import { currenciesObj } from '../libs/currencies'
 import PersonSchema from '../db/models/person'
 import type { Pending } from '../db/models/person/currencies/pending'
 import type { Person } from '../db/models/person'
-import type { SuportedCurrencies as SC } from '../currencyApi'
+import type { SuportedCurrencies as SC } from '../libs/currencies'
 
 /**
  * Função para fazer o hash do password de um usuário
@@ -250,9 +250,9 @@ class BalanceOps {
 
 		/** O middleware de findOneAndUpdate não é executado em um subdocumento */
 		if (typeof pending.amount == 'string' || typeof pending.amount == 'number') {
-			pending.amount = Decimal128.fromNumeric(pending.amount, detailsOf(currency).decimals)
+			pending.amount = Decimal128.fromNumeric(pending.amount, currenciesObj[currency].decimals)
 		} else {
-			pending.amount = pending.amount.truncate(detailsOf(currency).decimals)
+			pending.amount = pending.amount.truncate(currenciesObj[currency].decimals)
 		}
 
 		const response = await PersonSchema.findOneAndUpdate({

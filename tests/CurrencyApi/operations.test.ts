@@ -4,6 +4,7 @@ import { Decimal128, ObjectId } from 'mongodb'
 import Person from '../../src/db/models/person'
 import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
+import { currencyNames, currenciesObj } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
 import * as UserApi from '../../src/userApi'
 import type User from '../../src/userApi/user'
@@ -18,13 +19,13 @@ describe('Testing operations on the currencyApi', () => {
 		user = await UserApi.createUser('operations@example.com', 'userP@ss')
 
 		// Manualmente seta o saldo disponível para 1
-		for (const currency of CurrencyApi.currencies) {
+		for (const currency of currencyNames) {
 			user.person.currencies[currency].balance.available = Decimal128.fromNumeric(1)
 		}
 		await user.person.save()
 	})
 
-	for (const currency of CurrencyApi.currencies) {
+	for (const currency of currencyNames) {
 		describe(`Testing withdraw for ${currency}`, () => {
 			let opid: ObjectId
 			const amount = 0.011
@@ -57,7 +58,7 @@ describe('Testing operations on the currencyApi', () => {
 				// Checa se houve erro de arredondamento convertendo pra string
 				expect(+tx.amount.toFullString())
 					.to.equal(+(amount - tx.fee)
-						.toFixed(CurrencyApi.detailsOf(currency).decimals))
+						.toFixed(currenciesObj[currency].decimals))
 
 				/*
 				 * Checa se houve erros de arredondamento comparando as
@@ -71,7 +72,7 @@ describe('Testing operations on the currencyApi', () => {
 				/*
 				 * Checa se houve erros no arredondamento somando os valores
 				 */
-				const expoencial = 10 * CurrencyApi.detailsOf(currency).decimals
+				const expoencial = 10 * currenciesObj[currency].decimals
 				const _tx_amount = Math.trunc(+tx.amount.toFullString() * expoencial)
 				const _fee = Math.trunc(tx.fee * expoencial)
 				const _tst_amount = Math.trunc(amount * expoencial)
@@ -79,7 +80,7 @@ describe('Testing operations on the currencyApi', () => {
 			})
 
 			it('Should return AmountOfRange if amount is lower than 2*fee', async () => {
-				const { fee } = CurrencyApi.detailsOf(currency)
+				const { fee } = currenciesObj[currency]
 				await expect(
 					CurrencyApi.withdraw(user, currency, account, (2 * fee - 0.01 * fee))
 				).to.eventually.be

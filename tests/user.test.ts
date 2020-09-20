@@ -3,16 +3,16 @@ import { Decimal128, ObjectId } from 'mongodb'
 import chai, { expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as UserApi from '../src/userApi'
-import * as CurrencyApi from '../src/currencyApi'
 import User from '../src/userApi/user'
 import Person from '../src/db/models/person'
+import { currencyNames, currenciesObj } from '../src/libs/currencies'
 
 chai.use(chaiAsPromised)
 
 describe('Testing UserApi', () => {
 	let user: User
 
-	for (const currency of CurrencyApi.currencies) {
+	for (const currency of currencyNames) {
 		describe('for ' + currency, () => {
 			beforeEach(async () => {
 				await Person.deleteMany({})
@@ -174,7 +174,7 @@ describe('Testing UserApi', () => {
 						await user.balanceOps.complete(currency, opid)
 						const person = await Person.findById(user.id)
 						const truncatedDecimals = amount.split('.')[1]
-							.slice(0, CurrencyApi.detailsOf(currency).decimals)
+							.slice(0, currenciesObj[currency].decimals)
 						expect(person.currencies[currency].balance.available.toFullString())
 							.to.equals('71.' + truncatedDecimals)
 					})

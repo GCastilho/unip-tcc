@@ -3,6 +3,7 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import authentication from './authentication'
+import { currencyNames } from '../../../libs/currencies'
 import Transaction from '../../../db/models/transaction'
 import * as UserApi from '../../../userApi'
 import * as CurrencyApi from '../../../currencyApi'
@@ -50,7 +51,7 @@ router.use(authentication)
 router.get('/accounts', async (req, res) => {
 	const user = await UserApi.findUser.byId(req.userId)
 	const account = {}
-	for (const currency of CurrencyApi.currencies) {
+	for (const currency of currencyNames) {
 		account[currency] = await user.getAccounts(currency)
 	}
 	res.send(account)
@@ -62,7 +63,7 @@ router.get('/accounts', async (req, res) => {
 router.get('/balances', async (req, res) => {
 	const user = await UserApi.findUser.byId(req.userId)
 	const balance = {}
-	for (const currency of CurrencyApi.currencies) {
+	for (const currency of currencyNames) {
 		balance[currency] = await user.getBalance(currency, true)
 	}
 	res.send(balance)
@@ -149,10 +150,11 @@ router.get('/transactions', async (req, res) => {
 	const user = await UserApi.findUser.byId(req.userId)
 	/** Numero de transações que sera puladas */
 	const skip: number = +req.query.skip || 0
-	/** Filtro de transações por currency */
-	const currency = CurrencyApi.currencies.find(currency => currency === req.query.currency)
 	/** Filtro da query do mongo */
-	const query = currency ? { userId: user?.id, currency } : { userId: user.id }
+	const query = { userId: user.id } as any
+	/** Filtro de transações por currency */
+	const currency = currencyNames.find(currency => currency === req.query.currency)
+	if (currency) query.currency = currency
 	/**
 	 * As 10 mais recentes transações do usuário,
 	 * filtrado de acordo com a query e pulando de acordo com skip
@@ -182,7 +184,7 @@ router.get('/transactions', async (req, res) => {
 router.post('/transactions', async (req, res) => {
 	const user = await UserApi.findUser.byId(req.userId)
 	try {
-		const currency = CurrencyApi.currencies.find(currency => currency === req.body.currency)
+		const currency = currencyNames.find(currency => currency === req.body.currency)
 		/** Checa se os dados dados enviados pelo o usuario são do type correto */
 		if (!currency
 			|| !user

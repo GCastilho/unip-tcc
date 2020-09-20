@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb'
 import Market from './market'
 import User from '../userApi/user'
 import OrderDoc from '../db/models/order'
-import type { SuportedCurrencies as SC } from '../currencyApi'
+import type { SuportedCurrencies as SC } from '../libs/currencies'
 import type { Order } from '../db/models/order'
 
 interface MarketOrder {

@@ -47,9 +47,13 @@ assert(
 	'A currency can not have decimal units higher than the supported by the system'
 )
 
+/** Array de nomes das currencies suportadas */
+export const currencyNames = currencies.map(currency => currency.name)
+
+/** Tipo do nome de uma currency suportada */
 export type SuportedCurrencies = typeof currencies[number]['name']
 
-export type CurrenciesObj = {
+type CurrenciesObj = {
 	[key in SuportedCurrencies]: Currency
 }
 

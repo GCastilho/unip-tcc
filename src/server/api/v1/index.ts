@@ -1,6 +1,6 @@
 import express from 'express'
 import user from './user'
-import * as CurrencyApi from '../../../currencyApi'
+import { currencies } from '../../../libs/currencies'
 
 const router = express.Router()
 
@@ -8,9 +8,11 @@ const router = express.Router()
  * Retorna as currencies suportadas
  */
 router.get('/currencies', (_req, res) => {
-	const currenciesDetailed = CurrencyApi.currencies.map(currency => ({
-		name: currency,
-		...CurrencyApi.detailsOf(currency)
+	const currenciesDetailed = currencies.map(currency => ({
+		name: currency.name,
+		code: currency.code,
+		decimals: currency.decimals,
+		fee: currency.fee
 	}))
 	res.send(currenciesDetailed)
 })

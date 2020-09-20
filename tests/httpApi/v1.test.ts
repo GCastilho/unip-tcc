@@ -6,11 +6,13 @@ import { ObjectId, Decimal128 } from 'mongodb'
 import cookieparser from 'cookieparser'
 import * as UserApi from '../../src/userApi'
 import * as CurrencyApi from '../../src/currencyApi'
+import { currencyNames, currenciesObj, currencies } from '../../src/libs/currencies'
+import api from '../../src/server/api'
 import Person from '../../src/db/models/person'
 import Session from '../../src/db/models/session'
 import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
-import api from '../../src/server/api'
+import type { SuportedCurrencies } from '../../src/libs/currencies'
 
 const app = express()
 app.use(api)
@@ -62,9 +64,11 @@ describe('Testing version 1 of HTTP API', () => {
 			const { body } = await request(app).get('/v1/currencies').send()
 				.expect('Content-Type', /json/)
 				.expect(200)
-			const currenciesDetailed = CurrencyApi.currencies.map(currency => ({
-				name: currency,
-				...CurrencyApi.detailsOf(currency)
+			const currenciesDetailed = currencies.map(currency => ({
+				name: currency.name,
+				code: currency.code,
+				decimals: currency.decimals,
+				fee: currency.fee
 			}))
 			expect(body).to.be.an('array').that.deep.equals(currenciesDetailed)
 		})
@@ -79,7 +83,7 @@ describe('Testing version 1 of HTTP API', () => {
 		}
 
 		before(async () => {
-			for (const currency of CurrencyApi.currencies) {
+			for (const currency of currencyNames) {
 				await Person.findByIdAndUpdate(id, {
 					$push: {
 						[`currencies.${currency}.accounts`]: `${currency}-account`
@@ -202,9 +206,9 @@ describe('Testing version 1 of HTTP API', () => {
 					userId: id,
 					command: 'create_account'
 				})
-				expect(createAccountRequests).to.lengthOf(CurrencyApi.currencies.length)
+				expect(createAccountRequests).to.lengthOf(currencyNames.length)
 
-				CurrencyApi.currencies.forEach(currency => {
+				currencyNames.forEach(currency => {
 					expect(
 						createAccountRequests.some(item => item.currency === currency),
 						`not found request for ${currency}`
@@ -372,9 +376,9 @@ describe('Testing version 1 of HTTP API', () => {
 					.expect(200)
 				expect(body).to.be.an('object')
 				for (const key in body) {
-					expect(key).to.be.oneOf(CurrencyApi.currencies)
+					expect(key).to.be.oneOf(currencyNames)
 				}
-				for (const currency of CurrencyApi.currencies) {
+				for (const currency of currencyNames) {
 					expect(body).to.have.deep.property(currency, await user.getAccounts(currency))
 				}
 			})
@@ -397,9 +401,9 @@ describe('Testing version 1 of HTTP API', () => {
 					.expect(200)
 				expect(body).to.be.an('object')
 				for (const key in body) {
-					expect(key).to.be.oneOf(CurrencyApi.currencies)
+					expect(key).to.be.oneOf(currencyNames)
 				}
-				for (const currency of CurrencyApi.currencies) {
+				for (const currency of currencyNames) {
 					expect(body).to.have.deep.property(currency, await user.getBalance(currency, true))
 				}
 			})
@@ -410,11 +414,11 @@ describe('Testing version 1 of HTTP API', () => {
 				const user = await UserApi.findUser.byId(id)
 
 				// Calcula os amount das operações
-				const amounts: [CurrencyApi.SuportedCurrencies, number][] = []
-				const amountsSum = new Map<CurrencyApi.SuportedCurrencies, number>()
+				const amounts: [SuportedCurrencies, number][] = []
+				const amountsSum = new Map<SuportedCurrencies, number>()
 				for (let i = 1; i <= 30; i++) {
-					for (const currency of CurrencyApi.currencies) {
-						const txAmount = CurrencyApi.detailsOf(currency).fee * 2 * Math.pow(i, Math.E)
+					for (const currency of currencyNames) {
+						const txAmount = currenciesObj[currency].fee * 2 * Math.pow(i, Math.E)
 						amounts.push([currency, txAmount])
 
 						const sum = amountsSum.get(currency) | 0
@@ -423,7 +427,7 @@ describe('Testing version 1 of HTTP API', () => {
 				}
 
 				// Garante saldo disponível para todas as operações
-				for (const currency of CurrencyApi.currencies) {
+				for (const currency of currencyNames) {
 					const { available } = user.person.currencies[currency].balance
 					const updatedAmount = +available + amountsSum.get(currency)
 					await Person.findByIdAndUpdate(user.id, {
@@ -534,7 +538,7 @@ describe('Testing version 1 of HTTP API', () => {
 				})
 
 				describe('Testing filtering of transactions by currency', () => {
-					for (const currency of CurrencyApi.currencies) {
+					for (const currency of currencyNames) {
 						it(`Should filter transactions by ${currency}`, async () => {
 							const transactions = (
 								await Transaction.find({ currency }).sort({ timestamp: -1 })
@@ -580,7 +584,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 					// Cria o outro usuário
 					const user = await UserApi.createUser('randomUser-v1-test@email.com', 'randomPass')
-					for (const currency of CurrencyApi.currencies) {
+					for (const currency of currencyNames) {
 						user.person.currencies[currency].balance.available = Decimal128.fromNumeric(50)
 						await user.person.save()
 						const opid = await CurrencyApi.withdraw(user, currency, `other-account-${currency}`, 12.5)
@@ -629,7 +633,7 @@ describe('Testing version 1 of HTTP API', () => {
 				})
 			})
 
-			for (const currency of CurrencyApi.currencies) {
+			for (const currency of currencyNames) {
 				describe(`Testing withdraw requests for ${currency}`, () => {
 					it('Should return Not Authorized if invalid or missing sessionId', async () => {
 						/** Número de transações antes da operação */
