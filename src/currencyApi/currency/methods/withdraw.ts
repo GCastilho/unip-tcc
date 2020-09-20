@@ -1,8 +1,8 @@
-import Checklist, { Checklist as Ck } from '../../../../db/models/checklist'
-import Transaction from '../../../../db/models/transaction'
-import * as userApi from '../../../../userApi'
-import Common from '../index'
-import type { TxSend, UpdtSent } from '../../../../../interfaces/transaction'
+import Checklist, { Checklist as Ck } from '../../../db/models/checklist'
+import Transaction from '../../../db/models/transaction'
+import * as userApi from '../../../userApi'
+import Currency from '../index'
+import type { TxSend, UpdtSent } from '../../../../interfaces/transaction'
 
 /**
  * Retorna uma função que varre a collection da checklist e executa os requests
@@ -11,7 +11,7 @@ import type { TxSend, UpdtSent } from '../../../../../interfaces/transaction'
  * Essa função também garante uma única instância do loop por curency para
  * impedir problemas de race condition
  */
-export function withdraw(this: Common) {
+export function withdraw(this: Currency) {
 	/** Varíavel de contole das instâncias da withdraw */
 	let looping = false
 

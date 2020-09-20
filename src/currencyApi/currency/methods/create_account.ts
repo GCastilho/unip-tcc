@@ -1,6 +1,6 @@
-import Checklist, { Checklist as Ck } from '../../../../db/models/checklist'
-import Person from '../../../../db/models/person'
-import Common from '../index'
+import Checklist, { Checklist as Ck } from '../../../db/models/checklist'
+import Person from '../../../db/models/person'
+import Currency from '../index'
 
 /**
  * Retorna uma função que varre a collection checklist procurando por accounts
@@ -9,7 +9,7 @@ import Common from '../index'
  * Essa função também garante uma única instância do loop por curency para
  * impedir problemas de race condition
  */
-export function create_account(this: Common) {
+export function create_account(this: Currency) {
 	/** Varíavel de contole das instâncias da create_account */
 	let looping = false
 

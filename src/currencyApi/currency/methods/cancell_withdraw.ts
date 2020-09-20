@@ -1,8 +1,8 @@
-import Checklist, { Checklist as Ck } from '../../../../db/models/checklist'
+import Checklist, { Checklist as Ck } from '../../../db/models/checklist'
 import { ObjectId } from 'mongodb'
-import Common from '../index'
-import * as UserApi from '../../../../userApi'
-import Transaction from '../../../../db/models/transaction'
+import Currency from '../index'
+import * as UserApi from '../../../userApi'
+import Transaction from '../../../db/models/transaction'
 
 /**
  * Retorna uma função que varre a collection checklist procurando por request
@@ -11,7 +11,7 @@ import Transaction from '../../../../db/models/transaction'
  * Essa função também garante uma única instância do loop por curency para
  * impedir problemas de race condition
  */
-export function cancell_withdraw_loop(this: Common) {
+export function cancell_withdraw_loop(this: Currency) {
 	/** Varíavel de contole das instâncias da cancell_withdraw */
 	let looping = false
 
@@ -58,7 +58,7 @@ export function cancell_withdraw_loop(this: Common) {
 	return _cancell_withdraw
 }
 
-export async function cancell_withdraw(this: Common, userId: ObjectId, opid: ObjectId) {
+export async function cancell_withdraw(this: Currency, userId: ObjectId, opid: ObjectId) {
 	try {
 		const response = await this.emit('cancell_withdraw', opid)
 

@@ -1,14 +1,14 @@
 import socketIO from 'socket.io'
 import ss = require('socket.io-stream')
 import { ObjectId } from 'mongodb'
-import Common from '../index'
-import Person from '../../../../db/models/person'
-import Tx from '../../../../db/models/transaction'
-import * as userApi from '../../../../userApi'
-import type User from '../../../../userApi/user'
-import type { TxReceived, UpdtReceived } from '../../../../../interfaces/transaction'
+import Currency from '../index'
+import Person from '../../../db/models/person'
+import Tx from '../../../db/models/transaction'
+import * as userApi from '../../../userApi'
+import type User from '../../../userApi/user'
+import type { TxReceived, UpdtReceived } from '../../../../interfaces/transaction'
 
-export function connection(this: Common, socket: socketIO.Socket) {
+export function connection(this: Currency, socket: socketIO.Socket) {
 	/*
 	 * Essa função é executada (pela currencyApi) quando o socket se conecta
 	 */

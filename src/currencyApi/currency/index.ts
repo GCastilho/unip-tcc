@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events'
 import { ObjectId } from 'mongodb'
-import Checklist from '../../../db/models/checklist'
+import Checklist from '../../db/models/checklist'
 import * as methods from './methods'
 import type TypedEmitter from 'typed-emitter'
-import type User from '../../../userApi/user'
-import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../../interfaces/transaction'
-import type { SuportedCurrencies } from '../../../libs/currencies'
+import type User from '../../userApi/user'
+import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../interfaces/transaction'
+import type { SuportedCurrencies } from '../../libs/currencies'
 
 /**
  * Interface para padronizar os eventos públicos
@@ -19,7 +19,7 @@ interface PublicEvents {
 /**
  * Classe abstrata dos módulos comuns de todas as currencyModules
  */
-export default class Common {
+export default class Currency {
 	/** O nome da currency que esta classe se comunica */
 	public readonly name: SuportedCurrencies
 
