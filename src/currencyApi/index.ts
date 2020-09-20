@@ -1,11 +1,11 @@
 import socketIO from 'socket.io'
 import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
-import { Nano, Bitcoin } from './currencies'
-import { currencyNames, currenciesObj } from '../libs/currencies'
+import { currencies, currencyNames, currenciesObj } from '../libs/currencies'
 import User from '../userApi/user'
 import Checklist from '../db/models/checklist'
 import Transaction from '../db/models/transaction'
+import Common from './currencies/common'
 import type TypedEmitter from 'typed-emitter'
 import type { Person } from '../db/models/person'
 import type { SuportedCurrencies } from '../libs/currencies'
@@ -20,11 +20,13 @@ interface PublicEvents {
 	update_sent_tx: (userId: User['id'], currency: SuportedCurrencies, updtSent: UpdtSent|CancelledSentTx) => void
 }
 
-/** Módulos das currencies individuais (devem extender a common) */
-const _currencies = {
-	nano: new Nano(),
-	bitcoin: new Bitcoin()
-}
+/** Módulos das currencies individuais */
+const _currencies = Object.fromEntries(
+	currencies.map(currency => [
+		currency.name,
+		new Common(currency.name, currency.fee)
+	])
+) as { [key in SuportedCurrencies]: Common }
 
 /** EventEmmiter para eventos públicos */
 export const events = new EventEmitter() as TypedEmitter<PublicEvents>

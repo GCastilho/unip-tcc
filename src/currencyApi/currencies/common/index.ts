@@ -5,6 +5,7 @@ import * as methods from './methods'
 import type TypedEmitter from 'typed-emitter'
 import type User from '../../../userApi/user'
 import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../../interfaces/transaction'
+import type { SuportedCurrencies } from '../../../libs/currencies'
 
 /**
  * Interface para padronizar os eventos públicos
@@ -18,21 +19,15 @@ interface PublicEvents {
 /**
  * Classe abstrata dos módulos comuns de todas as currencyModules
  */
-export default abstract class Common {
+export default class Common {
 	/** O nome da currency que esta classe se comunica */
-	abstract name: 'bitcoin' | 'nano'
-
-	/** O código da currency */
-	abstract code: 'btc' | 'nano'
+	public readonly name: SuportedCurrencies
 
 	/** Taxa cobrada do usuário para executar operações de saque */
-	abstract fee: number
-
-	/** A quantidade de casas decimais que esta currency tem */
-	public decimals = 8
+	public readonly fee: number
 
 	/** A quantidade de casas decimais desta currency que o sistema opera */
-	public supportedDecimals = Math.min(this.decimals, 8)
+	public decimals = 8
 
 	/** EventEmmiter para eventos internos */
 	protected _events = new EventEmitter()
@@ -91,7 +86,13 @@ export default abstract class Common {
 	/** Varre a checklist e tenta enviar eventos de cancell withdraw para os opId*/
 	public cancellWithdraw: (userid: ObjectId, opid: ObjectId) => Promise<string>
 
-	constructor() {
+	constructor(
+		name: SuportedCurrencies,
+		fee: number
+	) {
+		this.name = name
+		this.fee = fee
+
 		this.create_account = methods.create_account.bind(this)()
 		this.withdraw = methods.withdraw.bind(this)()
 		this.cancellWithdrawLoop = methods.cancell_withdraw_loop.bind(this)()
