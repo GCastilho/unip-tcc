@@ -1,4 +1,4 @@
-import '../../src/libs'
+import '../../src/libs/extensions'
 import io from 'socket.io-client'
 import { expect } from 'chai'
 import { Decimal128 } from 'mongodb'

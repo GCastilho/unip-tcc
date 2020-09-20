@@ -1,4 +1,4 @@
-import '../../src/libs'
+import '../../src/libs/extensions'
 import { expect } from 'chai'
 import { Decimal128, ObjectId } from 'mongodb'
 import Person from '../../src/db/models/person'

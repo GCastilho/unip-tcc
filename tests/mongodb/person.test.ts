@@ -1,4 +1,4 @@
-import '../../src/libs'
+import '../../src/libs/extensions'
 import randomstring from 'randomstring'
 import { expect } from 'chai'
 import { Decimal128, ObjectId } from 'mongodb'

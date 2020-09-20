@@ -1,4 +1,4 @@
-import '../../src/libs'
+import '../../src/libs/extensions'
 import io from 'socket.io-client'
 import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
@@ -8,7 +8,7 @@ import Transaction from '../../src/db/models/transaction'
 import * as CurrencyApi from '../../src/currencyApi'
 import * as UserApi from '../../src/userApi'
 import type User from '../../src/userApi/user'
-import type { TxSend } from '../../src/db/models/transaction'
+import type { TxSend } from '../../interfaces/transaction'
 
 describe('Testing if CurrencyApi is making requests to the websocket', () => {
 	const port = process.env.CURRENCY_API_PORT || 5808

@@ -1,10 +1,9 @@
 import { Decimal128 } from 'mongodb'
 import { Schema, Document } from 'mongoose'
 import { PendingSchema } from './pending'
-import { detailsOf } from '../../../../currencyApi'
 import type { SchemaTypeOpts } from 'mongoose'
 import type { Pending } from './pending'
-import type { SuportedCurrencies as SC } from '../../../../currencyApi'
+import type { SuportedCurrencies as SC } from '../../../../libs/currencies'
 
 /** A interface de uma currency genérica */
 export interface Currency extends Document {
@@ -20,17 +19,15 @@ export interface Currency extends Document {
 	pending: Pending[]
 }
 
-/** Objeto validate usado para implementação de validação pela CurrencySchema */
-interface Validate {
-	validator: SchemaTypeOpts.ValidateFn<Currency['accounts']>
-	message: SchemaTypeOpts.ValidateOptsBase['message']
-}
-
 /**
  * Classe do Schema de uma currency genérica
  */
-export class CurrencySchema extends Schema {
-	constructor(currency: SC, validate: Validate) {
+export default class CurrencySchema extends Schema {
+	constructor(
+		currency: SC,
+		decimals: number,
+		validator: SchemaTypeOpts.ValidateFn<Currency['accounts']>,
+	) {
 		super({
 			balance: {
 				available: {
@@ -53,7 +50,10 @@ export class CurrencySchema extends Schema {
 			accounts: {
 				type: [String],
 				trim: true,
-				validate
+				validate: {
+					validator,
+					message: `Invalid ${currency} account address`
+				}
 			},
 			pending: {
 				type: [PendingSchema]
@@ -61,8 +61,6 @@ export class CurrencySchema extends Schema {
 		}, {
 			_id: false
 		})
-
-		const { decimals } = detailsOf(currency)
 
 		// Faz a truncagem dos decimais
 		this.pre('validate', function(this: Currency) {

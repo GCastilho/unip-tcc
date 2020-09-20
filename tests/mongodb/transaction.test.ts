@@ -1,4 +1,3 @@
-import '../../src/libs'
 import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
 import Transaction from '../../src/db/models/transaction'

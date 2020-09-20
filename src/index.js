@@ -1,5 +1,5 @@
 /** Load libraries */
-require('./libs')
+require('./libs/extensions')
 
 /** Load MongoDB main model */
 require('./db/models/person')
