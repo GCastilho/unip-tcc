@@ -1,4 +1,4 @@
-import '../../src/libs/decimal128.extension'
+import '../../src/libs/extensions/decimal128.extension'
 import { Decimal128 } from 'mongodb'
 import { expect } from 'chai'
 

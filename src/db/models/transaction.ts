@@ -1,8 +1,8 @@
 import { ObjectId, Decimal128 } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
-import { detailsOf } from '../../currencyApi'
+import { currencies, currenciesObj } from '../../libs/currencies'
 import type User from '../../userApi/user'
-import type { SuportedCurrencies } from '../../currencyApi'
+import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** A interface dessa collection */
 export interface Transaction extends Document {
@@ -60,7 +60,7 @@ const TransactionSchema: Schema = new Schema({
 	},
 	currency: {
 		type: String,
-		enum: ['bitcoin', 'nano'],
+		enum: currencies.map(currency => currency.name),
 		required: true
 	},
 	status: {
@@ -112,7 +112,7 @@ TransactionSchema.index({
 
 TransactionSchema.pre('validate', function(this: Transaction) {
 	if (this.amount instanceof Decimal128)
-		this.amount = this.amount.truncate(detailsOf(this.currency).decimals)
+		this.amount = this.amount.truncate(currenciesObj[this.currency].decimals)
 })
 
 /**

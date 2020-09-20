@@ -48,3 +48,11 @@ assert(
 )
 
 export type SuportedCurrencies = typeof currencies[number]['name']
+
+export type CurrenciesObj = {
+	[key in SuportedCurrencies]: Currency
+}
+
+export const currenciesObj = Object.fromEntries(
+	currencies.map(currency => [currency.name, currency])
+) as CurrenciesObj

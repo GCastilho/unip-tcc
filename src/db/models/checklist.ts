@@ -1,5 +1,7 @@
-import mongoose, { Schema, Document } from '../mongoose'
 import { ObjectId } from 'mongodb'
+import mongoose, { Schema, Document } from '../mongoose'
+import { currencies } from '../../libs/currencies'
+import type { SuportedCurrencies } from '../../libs/currencies'
 
 /**
  * Checklist collection's interface
@@ -7,8 +9,8 @@ import { ObjectId } from 'mongodb'
 export interface Checklist extends Document {
 	opid: ObjectId
 	userId: ObjectId
+	currency: SuportedCurrencies
 	command: 'create_account'|'withdraw'|'cancell_withdraw'
-	currency: 'nano'|'bitcoin'
 	status: 'preparing'|'requested'|'completed'|'cancelled'
 }
 
@@ -21,14 +23,14 @@ const ChecklistSchema = new Schema({
 		type: ObjectId,
 		required: true
 	},
+	currency: {
+		type: String,
+		enum: currencies.map(currency => currency.name),
+		required: true
+	},
 	command: {
 		type: String,
 		enum: ['create_account', 'withdraw', 'cancell_withdraw'],
-		required: true
-	},
-	currency: {
-		type: String,
-		enum: ['nano', 'bitcoin'],
 		required: true
 	},
 	status: {
