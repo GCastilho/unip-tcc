@@ -1,5 +1,5 @@
 import socketIO from 'socket.io'
-import ss = require('socket.io-stream')
+import ss from 'socket.io-stream'
 import { ObjectId } from 'mongodb'
 import Currency from '../index'
 import Person from '../../../db/models/person'

@@ -1,11 +1,11 @@
 /** Load libraries */
-require('./libs/extensions')
+import './libs/extensions'
 
 /** Load CurrencyApi module */
-require('./currencyApi')
+import './currencyApi'
 
 /** Load MarketApi module */
-require('./marketApi')
+import './marketApi'
 
 /** Load HTTP server */
-require('./server')
+import './server'
