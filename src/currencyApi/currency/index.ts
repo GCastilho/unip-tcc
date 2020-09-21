@@ -6,6 +6,7 @@ import type TypedEmitter from 'typed-emitter'
 import type User from '../../userApi/user'
 import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../interfaces/transaction'
 import type { SuportedCurrencies } from '../../libs/currencies'
+import type { Events as ExternalEvents } from '../../../interfaces/communication/external-socket'
 
 /**
  * Interface para padronizar os eventos públicos
@@ -51,9 +52,12 @@ export default class Currency {
 	 * @param event O evento que será enviado ao socket
 	 * @param args Os argumentos desse evento
 	 *
-	 * @throws SocketDisconnected if socket is disconnected
+	 * @throws 'SocketDisconnected' if socket is disconnected
 	 */
-	protected emit(event: string, ...args: any): Promise<any> {
+	protected emit<Event extends keyof ExternalEvents>(
+		event: Event,
+		...args: Parameters<ExternalEvents[Event]>
+	): Promise<ReturnType<ExternalEvents[Event]>> {
 		return new Promise((resolve, reject) => {
 			let gotResponse = false
 			if (!this.isOnline) return reject('SocketDisconnected')

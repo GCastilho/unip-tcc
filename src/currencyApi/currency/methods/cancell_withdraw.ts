@@ -29,7 +29,7 @@ export function cancell_withdraw_loop(this: Currency) {
 			let item: Ck
 			while (this.isOnline && (item = await checklist.next())) {
 				try {
-					await this.emit('cancell_withdraw', item.opid)
+					await this.emit('cancell_withdraw', item.opid.toHexString())
 					item.status = 'completed'
 					await item.save()
 					const user = await UserApi.findUser.byId(item.userId)
@@ -60,7 +60,7 @@ export function cancell_withdraw_loop(this: Currency) {
 
 export async function cancell_withdraw(this: Currency, userId: ObjectId, opid: ObjectId) {
 	try {
-		const response = await this.emit('cancell_withdraw', opid)
+		const response = await this.emit('cancell_withdraw', opid.toHexString())
 
 		const user = await UserApi.findUser.byId(userId)
 		// Pode dar throw em OperationNotFound (não tem handler)
