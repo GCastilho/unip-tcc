@@ -36,6 +36,10 @@
 		overflow: hidden;
 	}
 
+	h1 {
+		text-align: center;
+	}
+
 	.table > div:first-of-type {
 		display: grid;
 		grid-template-columns: 10% 13% 59% 18%;

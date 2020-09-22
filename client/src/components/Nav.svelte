@@ -122,7 +122,7 @@
 									class:selected="{segment === 'user/transactions'}"
 									on:click="{() => userdropdown = 'hide'}"
 									href="user/transactions"
-								><img alt="Transactions" title="Transactions" src="./assets/list.svg" />
+								><img alt="Transactions" title="Transactions" src="./assets/transaction.svg" />
 									Transactions
 								</a>
 							</td></tr>
