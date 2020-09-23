@@ -95,15 +95,15 @@ router.get('/transactions/:opid', async (req, res) => {
 		if (tx.userId.toHexString() !== req.user?.id.toHexString()) throw 'NotAuthorized'
 		// Formata o objeto da transação
 		res.send({
-			opid: tx.id,
-			status: tx.status,
-			currency: tx.currency,
-			txid: tx.txid,
-			account: tx.account,
-			amount: +tx.amount.toFullString(),
-			type: tx.type,
+			opid:          tx.id,
+			status:        tx.status,
+			currency:      tx.currency,
+			txid:          tx.txid,
+			account:       tx.account,
+			amount:       +tx.amount.toFullString(),
+			type:          tx.type,
 			confirmations: tx.confirmations,
-			timestamp: tx.timestamp.getTime()
+			timestamp:     tx.timestamp.getTime()
 		})
 	} catch (err) {
 		if (err === 'NotFound') {
@@ -171,16 +171,16 @@ router.get('/transactions', async (req, res) => {
 		skip
 	})
 	const formattedTransactions = txs.map(tx => ({
-		opid: tx.id,
-		status: tx.status,
-		currency: tx.currency,
-		txid: tx.txid,
-		account: tx.account,
-		amount: +tx.amount.toFullString(),
-		fee: tx.fee,
-		type: tx.type,
+		opid:          tx.id,
+		status:        tx.status,
+		currency:      tx.currency,
+		txid:          tx.txid,
+		account:       tx.account,
+		amount:       +tx.amount.toFullString(),
+		fee:           tx.fee,
+		type:          tx.type,
 		confirmations: tx.confirmations,
-		timestamp: tx.timestamp.getTime()
+		timestamp:     tx.timestamp.getTime()
 	}))
 	res.send(formattedTransactions)
 })
