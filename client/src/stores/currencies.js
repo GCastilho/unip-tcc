@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store'
+import { writable, get as getStoreValue } from 'svelte/store'
 import axios from '../utils/axios'
 import { addSocketListener } from '../utils/websocket'
 
@@ -26,3 +26,11 @@ axios.get('/v1/currencies')
 			}
 		})
 	})
+
+/**
+ * Retorna o objeto de informações de uma currency, o mesmo retornado pela API
+ * @param {string} currency A currency para retornar informações
+ */
+export function get(currency) {
+	return getStoreValue({ subscribe }).find(v => v.name == currency)
+}

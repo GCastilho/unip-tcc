@@ -10,7 +10,7 @@
     "start:bitcoin": "npm start --prefix ./build/external_modules/bitcoin",
     "test": "env-cmd -f ./cfg/test.env ts-mocha --exit \"tests/**/*.test.+(ts|js)\"",
     "dev": "npm run eslint && concurrently --kill-others-on-fail \"npm run dev-server\" \"npm run dev-client\"",
-    "dev-server": "env-cmd -f ./cfg/dev.env ts-node-dev --inspect -- src/index.js",
+    "dev-server": "env-cmd -f ./cfg/dev.env ts-node-dev --inspect -- src/index.ts",
     "dev-client": "npm run dev --prefix ./client",
     "dep-install": "npm install && npm-recursive-install --rootDir=client && npm-recursive-install --rootDir=external_modules",
     "eslint": "eslint . --ext .js,.ts",

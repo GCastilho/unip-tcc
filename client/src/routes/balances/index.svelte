@@ -5,13 +5,13 @@
 </script>
 
 <script>
-	import * as currencies from '../../stores/currencies.js'
+	import * as currencies from '../../stores/currencies'
 	import TableRow from './_tableRow/index.svelte'
 </script>
 
 <style>
 	table {
-		--table-borders: #FF3E00
+		--table-borders: #f19e82
 	}
 
 	h1 {

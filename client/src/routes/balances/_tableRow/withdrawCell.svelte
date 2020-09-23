@@ -1,6 +1,6 @@
 <script>
-	import * as balances from '../../../stores/balances.js'
-	import axios from '../../../utils/axios'
+	import * as balances from '../../../stores/balances'
+	import { withdraw } from '../../../stores/transactions'
 
 	export let currency
 	export let fee
@@ -26,20 +26,9 @@
 		event.target.amount.value = ''
 
 		try {
-			const opid = await axios.post(
-				'/v1/user/transactions', 
-				{
-					currency,
-					destination,
-					amount
-				}
-			)
-			console.log('Withdraw executed, opid is:', opid.data)
+			await withdraw(name, destination, amount)
 			err = null
 
-			// Atualiza o balance
-			$balances[currency].available -= amount
-			$balances[currency].locked += amount
 			amountToReceive = 0
 		} catch(err) {
 			console.error('Error on withdraw request:', err)

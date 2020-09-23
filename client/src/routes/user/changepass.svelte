@@ -71,7 +71,7 @@
 	}
 </style>
 
-<h1>Alterar Senha</h1>
+<h1>Change Password</h1>
 <form on:submit|preventDefault={handleSubmit}>
 	{#if errorMessage}
 		<FormErrorMessage>{errorMessage}</FormErrorMessage>
