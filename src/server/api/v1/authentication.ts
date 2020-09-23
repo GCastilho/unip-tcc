@@ -1,15 +1,9 @@
 import express from 'express'
-import bodyParser from 'body-parser'
-import cookieParser from 'cookie-parser'
 import Session from '../../../db/models/session'
 import * as randomstring from 'randomstring'
 import * as UserApi from '../../../userApi'
 
 const router = express.Router()
-
-// Parsers
-router.use(cookieParser())
-router.use(bodyParser.json())
 
 /**
  * Handler do request de autenticação

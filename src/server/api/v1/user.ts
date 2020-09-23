@@ -1,4 +1,3 @@
-import cors from 'cors'
 import express from 'express'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
@@ -9,9 +8,6 @@ import * as UserApi from '../../../userApi'
 import * as CurrencyApi from '../../../currencyApi'
 
 const router = express.Router()
-
-/** Habilita o CORS para requests autenticados vindos de qualquer endereço */
-router.use(cors({ credentials: true, origin: true }))
 
 // Parsers
 router.use(cookieParser())
