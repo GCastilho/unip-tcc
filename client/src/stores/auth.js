@@ -37,12 +37,8 @@ const initialState = typeof window !== 'undefined'
  */
 const { subscribe, set } = writable(initialState)
 
-/**
- * Ao usar a store como $auth, o compilador reclama que o método 'set' não
- * existe. Isso é resolvível usando uma readable ou derived, que é uma melhor
- * alternativa do que deixar como está
- */
-export { subscribe, set }
+/** Exporta o subscribe para esse módulo ser uma store */
+export { subscribe }
 
 /**
  * Autentica uma conexão com o websocket usando o token fornecido

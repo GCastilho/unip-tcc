@@ -7,11 +7,20 @@
 <style>
 	main {
 		position: relative;
-		max-width: 56em;
+		max-width: 100vw;
 		background-color: white;
 		padding: 1.5em;
-		margin: 0 auto;
 		box-sizing: border-box;
+	}
+
+	@media only screen and (max-width: 900px) {
+		main {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: 0;
+			padding-top: 1.5em;
+		}
 	}
 </style>
 

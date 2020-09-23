@@ -47,8 +47,9 @@ router.use(async (req, res, next) => {
 	try {
 		if (!req.cookies.sessionId) throw 'Cookie Not Found'
 		req.user = await UserApi.findUser.byCookie(req.cookies.sessionId)
+		res.cookie('sessionId', req.cookies.sessionId,)
 		next()
-	} catch(err) {
+	} catch (err) {
 		res.status(401).send({
 			error: 'NotAuthorized',
 			message: 'A valid cookie \'sessionId\' is required to perform this operation'
@@ -99,12 +100,12 @@ router.get('/transactions/:opid', async (req, res) => {
 			currency:      tx.currency,
 			txid:          tx.txid,
 			account:       tx.account,
-			amount:        tx.amount.toFullString(),
+			amount:       +tx.amount.toFullString(),
 			type:          tx.type,
 			confirmations: tx.confirmations,
 			timestamp:     tx.timestamp.getTime()
 		})
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotFound') {
 			res.status(404).send({
 				error: 'NotFound',
@@ -175,7 +176,8 @@ router.get('/transactions', async (req, res) => {
 		currency:      tx.currency,
 		txid:          tx.txid,
 		account:       tx.account,
-		amount:        tx.amount.toFullString(),
+		amount:       +tx.amount.toFullString(),
+		fee:           tx.fee,
 		type:          tx.type,
 		confirmations: tx.confirmations,
 		timestamp:     tx.timestamp.getTime()
@@ -198,7 +200,7 @@ router.post('/transactions', async (req, res) => {
 
 		const opid = await CurrencyApi.withdraw(req.user, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotEnoughFunds') {
 			res.status(403).send({
 				error: 'NotEnoughFunds',
