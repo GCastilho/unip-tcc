@@ -6,15 +6,24 @@ import type TypedEmitter from 'typed-emitter'
 import type User from '../../userApi/user'
 import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../interfaces/transaction'
 import type { SuportedCurrencies } from '../../libs/currencies'
-import type { Events as ExternalEvents } from '../../../interfaces/communication/external-socket'
+import type { MainEvents as ExternalEvents } from '../../../interfaces/communication/external-socket'
 
-/**
- * Interface para padronizar os eventos públicos
- */
+/** Type para um callback genérico */
+type Callback = (err: any, response?: any) => void
+
+/** Interface para padronizar os eventos públicos */
 interface PublicEvents {
 	new_transaction: (id: User['id'], transaction: TxInfo) => void
 	update_received_tx: (id: User['id'], txUpdate: UpdtReceived) => void
 	update_sent_tx: (id: User['id'], txUpdate: UpdtSent|CancelledSentTx) => void
+}
+
+/** Interface para padronizar os eventos privados */
+interface PrivateEvents {
+	connected: () => void
+	disconnected: () => void
+	emit: (event: string, args: any[], callback: Callback) => void
+	update_sent_tx: (updtSended: UpdtSent, callback: Callback) => void
 }
 
 /**
@@ -31,7 +40,7 @@ export default class Currency {
 	public decimals = 8
 
 	/** EventEmmiter para eventos internos */
-	protected _events = new EventEmitter()
+	protected _events = new EventEmitter() as TypedEmitter<PrivateEvents>
 
 	/** Indica se o módulo externo está online ou não */
 	protected isOnline = false
@@ -61,7 +70,7 @@ export default class Currency {
 		return new Promise((resolve, reject) => {
 			let gotResponse = false
 			if (!this.isOnline) return reject('SocketDisconnected')
-			this._events.emit('emit', event, ...args, ((error, response) => {
+			this._events.emit('emit', event, args, ((error, response) => {
 				gotResponse = true
 				if (error) return reject(error)
 				resolve(response)

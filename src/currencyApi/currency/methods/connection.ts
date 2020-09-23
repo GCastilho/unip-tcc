@@ -272,13 +272,11 @@ export function connection(this: Currency, socket: socketIO.Socket) {
 	 * Ouve por eventos vindos do método 'module' e os retransmite ao socket
 	 * para serem enviados ao módulo externo
 	 */
-	this._events.on('emit', (event: string, ...args: any) => {
+	this._events.on('emit', (event, args, callback) => {
 		console.log('event', event)
 		if (this.isOnline) {
-			socket.emit(event, ...args)
+			socket.emit(event, ...args, callback)
 		} else {
-			/** O último argumento é o callback do evento */
-			const callback: Function = args[args.length - 1]
 			callback('SocketDisconnected')
 		}
 	})

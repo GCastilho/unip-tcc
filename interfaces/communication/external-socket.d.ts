@@ -7,10 +7,10 @@ type FilterFunctionsProperties<T extends object> = {
 	[P in keyof T]: T[P] extends (...args: any) => any ? T[P] : never
 }
 
-interface RawEvents {
+interface RawMainEvents {
 	create_new_account: () => string
 	withdraw: (transaction: TxSend) => string
 	cancell_withdraw: (opid: string) => string
 }
 
-export type Events = FilterFunctionsProperties<RawEvents>
+export type MainEvents = FilterFunctionsProperties<RawMainEvents>
