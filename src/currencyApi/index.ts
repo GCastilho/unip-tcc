@@ -151,7 +151,7 @@ export async function withdraw(
 	await item.save()
 
 	/** Chama o método da currency para executar o withdraw */
-	_currencies[currency].withdraw()
+	_currencies[currency].withdraw(transaction)
 
 	return opid
 }

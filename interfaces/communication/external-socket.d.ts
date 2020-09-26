@@ -1,6 +1,4 @@
-import type { TxSend } from '../transaction'
-
-// Nota pra implementação: Dar erro se n tiver o listener
+import type { TxSend, TxReceived, UpdtReceived, UpdtSent } from '../transaction'
 
 /** Retorna um type apenas com as propriedades que são funções */
 type FilterFunctionsProperties<T extends object> = {
@@ -14,3 +12,11 @@ interface RawMainEvents {
 }
 
 export type MainEvents = FilterFunctionsProperties<RawMainEvents>
+
+interface RawExternalEvents {
+	new_transaction: (transaction: TxReceived) => string
+	update_received_tx: (txUpdate: UpdtReceived) => string
+	update_sent_tx: (updtSent: UpdtSent) => string
+}
+
+export type ExternalEvents = FilterFunctionsProperties<RawExternalEvents>

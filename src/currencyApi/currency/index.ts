@@ -1,12 +1,13 @@
 import { EventEmitter } from 'events'
 import { ObjectId } from 'mongodb'
 import Checklist from '../../db/models/checklist'
+import TransactionDoc, { Transaction } from '../../db/models/transaction'
 import * as methods from './methods'
 import type TypedEmitter from 'typed-emitter'
 import type User from '../../userApi/user'
 import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../interfaces/transaction'
 import type { SuportedCurrencies } from '../../libs/currencies'
-import type { MainEvents as ExternalEvents } from '../../../interfaces/communication/external-socket'
+import type { MainEvents } from '../../../interfaces/communication/external-socket'
 
 /** Type para um callback genérico */
 type Callback = (err: any, response?: any) => void
@@ -36,9 +37,6 @@ export default class Currency {
 	/** Taxa cobrada do usuário para executar operações de saque */
 	public readonly fee: number
 
-	/** A quantidade de casas decimais desta currency que o sistema opera */
-	public decimals = 8
-
 	/** EventEmmiter para eventos internos */
 	protected _events = new EventEmitter() as TypedEmitter<PrivateEvents>
 
@@ -63,10 +61,10 @@ export default class Currency {
 	 *
 	 * @throws 'SocketDisconnected' if socket is disconnected
 	 */
-	protected emit<Event extends keyof ExternalEvents>(
+	protected emit<Event extends keyof MainEvents>(
 		event: Event,
-		...args: Parameters<ExternalEvents[Event]>
-	): Promise<ReturnType<ExternalEvents[Event]>> {
+		...args: Parameters<MainEvents[Event]>
+	): Promise<ReturnType<MainEvents[Event]>> {
 		return new Promise((resolve, reject) => {
 			let gotResponse = false
 			if (!this.isOnline) return reject('SocketDisconnected')
@@ -90,13 +88,25 @@ export default class Currency {
 	/** Varre a checklist e executa as ordens de create_accounts agendadas */
 	public create_account: () => Promise<void>
 
-	/** Varre a checklist e executa as ordens de withdraw agendadas */
-	public withdraw: () => Promise<void>
+	/** Manda requests de saque para o módulo externos */
+	public async withdraw(transaction: Transaction): Promise<void> {
+		try {
+			await this.emit('withdraw', {
+				opid: transaction._id.toHexString(),
+				account: transaction.account,
+				amount: transaction.amount.toFullString()
+			})
+			console.log('sent withdraw request', transaction)
+		} catch(err) {
+			if (err != 'SocketDisconnected' && err.code != 'OperationExists')
+				throw err
+		}
+	}
 
-	/** Varre a checklist e tenta enviar eventos de cancell withdraw para os opId*/
+	/** Varre a checklist e tenta enviar requests de cancell withdraw */
 	private cancellWithdrawLoop: () => Promise<void>
 
-	/** Varre a checklist e tenta enviar eventos de cancell withdraw para os opId*/
+	/** Processa requests de cancelamento de saque */
 	public cancellWithdraw: (userid: ObjectId, opid: ObjectId) => Promise<string>
 
 	constructor(
@@ -107,14 +117,38 @@ export default class Currency {
 		this.fee = fee
 
 		this.create_account = methods.create_account.bind(this)()
-		this.withdraw = methods.withdraw.bind(this)()
 		this.cancellWithdrawLoop = methods.cancell_withdraw_loop.bind(this)()
 		this.cancellWithdraw = methods.cancell_withdraw.bind(this)
 
+		// Chama a withraw para o evento de update_sent_tx ser colocado
+		methods.withdraw.call(this)
+
 		this._events.on('connected', () => {
 			this.create_account()
-			this.withdraw()
 			this.cancellWithdrawLoop()
+			this.loop()
+				.catch(err => console.error('Error on loop method for', this.name, err))
 		})
+	}
+
+	/** Flag que indica se o loop está sendo executado */
+	private looping = false
+
+	private async loop() {
+		if (this.looping || !this.isOnline) return
+		this.looping = true
+
+		// Envia ao módulo externo requests de withdraw com status 'processing'
+		const processingCursor = TransactionDoc.find({
+			currency: this.name,
+			status: 'processing'
+		}).cursor()
+
+		let item: Transaction
+		while (this.isOnline && (item = await processingCursor.next())) {
+			await this.withdraw(item)
+		}
+
+		this.looping = false
 	}
 }

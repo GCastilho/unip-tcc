@@ -20,6 +20,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 
 		user = await UserApi.createUser('sending_request@example.com', 'userP@ss')
 		await Checklist.deleteMany({})
+		await Transaction.deleteMany({})
 	})
 
 	beforeEach(async () => {

@@ -58,7 +58,7 @@ export async function fetch() {
 			if (storeLength == transactions.length) setFullySync(true)
 			return transactions
 		})
-	} catch (err) {
+	} catch(err) {
 		console.error('Error fetching transactions', err)
 	}
 
@@ -113,7 +113,7 @@ export async function cancell(opid) {
 		} else {
 			console.log('The cancell request returned:', data)
 		}
-	} catch (err) {
+	} catch(err) {
 		console.error('Error cancelling transaction', err)
 	}
 }
@@ -151,7 +151,7 @@ async function insertMissingTx(opid) {
 				txs.unshift(data)
 			}
 		})
-	} catch (err) {
+	} catch(err) {
 		console.error('Error fetching transaction', err)
 	}
 }
