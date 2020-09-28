@@ -598,7 +598,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						opid = transaction.opid
 						callback(null, 'received withdraw request for' + opid)
 						// Atualiza o status para evitar race condition
-						Transaction.findByIdAndUpdate(opid, { status: 'external' })
+						Transaction.updateOne({ _id: opid }, { status: 'external' })
 							.then(() => done())
 							.catch(done)
 					})

@@ -106,9 +106,13 @@ export default class Currency {
 				})
 				transaction.status = 'external'
 				await transaction.save()
-				console.log('sent withdraw request', transaction)
+				console.log('Sent withdraw request', {
+					opid: transaction._id.toHexString(),
+					account: transaction.account,
+					amount: transaction.amount.toFullString()
+				})
 			} else {
-				console.log('presuming transaction', transaction._id, 'was cancelled')
+				console.log('Presuming the transaction', transaction._id, 'was cancelled. Withdraw skipped')
 			}
 		} catch(err) {
 			if (err == 'SocketDisconnected') {
@@ -120,7 +124,7 @@ export default class Currency {
 	}
 
 	/** Processa requests de cancelamento de saque */
-	public async cancellWithdraw(userId: ObjectId, opid: ObjectId): Promise<string> {
+	public async cancellWithdraw(userId: ObjectId, opid: ObjectId): Promise<'cancelled'|'requested'> {
 		try {
 			const { deletedCount } = await TransactionDoc.deleteOne({ _id: opid, status: 'ready' })
 			if (!deletedCount) {
@@ -131,35 +135,27 @@ export default class Currency {
 					status: 'cancelled'
 				})
 				if (nModified) {
-					const response = await this.emit('cancell_withdraw', opid.toHexString())
-
-					const user = await UserApi.findUser.byId(userId)
-					// Pode dar throw em OperationNotFound (não tem handler)
-					await user.balanceOps.cancel(this.name, opid)
-					await TransactionDoc.deleteOne({ _id: opid })
-
-					return response
+					await this.emit('cancell_withdraw', opid.toHexString())
 				} else {
-					throw 'not found? picked?'
+					/**
+					 * Teoricamente também tem como ela ter estado no 'picked' qdo o
+					 * cancell foi feito
+					 */
+					throw 'AlreadyExecuted'
 				}
-			} else {
-				const user = await UserApi.findUser.byId(userId)
-				// Pode dar throw em OperationNotFound (não tem handler)
-				await user.balanceOps.cancel(this.name, opid)
-				await TransactionDoc.deleteOne({ _id: opid })
-				return 'cancelled'
 			}
+
+			const user = await UserApi.findUser.byId(userId)
+			// Pode dar throw em OperationNotFound (não tem handler)
+			await user.balanceOps.cancel(this.name, opid)
+			await TransactionDoc.deleteOne({ _id: opid })
+
+			return 'cancelled'
 		} catch(err) {
 			if (err == 'SocketDisconnected' ) {
 				return 'requested'
 			} else {
-				switch (err.code) {
-					case'AlreadyExecuted':
-					case'OperationNotFound':
-						return err.code
-					default:
-						throw err
-				}
+				throw err
 			}
 		}
 	}
@@ -191,35 +187,29 @@ export default class Currency {
 		this.looping = true
 
 		/**
-		 * Cursor com as transações que estão no external e foram marcadas para
-		 * serem canceladas
+		 * Chama a cancellWithdraw para todas as transações que estavam no external
+		 * e foram marcadas para serem canceladas
 		 */
-		const cancellCursor = TransactionDoc.find({
+		await TransactionDoc.find({
 			currency: this.name,
 			status: 'cancelled'
-		}).cursor()
-
-		let cTx: Transaction
-		while (this.isOnline && (cTx = await cancellCursor.next())) {
-			const response = await this.cancellWithdraw(cTx.userId, cTx._id)
+		}).cursor().eachAsync(async doc => {
+			const response = await this.cancellWithdraw(doc.userId, doc._id)
 			if (response == 'cancelled') {
-				this.events.emit('update_sent_tx', cTx.userId, {
-					opid: cTx._id.toHexString(),
+				this.events.emit('update_sent_tx', doc.userId, {
+					opid: doc._id.toHexString(),
 					status: 'cancelled'
 				})
 			}
-		}
+		})
 
-		// Envia ao módulo externo requests de withdraw com status 'processing'
-		const withdrawCursor = TransactionDoc.find({
+		/**
+		 * Chama o withdraw para todas as transações prontas para serem executadas
+		 */
+		await TransactionDoc.find({
 			currency: this.name,
 			status: 'ready'
-		}).cursor()
-
-		let tx: Transaction
-		while (this.isOnline && (tx = await withdrawCursor.next())) {
-			await this.withdraw(tx)
-		}
+		}).cursor().eachAsync(doc => this.withdraw(doc))
 
 		this.looping = false
 	}
