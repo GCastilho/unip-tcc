@@ -9,7 +9,6 @@
 		position: relative;
 		max-width: 100vw;
 		background-color: white;
-		padding: 1.5em;
 		box-sizing: border-box;
 	}
 

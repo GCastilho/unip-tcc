@@ -37,6 +37,7 @@
 	}
 
 	h1 {
+		margin-top: 0.5em;
 		text-align: center;
 	}
 
@@ -56,12 +57,13 @@
 	}
 
 	.background-table {
-		width: calc(100vw - 100px);
+		width: 100%;
+		width: -webkit-fill-available;
+		width: -moz-fill-available;
 		min-height: calc(100vh - 220px);
 		border: 1px solid lightgray;
-		margin-top: 1.5em;
-		margin-left: 0px;
-		margin-right: 20px;
+		margin: 1.5em;
+		margin-bottom: 0px;
 		padding: 20px;
 		border-radius: 15px;
 		box-shadow: 0px 5px 50px 0px rgba(18, 89, 93, 0.15);
@@ -72,6 +74,7 @@
 		.background-table{
 			width: 100%;
 			margin-right: 0;
+			margin-left: 0;
 			padding: 0;
 			border-radius: 0;
 		}

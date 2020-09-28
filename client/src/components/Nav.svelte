@@ -101,6 +101,7 @@
 
 		<div style="float:right">
 			{#if $auth}
+				<li><a class:selected="{segment === 'market'}" href="market">market</a></li>
 				<li><a class:selected="{segment === 'balances'}" href="balances">balances</a></li>
 				<li on:mouseover="{() => userdropdown = 'show'}" on:mouseleave="{() => userdropdown = 'hide'}">
 					<div class='dropdown-button' class:selected = {userdropdown === 'show' || segment === 'user'}>

@@ -60,7 +60,8 @@
 
 <style>
 	h1 {
-		text-align: center
+		margin-top: 0.5em;
+		text-align: center;
 	}
 
 	form {

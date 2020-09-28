@@ -37,6 +37,10 @@
 </script>
 
 <style>
+	h1, div {
+		margin-top: 0.5em;
+	}
+
 	h1, h2, p {
 		text-align: center;
 	}

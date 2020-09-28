@@ -42,6 +42,10 @@
 </script>
 
 <style>
+	h1 {
+		margin-top: 0.5em;
+	}
+
 	h1, p {
 		text-align: center;
 	}
