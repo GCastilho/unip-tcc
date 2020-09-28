@@ -597,16 +597,19 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					client.once('withdraw', (transaction: TxSend, callback: (err: null, res?: string) => void) => {
 						opid = transaction.opid
 						callback(null, 'received withdraw request for' + opid)
-						done()
+						// Atualiza o status para evitar race condition
+						Transaction.findByIdAndUpdate(opid, { status: 'external' })
+							.then(() => done())
+							.catch(done)
 					})
 					CurrencyApi.withdraw(user, currency, `${currency}_account`, 10)
 						.catch(done)
 				})
 			})
 
-			it('Should have status \'processing\' before receiving the first update', async () => {
+			it('Should have status \'external\' before receiving the first update', async () => {
 				const tx = await Transaction.findById(opid)
-				expect(tx.status).to.equals('processing')
+				expect(tx.status).to.equals('external')
 			})
 
 			it('Sould update a pending transaction', done => {
@@ -660,6 +663,33 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 			it('Should return UserNotFound if a user for existing transaction was not found', done => {
 				let user: User
 
+				// Recebe o request de saque
+				client.once('withdraw', (request: TxSend, callback: (err: any, response?: string) => void) => {
+					callback(null, 'received withdraw request for userNotFound test')
+
+					// Deleta o usuário
+					Person.findByIdAndDelete(user.id).then(() => {
+						// Emite o update para o usuário deletado
+						client.emit('update_sent_tx', {
+							opid: request.opid,
+							txid: `randomTxId-deleted-user-${currency}`,
+							status: 'confirmed',
+							confirmations: 6,
+							timestamp: 123456789
+						}, (err: any, res?: string) => {
+							try {
+								expect(res).to.be.undefined
+								expect(err).to.be.an('object')
+								expect(err.code).to.equals('UserNotFound')
+								expect(err.message).to.be.a('string')
+								done()
+							} catch(err) {
+								done(err)
+							}
+						})
+					}).catch(done)
+				})
+
 				// Cria o usuário
 				UserApi.createUser(`non-existing-user-send-${currency}@email.com`, 'UserP@ass').then(_user => {
 					user = _user
@@ -673,33 +703,6 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}).then(() => {
 					// Executa o saque
 					return CurrencyApi.withdraw(user, currency, 'randomAccount', 10)
-				}).then(opid => {
-					// Recebe o request de saque
-					client.once('withdraw', (request: TxSend, callback: (err: any, response?: string) => void) => {
-						callback(null, 'received withdraw request for userNotFound test')
-
-						// Deleta o usuário
-						Person.findByIdAndDelete(user.id).then(() => {
-							// Emite o update para o usuário deletado
-							client.emit('update_sent_tx', {
-								opid,
-								txid: `randomTxId-deleted-user-${currency}`,
-								status: 'confirmed',
-								confirmations: 6,
-								timestamp: 123456789
-							}, (err: any, res?: string) => {
-								try {
-									expect(res).to.be.undefined
-									expect(err).to.be.an('object')
-									expect(err.code).to.equals('UserNotFound')
-									expect(err.message).to.be.a('string')
-									done()
-								} catch(err) {
-									done(err)
-								}
-							})
-						}).catch(done)
-					})
 				}).catch(done)
 			})
 
@@ -787,7 +790,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						expect(err.message).to.be.a('string')
 						return Transaction.findById(opid)
 					}).then(doc => {
-						expect(doc.status).to.equals('processing')
+						expect(doc.status).to.equals('external')
 						done()
 					}).catch(done)
 				})
@@ -809,7 +812,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						expect(err.message).to.be.a('string')
 						return Transaction.findById(opid)
 					}).then(doc => {
-						expect(doc.status).to.equals('processing')
+						expect(doc.status).to.equals('external')
 						done()
 					}).catch(done)
 				})
@@ -831,7 +834,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						expect(err.message).to.be.a('string')
 						return Transaction.findById(opid)
 					}).then(doc => {
-						expect(doc.status).to.equals('processing')
+						expect(doc.status).to.equals('external')
 						done()
 					}).catch(done)
 				})
@@ -853,7 +856,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						expect(err.message).to.be.a('string')
 						return Transaction.findById(opid)
 					}).then(doc => {
-						expect(doc.status).to.equals('processing')
+						expect(doc.status).to.equals('external')
 						done()
 					}).catch(done)
 				})

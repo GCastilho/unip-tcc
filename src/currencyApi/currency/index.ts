@@ -1,8 +1,9 @@
 import { EventEmitter } from 'events'
 import { ObjectId } from 'mongodb'
-import Checklist from '../../db/models/checklist'
+import ChecklistDoc from '../../db/models/checklist'
 import TransactionDoc, { Transaction } from '../../db/models/transaction'
 import * as methods from './methods'
+import * as UserApi from '../../userApi'
 import type TypedEmitter from 'typed-emitter'
 import type User from '../../userApi/user'
 import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../interfaces/transaction'
@@ -45,7 +46,7 @@ export default class Currency {
 
 	/** Limpa os comandos com status 'completed' da checklist */
 	protected checklistCleaner = async (): Promise<void> => {
-		await Checklist.deleteMany({
+		await ChecklistDoc.deleteMany({
 			$or: [
 				{ status: 'completed' },
 				{ status: 'cancelled' }
@@ -91,23 +92,77 @@ export default class Currency {
 	/** Manda requests de saque para o módulo externos */
 	public async withdraw(transaction: Transaction): Promise<void> {
 		try {
-			await this.emit('withdraw', {
-				opid: transaction._id.toHexString(),
-				account: transaction.account,
-				amount: transaction.amount.toFullString()
+			const { nModified } = await TransactionDoc.updateOne({
+				_id: transaction._id,
+				status: 'ready'
+			}, {
+				status: 'picked'
 			})
-			console.log('sent withdraw request', transaction)
+			if (nModified) {
+				await this.emit('withdraw', {
+					opid: transaction._id.toHexString(),
+					account: transaction.account,
+					amount: transaction.amount.toFullString()
+				})
+				transaction.status = 'external'
+				await transaction.save()
+				console.log('sent withdraw request', transaction)
+			} else {
+				console.log('presuming transaction', transaction._id, 'was cancelled')
+			}
 		} catch(err) {
-			if (err != 'SocketDisconnected' && err.code != 'OperationExists')
+			if (err == 'SocketDisconnected') {
+				await TransactionDoc.updateOne({ _id: transaction._id }, { status: 'ready' })
+			} else if (err.code != 'OperationExists') {
 				throw err
+			}
 		}
 	}
 
-	/** Varre a checklist e tenta enviar requests de cancell withdraw */
-	private cancellWithdrawLoop: () => Promise<void>
-
 	/** Processa requests de cancelamento de saque */
-	public cancellWithdraw: (userid: ObjectId, opid: ObjectId) => Promise<string>
+	public async cancellWithdraw(userId: ObjectId, opid: ObjectId): Promise<string> {
+		try {
+			const { deletedCount } = await TransactionDoc.deleteOne({ _id: opid, status: 'ready' })
+			if (!deletedCount) {
+				const { nModified } = await TransactionDoc.updateOne({
+					_id: opid,
+					status: 'external'
+				}, {
+					status: 'cancelled'
+				})
+				if (nModified) {
+					const response = await this.emit('cancell_withdraw', opid.toHexString())
+
+					const user = await UserApi.findUser.byId(userId)
+					// Pode dar throw em OperationNotFound (não tem handler)
+					await user.balanceOps.cancel(this.name, opid)
+					await TransactionDoc.deleteOne({ _id: opid })
+
+					return response
+				} else {
+					throw 'not found? picked?'
+				}
+			} else {
+				const user = await UserApi.findUser.byId(userId)
+				// Pode dar throw em OperationNotFound (não tem handler)
+				await user.balanceOps.cancel(this.name, opid)
+				await TransactionDoc.deleteOne({ _id: opid })
+				return 'cancelled'
+			}
+		} catch(err) {
+			if (err == 'SocketDisconnected' ) {
+				return 'requested'
+			} else {
+				switch (err.code) {
+					case'AlreadyExecuted':
+					case'OperationNotFound':
+						return err.code
+					default:
+						throw err
+				}
+			}
+		}
+	}
 
 	constructor(
 		name: SuportedCurrencies,
@@ -117,15 +172,12 @@ export default class Currency {
 		this.fee = fee
 
 		this.create_account = methods.create_account.bind(this)()
-		this.cancellWithdrawLoop = methods.cancell_withdraw_loop.bind(this)()
-		this.cancellWithdraw = methods.cancell_withdraw.bind(this)
 
 		// Chama a withraw para o evento de update_sent_tx ser colocado
 		methods.withdraw.call(this)
 
 		this._events.on('connected', () => {
 			this.create_account()
-			this.cancellWithdrawLoop()
 			this.loop()
 				.catch(err => console.error('Error on loop method for', this.name, err))
 		})
@@ -138,15 +190,35 @@ export default class Currency {
 		if (this.looping || !this.isOnline) return
 		this.looping = true
 
-		// Envia ao módulo externo requests de withdraw com status 'processing'
-		const processingCursor = TransactionDoc.find({
+		/**
+		 * Cursor com as transações que estão no external e foram marcadas para
+		 * serem canceladas
+		 */
+		const cancellCursor = TransactionDoc.find({
 			currency: this.name,
-			status: 'processing'
+			status: 'cancelled'
 		}).cursor()
 
-		let item: Transaction
-		while (this.isOnline && (item = await processingCursor.next())) {
-			await this.withdraw(item)
+		let cTx: Transaction
+		while (this.isOnline && (cTx = await cancellCursor.next())) {
+			const response = await this.cancellWithdraw(cTx.userId, cTx._id)
+			if (response == 'cancelled') {
+				this.events.emit('update_sent_tx', cTx.userId, {
+					opid: cTx._id.toHexString(),
+					status: 'cancelled'
+				})
+			}
+		}
+
+		// Envia ao módulo externo requests de withdraw com status 'processing'
+		const withdrawCursor = TransactionDoc.find({
+			currency: this.name,
+			status: 'ready'
+		}).cursor()
+
+		let tx: Transaction
+		while (this.isOnline && (tx = await withdrawCursor.next())) {
+			await this.withdraw(tx)
 		}
 
 		this.looping = false

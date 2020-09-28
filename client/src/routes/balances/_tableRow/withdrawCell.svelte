@@ -26,7 +26,7 @@
 		event.target.amount.value = ''
 
 		try {
-			await withdraw(name, destination, amount)
+			await withdraw(currency, destination, amount)
 			err = null
 
 			amountToReceive = 0

@@ -11,6 +11,8 @@ import * as UserApi from '../../src/userApi'
 import type User from '../../src/userApi/user'
 import type { TxSend } from '../../interfaces/transaction'
 
+type SocketCallback = (err: any, response?: string) => void;
+
 describe('Testing if CurrencyApi is making requests to the websocket', () => {
 	const port = process.env.CURRENCY_API_PORT || 5808
 	let user: User
@@ -83,53 +85,6 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					})
 				}).catch(done)
 			})
-
-			it('Should receive a cancell_withdraw request', done => {
-				const amount = 3.456
-				let _opid: string
-
-				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount).then(opid => {
-					_opid = opid.toHexString()
-					return CurrencyApi.cancellWithdraw(user.id, currency, opid)
-				}).then(response => {
-					expect(response).to.be.a('string').that.equals('requested')
-					return Checklist.findOne({
-						opid: _opid,
-						command: 'cancell_withdraw',
-					})
-				}).then(check => {
-					expect(check).to.be.a('object')
-					expect(check.opid.toHexString()).to.equals(_opid)
-
-					client = io(url + '/' + currency)
-
-					// Responde o evento de withdraw para evitar timeout
-					client.once('withdraw', (
-						request: TxSend,
-						callback: (err: any, response?: string) => void
-					) => {
-						callback(null, 'request received for' + currency)
-					})
-
-					client.once('cancell_withdraw', async (
-						opid: string,
-						callback: (err: any, response?: string) => void
-					) => {
-						try {
-							const tx = await Transaction.findById(_opid)
-
-							expect(tx).to.be.an('object')
-							expect(opid).to.be.a('string')
-								.that.equals(tx._id.toHexString())
-
-							done()
-						} catch(err) {
-							done(err)
-						}
-						callback(null, `request received for ${currency}`)
-					})
-				}).catch(done)
-			})
 		})
 
 		describe(`If the ${currency} module is already connected`, () => {
@@ -185,6 +140,12 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 			it('Shold receive a request for cancell_withdraw immediate after requested', done => {
 				const amount = 4
 				let _opid: ObjectId
+
+				// Reponse o request para evitar timeout
+				client.once('withdraw', (txSent: TxSend, callback: SocketCallback) => {
+					callback(null, 'request received for' + currency)
+				})
+
 				client.once('cancell_withdraw', async (
 					opid: string,
 					callback: (err: any, response?: string) => void

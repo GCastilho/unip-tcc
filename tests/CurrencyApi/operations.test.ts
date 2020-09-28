@@ -87,5 +87,32 @@ describe('Testing operations on the currencyApi', () => {
 					.rejectedWith(`Withdraw amount for ${currency} must be at least '${2 * fee}', but got ${2 * fee - 0.01 * fee}`)
 			})
 		})
+
+		describe(`Testing cancell_withdraw for ${currency}`, () => {
+			let opid: ObjectId
+
+			beforeEach(async () => {
+				// @ts-expect-error
+				user.person.currencies[currency].balance.available = 10
+				// @ts-expect-error
+				user.person.currencies[currency].balance.locked = 0
+				await user.person.save()
+
+				opid = await CurrencyApi.withdraw(user, currency, `operations-cancell-${currency}`, 1)
+			})
+
+			it('Should cancell a withdraw request', async () => {
+				expect((await Transaction.findById(opid)).status).to.equals('ready')
+				expect(await CurrencyApi.cancellWithdraw(user.id, currency, opid))
+					.to.equal('cancelled')
+				expect(await Transaction.findById(opid)).to.be.null
+
+				const person = await Person.findById(user.id)
+				expect(person.currencies[currency].balance.available.toFullString())
+					.to.equals('10.0')
+				expect(person.currencies[currency].balance.locked.toFullString())
+					.to.equals('0.0')
+			})
+		})
 	}
 })

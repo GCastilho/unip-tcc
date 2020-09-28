@@ -15,13 +15,21 @@ export interface Transaction extends Document {
 	 * pending: A transação já foi processada e aceita no saldo do usuário e
 	 * está pendente para ser confirmada na rede
 	 *
+	 * ready: O processamento inicial foi concluído e a tranação está pronta para
+	 * ser enviada ao módulo externo
+	 *
+	 * picked: A transação foi selecionada pelo método de withdraw para ser
+	 * enviada ao módulo externo
+	 *
+	 * external: A transação foi envada ao módulo externo
+	 *
 	 * confirmed: A transação foi confirmada na rede e teve o saldo do usuário
 	 * atualizado no database
 	 *
 	 * processing: A transação ainda não foi processada no saldo do usuário,
 	 * podendo ser negada quando isso ocorrer (e deletada do db)
 	 */
-	status: 'processing'|'pending'|'confirmed'
+	status: 'processing'|'ready'|'picked'|'external'|'cancelled'|'pending'|'confirmed'
 	/** De qual currency essa transação se refere */
 	currency: SuportedCurrencies
 	/** Identificador da transação na rede da moeda */
@@ -65,7 +73,7 @@ const TransactionSchema: Schema = new Schema({
 	},
 	status: {
 		type: String,
-		enum: ['processing', 'pending', 'confirmed'],
+		enum: ['processing', 'ready', 'picked', 'external', 'cancelled', 'pending', 'confirmed'],
 		required: true
 	},
 	confirmations: {

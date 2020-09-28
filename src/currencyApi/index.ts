@@ -97,15 +97,6 @@ export async function withdraw(
 	 */
 	const opid = new ObjectId()
 
-	// Adiciona o comando de withdraw na checklist
-	const item = await new Checklist({
-		opid,
-		userId: user.id,
-		command: 'withdraw',
-		currency,
-		status: 'preparing'
-	}).save()
-
 	// Desconta o fee do amount
 	const _amount = amount * Math.pow(10, decimals)
 	const _fee = fee * Math.pow(10, decimals)
@@ -132,26 +123,21 @@ export async function withdraw(
 		})
 	} catch(err) {
 		if (err === 'NotEnoughFunds') {
-			// Remove a transação da collection e o item da checklist
-			await Promise.all([
-				transaction.remove(),
-				item.remove()
-			])
+			await transaction.remove()
 		}
 		/** Da throw no erro independente de qual erro seja */
 		throw err
 	}
 
 	/**
-	 * Atualiza a operação na checklist para o status 'requested', que sinaliza
-	 * para o withdraw_loop que os check iniciais (essa função) foram
-	 * bem-sucedidos
+	 * Atualiza a transação para o status 'ready', que sinaliza para o sistema
+	 * que os check iniciais (essa função) foram bem-sucedidos
 	 */
-	item.status = 'requested'
-	await item.save()
+	transaction.status = 'ready'
+	await transaction.save()
 
 	/** Chama o método da currency para executar o withdraw */
-	_currencies[currency].withdraw(transaction)
+	await _currencies[currency].withdraw(transaction)
 
 	return opid
 }
