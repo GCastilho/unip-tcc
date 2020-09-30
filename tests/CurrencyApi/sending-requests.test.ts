@@ -44,7 +44,9 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 			})
 
 			it('Should receive a create_new_account request', done => {
-				CurrencyApi.create_accounts(user.id, [currency]).then(() => {
+				CurrencyApi.createAccount(user.id, currency).catch(err => {
+					if (err != 'SocketDisconnected') throw err
+				}).then(() => {
 					client = io(url + '/' + currency)
 
 					client.once('create_new_account', (callback: (err: any, account?: string) => void) => {
@@ -90,8 +92,9 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 		describe(`If the ${currency} module is already connected`, () => {
 			let client: SocketIOClient.Socket
 
-			before(async () => {
+			before(done => {
 				client = io(url + '/' + currency)
+				client.once('connect', done)
 			})
 
 			after(() => {
@@ -104,7 +107,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					done()
 				})
 
-				CurrencyApi.create_accounts(user.id, [currency]).catch(done)
+				CurrencyApi.createAccount(user.id, currency).catch(done)
 			})
 
 			it('Should receive a withdraw request immediate after requested', done => {

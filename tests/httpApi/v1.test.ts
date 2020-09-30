@@ -200,21 +200,6 @@ describe('Testing version 1 of HTTP API', () => {
 				// Assert user was NOT created
 				expect(await Person.find({ email: user.email })).lengthOf(1)
 			})
-
-			it('Should have a create_account request for each currency', async () => {
-				const createAccountRequests = await Checklist.find({
-					userId: id,
-					command: 'create_account'
-				})
-				expect(createAccountRequests).to.lengthOf(currencyNames.length)
-
-				currencyNames.forEach(currency => {
-					expect(
-						createAccountRequests.some(item => item.currency === currency),
-						`not found request for ${currency}`
-					).to.be.true
-				})
-			})
 		})
 
 		describe('/authentication', () => {

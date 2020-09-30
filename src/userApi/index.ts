@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb'
 import Session from '../db/models/session'
 import PersonModel from '../db/models/person'
 import User, { hashPassword } from './user'
+import { currencyNames } from '../libs/currencies'
 import * as CurrencyApi from '../currencyApi'
 
 /**
@@ -27,7 +28,14 @@ export async function createUser(email: string, password: string): Promise<User>
 	 * @todo Criar as accounts quando o e-mail for confirmado, não ao
 	 * criar o usuário
 	 */
-	await CurrencyApi.create_accounts(person._id)
+	const createAccounts = currencyNames
+		.map(currency => CurrencyApi.createAccount(person._id, currency))
+
+	/** Se múltiplas forem rejeitadas só irá mostrar o valor da primeira */
+	await Promise.all(createAccounts).catch(err => {
+		if (err != 'SocketDisconnected')
+			console.error('Error creating account for new user', err)
+	})
 
 	return new User(person)
 }

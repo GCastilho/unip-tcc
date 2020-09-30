@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events'
 import { ObjectId } from 'mongodb'
+import Person from '../../db/models/person'
 import ChecklistDoc from '../../db/models/checklist'
 import TransactionDoc, { Transaction } from '../../db/models/transaction'
 import * as methods from './methods'
@@ -86,8 +87,15 @@ export default class Currency {
 	/** Handler da conexão com o módulo externo */
 	public connection = methods.connection
 
-	/** Varre a checklist e executa as ordens de create_accounts agendadas */
-	public create_account: () => Promise<void>
+	public async createAccount(userId: ObjectId): Promise<string> {
+		const account = await this.emit('create_new_account')
+		await Person.findByIdAndUpdate(userId, {
+			$push: {
+				[`currencies.${this.name}.accounts`]: account
+			}
+		})
+		return account
+	}
 
 	/** Manda requests de saque para o módulo externos */
 	public async withdraw(transaction: Transaction): Promise<void> {
@@ -167,13 +175,10 @@ export default class Currency {
 		this.name = name
 		this.fee = fee
 
-		this.create_account = methods.create_account.bind(this)()
-
 		// Chama a withraw para o evento de update_sent_tx ser colocado
 		methods.withdraw.call(this)
 
 		this._events.on('connected', () => {
-			this.create_account()
 			this.loop()
 				.catch(err => console.error('Error on loop method for', this.name, err))
 		})
@@ -185,6 +190,19 @@ export default class Currency {
 	private async loop() {
 		if (this.looping || !this.isOnline) return
 		this.looping = true
+
+		/**
+		 * Chama o createAccount para todos os usuários com array de accounts vazio
+		 */
+		await Person.find({
+			[`currencies.${this.name}.accounts`]: { $size: 0 }
+		}).cursor().eachAsync(async doc => {
+			try {
+				await this.createAccount(doc._id)
+			} catch(err) {
+				if (err != 'SocketDisconnected') throw err
+			}
+		})
 
 		/**
 		 * Chama a cancellWithdraw para todas as transações que estavam no external

@@ -3,7 +3,6 @@ import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
 import User from '../userApi/user'
 import Currency from './currency'
-import Checklist from '../db/models/checklist'
 import Transaction from '../db/models/transaction'
 import { currencies, currencyNames, currenciesObj } from '../libs/currencies'
 import type TypedEmitter from 'typed-emitter'
@@ -32,45 +31,22 @@ const _currencies = Object.fromEntries(
 export const events = new EventEmitter() as TypedEmitter<PublicEvents>
 
 /**
- * Adiciona o request de criar accounts na checklist e chama o método
- * create_account das currencies solicitadas. Se nenhum account for
- * especificada, será criado uma account de cada currency
+ * Executa um request de criar account da currency informada. Se houver algum
+ * erro no processo, essa função irá rejeitar
  *
  * @param userId O ObjectId do usuário
- * @param currenciesToCreate As currencies que devem ser criadas accounts
+ * @param currency As currencies que devem ser criadas accounts
  */
-export async function create_accounts(
+export async function createAccount(
 	userId: Person['_id'],
-	currenciesToCreate: SuportedCurrencies[] = currencyNames
-): Promise<void> {
-	const itemsToSave = currenciesToCreate.map(currency => {
-		return new Checklist({
-			opid: new ObjectId(),
-			userId,
-			command: 'create_account',
-			currency,
-			status: 'requested'
-		})
-	})
-
-	const promises = itemsToSave.map(item => item.save())
-
-	await Promise.all(promises)
-
-	/**
-	 * Chama create_account de cada currency que precisa ser criada uma account
-	 */
-	const createAccounts = currenciesToCreate.map(currency => _currencies[currency].create_account())
-
-	/** Se múltiplas forem rejeitadas só irá mostrar o valor da primeira */
-	Promise.all(createAccounts).catch(err => {
-		console.error('Error running create_account', err)
-	})
+	currency: SuportedCurrencies
+): Promise<string> {
+	return _currencies[currency].createAccount(userId)
 }
 
 /**
- * Adiciona o request de withdraw na checklist e chama a função de withdraw
- * desta currency
+ * Adiciona o request de saque, trava o saldo do usuário e chama a função de
+ * withdraw desta currency
  *
  * @param email O email do usuário que a currency será retirada
  * @param currency A currency que será retirada

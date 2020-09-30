@@ -8,15 +8,8 @@ interface Transaction {
 	account: string
 	/** Amount da transação */
 	amount: number|bigint|string
-	/**
-	 * Status da transação
-	 *
-	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
-	 *
-	 * confirmed: A transação foi confirmada pela rede e é considerada
-	 * irreversível
-	 */
-	status: 'pending'|'confirmed'
+	/** Status da transação */
+	status: TransactionDoc['status']
 	/**
 	 * A quantidade de confirmações que uma transação tem. Transações
 	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
