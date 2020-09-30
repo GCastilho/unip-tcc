@@ -39,6 +39,12 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 		describe(`Once the ${currency} module connects`, () => {
 			let client: SocketIOClient.Socket
 
+			before(() => {
+				client = io(url + '/' + currency, {
+					autoConnect: false
+				})
+			})
+
 			afterEach(() => {
 				client.disconnect()
 			})
@@ -47,7 +53,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 				CurrencyApi.createAccount(user.id, currency).catch(err => {
 					if (err != 'SocketDisconnected') throw err
 				}).then(() => {
-					client = io(url + '/' + currency)
+					client.connect()
 
 					client.once('create_new_account', (callback: (err: any, account?: string) => void) => {
 						callback(null, `account-${currency}`)
@@ -59,7 +65,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 			it('Should receive a withdraw request', done => {
 				const amount = 3.456
 				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount).then(opid => {
-					client = io(url + '/' + currency)
+					client.connect()
 
 					client.once('withdraw', async (
 						request: TxSend,
