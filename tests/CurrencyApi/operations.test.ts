@@ -89,9 +89,9 @@ describe('Testing operations on the currencyApi', () => {
 		let opid: ObjectId
 
 		beforeEach(async () => {
-			// @ts-expect-error
+			// @ts-expect-error Automaticamente convertido para Decimal128
 			user.person.currencies.bitcoin.balance.available = 10
-			// @ts-expect-error
+			// @ts-expect-error Automaticamente convertido para Decimal128
 			user.person.currencies.bitcoin.balance.locked = 0
 			await user.person.save()
 

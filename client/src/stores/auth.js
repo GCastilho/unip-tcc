@@ -42,7 +42,7 @@ async function authentication(token) {
 		await emit('authenticate', token)
 		console.log('Authentication successful')
 		set(true)
-	} catch(err) {
+	} catch (err) {
 		if (err != 'InvalidToken')
 			console.error('Error authenticating with websocket', err)
 	}
@@ -60,7 +60,7 @@ export async function login(email, password) {
 			email, password
 		})
 		await authentication(data.token)
-	} catch(err) {
+	} catch (err) {
 		console.error('Authentication error', err)
 		set(false)
 	}
@@ -75,7 +75,7 @@ export async function logout() {
 		emit('deauthenticate')
 		console.log('Deauthentication successful')
 		set(false)
-	} catch(err) {
+	} catch (err) {
 		console.error('Deauthentication error:', err)
 		set(false)
 	}
@@ -104,7 +104,7 @@ const removeListener = addSocketListener('disconnect', () => {
 			/** @type {{data: {token: string}}} */
 			const { data } = await axios.get('/v1/user/authentication')
 			await authentication(data.token)
-		} catch(err) {
+		} catch (err) {
 			if (!err.response || err.response.status == 401) set(false)
 			else throw err
 		}

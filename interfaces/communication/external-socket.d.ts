@@ -1,6 +1,7 @@
 import type { TxSend, TxReceived, UpdtReceived, UpdtSent } from '../transaction'
 
 /** Retorna um type apenas com as propriedades que são funções */
+// eslint-disable-next-line @typescript-eslint/ban-types
 type FilterFunctionsProperties<T extends object> = {
 	[P in keyof T]: T[P] extends (...args: any) => any ? T[P] : never
 }

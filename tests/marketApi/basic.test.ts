@@ -27,7 +27,7 @@ describe('Performing basic tests on the MarketApi', () => {
 
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of currencyNames)
-			// @ts-expect-error
+			// @ts-expect-error Automaticamente convertido para Decimal128
 			user.person.currencies[currency].balance.available = 10
 		await user.person.save()
 	})

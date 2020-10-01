@@ -20,7 +20,7 @@ export async function processTransaction(this: Nano, block: any): Promise<void> 
 		/** Procura por transações que não foram computadas */
 		txArray = await this.findMissingTx(savedAccount.account, savedAccount.lastBlock)
 		if (!txArray) return
-	} catch(err) {
+	} catch (err) {
 		return console.error('Error finding missing transactions:', err)
 	}
 
@@ -70,7 +70,7 @@ export async function processTransaction(this: Nano, block: any): Promise<void> 
 			}).catch(err => {
 				console.error('Error redirecting to nano stdAccount', err)
 			})
-		} catch(err) {
+		} catch (err) {
 			if (err.code != 11000)
 				return console.error('Error processing txArray:', err)
 		}

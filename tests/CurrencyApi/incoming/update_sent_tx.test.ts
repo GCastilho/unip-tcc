@@ -30,9 +30,9 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 
 	beforeEach(done => {
 		Transaction.deleteMany({}).then(() => {
-			// @ts-expect-error
+			// @ts-expect-error Automaticamente convertido para Decimal128
 			person.currencies.bitcoin.balance.available = 50
-			// @ts-expect-error
+			// @ts-expect-error Automaticamente convertido para Decimal128
 			person.currencies.bitcoin.balance.locked = 0
 
 			return person.save()
@@ -179,7 +179,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 					expect(err.code).to.equals('UserNotFound')
 					expect(err.message).to.be.a('string')
 					done()
-				} catch(err) {
+				} catch (err) {
 					done(err)
 				}
 			})
@@ -268,7 +268,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 			const updateEvent = client.emit('update_sent_tx', {
 				opid,
 				txid: 'random-txid',
-				// @ts-expect-error
+				// @ts-expect-error Testando justamente um status inválido
 				status: 'invalid-status',
 				confirmations: 6,
 				timestamp: 123456789

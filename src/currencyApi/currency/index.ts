@@ -122,7 +122,7 @@ export default class Currency {
 			} else {
 				console.log('Presuming the transaction', transaction._id, 'was cancelled. Withdraw skipped')
 			}
-		} catch(err) {
+		} catch (err) {
 			if (err == 'SocketDisconnected') {
 				await TransactionDoc.updateOne({ _id: transaction._id }, { status: 'ready' })
 			} else if (err.code != 'OperationExists') {
@@ -159,7 +159,7 @@ export default class Currency {
 			await TransactionDoc.deleteOne({ _id: opid })
 
 			return 'cancelled'
-		} catch(err) {
+		} catch (err) {
 			if (err == 'SocketDisconnected' ) {
 				return 'requested'
 			} else {
@@ -199,7 +199,7 @@ export default class Currency {
 		}).cursor().eachAsync(async doc => {
 			try {
 				await this.createAccount(doc._id)
-			} catch(err) {
+			} catch (err) {
 				if (err != 'SocketDisconnected') throw err
 			}
 		})

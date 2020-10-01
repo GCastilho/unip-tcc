@@ -11,7 +11,7 @@ export function nanoRpc(this: Nano) {
 			if (res.data.error)
 				throw res.data.error
 			return res.data
-		} catch(err) {
+		} catch (err) {
 			if (err.isAxiosError) {
 				throw {
 					errno:        err.errno,
@@ -53,7 +53,7 @@ export function nanoRpc(this: Nano) {
 	 * @returns Um objeto UpdtSended para ser enviado ao servidor
 	 */
 	const send = async (doc: PSent): Promise<UpdtSent> => {
-		const { transaction: { opid, account, amount } } = doc
+		const { transaction: { opid, account, amount }} = doc
 
 		const res = await request({
 			action: 'send',

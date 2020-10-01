@@ -28,7 +28,7 @@ router.post('/', async (req, res): Promise<any> => {
 		 * quando confirmado
 		 */
 		res.status(201).send({ message: 'Success' })
-	} catch(err) {
+	} catch (err) {
 		if (err.code === 11000) {
 			res.status(409).send({ error: 'Email already registered' })
 		} else {
@@ -92,7 +92,7 @@ router.get('/transactions/:opid', async (req, res) => {
 			confirmations: tx.confirmations,
 			timestamp:     tx.timestamp.getTime()
 		})
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotFound') {
 			res.status(404).send({
 				error: 'NotFound',
@@ -121,7 +121,7 @@ router.delete('/transactions/:opid', async (req, res) => {
 		res.send({
 			message: await CurrencyApi.cancellWithdraw(tx.userId, tx.currency, tx._id)
 		})
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotFound') {
 			res.status(404).send({
 				error: 'NotFound',
@@ -191,7 +191,7 @@ router.post('/transactions', async (req, res) => {
 
 		const opid = await CurrencyApi.withdraw(user, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotEnoughFunds') {
 			res.status(403).send({
 				error: 'NotEnoughFunds',
@@ -227,7 +227,7 @@ router.patch('/password', async (req, res): Promise<any> => {
 		await user.checkPassword(req.body.old)
 		await user.changePassword(req.body.new)
 		res.send({ message: 'Password updated' })
-	} catch(err) {
+	} catch (err) {
 		if (err == 'UserNotFound' || err == 'InvalidPassword') {
 			/**
 			 * Diferenciar usuário não encontrado de credenciais inválidas

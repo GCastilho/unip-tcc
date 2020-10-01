@@ -14,7 +14,7 @@ import type { TxReceived } from '../../../interfaces/transaction'
  * @param getInfo Uma função que recebe um txid e retorna informações brutas da
  * transação da blockchain
  */
-async function formatTransaction(txid: string, getInfo: Function): Promise<TxReceived|void> {
+async function formatTransaction(txid: string, getInfo: (...args: any[]) => any): Promise<TxReceived|void> {
 	/**
 	 * Informações da transação pegas da blockchain
 	 */
@@ -90,7 +90,7 @@ export async function processTransaction(this: Bitcoin, txid: TxReceived['txid']
 				'transaction.opid': new ObjectId(opid)
 			}
 		})
-	} catch(err) {
+	} catch (err) {
 		/**
 		 * O evento de transação recebida acontece quando a transação é
 		 * recebida e quando ela recebe a primeira confimação, o que causa um

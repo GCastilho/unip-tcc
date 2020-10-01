@@ -120,7 +120,7 @@ export async function processBlock(this: Bitcoin, block: string) {
 					console.error('Error processing sended transactions', err)
 			})
 		}
-	} catch(err) {
+	} catch (err) {
 		console.error('Error fetching unconfirmed transactions', err)
 	}
 }

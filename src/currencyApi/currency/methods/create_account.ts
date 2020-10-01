@@ -38,7 +38,7 @@ export function create_account(this: Currency) {
 			}
 
 			await this.checklistCleaner()
-		} catch(err) {
+		} catch (err) {
 			console.error('Error on create_account_loop:', err)
 		}
 		looping = false

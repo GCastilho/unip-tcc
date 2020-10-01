@@ -58,8 +58,7 @@ PersonSchema.pre('validate', function(this: Person) {
 	// Ao criar o documento, props de sub-schemas serão undefined
 	if (!this.isNew) return
 	if (typeof this.currencies == 'undefined')
-		// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-		// @ts-ignore
+		// @ts-expect-error Esse objeto será automaticamente preenchido pelo mongoose
 		this.currencies = {}
 })
 

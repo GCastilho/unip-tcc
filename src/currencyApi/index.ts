@@ -97,7 +97,7 @@ export async function withdraw(
 			type: 'transaction',
 			amount: - Math.abs(amount) // Garante que o amount será negativo
 		})
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotEnoughFunds') {
 			await transaction.remove()
 		}

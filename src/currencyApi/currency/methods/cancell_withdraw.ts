@@ -48,7 +48,7 @@ export function cancell_withdraw_loop(this: Currency) {
 						opid: item.opid.toHexString(),
 						status: 'cancelled'
 					})
-				} catch(err) {
+				} catch (err) {
 					if (err.code == 'AlreadyExecuted') {
 						item.status = 'completed'
 						await item.save()
@@ -61,7 +61,7 @@ export function cancell_withdraw_loop(this: Currency) {
 				}
 			}
 			await this.checklistCleaner()
-		} catch(err) {
+		} catch (err) {
 			console.error('Error on cancell_withdraw_loop:', err)
 		}
 		looping = false
@@ -75,7 +75,7 @@ export async function cancell_withdraw(this: Currency, userId: ObjectId, opid: O
 		const response = await this.emit('cancell_withdraw', opid.toHexString())
 		await cancelInMain.call(this, userId, opid)
 		return response
-	} catch(err) {
+	} catch (err) {
 		if (err == 'SocketDisconnected' ) {
 			await Checklist.updateOne({
 				opid,

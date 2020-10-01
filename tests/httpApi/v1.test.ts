@@ -10,7 +10,6 @@ import { currencyNames, currenciesObj, currencies } from '../../src/libs/currenc
 import api from '../../src/server/api'
 import Person from '../../src/db/models/person'
 import Session from '../../src/db/models/session'
-import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
 import type { SuportedCurrencies } from '../../src/libs/currencies'
 

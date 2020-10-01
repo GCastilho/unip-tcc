@@ -22,7 +22,7 @@ auth.subscribe(async auth => {
 			}
 		}
 		set(data)
-	} catch(err) {
+	} catch (err) {
 		console.error('Error while fetching balances:', err.response.statusText)
 	}
 })

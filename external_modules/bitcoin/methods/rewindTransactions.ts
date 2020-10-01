@@ -72,7 +72,7 @@ export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
 					'transaction.opid': new ObjectId(opid)
 				}
 			})
-		} catch(err) {
+		} catch (err) {
 			/**
 			 * O evento de transação recebida acontece quando a transação é
 			 * recebida e quando ela recebe a primeira confimação, o que causa um

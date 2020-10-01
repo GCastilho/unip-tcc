@@ -28,7 +28,7 @@ axios.get('/v1/currencies')
 			try {
 				const { data } = await axios.get('/v1/currencies')
 				set(data)
-			} catch(err) {
+			} catch (err) {
 				console.error('Error fetching currencies:', err.code)
 			}
 		})

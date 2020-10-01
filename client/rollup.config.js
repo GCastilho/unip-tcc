@@ -94,6 +94,7 @@ export default {
 			typescript(),
 			svelteSVG({ generate: 'ssr', dev }),
 		],
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		external: Object.keys(pkg.dependencies).concat(require('module').builtinModules),
 
 		preserveEntrySignatures: 'strict',

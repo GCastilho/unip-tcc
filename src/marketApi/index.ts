@@ -58,7 +58,7 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
 			type: 'trade',
 			amount: - Math.abs(order.owning.amount)
 		})
-	} catch(err) {
+	} catch (err) {
 		if (err === 'NotEnoughFunds')
 			await orderDoc.remove()
 		throw err

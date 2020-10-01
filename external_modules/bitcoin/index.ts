@@ -57,7 +57,7 @@ export class Bitcoin extends Common {
 		do {
 			try {
 				this.blockHeight = (await this.rpc.getBlockChainInfo())?.headers
-			} catch(err) {
+			} catch (err) {
 				process.stdout.write('Failed to recover block height. ')
 				if (err.name != 'RpcError' && err.code != 'ECONNREFUSED')
 					console.error(err)

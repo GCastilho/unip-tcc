@@ -30,9 +30,9 @@ describe('Testing the receival of update_received_tx on the CurrencyApi', () => 
 	beforeEach(async () => {
 		await Transaction.deleteMany({})
 
-		// @ts-expect-error
+		// @ts-expect-error Automaticamente convertido para Decimal128
 		person.currencies.bitcoin.balance.available = 0
-		// @ts-expect-error
+		// @ts-expect-error Automaticamente convertido para Decimal128
 		person.currencies.bitcoin.balance.locked = 0
 		await person.save()
 
@@ -217,7 +217,7 @@ describe('Testing the receival of update_received_tx on the CurrencyApi', () => 
 		it('Should fail if status is invalid', async () => {
 			const updateEvent = client.emit('update_received_tx', {
 				opid,
-				// @ts-expect-error
+				// @ts-expect-error Testando justamente um objeto inválido
 				status: 'invalid-status',
 				confirmations: 6
 			})

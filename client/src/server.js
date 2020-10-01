@@ -25,7 +25,7 @@ express()
 				})
 				req.token = data.token
 				next()
-			} catch(err) {
+			} catch (err) {
 				if (err.response.status == 401) next()
 				else next(err)
 			}

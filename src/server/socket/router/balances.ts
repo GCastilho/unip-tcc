@@ -43,7 +43,7 @@ export default function balances(socket: SocketIO.Socket) {
 			const { currency, destination, amount } = request
 			const opid = await CurrencyApi.withdraw(socket.user, currency, destination, +amount)
 			callback(null, opid.toHexString())
-		} catch(err) {
+		} catch (err) {
 			if (err === 'NotEnoughFunds') {
 				callback('NotEnoughFunds')
 			} else {

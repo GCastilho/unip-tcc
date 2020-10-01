@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 import { Decimal128 } from 'mongodb'
 
 declare module 'mongodb' {

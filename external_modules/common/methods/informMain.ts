@@ -36,7 +36,7 @@ export function informMain(this: Common) {
 			}
 
 			return opid
-		} catch(err) {
+		} catch (err) {
 			if (err === 'SocketDisconnected') {
 				/**
 				 * Salva a Tx no database para ser enviada quando
@@ -72,7 +72,7 @@ export function informMain(this: Common) {
 	const updateReceivedTx = async (txUpdate: UpdtReceived): Promise<void> => {
 		try {
 			await this.module('update_received_tx', txUpdate)
-		} catch(err) {
+		} catch (err) {
 			if (err === 'SocketDisconnected') return
 			/**
 			 * OperationNotFound significa ou que a transação não existe
@@ -108,7 +108,7 @@ export function informMain(this: Common) {
 				console.log('deleting confirmed sended transaction', txUpdate)
 				await SendPending.deleteOne({ opid: txUpdate.opid })
 			}
-		} catch(err) {
+		} catch (err) {
 			if (err === 'SocketDisconnected') return
 			if (err.code === 'OperationNotFound') {
 				console.error('Deleting non-existent withdraw transaction', txUpdate)

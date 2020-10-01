@@ -25,9 +25,9 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 	})
 
 	beforeEach(async () => {
-		// @ts-expect-error
+		// @ts-expect-error Automaticamente convertido para Decimal128
 		person.currencies.bitcoin.balance.available = 0
-		// @ts-expect-error
+		// @ts-expect-error Automaticamente convertido para Decimal128
 		person.currencies.bitcoin.balance.locked = 0
 
 		await person.save()
@@ -200,7 +200,7 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 		})
 
 		it('Should return ValidationError if status is invalid', async () => {
-			// @ts-expect-error
+			// @ts-expect-error Testando justamente um objeto inválido
 			const invalidStatus = {
 				...transaction,
 				status: 'not-valid-status'
@@ -223,7 +223,7 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 		})
 
 		it('Should return ValidationError if confirmations is not a number', async () => {
-			// @ts-expect-error
+			// @ts-expect-error Testando justamente um objeto inválido
 			const invalidConfirmations = {
 				...transaction,
 				confirmations: '6j'
@@ -235,7 +235,7 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 		})
 
 		it('Should return ValidationError if timestamp is not valid', async () => {
-			// @ts-expect-error
+			// @ts-expect-error Testando justamente um objeto inválido
 			const invalidTimestamp = {
 				...transaction,
 				timestamp: '123456789t'

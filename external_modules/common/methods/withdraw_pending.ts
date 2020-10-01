@@ -32,7 +32,7 @@ export function withdraw_pending(this: Common) {
 			})
 
 			await this.informMain.updateWithdraw(transaction)
-		} catch(err) {
+		} catch (err) {
 			console.error(`Error updating/sending txSend: ${transaction}`, err)
 		}
 	}
@@ -67,7 +67,7 @@ export function withdraw_pending(this: Common) {
 			let transaction: true|UpdtSent
 			try {
 				transaction = await this.withdraw(doc, updateAndSendTxs)
-			} catch(err) {
+			} catch (err) {
 				if (err.code === 'NotSent') {
 					doc.journaling = 'requested'
 					await doc.save()
@@ -105,7 +105,7 @@ export function withdraw_pending(this: Common) {
 		looping = true
 		try {
 			await withdraw_loop()
-		} catch(err) {
+		} catch (err) {
 			console.error('Error in withdraw_loop', err)
 		}
 		looping = false

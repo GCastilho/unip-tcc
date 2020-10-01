@@ -33,7 +33,7 @@ async function request(command: string, ...args: any[]): Promise<any> {
 		const res = await client[command](...args)
 		events.emit('rpc_success')
 		return res
-	} catch(err) {
+	} catch (err) {
 		if (err.code === 'ECONNREFUSED') {
 			events.emit('rpc_refused')
 		}
@@ -71,7 +71,7 @@ export const getBlockCount = async (): Promise<any> =>
  * @returns Um objeto UpdtSended para ser enviado ao main server
  */
 export async function send(pSend: PSent): Promise<UpdtSent> {
-	const { transaction: { opid, account, amount } } = pSend
+	const { transaction: { opid, account, amount }} = pSend
 
 	// TODO: Melhorar o handler desses error codes
 	// TODO: Garantir que o cast to number do amount não dá problema com rounding

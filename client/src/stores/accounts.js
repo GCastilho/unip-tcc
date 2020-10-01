@@ -13,7 +13,7 @@ auth.subscribe(async auth => {
 	try {
 		const { data: accounts } = await axios.get('/v1/user/accounts')
 		set(accounts)
-	} catch(err) {
+	} catch (err) {
 		if (!err.response || err.response.status == 401) set({})
 		else throw err
 	}

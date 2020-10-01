@@ -35,7 +35,7 @@ router.post('/authentication', async (req, res): Promise<any> => {
 		 */
 		res.cookie('sessionId', session.sessionId, { httpOnly: true, sameSite: 'none' })
 		res.send({ token: session.token })
-	} catch(err) {
+	} catch (err) {
 		if (err === 'UserNotFound' || err === 'InvalidPassword') {
 			/**
 			 * Diferenciar usuário não encontrado de credenciais inválidas
@@ -64,7 +64,7 @@ router.use(async (req, res, next) => {
 		const user = await UserApi.findUser.byCookie(req.cookies.sessionId)
 		req.userId = user.id
 		next()
-	} catch(err) {
+	} catch (err) {
 		res.status(401).send({
 			error: 'NotAuthorized',
 			message: 'A valid cookie \'sessionId\' is required to perform this operation'
@@ -91,7 +91,7 @@ router.delete('/authentication', async (req, res) => {
 		// Seta o cookie para expirar no passado, fazendo com o que browser o delete
 		res.cookie('sessionId', '', { httpOnly: true, expires: new Date(0) })
 		res.send({ message: 'Success' })
-	} catch(err) {
+	} catch (err) {
 		res.status(500).send({ error: 'InternalServerError' })
 	}
 })

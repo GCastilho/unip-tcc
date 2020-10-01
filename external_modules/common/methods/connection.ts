@@ -19,7 +19,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 			socket.emit(event, ...args)
 		} else {
 			/** O último argumento é o callback do evento */
-			const callback: Function = args[args.length - 1]
+			const callback: (...args: any[]) => any = args[args.length - 1]
 			callback('SocketDisconnected')
 		}
 	})
@@ -55,17 +55,17 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		this._events.emit('disconnected')
 	})
 
-	socket.on('create_new_account', async (callback: Function) => {
+	socket.on('create_new_account', async (callback: (...args: any[]) => any) => {
 		try {
 			const account = await this.getNewAccount()
 			await new Account({ account }).save()
 			callback(null, account)
-		} catch(err) {
+		} catch (err) {
 			callback(err)
 		}
 	})
 
-	socket.on('withdraw', async (request: TxSend, callback: Function) => {
+	socket.on('withdraw', async (request: TxSend, callback: (...args: any[]) => any) => {
 		console.log('received withdraw request', request)
 		/**
 		 * Salva na pending e retorna um callback dando ciência do recebimento
@@ -84,7 +84,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 			}).save()
 
 			callback(null, `received withdraw request for '${request.opid}'`)
-		} catch(err) {
+		} catch (err) {
 			if (err.code === 11000) {
 				callback({
 					code: 'OperationExists',
@@ -101,7 +101,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		this.withdraw_pending()
 	})
 
-	socket.on('cancell_withdraw', async (opid: TxSend['opid'], callback: Function) => {
+	socket.on('cancell_withdraw', async (opid: TxSend['opid'], callback: (...args: any[]) => any) => {
 		console.log('received cancell_withdraw request', opid)
 		try {
 			/**
@@ -129,7 +129,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 				}
 				callback(null, 'cancelled')
 			}
-		} catch(err) {
+		} catch (err) {
 			console.error('Error cancelling request:', err)
 			callback(err)
 		}

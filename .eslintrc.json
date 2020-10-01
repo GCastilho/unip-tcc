@@ -1,21 +1,52 @@
 {
     "env": {
-        "commonjs": true,
-        "es6": true,
+        "es2021": true,
         "node": true
     },
-    "extends": "eslint:recommended",
-    "globals": {
-        "Atomics": "readonly",
-        "SharedArrayBuffer": "readonly"
-    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "sourceType": "module",
-        "ecmaVersion": 2020
+        "ecmaVersion": 12,
+        "sourceType": "module"
     },
+    "plugins": [
+        "@typescript-eslint"
+    ],
     "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "indent": [
+            "error",
+            "tab",
+            {
+                "SwitchCase": 1
+            }
+        ],
+        "linebreak-style": [
+            "off",
+            "unix"
+        ],
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "semi": [
+            "error",
+            "never"
+        ],
         "no-trailing-spaces": "error",
         "space-infix-ops": "error",
+        "object-curly-spacing": [
+            "error",
+            "always",
+            {
+                "arraysInObjects": false,
+                "objectsInObjects": false
+            }
+        ],
         "array-bracket-spacing": [
             "error",
             "never"
@@ -36,39 +67,17 @@
             "before": false,
             "after": true
         }],
-        "indent": [
-            "error",
-            "tab",
-            {
-                "SwitchCase": 1
-            }
-        ],
         "keyword-spacing": ["error", {
             "before": true,
             "after": true,
             "overrides": {
-                "catch": {
-                    "after": false
-                },
                 "case": {
                     "after": false
                 }
             }
         }],
-        "linebreak-style": [
-            "off",
-            "unix"
-        ],
         "no-undef": [
             "off"
-        ],
-        "quotes": [
-            "error",
-            "single"
-        ],
-        "semi": [
-            "error",
-            "never"
         ],
         "space-before-function-paren": ["error", {
             "anonymous": "never",
@@ -79,28 +88,5 @@
             "ignoreEOLComments": true,
             "exceptions": { "Property": true }
         }]
-    },
-    "overrides": [{
-        "files": [ "**/*.ts" ],
-        "parser": "@typescript-eslint/parser",
-        "plugins": [
-            "@typescript-eslint"
-        ],
-        "extends": [
-            "eslint:recommended",
-            "plugin:@typescript-eslint/eslint-recommended",
-            "plugin:@typescript-eslint/recommended"
-        ],
-        "rules": {
-            "@typescript-eslint/member-delimiter-style": ["error", {
-                "multiline": {
-                    "delimiter": "none"
-                }
-            }],
-            "@typescript-eslint/explicit-function-return-type": "off",
-            "@typescript-eslint/no-explicit-any": "off",
-            "@typescript-eslint/camelcase": "off",
-            "@typescript-eslint/no-namespace": "off"
-        }
-    }]
+    }
 }

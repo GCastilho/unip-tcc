@@ -31,9 +31,9 @@ describe('Testing trade function', () => {
 			}
 		})
 		await buyPerson.validate()
-		// @ts-expect-error
+		// @ts-expect-error Automaticamente convertido para Decimal128
 		buyPerson.currencies.bitcoin.balance.available = 10
-		// @ts-expect-error
+		// @ts-expect-error Automaticamente convertido para Decimal128
 		buyPerson.currencies.nano.balance.available = 10
 		await buyPerson.save()
 
@@ -75,7 +75,7 @@ describe('Testing trade function', () => {
 	})
 
 	it('Should fail if matchs items are not a touple', async () => {
-		// @ts-expect-error
+		// @ts-expect-error Testando um input inválido
 		await expect(trade([[buyOrder], [buyOrder, sellOrder]])).to.eventually.be
 			.rejectedWith('Orders must allways be in touples')
 	})

@@ -204,11 +204,11 @@ class BalanceOps {
 								 */
 								$or: [{
 									$gte: [
-										{ $add: ['$$this.amount', amount] }, 0
+										{ $add: ['$$this.amount', amount]}, 0
 									]
 								}, {
 									$lte: [
-										{ $add: ['$$this.amount', amount.abs()] }, 0
+										{ $add: ['$$this.amount', amount.abs()]}, 0
 									]
 								}]
 							}
@@ -259,7 +259,7 @@ class BalanceOps {
 			_id: this.id,
 			$expr: {
 				$gte: [
-					{ $add: [`$${balanceObj}.available`, pending.amount] }, 0
+					{ $add: [`$${balanceObj}.available`, pending.amount]}, 0
 				]
 			}
 		}, {
@@ -423,7 +423,7 @@ class BalanceOps {
 	 */
 	async unlock(currency: SC, operation: ObjectId, opid: any, force: true): Promise<void>
 	async unlock(currency: SC, operation: ObjectId, opid: ObjectId|null, force?: true) {
-		const query: {} = {
+		const query: Record<string, unknown> = {
 			_id: this.id,
 			[`currencies.${currency}.pending.opid`]: operation
 		}

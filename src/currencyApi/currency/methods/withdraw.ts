@@ -43,7 +43,7 @@ export function withdraw(this: Currency) {
 
 			callback(null, `${txUpdate.opid} updated`)
 			this.events.emit('update_sent_tx', tx.userId, txUpdate)
-		} catch(err) {
+		} catch (err) {
 			if (err === 'OperationNotFound') {
 				callback({
 					code: 'OperationNotFound',
@@ -100,7 +100,7 @@ export function withdraw(this: Currency) {
 
 					item.status = 'completed'
 					await item.save()
-				} catch(err) {
+				} catch (err) {
 					if (err === 'SocketDisconnected') {
 						item.status = 'requested'
 						await item.save()
@@ -114,7 +114,7 @@ export function withdraw(this: Currency) {
 			}
 
 			await this.checklistCleaner()
-		} catch(err) {
+		} catch (err) {
 			console.error('Error on withdraw_loop', err)
 		}
 		looping = false
