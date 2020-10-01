@@ -154,7 +154,7 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 		expect(err.transaction.account).to.equals(transaction.account)
 	})
 
-	describe('And sending invalid data', () => {
+	describe('If sending invalid data', () => {
 		const transaction: TxReceived = {
 			txid: 'random-txid',
 			status: 'pending',

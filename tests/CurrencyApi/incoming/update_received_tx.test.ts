@@ -4,10 +4,9 @@ import { Socket, setupPerson } from './setup'
 import Transaction from '../../../src/db/models/transaction'
 import PersonDoc, { Person } from '../../../src/db/models/person'
 import * as UserApi from '../../../src/userApi'
-import * as CurrencyApi from '../../../src/currencyApi'
 import type { UpdtReceived } from '../../../interfaces/transaction'
 
-describe('Testing the receival of new_transaction on the CurrencyApi', () => {
+describe('Testing the receival of update_received_tx on the CurrencyApi', () => {
 	let client: Socket
 	let person: Person
 
@@ -76,40 +75,6 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 		expect(doc.confirmations).to.be.undefined
 	})
 
-	it('Should return UserNotFound if a user for existing transaction was not found', async () => {
-		// Configura o novo usuário
-		const newUser = await UserApi.createUser('receive-UserNotFound@email.com', 'UserP@ass')
-		await PersonDoc.findByIdAndUpdate(newUser.id, {
-			$push: {
-				['currencies.bitcoin.accounts']: 'bitcoin-account-newUser'
-			}
-		})
-
-		const opid = await client.emit('new_transaction', {
-			txid: 'UserNotFound-txid',
-			status: 'pending',
-			amount: 10,
-			account: 'bitcoin-account-newUser',
-			timestamp: 123456789
-		})
-
-		// Deleta o novo usuário
-		await PersonDoc.findByIdAndDelete(newUser.id)
-
-		// Envia um update para a transação do usuário deletado
-		const updateEvent = client.emit('update_received_tx', {
-			opid,
-			status: 'confirmed',
-			confirmations: 6
-		})
-
-		await expect(updateEvent).to.eventually.be.rejected.with.an('object')
-		const err = await updateEvent.catch(err => err)
-		expect(err).to.be.an('object')
-		expect(err.code).to.equals('UserNotFound')
-		expect(err.message).to.be.a('string')
-	})
-
 	it('Sould not update balance if status is pending', async () => {
 		const updReceived: UpdtReceived = {
 			opid,
@@ -158,79 +123,115 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 		expect(doc.confirmations).to.be.undefined
 	})
 
-	it('Should fail if opid was not informed', async () => {
-		const updateEvent = client.emit('update_received_tx', {
-			status: 'confirmed',
-			confirmations: 6
-		} as UpdtReceived)
+	describe('If sending invalid data', () => {
+		it('Should return UserNotFound if a user for existing transaction was not found', async () => {
+			// Configura o novo usuário
+			const newUser = await UserApi.createUser('receive-UserNotFound@email.com', 'UserP@ass')
+			await PersonDoc.findByIdAndUpdate(newUser.id, {
+				$push: {
+					['currencies.bitcoin.accounts']: 'bitcoin-account-newUser'
+				}
+			})
 
-		await expect(updateEvent).to.eventually.be.rejected.with.an('object')
+			const opid = await client.emit('new_transaction', {
+				txid: 'UserNotFound-txid',
+				status: 'pending',
+				amount: 10,
+				account: 'bitcoin-account-newUser',
+				timestamp: 123456789
+			})
 
-		const err = await updateEvent.catch(err => err)
-		expect(err).to.be.a('object')
-		expect(err.code).to.be.a('string')
-			.that.equals('BadRequest')
-		expect(err.message).to.be.a('string')
+			// Deleta o novo usuário
+			await PersonDoc.findByIdAndDelete(newUser.id)
 
-		const doc = await Transaction.findById(opid)
-		expect(doc.status).to.equals('pending')
-	})
+			// Envia um update para a transação do usuário deletado
+			const updateEvent = client.emit('update_received_tx', {
+				opid,
+				status: 'confirmed',
+				confirmations: 6
+			})
 
-	it('Should fail if a valid opid was not found', async () => {
-		const updateEvent = client.emit('update_received_tx', {
-			opid: '505618b81ce5e89fb0d1b05c',
-			status: 'confirmed',
-			confirmations: 6
+			await expect(updateEvent).to.eventually.be.rejected.with.an('object')
+			const err = await updateEvent.catch(err => err)
+			expect(err).to.be.an('object')
+			expect(err.code).to.equals('UserNotFound')
+			expect(err.message).to.be.a('string')
 		})
 
-		await expect(updateEvent).to.eventually.be.rejected.with.an('object')
+		it('Should fail if opid was not informed', async () => {
+			const updateEvent = client.emit('update_received_tx', {
+				status: 'confirmed',
+				confirmations: 6
+			} as UpdtReceived)
 
-		const err = await updateEvent.catch(err => err)
-		expect(err).to.be.a('object')
-		expect(err.code).to.be.a('string')
-			.that.equals('OperationNotFound')
-		expect(err.message).to.be.a('string')
+			await expect(updateEvent).to.eventually.be.rejected.with.an('object')
 
-		const doc = await Transaction.findById(opid)
-		expect(doc.status).to.equals('pending')
-	})
+			const err = await updateEvent.catch(err => err)
+			expect(err).to.be.a('object')
+			expect(err.code).to.be.a('string')
+				.that.equals('BadRequest')
+			expect(err.message).to.be.a('string')
 
-	it('Should fail if invalid opid was informed', async () => {
-		const updateEvent = client.emit('update_received_tx', {
-			opid: 'invalid-opid-string',
-			status: 'confirmed',
-			confirmations: 6
+			const doc = await Transaction.findById(opid)
+			expect(doc.status).to.equals('pending')
 		})
 
-		await expect(updateEvent).to.eventually.be.rejected.with.an('object')
+		it('Should fail if a valid opid was not found', async () => {
+			const updateEvent = client.emit('update_received_tx', {
+				opid: '505618b81ce5e89fb0d1b05c',
+				status: 'confirmed',
+				confirmations: 6
+			})
 
-		const err = await updateEvent.catch(err => err)
-		expect(err).to.be.a('object')
-		expect(err.code).to.be.a('string')
-			.that.equals('CastError')
-		expect(err.message).to.be.a('string')
+			await expect(updateEvent).to.eventually.be.rejected.with.an('object')
 
-		const doc = await Transaction.findById(opid)
-		expect(doc.status).to.equals('pending')
-	})
+			const err = await updateEvent.catch(err => err)
+			expect(err).to.be.a('object')
+			expect(err.code).to.be.a('string')
+				.that.equals('OperationNotFound')
+			expect(err.message).to.be.a('string')
 
-	it('Should fail if status is invalid', async () => {
-		const updateEvent = client.emit('update_received_tx', {
-			opid,
-			// @ts-expect-error
-			status: 'invalid-status',
-			confirmations: 6
+			const doc = await Transaction.findById(opid)
+			expect(doc.status).to.equals('pending')
 		})
 
-		await expect(updateEvent).to.eventually.be.rejected.with.an('object')
+		it('Should fail if invalid opid was informed', async () => {
+			const updateEvent = client.emit('update_received_tx', {
+				opid: 'invalid-opid-string',
+				status: 'confirmed',
+				confirmations: 6
+			})
 
-		const err = await updateEvent.catch(err => err)
-		expect(err).to.be.a('object')
-		expect(err.code).to.be.a('string')
-			.that.equals('ValidationError')
-		expect(err.message).to.be.a('string')
+			await expect(updateEvent).to.eventually.be.rejected.with.an('object')
 
-		const doc = await Transaction.findById(opid)
-		expect(doc.status).to.equals('pending')
+			const err = await updateEvent.catch(err => err)
+			expect(err).to.be.a('object')
+			expect(err.code).to.be.a('string')
+				.that.equals('CastError')
+			expect(err.message).to.be.a('string')
+
+			const doc = await Transaction.findById(opid)
+			expect(doc.status).to.equals('pending')
+		})
+
+		it('Should fail if status is invalid', async () => {
+			const updateEvent = client.emit('update_received_tx', {
+				opid,
+				// @ts-expect-error
+				status: 'invalid-status',
+				confirmations: 6
+			})
+
+			await expect(updateEvent).to.eventually.be.rejected.with.an('object')
+
+			const err = await updateEvent.catch(err => err)
+			expect(err).to.be.a('object')
+			expect(err.code).to.be.a('string')
+				.that.equals('ValidationError')
+			expect(err.message).to.be.a('string')
+
+			const doc = await Transaction.findById(opid)
+			expect(doc.status).to.equals('pending')
+		})
 	})
 })
