@@ -3,7 +3,6 @@ import io from 'socket.io-client'
 import { expect } from 'chai'
 import { Decimal128 } from 'mongodb'
 import Person from '../../src/db/models/person'
-import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
 import { currencyNames } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
@@ -19,7 +18,6 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 		await Transaction.deleteMany({})
 
 		user = await UserApi.createUser('receival_test@example.com', 'userP@ss')
-		await Checklist.deleteMany({})
 
 		// Seta dummy accounts para serem usadas nos testes
 		for (const currency of currencyNames) {

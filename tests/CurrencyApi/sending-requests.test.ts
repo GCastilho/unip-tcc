@@ -3,7 +3,6 @@ import io from 'socket.io-client'
 import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
 import Person from '../../src/db/models/person'
-import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
 import { currencyNames } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
@@ -21,7 +20,6 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 		await Person.deleteMany({})
 
 		user = await UserApi.createUser('sending_request@example.com', 'userP@ss')
-		await Checklist.deleteMany({})
 		await Transaction.deleteMany({})
 	})
 

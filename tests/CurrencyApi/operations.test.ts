@@ -2,7 +2,6 @@ import '../../src/libs/extensions'
 import { expect } from 'chai'
 import { Decimal128, ObjectId } from 'mongodb'
 import Person from '../../src/db/models/person'
-import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
 import { currenciesObj } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
@@ -14,7 +13,6 @@ describe('Testing operations on the currencyApi', () => {
 
 	before(async () => {
 		await Person.deleteMany({})
-		await Checklist.deleteMany({})
 
 		user = await UserApi.createUser('operations@example.com', 'userP@ss')
 
