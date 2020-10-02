@@ -4,7 +4,6 @@ import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
 import initListeners from './listeners'
 import Person from '../../db/models/person'
-import ChecklistDoc from '../../db/models/checklist'
 import TransactionDoc, { Transaction } from '../../db/models/transaction'
 import * as UserApi from '../../userApi'
 import type TypedEmitter from 'typed-emitter'
@@ -38,21 +37,14 @@ export default class Currency {
 	/** Taxa cobrada do usuário para executar operações de saque */
 	public readonly fee: number
 
+	/** EventEmmiter para eventos públicos */
+	public events = new EventEmitter() as TypedEmitter<PublicEvents>
+
 	/** EventEmmiter para eventos internos */
 	protected _events = new EventEmitter() as TypedEmitter<PrivateEvents>
 
 	/** Indica se o módulo externo está online ou não */
 	protected isOnline = false
-
-	/** Limpa os comandos com status 'completed' da checklist */
-	protected checklistCleaner = async (): Promise<void> => {
-		await ChecklistDoc.deleteMany({
-			$or: [
-				{ status: 'completed' },
-				{ status: 'cancelled' }
-			]
-		})
-	}
 
 	/**
 	 * Wrapper de comunicação com o socket do módulo externo
@@ -80,9 +72,10 @@ export default class Currency {
 		})
 	}
 
-	/** EventEmmiter para eventos públicos */
-	public events = new EventEmitter() as TypedEmitter<PublicEvents>
-
+	/**
+	 * Pede uma nova account para o módulo externo e atualiza o
+	 * documento do usuário
+	 */
 	public async createAccount(userId: ObjectId): Promise<string> {
 		const account = await this.emit('create_new_account')
 		await Person.findByIdAndUpdate(userId, {
@@ -250,6 +243,7 @@ export default class Currency {
 	/** Flag que indica se o loop está sendo executado */
 	private looping = false
 
+	/** Envia requests pendentes aos módulos externos */
 	private async loop() {
 		if (this.looping || !this.isOnline) return
 		this.looping = true
@@ -259,9 +253,9 @@ export default class Currency {
 		 */
 		await Person.find({
 			[`currencies.${this.name}.accounts`]: { $size: 0 }
-		}).cursor().eachAsync(async doc => {
+		}).cursor().eachAsync(async person => {
 			try {
-				await this.createAccount(doc._id)
+				await this.createAccount(person._id)
 			} catch (err) {
 				if (err != 'SocketDisconnected') throw err
 			}
@@ -274,11 +268,11 @@ export default class Currency {
 		await TransactionDoc.find({
 			currency: this.name,
 			status: 'cancelled'
-		}).cursor().eachAsync(async doc => {
-			const response = await this.cancellWithdraw(doc.userId, doc._id)
+		}).cursor().eachAsync(async tx => {
+			const response = await this.cancellWithdraw(tx.userId, tx._id)
 			if (response == 'cancelled') {
-				this.events.emit('update_sent_tx', doc.userId, {
-					opid: doc._id.toHexString(),
+				this.events.emit('update_sent_tx', tx.userId, {
+					opid: tx._id.toHexString(),
 					status: 'cancelled'
 				})
 			}
@@ -290,6 +284,6 @@ export default class Currency {
 		await TransactionDoc.find({
 			currency: this.name,
 			status: 'ready'
-		}).cursor().eachAsync(doc => this.withdraw(doc))
+		}).cursor().eachAsync(tx => this.withdraw(tx))
 	}
 }

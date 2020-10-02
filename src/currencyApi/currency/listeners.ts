@@ -220,6 +220,9 @@ export default function initListeners(this: Currency) {
 		}
 	})
 
+	/**
+	 * Processa requests de atualização de transações enviadas
+	 */
 	this._events.on('update_sent_tx', async (updtSent, callback) => {
 		if (!updtSent.opid) return callback({
 			code: 'BadRequest',
