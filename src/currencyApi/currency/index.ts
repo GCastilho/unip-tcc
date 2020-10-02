@@ -1,5 +1,6 @@
-import { EventEmitter } from 'events'
 import { ObjectId } from 'mongodb'
+import { EventEmitter } from 'events'
+import initListeners from './listeners'
 import Person from '../../db/models/person'
 import ChecklistDoc from '../../db/models/checklist'
 import TransactionDoc, { Transaction } from '../../db/models/transaction'
@@ -172,8 +173,8 @@ export default class Currency {
 		this.name = name
 		this.fee = fee
 
-		// Chama a withraw para o evento de update_sent_tx ser colocado
-		methods.withdraw.call(this)
+		// Inicia os listeners do módulo externo
+		initListeners.call(this)
 
 		this._events.on('connected', () => {
 			this.loop()
