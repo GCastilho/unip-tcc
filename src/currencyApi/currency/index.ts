@@ -9,7 +9,7 @@ import type TypedEmitter from 'typed-emitter'
 import type User from '../../userApi/user'
 import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../interfaces/transaction'
 import type { SuportedCurrencies } from '../../libs/currencies'
-import type { MainEvents } from '../../../interfaces/communication/external-socket'
+import type { MainEvents, ListenerFunctions, ExternalEvents } from '../../../interfaces/communication/external-socket'
 
 /** Type para um callback genérico */
 type Callback = (err: any, response?: any) => void
@@ -22,16 +22,13 @@ interface PublicEvents {
 }
 
 /** Interface para padronizar os eventos privados */
-interface PrivateEvents {
+type PrivateEvents = {
 	connected: () => void
 	disconnected: () => void
 	emit: (event: string, args: any[], callback: Callback) => void
-	update_sent_tx: (updtSended: UpdtSent, callback: Callback) => void
-}
+} & ListenerFunctions<ExternalEvents>
 
-/**
- * Classe abstrata dos módulos comuns de todas as currencyModules
- */
+/** Classe de uma currency suportada pela CurrencyApi */
 export default class Currency {
 	/** O nome da currency que esta classe se comunica */
 	public readonly name: SuportedCurrencies
@@ -181,6 +178,7 @@ export default class Currency {
 		this._events.on('connected', () => {
 			this.loop()
 				.catch(err => console.error('Error on loop method for', this.name, err))
+				.finally(() => this.looping = false)
 		})
 	}
 
@@ -228,7 +226,5 @@ export default class Currency {
 			currency: this.name,
 			status: 'ready'
 		}).cursor().eachAsync(doc => this.withdraw(doc))
-
-		this.looping = false
 	}
 }

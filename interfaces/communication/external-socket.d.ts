@@ -21,3 +21,16 @@ interface RawExternalEvents {
 }
 
 export type ExternalEvents = FilterFunctionsProperties<RawExternalEvents>
+
+/**
+ * Transforma as interfaces dos eventos em um padrão (...args, callback) => void
+ * para ser usado na tipagem de event listeners
+ */
+export type ListenerFunctions<T extends ExternalEvents|MainEvents> = {
+	[P in keyof T]: (
+		...args: [
+			...Parameters<T[P] extends (...args: any[]) => any ? T[P] : never>,
+			(err: any, response?: ReturnType<T[P] extends (...args: any[]) => any ? T[P] : never>) => void
+		]
+	) => void
+}
