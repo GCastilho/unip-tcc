@@ -1,0 +1,7 @@
+FROM mongo
+
+RUN mongo --port 27018
+
+RUN sh.addShard("shard01/mongo-shard1a:27019")
+
+RUN sh.addShard("shard01/mongo-shard1a:27019")
