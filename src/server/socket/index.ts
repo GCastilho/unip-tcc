@@ -1,8 +1,66 @@
-import socket from 'socket.io'
+import socket, { Socket } from 'socket.io'
 import { Server } from 'http'
-import * as Router from './router'
-import './globalListeners'
+import * as UserApi from '../../userApi'
+import * as connectedUsers from './connectedUsers'
 import './emitters'
+
+/**
+ * Handler da conexão de um cliente com o socket
+ * @param socket O Socket do cliente que acabou de se conectar
+ */
+function connectionHandler(socket: Socket) {
+	console.log('Incoming socket connection')
+
+	socket.on('disconnect', function(this: SocketIO.Socket, reason) {
+		console.log('Socket disconnected:', reason)
+		connectedUsers.remove(this)
+	})
+
+	/**
+	 * Autentica a conexão de um socket conectado, inserindo referência à Users no
+	 * socket e atualizando a connectedUsers
+	 * @param token O token de autenticação desse usuário
+	 * @param callback O callback de retorno ao cliente
+	 */
+	socket.on('authenticate', async function(this: SocketIO.Socket,
+		token: string,
+		callback: (err: null | string, response?: string) => void
+	) {
+		if (typeof token === 'string') {
+			try {
+				const user = await UserApi.findUser.byToken(token)
+				this.userId = user.id.toHexString()
+				connectedUsers.add(this)
+				callback(null, 'authenticated')
+			} catch (err) {
+				this.userId = undefined
+				if (err === 'TokenNotFound' || err === 'UserNotFound') {
+					callback('TokenNotFound')
+				} else {
+					console.error('Error while authenticating user:', err)
+					callback('InternalServerError')
+				}
+			}
+		} else {
+			connectedUsers.remove(this)
+			this.userId = undefined
+			callback('InvalidToken')
+		}
+	})
+
+	/**
+	 * Desautentica uma conexão de um socket conectado, removendo a referência à
+	 * Users no socket e atualizando a connectedUsers
+	 * @param callback O callback de retorno ao cliente
+	 */
+	socket.on('deauthenticate', function(this: SocketIO.Socket,
+		callback: (err: null, response?: string) => void
+	) {
+		connectedUsers.remove(this)
+		this.userId = undefined
+		callback(null, 'deauthenticated')
+	})
+}
 
 /**
  * Função de inicialização do websocket
@@ -10,9 +68,5 @@ import './emitters'
 export default function(server: Server) {
 	const io = socket(server)
 
-	io.on('connection', function(socket) {
-		console.log('Incoming socket connection')
-
-		Router.use(socket)
-	})
+	io.on('connection', connectionHandler)
 }

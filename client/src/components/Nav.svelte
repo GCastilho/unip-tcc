@@ -1,15 +1,11 @@
 <script>
 	import { stores } from '@sapper/app'
-	import { route } from '../utils/websocket.js'
-	import { logout } from '../stores/auth.js'
+	import { logout } from '../stores/auth'
 
 	export let segment
 
 	// Store com dados de sessão para permitir SSR
-	const { page, session } = stores()
-
-	// Roteia o websocket a cada atualização do path da página
-	page.subscribe(value => route(value.path))
+	const { session } = stores()
 
 	let userdropdown = 'hide'
 </script>

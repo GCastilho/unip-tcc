@@ -12,14 +12,6 @@ socket.on('disconnect', reason => {
 })
 
 /**
- * Re-roteia o websocket para um novo path
- * @param {string} path O novo path do websocket
- */
-export function route(path) {
-	socket.emit('_path', path)
-}
-
-/**
  * Checa a conexão; A promessa retornada por essa função só será resolvida caso
  * o socket esteja conectado ou uma vez que ele se conectar
  */

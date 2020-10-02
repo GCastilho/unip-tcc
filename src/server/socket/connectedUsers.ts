@@ -1,35 +1,52 @@
-import User from '../../userApi/user'
+import type { Socket } from 'socket.io'
+import type { Person } from '../../db/models/person'
 
 /**
- * Map de usuários conectados no sistema, a chave é o userId do usuário e o
- * valor é o socket da conexão com esse usuário
+ * Map de usuários conectados no sistema, a chave é a string do userId do
+ * usuário e o valor é um set de todos os socket desse usuário que estão
+ * conectados
  */
-const connectedUsers = new Map()
+const connectedUsers = new Map<Person['id'], Set<Socket>>()
 
 /**
  * Adiciona o socket de um usuário autenticado ao map de usuários conectados
  * @param socket O socket da conexão com o usuário
  */
-export function add(socket: SocketIO.Socket) {
-	if (!socket.user) throw new Error('Socket must be from an authenticated user')
-	connectedUsers.set(socket.user.id.toHexString(), socket)
+export function add(socket: Socket): void {
+	if (!socket.userId) {
+		throw new Error('Socket must be from an authenticated user')
+	}
+
+	const set = connectedUsers.get(socket.userId)
+	if (set) set.add(socket)
+	else connectedUsers.set(socket.userId, new Set([socket]))
 }
 
 /**
- * Retorna o socket de um usuário conectado
- * @param id O userId do usuário
+ * Retorna o set de sockets de um usuário conectado
+ * @param userId O userId do usuário
  *
- * @returns SocketIO.Socket - caso o usuário esteja conectado
+ * @returns Set<Socket> - caso o usuário esteja conectado
  * @returns undefined - caso o usuário NÃO esteja conectado
  */
-export function get(id: User['id']): SocketIO.Socket|undefined {
-	return connectedUsers.get(id.toHexString())
+export function get(userId: Person['id']): Set<Socket>|undefined {
+	return connectedUsers.get(userId)
 }
 
 /**
- * Remove um usuário do Map de usuários conectados
- * @param id O userId do usuário
+ * Remove um socket de usuário do Set de sockets de usuários autenticados.
+ * Se o Set resultante estiver vazio, o usuário será removido do map de usuários
+ * autenticados
+ *
+ * @param socket O socket (de um usuário autenticado) que será removido da lista
+ * de sockets de usuários autenticados
  */
-export function remove(id?: User['id']) {
-	return connectedUsers.delete(id)
+export function remove(socket: Socket): void {
+	if (!socket.userId) return // Socket de usuário não autenticado
+
+	const set = connectedUsers.get(socket.userId)
+	if (!set) throw new Error('No user connected found for the given userId')
+
+	set.delete(socket)
+	if (set.size == 0) connectedUsers.delete(socket.userId)
 }

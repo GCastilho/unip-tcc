@@ -1,11 +1,11 @@
-import type User from '../../src/userApi/user'
+import { Person } from '../../src/db/models/person'
 
 declare module 'socket.io' {
 	interface Socket {
 		/**
-		 * Reference to the instance of the class User for this particular user,
-		 * if this connection comes from an autenticated user
+		 * Hex string of the _id field of the person's document for this particular
+		 * user in the case this connection comes from an autenticated user
 		 */
-		user?: User
+		userId?: Person['id']
 	}
 }
