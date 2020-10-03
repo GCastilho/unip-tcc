@@ -4,6 +4,7 @@ import { EventEmitter } from 'events'
 import User from '../userApi/user'
 import Currency from './currency'
 import Transaction from '../db/models/transaction'
+import { balanceOperations as BalanceOps } from '../db/models/person'
 import { currencies, currencyNames, currenciesObj } from '../libs/currencies'
 import type TypedEmitter from 'typed-emitter'
 import type { Person } from '../db/models/person'
@@ -57,7 +58,7 @@ export async function createAccount(
  * @throws ValidationError from mongoose
  */
 export async function withdraw(
-	user: User,
+	userId: Person['_id'],
 	currency: SuportedCurrencies,
 	account: string,
 	amount: number
@@ -80,7 +81,7 @@ export async function withdraw(
 	// Adiciona a operação na Transactions
 	const transaction = await new Transaction({
 		_id: opid,
-		userId: user.id,
+		userId,
 		type: 'send',
 		currency,
 		status: 'processing',
@@ -92,7 +93,7 @@ export async function withdraw(
 
 	try {
 		/** Tenta atualizar o saldo */
-		await user.balanceOps.add(currency, {
+		await BalanceOps.add(userId, currency, {
 			opid,
 			type: 'transaction',
 			amount: - Math.abs(amount) // Garante que o amount será negativo

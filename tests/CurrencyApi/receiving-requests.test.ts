@@ -600,7 +600,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 							.then(() => done())
 							.catch(done)
 					})
-					CurrencyApi.withdraw(user, currency, `${currency}_account`, 10)
+					CurrencyApi.withdraw(user.id, currency, `${currency}_account`, 10)
 						.catch(done)
 				})
 			})
@@ -700,7 +700,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					})
 				}).then(() => {
 					// Executa o saque
-					return CurrencyApi.withdraw(user, currency, 'randomAccount', 10)
+					return CurrencyApi.withdraw(user.id, currency, 'randomAccount', 10)
 				}).catch(done)
 			})
 

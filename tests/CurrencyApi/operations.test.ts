@@ -28,7 +28,7 @@ describe('Testing operations on the currencyApi', () => {
 		const account = 'operations-bitcoin'
 
 		before(async () => {
-			opid = await CurrencyApi.withdraw(user, 'bitcoin', account, amount)
+			opid = await CurrencyApi.withdraw(user.id, 'bitcoin', account, amount)
 			expect(opid).to.be.an('object')
 			expect(opid).to.be.instanceOf(ObjectId)
 		})
@@ -77,7 +77,7 @@ describe('Testing operations on the currencyApi', () => {
 		it('Should return AmountOfRange if amount is lower than 2*fee', async () => {
 			const { fee } = currenciesObj.bitcoin
 			await expect(
-				CurrencyApi.withdraw(user, 'bitcoin', account, (2 * fee - 0.01 * fee))
+				CurrencyApi.withdraw(user.id, 'bitcoin', account, (2 * fee - 0.01 * fee))
 			).to.eventually.be
 				.rejectedWith(`Withdraw amount for bitcoin must be at least '${2 * fee}', but got ${2 * fee - 0.01 * fee}`)
 		})
@@ -93,7 +93,7 @@ describe('Testing operations on the currencyApi', () => {
 			user.person.currencies.bitcoin.balance.locked = 0
 			await user.person.save()
 
-			opid = await CurrencyApi.withdraw(user, 'bitcoin', 'operations-cancell-bitcoin', 1)
+			opid = await CurrencyApi.withdraw(user.id, 'bitcoin', 'operations-cancell-bitcoin', 1)
 		})
 
 		it('Should cancell a withdraw request', async () => {

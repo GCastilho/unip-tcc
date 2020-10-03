@@ -189,7 +189,7 @@ router.post('/transactions', async (req, res) => {
 			|| isNaN(+req.body.amount)
 		) throw 'BadRequest'
 
-		const opid = await CurrencyApi.withdraw(user, currency, req.body.destination, +req.body.amount)
+		const opid = await CurrencyApi.withdraw(user.id, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
 	} catch (err) {
 		if (err === 'NotEnoughFunds') {

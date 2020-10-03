@@ -36,9 +36,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 			person.currencies.bitcoin.balance.locked = 0
 
 			return person.save()
-		}).then(() => {
-			return UserApi.findUser.byId(person._id)
-		}).then(user => {
+		}).then(person => {
 			client.once('withdraw', (transaction: TxSend, callback: (err: any, res?: string) => void) => {
 				opid = transaction.opid
 				callback(null, 'received withdraw request for' + opid)
@@ -51,7 +49,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 				// 	.then(() => done())
 				// 	.catch(done)
 			})
-			return CurrencyApi.withdraw(user, 'bitcoin', 'bitcoin_account', txAmount)
+			return CurrencyApi.withdraw(person._id, 'bitcoin', 'bitcoin_account', txAmount)
 		}).catch(done)
 	})
 
@@ -188,17 +186,15 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 			UserApi.createUser('non-existing-user-send-bitcoin@email.com', 'UserP@ass').then(user => {
 				userId = user.person._id
 				// Seta o saldo do usuário
-				return PersonDoc.findByIdAndUpdate(user.id, {
+				return PersonDoc.findByIdAndUpdate(userId, {
 					$set: {
 						['currencies.bitcoin.balance.available']: 50,
 						['currencies.bitcoin.balance.locked']: 0
 					}
 				})
-			}).then(() => {
-				return UserApi.findUser.byId(userId)
-			}).then(user => {
+			}).then(person => {
 				// Executa o saque
-				return CurrencyApi.withdraw(user, 'bitcoin', 'randomAccount', 10)
+				return CurrencyApi.withdraw(person._id, 'bitcoin', 'randomAccount', 10)
 			}).catch(done)
 		})
 

@@ -423,7 +423,7 @@ describe('Testing version 1 of HTTP API', () => {
 
 				// Executa as operações de saque
 				for (const [currency, amount] of amounts) {
-					await CurrencyApi.withdraw(user, currency, `random-account-${currency}`, amount)
+					await CurrencyApi.withdraw(user.id, currency, `random-account-${currency}`, amount)
 				}
 
 				// Adiciona um txid e confirmations nas transações
@@ -574,7 +574,7 @@ describe('Testing version 1 of HTTP API', () => {
 					for (const currency of currencyNames) {
 						user.person.currencies[currency].balance.available = Decimal128.fromNumeric(50)
 						await user.person.save()
-						const opid = await CurrencyApi.withdraw(user, currency, `other-account-${currency}`, 12.5)
+						const opid = await CurrencyApi.withdraw(user.id, currency, `other-account-${currency}`, 12.5)
 						opidSet.add(opid)
 					}
 

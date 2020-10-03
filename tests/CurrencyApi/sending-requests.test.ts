@@ -62,7 +62,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 
 			it('Should receive a withdraw request', done => {
 				const amount = 3.456
-				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount).then(opid => {
+				CurrencyApi.withdraw(user.id, currency, `${currency}_account`, amount).then(opid => {
 					client.connect()
 
 					client.once('withdraw', async (
@@ -140,7 +140,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					callback(null, 'request received for' + currency)
 				})
 
-				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount)
+				CurrencyApi.withdraw(user.id, currency, `${currency}_account`, amount)
 					.catch(done)
 			})
 
@@ -171,7 +171,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					callback(null, `request received for ${currency}`)
 				})
 
-				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount).then(opid => {
+				CurrencyApi.withdraw(user.id, currency, `${currency}_account`, amount).then(opid => {
 					_opid = opid
 					return CurrencyApi.cancellWithdraw(user.id, currency, opid)
 				}).catch(done)
