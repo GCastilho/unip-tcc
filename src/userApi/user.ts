@@ -44,20 +44,6 @@ class BalanceOps {
 	}
 
 	/**
-	 * Retorna o amount de uma operação DESSE usuário
-	 *
-	 * @param currency A currency que a operação se refere
-	 * @param opid O ObjectId que referencia o documento da operação em sua
-	 * respectiva collection
-	 *
-	 * @throws OperationNotFound if an operation was not found for THIS user
-	 */
-	private async getOpAmount(currency: SC, opid: ObjectId): Promise<Decimal128> {
-		const operation = await this.get(currency, opid)
-		return operation.amount
-	}
-
-	/**
 	 * Remove uma operação do banco de dados, subtraindo o módulo do
 	 * opAmount do campo locked e incrementando o campo 'available' com o
 	 * valor passado em 'changeInAvailable'
@@ -113,7 +99,7 @@ class BalanceOps {
 		/**
 		 * O amount da operação
 		 */
-		const amount: Pending['amount'] = await this.getOpAmount(currency, opid)
+		const { amount } = await this.get(currency, opid)
 
 		/**
 		 * Calcula o quanto o campo 'available' deverá ser alterado para
@@ -150,7 +136,7 @@ class BalanceOps {
 		rfOpid: ObjectId,
 		amount: Decimal128
 	): Promise<void> {
-		const opAmount = await this.getOpAmount(currency, opid)
+		const { amount: opAmount } = await this.get(currency, opid)
 
 		/**
 		 * Garante que o amount será positivo para uma ordem de redução de saldo
@@ -283,31 +269,17 @@ class BalanceOps {
 	 * @param opid O ObjectId que referencia o documento da operação em sua
 	 * respectiva collection
 	 *
-	 * @throws OperationNotFound if an operation was not found for THIS user
+	 * @throws 'OperationNotFound' if an operation was not found for THIS user
 	 */
-	async get(currency: string, opid: ObjectId): Promise<Pending> {
-		// No primeiro item do array retornado pega o objeto 'operations'
-		const [{ operations }] = await PersonSchema.aggregate([
-			{
-				$match: { _id: this.id }
-			}, {
-				$project: {
-					operations: {
-						$filter: {
-							input: `$currencies.${currency}.pending`,
-							as: 'operations',
-							cond: {
-								$eq: ['$$operations.opid', opid]
-							}
-						}
-					}
-				}
-			}
-		])
-		if (!operations[0] || !(operations[0].amount instanceof Decimal128))
-			throw 'OperationNotFound'
-
-		return operations[0]
+	async get(currency: SC, opid: ObjectId): Promise<Pending> {
+		const person = await PersonSchema.findOne({
+			_id: this.id,
+			[`currencies.${currency}.pending.opid`]: opid
+		}, {
+			[`currencies.${currency}.pending.$.opid`]: 1
+		})
+		if (!person) throw 'OperationNotFound'
+		return person.currencies[currency].pending[0]
 	}
 
 	/**
@@ -324,7 +296,7 @@ class BalanceOps {
 		/**
 		 * O amount da operação
 		 */
-		const amount: Pending['amount'] = await this.getOpAmount(currency, opid)
+		const { amount } = await this.get(currency, opid)
 
 		/**
 		 * Calcula o quanto o campo 'available' deverá ser alterado para
@@ -421,7 +393,7 @@ class BalanceOps {
 	 * @param force Indica que o destrave irá ser executado no modo inseguro
 	 * @throws OperationNotFound if a pending operation was not found
 	 */
-	async unlock(currency: SC, operation: ObjectId, opid: any, force: true): Promise<void>
+	async unlock(currency: SC, operation: ObjectId, opid: null, force: true): Promise<void>
 	async unlock(currency: SC, operation: ObjectId, opid: ObjectId|null, force?: true) {
 		const query: Record<string, unknown> = {
 			_id: this.id,

@@ -282,7 +282,7 @@ describe('Testing UserApi', () => {
 							it('Should unlock an operation', async () => {
 								await user.balanceOps.unlock(currency, opid, lockOpid)
 								const pending = await user.balanceOps.get(currency, opid)
-								expect(Object.keys(pending.locked).length).to.equals(0)
+								expect(pending.locked.byOpid).to.be.undefined
 							})
 
 							it('Should not unlock if opid was not informed', async () => {
@@ -293,7 +293,7 @@ describe('Testing UserApi', () => {
 							it('Should unlock an operation using the forced mode', async () => {
 								await user.balanceOps.unlock(currency, opid, null, true)
 								const pending = await user.balanceOps.get(currency, opid)
-								expect(Object.keys(pending.locked).length).to.equals(0)
+								expect(pending.locked.byOpid).to.be.undefined
 							})
 
 							it('Should fail when trying to complete it without the unlock key', async () => {
