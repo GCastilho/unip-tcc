@@ -67,3 +67,5 @@ PersonSchema.pre('validate', function(this: Person) {
  * usuários
  */
 export default mongoose.model<Person>('Person', PersonSchema)
+
+export * as balanceOperations from './balancesOps'
