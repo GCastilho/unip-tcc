@@ -1,8 +1,8 @@
 import type Currency from './index'
 import { ObjectId } from 'mongodb'
 import Tx from '../../db/models/transaction'
+import { Person, balanceOperations as BalanceOps } from '../../db/models/person'
 import * as userApi from '../../userApi'
-import type User from '../../userApi/user'
 import type { TxReceived } from '../../../interfaces/transaction'
 
 export default function initListeners(this: Currency) {
@@ -16,9 +16,10 @@ export default function initListeners(this: Currency) {
 		const { txid, account, amount, status, confirmations } = transaction
 		const timestamp = new Date(transaction.timestamp)
 
-		let user: User
+		let userId: Person['_id']
 		try {
-			user = await userApi.findUser.byAccount(this.name, account)
+			const user = await userApi.findUser.byAccount(this.name, account)
+			userId = user.id
 		} catch (err) {
 			if (err === 'UserNotFound') {
 				return callback({
@@ -38,7 +39,7 @@ export default function initListeners(this: Currency) {
 
 		const tx = new Tx({
 			_id: opid,
-			userId: user.id,
+			userId,
 			txid,
 			type: 'receive',
 			currency: this.name,
@@ -52,7 +53,7 @@ export default function initListeners(this: Currency) {
 		try {
 			await tx.save()
 
-			await user.balanceOps.add(this.name, {
+			await BalanceOps.add(userId, this.name, {
 				opid,
 				type: 'transaction',
 				amount
@@ -62,9 +63,9 @@ export default function initListeners(this: Currency) {
 			await tx.save()
 
 			if (status === 'confirmed')
-				await user.balanceOps.complete(this.name, opid)
+				await BalanceOps.complete(userId, this.name, opid)
 
-			this.events.emit('new_transaction', user.id, {
+			this.events.emit('new_transaction', userId, {
 				status:        tx.status,
 				currency:      tx.currency,
 				txid:          tx.txid,
@@ -93,7 +94,7 @@ export default function initListeners(this: Currency) {
 					 */
 					try {
 						/** Tenta cancelar a operação do usuário */
-						await user.balanceOps.cancel(this.name, tx._id)
+						await BalanceOps.cancel(userId, this.name, tx._id)
 					} catch (err) {
 						if (err != 'OperationNotFound')
 							throw err
@@ -122,7 +123,7 @@ export default function initListeners(this: Currency) {
 					}
 					console.log('Rejecting existing transaction:', transaction)
 					callback({ code: 'TransactionExists', transaction })
-					await user.balanceOps.cancel(this.name, opid).catch(err => {
+					await BalanceOps.cancel(userId, this.name, opid).catch(err => {
 						if (err != 'OperationNotFound') throw err
 					})
 				}
@@ -146,7 +147,7 @@ export default function initListeners(this: Currency) {
 				 */
 				try {
 					await Tx.findByIdAndDelete(opid)
-					await user.balanceOps.cancel(this.name, opid)
+					await BalanceOps.cancel(userId, this.name, opid)
 				} catch (err) {
 					if (err != 'OperationNotFound')
 						throw err
@@ -185,7 +186,7 @@ export default function initListeners(this: Currency) {
 
 			if (status === 'confirmed') {
 				const user = await userApi.findUser.byId(tx.userId)
-				await user.balanceOps.complete(this.name, new ObjectId(opid))
+				await BalanceOps.complete(user.id, this.name, new ObjectId(opid))
 			}
 
 			await tx.save()
@@ -246,7 +247,7 @@ export default function initListeners(this: Currency) {
 
 			if (updtSent.status === 'confirmed') {
 				const user = await userApi.findUser.byId(tx.userId)
-				await user.balanceOps.complete(this.name, tx._id)
+				await BalanceOps.complete(user.id, this.name, tx._id)
 			}
 
 			callback(null, `${updtSent.opid} updated`)
