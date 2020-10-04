@@ -2,7 +2,7 @@ import '../../src/libs/extensions'
 import randomstring from 'randomstring'
 import { expect } from 'chai'
 import { Decimal128, ObjectId } from 'mongodb'
-import Person, { Person as P } from '../../src/db/models/person'
+import Person from '../../src/db/models/person'
 import { currencyNames, currenciesObj } from '../../src/libs/currencies'
 
 describe('Testing person model', () => {
@@ -19,6 +19,17 @@ describe('Testing person model', () => {
 			credentials: {
 				salt: randomstring.generate({ length: 32 }),
 				password_hash: randomstring.generate({ length: 128 })
+			}
+		})
+
+		await expect(person.save()).to.eventually.fulfilled
+	})
+
+	it('Should save a document only informing email and password', async () => {
+		const person = new Person({
+			email: 'person-test@email.com',
+			credentials: {
+				password: 'randomP@ss'
 			}
 		})
 
@@ -76,8 +87,45 @@ describe('Testing person model', () => {
 
 	it('Should not save the same account in two different documents')
 
+	describe('Testing credentials', () => {
+		let person: InstanceType<typeof Person>
+		const password = 'randomP@ass'
+
+		beforeEach(async () => {
+			person = await new Person({
+				email: 'person@test.com',
+				credentials: { password }
+			}).save()
+		})
+
+		it('Should NOT return the password on the password property', () => {
+			expect(person.credentials.password).to.not.equals(password)
+		})
+
+		describe('Testing check method', () => {
+			it('Should return TRUE if the password is equal to the informed', () => {
+				expect(person.credentials.check(password)).to.be.true
+			})
+
+			it('Should return FALSE if the password is NOT equal to the informed', () => {
+				expect(person.credentials.check('notThePassword')).to.be.false
+			})
+		})
+
+		it('Should update the password_hash if a new password is set', async () => {
+			const old_hash = person.credentials.password_hash
+			person.credentials.password = 'newPassword'
+			expect(person.credentials.password_hash).to.not.equals(old_hash)
+		})
+
+		it('Should return TRUE to a password check after setting a new password', async () => {
+			person.credentials.password = 'newPassword'
+			expect(person.credentials.check('newPassword')).to.be.true
+		})
+	})
+
 	describe('When there is a document on the database', () => {
-		let person: P
+		let person: InstanceType<typeof Person>
 
 		beforeEach(async () => {
 			person = await new Person({

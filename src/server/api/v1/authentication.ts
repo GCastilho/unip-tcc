@@ -55,6 +55,7 @@ router.post('/authentication', async (req, res): Promise<any> => {
 			 *
 			 * @todo Fazer um error handling melhor
 			 */
+			console.error('Error on authentication', err)
 			res.status(500).send({ error: 'InternalServerError' })
 		}
 	}
