@@ -1,7 +1,7 @@
 import express from 'express'
+import Person from '../../../db/models/person'
 import Session from '../../../db/models/session'
 import * as randomstring from 'randomstring'
-import * as UserApi from '../../../userApi'
 
 const router = express.Router()
 
@@ -13,11 +13,16 @@ router.post('/authentication', async (req, res): Promise<any> => {
 		return res.status(400).send({ error: 'BadRequest' })
 
 	try {
-		const user = await UserApi.findUser.byEmail(req.body.email)
-		await user.checkPassword(req.body.password)
+		const person = await Person.findOne({
+			email: req.body.email
+		}, {
+			credentials: true
+		})
+		if (!person) throw 'UserNotFound'
+		if (!person.credentials.check(req.body.password)) throw 'InvalidPassword'
 
 		const session = await Session.findOneAndUpdate({
-			userId: user.id
+			userId: person.id
 		}, {
 			sessionId: randomstring.generate(128),
 			token: randomstring.generate(128),
@@ -61,8 +66,13 @@ router.post('/authentication', async (req, res): Promise<any> => {
 router.use(async (req, res, next) => {
 	try {
 		if (!req.cookies.sessionId) throw 'Cookie Not Found'
-		const user = await UserApi.findUser.byCookie(req.cookies.sessionId)
-		req.userId = user.id
+		const session = await Session.findOne({
+			sessionId: req.cookies.sessionId
+		}, {
+			userId: true
+		})
+		if (!session) throw 'CookieNotFound'
+		req.userId = session.userId
 		next()
 	} catch (err) {
 		res.status(401).send({

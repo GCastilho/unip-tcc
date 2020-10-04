@@ -1,8 +1,8 @@
 import type Currency from './index'
 import { ObjectId } from 'mongodb'
 import Tx from '../../db/models/transaction'
-import { Person, balanceOperations as BalanceOps } from '../../db/models/person'
-import * as userApi from '../../userApi'
+import PersonModel, { balanceOperations as BalanceOps } from '../../db/models/person'
+import type { Person } from '../../db/models/person'
 import type { TxReceived } from '../../../interfaces/transaction'
 
 export default function initListeners(this: Currency) {
@@ -18,8 +18,13 @@ export default function initListeners(this: Currency) {
 
 		let userId: Person['_id']
 		try {
-			const user = await userApi.findUser.byAccount(this.name, account)
-			userId = user.id
+			const person = await PersonModel.findOne({
+				[`currencies.${this.name}.accounts`]: account
+			}, {
+				_id: true
+			})
+			if (!person) throw 'UserNotFound'
+			userId = person._id
 		} catch (err) {
 			if (err === 'UserNotFound') {
 				return callback({
@@ -185,8 +190,9 @@ export default function initListeners(this: Currency) {
 			await tx.validate()
 
 			if (status === 'confirmed') {
-				const user = await userApi.findUser.byId(tx.userId)
-				await BalanceOps.complete(user.id, this.name, new ObjectId(opid))
+				const person = await PersonModel.findById(tx.userId, { _id: true })
+				if (!person) throw 'UserNotFound'
+				await BalanceOps.complete(person._id, this.name, new ObjectId(opid))
 			}
 
 			await tx.save()
@@ -196,12 +202,12 @@ export default function initListeners(this: Currency) {
 			if (err === 'UserNotFound') {
 				callback({
 					code: 'UserNotFound',
-					message: `UserApi could not find the user for the operation '${updtReceived.opid}'`
+					message: `Could not find the user for the operation '${updtReceived.opid}'`
 				})
 			} else if (err === 'OperationNotFound') {
 				callback({
 					code: 'OperationNotFound',
-					message: `userApi could not find operation '${updtReceived.opid}'`
+					message: `Could not find operation '${updtReceived.opid}'`
 				})
 			} else if (err.name === 'ValidationError') {
 				callback({
@@ -246,8 +252,9 @@ export default function initListeners(this: Currency) {
 			await tx.save()
 
 			if (updtSent.status === 'confirmed') {
-				const user = await userApi.findUser.byId(tx.userId)
-				await BalanceOps.complete(user.id, this.name, tx._id)
+				const person = await PersonModel.findById(tx.userId, { _id: true })
+				if (!person) throw 'UserNotFound'
+				await BalanceOps.complete(person._id, this.name, tx._id)
 			}
 
 			callback(null, `${updtSent.opid} updated`)

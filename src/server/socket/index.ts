@@ -1,6 +1,6 @@
 import socket, { Socket } from 'socket.io'
 import { Server } from 'http'
-import * as UserApi from '../../userApi'
+import Session from '../../db/models/session'
 import * as connectedUsers from './connectedUsers'
 import './emitters'
 
@@ -28,8 +28,9 @@ function connectionHandler(socket: Socket) {
 	) {
 		if (typeof token === 'string') {
 			try {
-				const user = await UserApi.findUser.byToken(token)
-				this.userId = user.id.toHexString()
+				const session = await Session.findOne({ token }, { userId: true })
+				if (!session) throw 'TokenNotFound'
+				this.userId = session.userId.toHexString()
 				connectedUsers.add(this)
 				callback(null, 'authenticated')
 			} catch (err) {

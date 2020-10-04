@@ -3,6 +3,7 @@ import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import authentication from './authentication'
 import { currencyNames } from '../../../libs/currencies'
+import Person from '../../../db/models/person'
 import Transaction from '../../../db/models/transaction'
 import * as UserApi from '../../../userApi'
 import * as CurrencyApi from '../../../currencyApi'
@@ -223,9 +224,10 @@ router.patch('/password', async (req, res): Promise<any> => {
 		})
 
 	try {
-		const user = await UserApi.findUser.byCookie(req.cookies['sessionId'])
-		await user.checkPassword(req.body.old)
-		await user.changePassword(req.body.new)
+		const person = await Person.findById(req.userId, { credentials: true })
+		if (!person) throw 'UserNotFound'
+		person.credentials.password = req.body.new
+		await person.save()
 		res.send({ message: 'Password updated' })
 	} catch (err) {
 		if (err == 'UserNotFound' || err == 'InvalidPassword') {
