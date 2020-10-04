@@ -499,7 +499,7 @@ export default class User {
 	 * @returns The updated person object
 	 */
 	async changePassword(password: string): Promise<User> {
-		this.person.credentials.password_hash = await this._hashPassword(password)
+		this.person.credentials.password = password
 		await this.person.save()
 		return this
 	}

@@ -1,7 +1,9 @@
 import { ObjectId } from 'mongodb'
 import mongoose, { Document, Schema } from '../../mongoose'
 import currenciesSchema from './currencies'
+import credentialsSchema from './credentials'
 import type { Currencies } from './currencies'
+import type { Credentials } from './credentials'
 
 /**
  * Interface do documento 'person', da collection 'people', que contém
@@ -11,13 +13,8 @@ export interface Person extends Document {
 	_id: ObjectId
 	/** O email do usuário */
 	email: string
-	/** Dados de credenciais */
-	credentials: {
-		/** O salt usado para fazer o hash do password */
-		salt: string
-		/** Hash do salt + password */
-		password_hash: string
-	}
+	/** Sub-documento de credenciais */
+	credentials: Credentials
 	/** Informações de currencies desse usuário */
 	currencies: Currencies
 }
@@ -33,24 +30,7 @@ const PersonSchema = new Schema({
 		unique: true,
 		required: true,
 	},
-	credentials: {
-		salt: {
-			type: String,
-			required: true,
-			validate: {
-				validator: v => v.length >= 32,
-				message: props => `salt can not have length less than 32 characters, found ${props.value.length}`
-			}
-		},
-		password_hash: {
-			type: String,
-			required: true,
-			validate: {
-				validator: v => v.length >= 128,
-				message: props => `password_hash can not have length less than 128 characters, found ${props.value.length}`
-			}
-		}
-	},
+	credentials: credentialsSchema,
 	currencies: currenciesSchema
 })
 
@@ -58,8 +38,11 @@ PersonSchema.pre('validate', function(this: Person) {
 	// Ao criar o documento, props de sub-schemas serão undefined
 	if (!this.isNew) return
 	if (typeof this.currencies == 'undefined')
-		// @ts-expect-error Esse objeto será automaticamente preenchido pelo mongoose
+		// @ts-expect-error Mongoose irá automaticamente preencher o subdocumento
 		this.currencies = {}
+	if (typeof this.credentials == 'undefined')
+		// @ts-expect-error Mongoose irá automaticamente preencher o subdocumento
+		this.credentials = {}
 })
 
 /**
