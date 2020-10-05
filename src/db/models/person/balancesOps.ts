@@ -1,12 +1,12 @@
 import { Model } from 'mongoose'
 import { Decimal128, ObjectId } from 'mongodb'
 import { currenciesObj } from '../../../libs/currencies'
-import type { Person } from './index'
+import type { PersonDoc } from './index'
 import type { SuportedCurrencies as SC } from '../../../libs/currencies'
 import type { Pending } from './currencies/pending'
 
 /** Model compilado do schema da Person */
-let PersonDoc: Model<Person>
+let Person: Model<PersonDoc>
 
 /**
  * Inicializa o balanceOps, passando uma referência do PersonModel para a
@@ -15,9 +15,9 @@ let PersonDoc: Model<Person>
  * @throws 'AlreadyInitialized' se for chamado quando o módulo já foi
  * inicializado
  */
-export function init(model: Model<Person>) {
-	if (typeof PersonDoc != 'undefined') throw 'AlreadyInitialized'
-	PersonDoc = model
+export function init(model: Model<PersonDoc>) {
+	if (typeof Person != 'undefined') throw 'AlreadyInitialized'
+	Person = model
 }
 
 /**
@@ -47,7 +47,7 @@ interface PendingOp extends Omit<Pending, 'amount'> {
  * @throws OperationNotFound if an operation was not found for THIS user
  */
 async function remove(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
 	opAmount: Decimal128,
@@ -56,7 +56,7 @@ async function remove(
 ): Promise<void> {
 	const balanceObj = `currencies.${currency}.balance`
 
-	const response = await PersonDoc.findOneAndUpdate({
+	const response = await Person.findOneAndUpdate({
 		_id: userId,
 		[`currencies.${currency}.pending.opid`]: opid,
 		[`currencies.${currency}.pending.locked.byOpid`]: rfOpid
@@ -87,7 +87,7 @@ async function remove(
  * @throws OperationNotFound if an operation was not found for THIS user
  */
 async function completeTotal(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
 	rfOpid?: ObjectId
@@ -126,7 +126,7 @@ async function completeTotal(
  * @throws OperationNotFound if the operation was not found for THIS user
  */
 async function completePartial(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
 	rfOpid: ObjectId,
@@ -163,7 +163,7 @@ async function completePartial(
 	 * locked e incrementando o amount available SE existir uma pending com
 	 * o opid informado e pending.amount - amount > 0
 	 */
-	const response = await PersonDoc.findOneAndUpdate({
+	const response = await Person.findOneAndUpdate({
 		_id: userId,
 		[`currencies.${currency}.pending.opid`]: opid,
 		$or: [
@@ -229,7 +229,7 @@ async function completePartial(
  * 'available' do balance) para executar a operação
  */
 export async function add(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	pending: PendingOp
 ): Promise<void> {
@@ -245,7 +245,7 @@ export async function add(
 		pending.amount = pending.amount.truncate(currenciesObj[currency].decimals)
 	}
 
-	const response = await PersonDoc.findOneAndUpdate({
+	const response = await Person.findOneAndUpdate({
 		_id: userId,
 		$expr: {
 			$gte: [
@@ -276,11 +276,11 @@ export async function add(
  * @throws 'OperationNotFound' if an operation was not found for THIS user
  */
 export async function get(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId
 ): Promise<Pending> {
-	const person = await PersonDoc.findOne({
+	const person = await Person.findOne({
 		_id: userId,
 		[`currencies.${currency}.pending.opid`]: opid
 	}, {
@@ -302,7 +302,7 @@ export async function get(
  * @throws OperationNotFound if an operation was not found for THIS user
  */
 export async function cancel(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId
 ): Promise<void> {
@@ -336,7 +336,7 @@ export async function cancel(
  * @throws OperationNotFound if an operation was not found for THIS user
  */
 export async function complete(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
 	rfOpid?: ObjectId
@@ -359,7 +359,7 @@ export async function complete(
  * @throws OperationNotFound if the operation was not found for THIS user
  */
 export async function complete(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
 	rfOpid: ObjectId,
@@ -367,7 +367,7 @@ export async function complete(
 ): Promise<void>
 
 export async function complete(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
 	rfOpid?: ObjectId,
@@ -392,12 +392,12 @@ export async function complete(
  * @throws OperationNotFound if a pending unlocked operation was not found
  */
 export async function lock(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	operation: ObjectId,
 	opid: ObjectId
 ) {
-	const response = await PersonDoc.findOneAndUpdate({
+	const response = await Person.findOneAndUpdate({
 		_id: userId,
 		[`currencies.${currency}.pending.opid`]: operation,
 		[`currencies.${currency}.pending.locked.byOpid`]: null
@@ -419,7 +419,7 @@ export async function lock(
  * @throws OperationNotFound if a pending locked operation was not found
  */
 export async function unlock(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	operation: ObjectId,
 	opid: ObjectId
@@ -436,7 +436,7 @@ export async function unlock(
  * @throws OperationNotFound if a pending operation was not found
  */
 export async function unlock(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	operation: ObjectId,
 	opid: null,
@@ -444,7 +444,7 @@ export async function unlock(
 ): Promise<void>
 
 export async function unlock(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SC,
 	operation: ObjectId,
 	opid: ObjectId|null,
@@ -459,7 +459,7 @@ export async function unlock(
 		query[`currencies.${currency}.pending.locked.byOpid`] = opid
 	}
 
-	const response = await PersonDoc.findOneAndUpdate(query, {
+	const response = await Person.findOneAndUpdate(query, {
 		[`currencies.${currency}.pending.$.locked`]: {}
 	}).select({ _id: true })
 

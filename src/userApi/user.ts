@@ -3,7 +3,7 @@ import { ObjectId, Decimal128 } from 'mongodb'
 import { currenciesObj } from '../libs/currencies'
 import PersonSchema from '../db/models/person'
 import type { Pending } from '../db/models/person/currencies/pending'
-import type { Person } from '../db/models/person'
+import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
 
 /**
@@ -416,7 +416,7 @@ export default class User {
 	/**
 	 * Retorna a versão atualizada do documento desse usuário do database
 	 */
-	private async getPerson(projection?: any): Promise<Person> {
+	private async getPerson(projection?: any): Promise<PersonDoc> {
 		const person = await PersonSchema.findById(this.id, projection)
 		if (!person) throw `Person document for id '${this.id} not found in the database`
 		return person
@@ -430,7 +430,7 @@ export default class User {
 		return hashPassword(salt, password)
 	}
 
-	constructor(person: Person) {
+	constructor(person: PersonDoc) {
 		this.person = person
 		this.id = person._id
 		this.balanceOps = new BalanceOps(this.id)
@@ -439,12 +439,12 @@ export default class User {
 	/**
 	 * Documento do mongodb desta person, acessível publicamente
 	 */
-	person: Person
+	person: PersonDoc
 
 	/**
 	 * Identificador único do documento desse usuário no database
 	 */
-	id: Person['_id']
+	id: PersonDoc['_id']
 
 	/**
 	 * Contém métodos para a manipulação de operações de mudança de saldo

@@ -9,7 +9,7 @@ import type { Credentials } from './credentials'
  * Interface do documento 'person', da collection 'people', que contém
  * informações relacionadas ao usuários
  */
-export interface Person extends Document {
+export interface PersonDoc extends Document {
 	_id: ObjectId
 	/** O email do usuário */
 	email: string
@@ -34,7 +34,7 @@ const PersonSchema = new Schema({
 	currencies: currenciesSchema
 })
 
-PersonSchema.pre('validate', function(this: Person) {
+PersonSchema.pre('validate', function(this: PersonDoc) {
 	// Ao criar o documento, props de sub-schemas serão undefined
 	if (!this.isNew) return
 	if (typeof this.currencies == 'undefined')
@@ -48,7 +48,7 @@ PersonSchema.pre('validate', function(this: Person) {
 import * as balanceOperations from './balancesOps'
 
 /** Interface do Model da Person, com os métodos estáticos do mesmo */
-interface PersonModel extends Model<Person> {
+interface PersonModel extends Model<PersonDoc> {
 	balanceOps: typeof balanceOperations
 }
 
@@ -59,11 +59,11 @@ PersonSchema.statics.balanceOps = balanceOperations
  * Model da collection people, responsável por armazenar as informações dos
  * usuários
  */
-const PersonModel = mongoose.model<Person, PersonModel>('Person', PersonSchema)
+const Person = mongoose.model<PersonDoc, PersonModel>('Person', PersonSchema)
 
 // Passa a referência do model para o balanceOps
-balanceOperations.init(PersonModel)
+balanceOperations.init(Person)
 
-export default PersonModel
+export default Person
 
 export * as balanceOperations from './balancesOps'

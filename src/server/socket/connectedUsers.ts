@@ -1,12 +1,12 @@
 import type { Socket } from 'socket.io'
-import type { Person } from '../../db/models/person'
+import type { PersonDoc } from '../../db/models/person'
 
 /**
  * Map de usuários conectados no sistema, a chave é a string do userId do
  * usuário e o valor é um set de todos os socket desse usuário que estão
  * conectados
  */
-const connectedUsers = new Map<Person['id'], Set<Socket>>()
+const connectedUsers = new Map<PersonDoc['id'], Set<Socket>>()
 
 /**
  * Adiciona o socket de um usuário autenticado ao map de usuários conectados
@@ -29,7 +29,7 @@ export function add(socket: Socket): void {
  * @returns Set<Socket> - caso o usuário esteja conectado
  * @returns undefined - caso o usuário NÃO esteja conectado
  */
-export function get(userId: Person['id']): Set<Socket>|undefined {
+export function get(userId: PersonDoc['id']): Set<Socket>|undefined {
 	return connectedUsers.get(userId)
 }
 

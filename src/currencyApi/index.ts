@@ -7,7 +7,7 @@ import Transaction from '../db/models/transaction'
 import { balanceOperations as BalanceOps } from '../db/models/person'
 import { currencies, currencyNames, currenciesObj } from '../libs/currencies'
 import type TypedEmitter from 'typed-emitter'
-import type { Person } from '../db/models/person'
+import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies } from '../libs/currencies'
 import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../interfaces/transaction'
 
@@ -39,7 +39,7 @@ export const events = new EventEmitter() as TypedEmitter<PublicEvents>
  * @param currency As currencies que devem ser criadas accounts
  */
 export async function createAccount(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SuportedCurrencies
 ): Promise<string> {
 	return _currencies[currency].createAccount(userId)
@@ -58,7 +58,7 @@ export async function createAccount(
  * @throws ValidationError from mongoose
  */
 export async function withdraw(
-	userId: Person['_id'],
+	userId: PersonDoc['_id'],
 	currency: SuportedCurrencies,
 	account: string,
 	amount: number

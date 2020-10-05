@@ -1,8 +1,8 @@
 import type Currency from './index'
 import { ObjectId } from 'mongodb'
 import Tx from '../../db/models/transaction'
-import PersonModel, { balanceOperations as BalanceOps } from '../../db/models/person'
-import type { Person } from '../../db/models/person'
+import Person, { balanceOperations as BalanceOps } from '../../db/models/person'
+import type { PersonDoc } from '../../db/models/person'
 import type { TxReceived } from '../../../interfaces/transaction'
 
 export default function initListeners(this: Currency) {
@@ -16,9 +16,9 @@ export default function initListeners(this: Currency) {
 		const { txid, account, amount, status, confirmations } = transaction
 		const timestamp = new Date(transaction.timestamp)
 
-		let userId: Person['_id']
+		let userId: PersonDoc['_id']
 		try {
-			const person = await PersonModel.findOne({
+			const person = await Person.findOne({
 				[`currencies.${this.name}.accounts`]: account
 			}, {
 				_id: true
@@ -190,7 +190,7 @@ export default function initListeners(this: Currency) {
 			await tx.validate()
 
 			if (status === 'confirmed') {
-				const person = await PersonModel.findById(tx.userId, { _id: true })
+				const person = await Person.findById(tx.userId, { _id: true })
 				if (!person) throw 'UserNotFound'
 				await BalanceOps.complete(person._id, this.name, new ObjectId(opid))
 			}
@@ -252,7 +252,7 @@ export default function initListeners(this: Currency) {
 			await tx.save()
 
 			if (updtSent.status === 'confirmed') {
-				const person = await PersonModel.findById(tx.userId, { _id: true })
+				const person = await Person.findById(tx.userId, { _id: true })
 				if (!person) throw 'UserNotFound'
 				await BalanceOps.complete(person._id, this.name, tx._id)
 			}

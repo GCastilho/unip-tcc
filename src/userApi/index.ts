@@ -1,7 +1,7 @@
 import randomstring from 'randomstring'
 import { ObjectId } from 'mongodb'
 import Session from '../db/models/session'
-import PersonModel from '../db/models/person'
+import Person from '../db/models/person'
 import User, { hashPassword } from './user'
 import { currencyNames } from '../libs/currencies'
 import * as CurrencyApi from '../currencyApi'
@@ -16,7 +16,7 @@ export async function createUser(email: string, password: string): Promise<User>
 	const salt = randomstring.generate({ length: 32 })
 	const password_hash = hashPassword(salt, password)
 
-	const person = await new PersonModel({
+	const person = await new Person({
 		email,
 		credentials: {
 			salt,
@@ -52,7 +52,7 @@ export const findUser = {
 	 * @throws 'UserNotFound'
 	 */
 	async byEmail(email: string): Promise<User> {
-		const person = await PersonModel.findOne({ email })
+		const person = await Person.findOne({ email })
 		if (!person) throw 'UserNotFound'
 		return new User(person)
 	},
@@ -64,7 +64,7 @@ export const findUser = {
 	 * @throws 'UserNotFound'
 	 */
 	async byId(id: ObjectId): Promise<User> {
-		const person = await PersonModel.findById(id)
+		const person = await Person.findById(id)
 		if (!person) throw 'UserNotFound'
 		return new User(person)
 	},
@@ -110,7 +110,7 @@ export const findUser = {
 	 * @throws 'UserNotFound'
 	 */
 	async byAccount(currency: string, account: string): Promise<User> {
-		const person = await PersonModel.findOne({
+		const person = await Person.findOne({
 			[`currencies.${currency}.accounts`]: account
 		})
 		if (!person) throw 'UserNotFound'
