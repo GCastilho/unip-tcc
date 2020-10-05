@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import mongoose, { Document, Schema } from '../../mongoose'
+import mongoose, { Document, Schema, Model } from '../../mongoose'
 import currenciesSchema from './currencies'
 import credentialsSchema from './credentials'
 import type { Currencies } from './currencies'
@@ -45,10 +45,25 @@ PersonSchema.pre('validate', function(this: Person) {
 		this.credentials = {}
 })
 
+import * as balanceOperations from './balancesOps'
+
+/** Interface do Model da Person, com os métodos estáticos do mesmo */
+interface PersonModel extends Model<Person> {
+	balanceOps: typeof balanceOperations
+}
+
+/** Faz a balanceOps ser uma propriedade estática do model da Person */
+PersonSchema.statics.balanceOps = balanceOperations
+
 /**
  * Model da collection people, responsável por armazenar as informações dos
  * usuários
  */
-export default mongoose.model<Person>('Person', PersonSchema)
+const PersonModel = mongoose.model<Person, PersonModel>('Person', PersonSchema)
+
+// Passa a referência do model para o balanceOps
+balanceOperations.init(PersonModel)
+
+export default PersonModel
 
 export * as balanceOperations from './balancesOps'

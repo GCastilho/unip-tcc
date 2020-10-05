@@ -1,8 +1,24 @@
-import PersonDoc, { Person } from './index'
+import { Model } from 'mongoose'
 import { Decimal128, ObjectId } from 'mongodb'
 import { currenciesObj } from '../../../libs/currencies'
+import type { Person } from './index'
 import type { SuportedCurrencies as SC } from '../../../libs/currencies'
 import type { Pending } from './currencies/pending'
+
+/** Model compilado do schema da Person */
+let PersonDoc: Model<Person>
+
+/**
+ * Inicializa o balanceOps, passando uma referência do PersonModel para a
+ * utilização desse módulo
+ *
+ * @throws 'AlreadyInitialized' se for chamado quando o módulo já foi
+ * inicializado
+ */
+export function init(model: Model<Person>) {
+	if (typeof PersonDoc != 'undefined') throw 'AlreadyInitialized'
+	PersonDoc = model
+}
 
 /**
  * Interface para operações de manipulação de saldo
