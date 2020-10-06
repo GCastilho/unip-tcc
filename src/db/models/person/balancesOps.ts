@@ -1,7 +1,7 @@
 import { Model } from 'mongoose'
 import { Decimal128, ObjectId } from 'mongodb'
 import { currenciesObj } from '../../../libs/currencies'
-import type { PersonDoc } from './index'
+import type { PersonDoc } from './schema'
 import type { SuportedCurrencies as SC } from '../../../libs/currencies'
 import type { Pending } from './currencies/pending'
 
