@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import Market from './market'
 import User from '../userApi/user'
+import Person from '../db/models/person'
 import OrderDoc from '../db/models/order'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
 import type { Order } from '../db/models/order'
@@ -53,7 +54,7 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
 	}).save()
 
 	try {
-		await user.balanceOps.add(order.owning.currency, {
+		await Person.balanceOps.add(user.id, order.owning.currency, {
 			opid,
 			type: 'trade',
 			amount: - Math.abs(order.owning.amount)
@@ -99,5 +100,5 @@ export async function remove(user: User, opid: ObjectId) {
 	if (!market) throw new MarketNotFound(`Market not found while removing: ${order}`)
 	market.remove(order)
 	await order.remove()
-	await user.balanceOps.cancel(order.owning.currency, opid)
+	await Person.balanceOps.cancel(user.id, order.owning.currency, opid)
 }

@@ -24,5 +24,3 @@ const Person = mongoose.model<PersonDoc, PersonModel>('Person', PersonSchema)
 balanceOperations.init(Person)
 
 export default Person
-
-export * as balanceOperations from './balancesOps'

@@ -3,8 +3,8 @@ import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
 import User from '../userApi/user'
 import Currency from './currency'
+import Person from '../db/models/person'
 import Transaction from '../db/models/transaction'
-import { balanceOperations as BalanceOps } from '../db/models/person'
 import { currencies, currencyNames, currenciesObj } from '../libs/currencies'
 import type TypedEmitter from 'typed-emitter'
 import type { PersonDoc } from '../db/models/person'
@@ -93,7 +93,7 @@ export async function withdraw(
 
 	try {
 		/** Tenta atualizar o saldo */
-		await BalanceOps.add(userId, currency, {
+		await Person.balanceOps.add(userId, currency, {
 			opid,
 			type: 'transaction',
 			amount: - Math.abs(amount) // Garante que o amount será negativo

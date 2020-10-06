@@ -1,7 +1,7 @@
 import type Currency from './index'
 import { ObjectId } from 'mongodb'
 import Tx from '../../db/models/transaction'
-import Person, { balanceOperations as BalanceOps } from '../../db/models/person'
+import Person from '../../db/models/person'
 import type { PersonDoc } from '../../db/models/person'
 import type { TxReceived } from '../../../interfaces/transaction'
 
@@ -58,7 +58,7 @@ export default function initListeners(this: Currency) {
 		try {
 			await tx.save()
 
-			await BalanceOps.add(userId, this.name, {
+			await Person.balanceOps.add(userId, this.name, {
 				opid,
 				type: 'transaction',
 				amount
@@ -68,7 +68,7 @@ export default function initListeners(this: Currency) {
 			await tx.save()
 
 			if (status === 'confirmed')
-				await BalanceOps.complete(userId, this.name, opid)
+				await Person.balanceOps.complete(userId, this.name, opid)
 
 			this.events.emit('new_transaction', userId, {
 				status:        tx.status,
@@ -99,7 +99,7 @@ export default function initListeners(this: Currency) {
 					 */
 					try {
 						/** Tenta cancelar a operação do usuário */
-						await BalanceOps.cancel(userId, this.name, tx._id)
+						await Person.balanceOps.cancel(userId, this.name, tx._id)
 					} catch (err) {
 						if (err != 'OperationNotFound')
 							throw err
@@ -128,7 +128,7 @@ export default function initListeners(this: Currency) {
 					}
 					console.log('Rejecting existing transaction:', transaction)
 					callback({ code: 'TransactionExists', transaction })
-					await BalanceOps.cancel(userId, this.name, opid).catch(err => {
+					await Person.balanceOps.cancel(userId, this.name, opid).catch(err => {
 						if (err != 'OperationNotFound') throw err
 					})
 				}
@@ -152,7 +152,7 @@ export default function initListeners(this: Currency) {
 				 */
 				try {
 					await Tx.findByIdAndDelete(opid)
-					await BalanceOps.cancel(userId, this.name, opid)
+					await Person.balanceOps.cancel(userId, this.name, opid)
 				} catch (err) {
 					if (err != 'OperationNotFound')
 						throw err
@@ -192,7 +192,7 @@ export default function initListeners(this: Currency) {
 			if (status === 'confirmed') {
 				const person = await Person.findById(tx.userId, { _id: true })
 				if (!person) throw 'UserNotFound'
-				await BalanceOps.complete(person._id, this.name, new ObjectId(opid))
+				await Person.balanceOps.complete(person._id, this.name, new ObjectId(opid))
 			}
 
 			await tx.save()
@@ -254,7 +254,7 @@ export default function initListeners(this: Currency) {
 			if (updtSent.status === 'confirmed') {
 				const person = await Person.findById(tx.userId, { _id: true })
 				if (!person) throw 'UserNotFound'
-				await BalanceOps.complete(person._id, this.name, tx._id)
+				await Person.balanceOps.complete(person._id, this.name, tx._id)
 			}
 
 			callback(null, `${updtSent.opid} updated`)

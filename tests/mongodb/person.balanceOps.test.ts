@@ -3,13 +3,13 @@ import { Decimal128, ObjectId } from 'mongodb'
 import chai, { expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as UserApi from '../../src/userApi'
-import Person, { Person as PersonI, balanceOperations as balanceOps } from '../../src/db/models/person'
+import Person from '../../src/db/models/person'
 import { currenciesObj } from '../../src/libs/currencies'
 
 chai.use(chaiAsPromised)
 
 describe('Testing BalanceOperations on the person model', () => {
-	let userId: PersonI['_id']
+	let userId: InstanceType<typeof Person>['_id']
 
 	beforeEach(async () => {
 		await Person.deleteMany({})
@@ -29,7 +29,7 @@ describe('Testing BalanceOperations on the person model', () => {
 	})
 
 	it('Should add a pending operation', async () => {
-		await balanceOps.add(userId, 'bitcoin', {
+		await Person.balanceOps.add(userId, 'bitcoin', {
 			opid: new ObjectId('89fb0d1b05c505618b81ce5e'),
 			type: 'transaction',
 			amount: 20
@@ -46,7 +46,7 @@ describe('Testing BalanceOperations on the person model', () => {
 	})
 
 	it('Should decrement from the available balance', async () => {
-		await balanceOps.add(userId, 'bitcoin', {
+		await Person.balanceOps.add(userId, 'bitcoin', {
 			opid: new ObjectId('89fb0d1b05c505618b81ce5e'),
 			type: 'transaction',
 			amount: -20
@@ -60,7 +60,7 @@ describe('Testing BalanceOperations on the person model', () => {
 	})
 
 	it('Should fail to add negative operation greater than the available balance', async () => {
-		await expect(balanceOps.add(userId, 'bitcoin', {
+		await expect(Person.balanceOps.add(userId, 'bitcoin', {
 			opid: new ObjectId('89fb0d1b05c505618b81ce5e'),
 			type: 'transaction',
 			amount: -60
@@ -85,7 +85,7 @@ describe('Testing BalanceOperations on the person model', () => {
 				}
 			})
 
-			await balanceOps.add(userId, 'bitcoin', {
+			await Person.balanceOps.add(userId, 'bitcoin', {
 				opid,
 				type: 'transaction',
 				amount: 20
@@ -101,7 +101,7 @@ describe('Testing BalanceOperations on the person model', () => {
 		})
 
 		it('Should return a pending operation', async () => {
-			const op = await balanceOps.get(userId, 'bitcoin', opid)
+			const op = await Person.balanceOps.get(userId, 'bitcoin', opid)
 			expect(op).to.be.an('object')
 			expect(op.type).to.equals('transaction')
 			expect(op.amount.toFullString())
@@ -109,7 +109,7 @@ describe('Testing BalanceOperations on the person model', () => {
 		})
 
 		it('Should cancel a pending operation', async () => {
-			await balanceOps.cancel(userId, 'bitcoin', opid)
+			await Person.balanceOps.cancel(userId, 'bitcoin', opid)
 			const person = await Person.findById(userId)
 			expect(person.currencies.bitcoin.pending).to.have.lengthOf(0)
 			expect(person.currencies.bitcoin.balance.available.toFullString())
@@ -119,7 +119,7 @@ describe('Testing BalanceOperations on the person model', () => {
 		})
 
 		it('Should complete a pending operation', async () => {
-			await balanceOps.complete(userId, 'bitcoin', opid)
+			await Person.balanceOps.complete(userId, 'bitcoin', opid)
 			const person = await Person.findById(userId)
 			expect(person.currencies.bitcoin.pending).to.have.lengthOf(0)
 			expect(person.currencies.bitcoin.balance.available.toFullString())
@@ -130,14 +130,14 @@ describe('Testing BalanceOperations on the person model', () => {
 
 		it('Should update balance with truncated amount', async () => {
 			// Completa a operação original
-			await balanceOps.complete(userId, 'bitcoin', opid)
+			await Person.balanceOps.complete(userId, 'bitcoin', opid)
 			const amount = '1.1234567891011121314151617181920'
-			await balanceOps.add(userId, 'bitcoin', {
+			await Person.balanceOps.add(userId, 'bitcoin', {
 				opid,
 				amount,
 				type: 'transaction'
 			})
-			await balanceOps.complete(userId, 'bitcoin', opid)
+			await Person.balanceOps.complete(userId, 'bitcoin', opid)
 			const person = await Person.findById(userId)
 			const truncatedDecimals = amount.split('.')[1]
 				.slice(0, currenciesObj.bitcoin.decimals)
@@ -151,7 +151,7 @@ describe('Testing BalanceOperations on the person model', () => {
 			it('Should partially complete a pending operation that increases balance', async () => {
 				const partialAmount = Decimal128.fromNumeric(10)
 
-				await balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
+				await Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
 				const person = await Person.findById(userId)
 				expect(person.currencies.bitcoin.pending).to.have.lengthOf(1)
 				expect(person.currencies.bitcoin.balance.available.toFullString())
@@ -164,7 +164,7 @@ describe('Testing BalanceOperations on the person model', () => {
 
 			it('Should partially complete a pending operation that reduces balance', async () => {
 				const opid = new ObjectId('89fb0d1b05c509518b81ce3e')
-				await balanceOps.add(userId, 'bitcoin', {
+				await Person.balanceOps.add(userId, 'bitcoin', {
 					opid,
 					type: 'trade',
 					amount: -20
@@ -172,7 +172,7 @@ describe('Testing BalanceOperations on the person model', () => {
 
 				const partialAmount = Decimal128.fromNumeric(10)
 
-				await balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
+				await Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
 				const person = await Person.findById(userId)
 				expect(person.currencies.bitcoin.pending).to.have.lengthOf(2)
 				expect(person.currencies.bitcoin.balance.available.toFullString())
@@ -188,9 +188,9 @@ describe('Testing BalanceOperations on the person model', () => {
 
 			it('Should complete an operation that was partially completed', async () => {
 				const partialAmount = Decimal128.fromNumeric(10)
-				await balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
+				await Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
 
-				await balanceOps.complete(userId, 'bitcoin', opid)
+				await Person.balanceOps.complete(userId, 'bitcoin', opid)
 				const person = await Person.findById(userId)
 				expect(person.currencies.bitcoin.pending).to.have.lengthOf(0)
 				expect(person.currencies.bitcoin.balance.available.toFullString())
@@ -202,22 +202,22 @@ describe('Testing BalanceOperations on the person model', () => {
 			it('Should fail when the amount is bigger than the operation', async () => {
 				const partialAmount = Decimal128.fromNumeric(21)
 
-				await expect(balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount))
+				await expect(Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount))
 					.to.eventually.be.rejectedWith('Amount provided is greater or equal than amount in order')
 			})
 
 			it('Should fail when the amount is the same as the operation', async () => {
 				const partialAmount = Decimal128.fromNumeric(20)
 
-				await expect(balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount))
+				await expect(Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount))
 					.to.eventually.be.rejectedWith('Amount provided is greater or equal than amount in order')
 			})
 
 			it('Should append the opid of the responsable operation', async () => {
 				const partialAmount = Decimal128.fromNumeric(10)
 
-				await balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
-				const { completions } = await balanceOps.get(userId, 'bitcoin', opid)
+				await Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
+				const { completions } = await Person.balanceOps.get(userId, 'bitcoin', opid)
 				expect(completions.find(v => v.toHexString() === rfOpid.toHexString()))
 					.to.be.an.instanceOf(ObjectId)
 			})
@@ -226,8 +226,8 @@ describe('Testing BalanceOperations on the person model', () => {
 		describe('Testing operation locks', () => {
 			it('Should lock an operation', async () => {
 				const lockOpid = new ObjectId()
-				await balanceOps.lock(userId, 'bitcoin', opid, lockOpid)
-				const pending = await balanceOps.get(userId, 'bitcoin', opid)
+				await Person.balanceOps.lock(userId, 'bitcoin', opid, lockOpid)
+				const pending = await Person.balanceOps.get(userId, 'bitcoin', opid)
 				expect(pending.opid.toHexString()).to.equals(opid.toHexString())
 				expect(pending.locked?.byOpid.toHexString())
 					.to.equals(lockOpid.toHexString())
@@ -238,60 +238,60 @@ describe('Testing BalanceOperations on the person model', () => {
 				const lockOpid = new ObjectId()
 
 				beforeEach(async () => {
-					await balanceOps.lock(userId, 'bitcoin', opid, lockOpid)
-					const pending = await balanceOps.get(userId, 'bitcoin', opid)
+					await Person.balanceOps.lock(userId, 'bitcoin', opid, lockOpid)
+					const pending = await Person.balanceOps.get(userId, 'bitcoin', opid)
 					expect(pending.locked?.byOpid.toHexString())
 						.to.equals(lockOpid.toHexString())
 					expect(pending.locked?.timestamp).to.be.an.instanceOf(Date)
 				})
 
 				it('Should unlock an operation', async () => {
-					await balanceOps.unlock(userId, 'bitcoin', opid, lockOpid)
-					const pending = await balanceOps.get(userId, 'bitcoin', opid)
+					await Person.balanceOps.unlock(userId, 'bitcoin', opid, lockOpid)
+					const pending = await Person.balanceOps.get(userId, 'bitcoin', opid)
 					expect(pending.locked.byOpid).to.be.undefined
 				})
 
 				it('Should not unlock if opid was not informed', async () => {
-					await expect(balanceOps.unlock(userId, 'bitcoin', opid, undefined))
+					await expect(Person.balanceOps.unlock(userId, 'bitcoin', opid, undefined))
 						.to.eventually.be.rejectedWith('OperationNotFound')
 				})
 
 				it('Should unlock an operation using the forced mode', async () => {
-					await balanceOps.unlock(userId, 'bitcoin', opid, null, true)
-					const pending = await balanceOps.get(userId, 'bitcoin', opid)
+					await Person.balanceOps.unlock(userId, 'bitcoin', opid, null, true)
+					const pending = await Person.balanceOps.get(userId, 'bitcoin', opid)
 					expect(pending.locked.byOpid).to.be.undefined
 				})
 
 				it('Should fail when trying to complete it without the unlock key', async () => {
-					await expect(balanceOps.complete(userId, 'bitcoin', opid))
+					await expect(Person.balanceOps.complete(userId, 'bitcoin', opid))
 						.to.eventually.be.rejectedWith('OperationNotFound')
 				})
 
 				it('Should fail when trying to complete it with an invalid opid', async () => {
-					await expect(balanceOps.complete(userId, 'bitcoin', opid, new ObjectId()))
+					await expect(Person.balanceOps.complete(userId, 'bitcoin', opid, new ObjectId()))
 						.to.eventually.be.rejectedWith('OperationNotFound')
 				})
 
 				it('Should complete the operation if informed the correct unlock key', async () => {
-					await balanceOps.complete(userId, 'bitcoin', opid, lockOpid)
+					await Person.balanceOps.complete(userId, 'bitcoin', opid, lockOpid)
 				})
 
 				it('Should fail when trying to partially complete it without the unlock key', async () => {
 					const amount = Decimal128.fromString('1')
-					await expect(balanceOps.complete(userId, 'bitcoin', opid, undefined, amount))
+					await expect(Person.balanceOps.complete(userId, 'bitcoin', opid, undefined, amount))
 						.to.eventually.be
 						.rejectedWith('rfOpid needs to be informed to partially complete an operation')
 				})
 
 				it('Should fail when trying to partially complete it with an invalid opid', async () => {
 					const amount = Decimal128.fromString('1')
-					await expect(balanceOps.complete(userId, 'bitcoin', opid, new ObjectId(), amount))
+					await expect(Person.balanceOps.complete(userId, 'bitcoin', opid, new ObjectId(), amount))
 						.to.eventually.be.rejectedWith('OperationNotFound')
 				})
 
 				it('Should partially complete the operation if informed the correct unlock key', async () => {
 					const amount = Decimal128.fromString('1')
-					await balanceOps.complete(userId, 'bitcoin', opid, lockOpid, amount)
+					await Person.balanceOps.complete(userId, 'bitcoin', opid, lockOpid, amount)
 				})
 			})
 		})

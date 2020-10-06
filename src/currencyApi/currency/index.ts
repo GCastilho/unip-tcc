@@ -5,7 +5,6 @@ import { EventEmitter } from 'events'
 import initListeners from './listeners'
 import Person from '../../db/models/person'
 import TransactionDoc, { Transaction } from '../../db/models/transaction'
-import { balanceOperations as BalanceOps } from '../../db/models/person'
 import type TypedEmitter from 'typed-emitter'
 import type User from '../../userApi/user'
 import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../interfaces/transaction'
@@ -143,7 +142,7 @@ export default class Currency {
 			}
 
 			// Pode dar throw em OperationNotFound (não tem handler)
-			await BalanceOps.cancel(userId, this.name, opid)
+			await Person.balanceOps.cancel(userId, this.name, opid)
 			await TransactionDoc.deleteOne({ _id: opid })
 
 			return 'cancelled'

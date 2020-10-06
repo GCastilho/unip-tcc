@@ -1,6 +1,6 @@
 import assert from 'assert'
 import TradeDoc from '../db/models/trade'
-import { balanceOperations as BalanceOps } from '../db/models/person'
+import Person from '../db/models/person'
 import * as UserApi from '../userApi'
 import type { Order } from '../db/models/order'
 
@@ -38,12 +38,12 @@ export default async function trade(matchs: [Order, Order][]) {
 		const takerUser = await UserApi.findUser.byId(taker.userId)
 
 		// Da lock na subida de saldo do requesting de ambas
-		await BalanceOps.add(makerUser.id, maker.requesting.currency, {
+		await Person.balanceOps.add(makerUser.id, maker.requesting.currency, {
 			opid: trade._id,
 			type: 'trade',
 			amount: maker.requesting.amount
 		})
-		await BalanceOps.add(takerUser.id, taker.requesting.currency, {
+		await Person.balanceOps.add(takerUser.id, taker.requesting.currency, {
 			opid: trade._id,
 			type: 'trade',
 			amount: taker.requesting.amount
@@ -51,7 +51,7 @@ export default async function trade(matchs: [Order, Order][]) {
 
 		// Da unlock na descida de saldo do owning de ambas
 		try {
-			await BalanceOps.complete(makerUser.id, maker.owning.currency, maker._id)
+			await Person.balanceOps.complete(makerUser.id, maker.owning.currency, maker._id)
 		} catch (err) {
 			if (err == 'OperationNotFound') {
 				const error = new Error()
@@ -62,7 +62,7 @@ export default async function trade(matchs: [Order, Order][]) {
 			}
 		}
 		try {
-			await BalanceOps.complete(takerUser.id, taker.owning.currency, taker._id)
+			await Person.balanceOps.complete(takerUser.id, taker.owning.currency, taker._id)
 		} catch (err) {
 			if (err == 'OperationNotFound') {
 				const error = new Error()
@@ -74,8 +74,8 @@ export default async function trade(matchs: [Order, Order][]) {
 		}
 
 		// Da unlock na subida de saldo do requesting de ambas
-		await BalanceOps.complete(makerUser.id, maker.requesting.currency, trade._id)
-		await BalanceOps.complete(takerUser.id, taker.requesting.currency, trade._id)
+		await Person.balanceOps.complete(makerUser.id, maker.requesting.currency, trade._id)
+		await Person.balanceOps.complete(takerUser.id, taker.requesting.currency, trade._id)
 
 		const promises: Promise<any>[] = match.map(item => item.remove())
 
