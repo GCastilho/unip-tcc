@@ -2,7 +2,6 @@ import '../../src/libs/extensions'
 import { Decimal128, ObjectId } from 'mongodb'
 import chai, { expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import * as UserApi from '../../src/userApi'
 import Person from '../../src/db/models/person'
 import { currenciesObj } from '../../src/libs/currencies'
 
@@ -13,9 +12,9 @@ describe('Testing BalanceOperations on the person model', () => {
 
 	beforeEach(async () => {
 		await Person.deleteMany({})
-		const { id } = await UserApi.createUser('userApi-test@email.com', 'userP@ss')
+		const { _id } = await Person.createOne('userApi-test@email.com', 'userP@ss')
 
-		const person = await Person.findByIdAndUpdate(id, {
+		const person = await Person.findByIdAndUpdate(_id, {
 			$set: {
 				['currencies.bitcoin.balance.available']: Decimal128.fromNumeric(50),
 				['currencies.bitcoin.balance.locked']: Decimal128.fromNumeric(0)

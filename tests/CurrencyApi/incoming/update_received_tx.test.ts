@@ -2,13 +2,13 @@ import '../../../src/libs/extensions'
 import { expect } from 'chai'
 import { Socket, setupPerson } from './setup'
 import Transaction from '../../../src/db/models/transaction'
-import PersonDoc, { Person } from '../../../src/db/models/person'
+import PersonDoc from '../../../src/db/models/person'
 import * as UserApi from '../../../src/userApi'
 import type { UpdtReceived } from '../../../interfaces/transaction'
 
 describe('Testing the receival of update_received_tx on the CurrencyApi', () => {
 	let client: Socket
-	let person: Person
+	let person: InstanceType<typeof PersonDoc>
 
 	before(async () => {
 		person = await setupPerson()

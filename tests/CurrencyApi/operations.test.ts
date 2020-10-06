@@ -5,20 +5,19 @@ import Person from '../../src/db/models/person'
 import Transaction from '../../src/db/models/transaction'
 import { currenciesObj } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
-import * as UserApi from '../../src/userApi'
-import type User from '../../src/userApi/user'
 
 describe('Testing operations on the currencyApi', () => {
-	let user: User
+	let userId: InstanceType<typeof Person>['_id']
 
 	before(async () => {
 		await Person.deleteMany({})
 
-		user = await UserApi.createUser('operations@example.com', 'userP@ss')
+		const person = await Person.createOne('operations@example.com', 'userP@ss')
+		userId = person['_id']
 
 		// Manualmente seta o saldo disponível para 1
-		user.person.currencies.bitcoin.balance.available = Decimal128.fromNumeric(1)
-		await user.person.save()
+		person.currencies.bitcoin.balance.available = Decimal128.fromNumeric(1)
+		await person.save()
 	})
 
 	describe('Testing withdraw', () => {
@@ -28,7 +27,7 @@ describe('Testing operations on the currencyApi', () => {
 		const account = 'operations-bitcoin'
 
 		before(async () => {
-			opid = await CurrencyApi.withdraw(user.id, 'bitcoin', account, amount)
+			opid = await CurrencyApi.withdraw(userId, 'bitcoin', account, amount)
 			expect(opid).to.be.an('object')
 			expect(opid).to.be.instanceOf(ObjectId)
 		})
@@ -77,7 +76,7 @@ describe('Testing operations on the currencyApi', () => {
 		it('Should return AmountOfRange if amount is lower than 2*fee', async () => {
 			const { fee } = currenciesObj.bitcoin
 			await expect(
-				CurrencyApi.withdraw(user.id, 'bitcoin', account, (2 * fee - 0.01 * fee))
+				CurrencyApi.withdraw(userId, 'bitcoin', account, (2 * fee - 0.01 * fee))
 			).to.eventually.be
 				.rejectedWith(`Withdraw amount for bitcoin must be at least '${2 * fee}', but got ${2 * fee - 0.01 * fee}`)
 		})
@@ -87,22 +86,25 @@ describe('Testing operations on the currencyApi', () => {
 		let opid: ObjectId
 
 		beforeEach(async () => {
-			// @ts-expect-error Automaticamente convertido para Decimal128
-			user.person.currencies.bitcoin.balance.available = 10
-			// @ts-expect-error Automaticamente convertido para Decimal128
-			user.person.currencies.bitcoin.balance.locked = 0
-			await user.person.save()
+			const person = await Person.findById(userId)
 
-			opid = await CurrencyApi.withdraw(user.id, 'bitcoin', 'operations-cancell-bitcoin', 1)
+			// @ts-expect-error Automaticamente convertido para Decimal128
+			person.currencies.bitcoin.balance.available = 10
+			// @ts-expect-error Automaticamente convertido para Decimal128
+			person.currencies.bitcoin.balance.locked = 0
+
+			await person.save()
+
+			opid = await CurrencyApi.withdraw(userId, 'bitcoin', 'operations-cancell-bitcoin', 1)
 		})
 
 		it('Should cancell a withdraw request', async () => {
 			expect((await Transaction.findById(opid)).status).to.equals('ready')
-			expect(await CurrencyApi.cancellWithdraw(user.id, 'bitcoin', opid))
+			expect(await CurrencyApi.cancellWithdraw(userId, 'bitcoin', opid))
 				.to.equal('cancelled')
 			expect(await Transaction.findById(opid)).to.be.null
 
-			const person = await Person.findById(user.id)
+			const person = await Person.findById(userId)
 			expect(person.currencies.bitcoin.balance.available.toFullString())
 				.to.equals('10.0')
 			expect(person.currencies.bitcoin.balance.locked.toFullString())

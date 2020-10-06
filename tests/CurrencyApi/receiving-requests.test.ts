@@ -6,22 +6,20 @@ import Person from '../../src/db/models/person'
 import Transaction from '../../src/db/models/transaction'
 import { currencyNames } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
-import * as UserApi from '../../src/userApi'
-import type User from '../../src/userApi/user'
 import type { TxReceived, UpdtReceived, TxSend, UpdtSent } from '../../interfaces/transaction'
 
 describe('Testing the receival of events on the CurrencyApi', () => {
-	let user: User
+	let person: InstanceType<typeof Person>
 
 	before(async () => {
 		await Person.deleteMany({})
 		await Transaction.deleteMany({})
 
-		user = await UserApi.createUser('receival_test@example.com', 'userP@ss')
+		person = await Person.createOne('receival_test@example.com', 'userP@ss')
 
 		// Seta dummy accounts para serem usadas nos testes
 		for (const currency of currencyNames) {
-			await Person.findByIdAndUpdate(user.id, {
+			await Person.findByIdAndUpdate(person.id, {
 				$push: {
 					[`currencies.${currency}.accounts`]: `${currency}-account`
 				}
@@ -57,7 +55,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 
 		describe(`When ${currency} module receives new_transaction`, () => {
 			beforeEach(async () => {
-				await Person.findByIdAndUpdate(user.id, {
+				await Person.findByIdAndUpdate(person.id, {
 					$set: {
 						[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(0),
 						[`currencies.${currency}.balance.locked`]: Decimal128.fromNumeric(0)
@@ -103,7 +101,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						expect(opid).to.be.a('string')
 						return Transaction.findById(opid)
 					}).then(doc => {
-						expect(doc.userId.toHexString()).to.equals(user.id.toHexString())
+						expect(doc.userId.toHexString()).to.equals(person.id.toHexString())
 						expect(doc.txid).to.equals(transaction.txid)
 						expect(doc.status).to.equals(transaction.status)
 						expect(doc.amount.toFullString()).to.equals(transaction.amount.toString())
@@ -122,7 +120,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('new_transaction', transaction, () => {
-					Person.findById(user.id, (err, doc) => {
+					Person.findById(person.id, (err, doc) => {
 						expect(doc.currencies[currency].balance.available.toFullString())
 							.to.equals('0.0')
 						expect(doc.currencies[currency].balance.locked.toFullString())
@@ -142,7 +140,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				client.emit('new_transaction', transaction, () => {
-					Person.findById(user.id, (err, doc) => {
+					Person.findById(person.id, (err, doc) => {
 						expect(doc).to.be.an('object')
 						expect(doc.currencies[currency].balance.available.toFullString())
 							.to.equals(transaction.amount.toString())
@@ -163,7 +161,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				CurrencyApi.events.once('new_transaction', (id, coin, tx) => {
-					expect(id.toHexString()).to.equals(user.id.toHexString())
+					expect(id.toHexString()).to.equals(person.id.toHexString())
 					expect(coin).to.equals(currency)
 					expect(tx).to.be.an('object')
 					expect(tx.txid).to.equals(transaction.txid)
@@ -227,7 +225,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					const available = Decimal128.fromNumeric(50).toFullString()
 					const locked = Decimal128.fromNumeric(0).toFullString()
 					// Garante que o request não irá falhar por falta de saldo
-					Person.findByIdAndUpdate(user.id, {
+					Person.findByIdAndUpdate(person.id, {
 						$set: {
 							[`currencies.${currency}.balance.available`]: Decimal128.fromString(available),
 							[`currencies.${currency}.balance.locked`]: Decimal128.fromString(locked)
@@ -241,7 +239,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 								expect(err.code).to.equals('ValidationError')
 								expect(err.message).to.be.a('string')
 								expect(opid).to.be.undefined
-								return Person.findById(user.id)
+								return Person.findById(person.id)
 							}).then(doc => {
 								// Checa se o doc do usuário não foi alterado
 								expect(doc.currencies[currency].balance.available.toFullString())
@@ -329,7 +327,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 			let opid: string
 
 			beforeEach(done => {
-				Person.findByIdAndUpdate(user.id, {
+				Person.findByIdAndUpdate(person.id, {
 					$set: {
 						[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(0),
 						[`currencies.${currency}.balance.locked`]: Decimal128.fromNumeric(0)
@@ -397,8 +395,8 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 
 			it('Should return UserNotFound if a user for existing transaction was not found', done => {
 				// Configura o novo usuário
-				UserApi.createUser(`UserNotFound-receive-${currency}@email.com`, 'UserP@ass').then(newUser => {
-					return Person.findByIdAndUpdate(newUser.id, {
+				Person.createOne(`UserNotFound-receive-${currency}@email.com`, 'UserP@ass').then(newPerson => {
+					return Person.findByIdAndUpdate(newPerson.id, {
 						$push: {
 							[`currencies.${currency}.accounts`]: `${currency}-account-newUser`
 						}
@@ -450,7 +448,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					Promise.resolve().then(() => {
 						expect(err).to.be.null
 						expect(res).to.be.a('string')
-						return Person.findById(user.id)
+						return Person.findById(person.id)
 					}).then(doc => {
 						expect(doc.currencies[currency].balance.locked.toFullString())
 							.to.equals(txAmount)
@@ -472,7 +470,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					Promise.resolve().then(() => {
 						expect(err).to.be.null
 						expect(res).to.be.a('string')
-						return Person.findById(user.id)
+						return Person.findById(person.id)
 					}).then(doc => {
 						expect(doc.currencies[currency].balance.locked.toFullString())
 							.to.equals('0.0')
@@ -586,7 +584,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 			let opid: string
 
 			beforeEach(done => {
-				Person.findByIdAndUpdate(user.id, {
+				Person.findByIdAndUpdate(person.id, {
 					$set: {
 						[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(50),
 						[`currencies.${currency}.balance.locked`]: Decimal128.fromNumeric(0)
@@ -600,7 +598,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 							.then(() => done())
 							.catch(done)
 					})
-					CurrencyApi.withdraw(user.id, currency, `${currency}_account`, 10)
+					CurrencyApi.withdraw(person.id, currency, `${currency}_account`, 10)
 						.catch(done)
 				})
 			})
@@ -659,14 +657,14 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 			})
 
 			it('Should return UserNotFound if a user for existing transaction was not found', done => {
-				let user: User
+				let person: InstanceType<typeof Person>
 
 				// Recebe o request de saque
 				client.once('withdraw', (request: TxSend, callback: (err: any, response?: string) => void) => {
 					callback(null, 'received withdraw request for userNotFound test')
 
 					// Deleta o usuário
-					Person.findByIdAndDelete(user.id).then(() => {
+					Person.findByIdAndDelete(person.id).then(() => {
 						// Emite o update para o usuário deletado
 						client.emit('update_sent_tx', {
 							opid: request.opid,
@@ -689,10 +687,10 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				})
 
 				// Cria o usuário
-				UserApi.createUser(`non-existing-user-send-${currency}@email.com`, 'UserP@ass').then(_user => {
-					user = _user
+				Person.createOne(`non-existing-user-send-${currency}@email.com`, 'UserP@ass').then(_person => {
+					person = _person
 					// Seta o saldo do usuário
-					return Person.findByIdAndUpdate(_user.id, {
+					return Person.findByIdAndUpdate(_person.id, {
 						$set: {
 							[`currencies.${currency}.balance.available`]: Decimal128.fromNumeric(50),
 							[`currencies.${currency}.balance.locked`]: Decimal128.fromNumeric(0)
@@ -700,7 +698,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					})
 				}).then(() => {
 					// Executa o saque
-					return CurrencyApi.withdraw(user.id, currency, 'randomAccount', 10)
+					return CurrencyApi.withdraw(person.id, currency, 'randomAccount', 10)
 				}).catch(done)
 			})
 
@@ -717,7 +715,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					Promise.resolve().then(() => {
 						expect(err).to.be.null
 						expect(res).to.be.a('string')
-						return Person.findById(user.id)
+						return Person.findById(person.id)
 					}).then(doc => {
 						expect(doc.currencies[currency].balance.locked.toFullString())
 							.to.equals('10.0')
@@ -741,7 +739,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					Promise.resolve().then(() => {
 						expect(err).to.be.null
 						expect(res).to.be.a('string')
-						return Person.findById(user.id)
+						return Person.findById(person.id)
 					}).then(doc => {
 						expect(doc.currencies[currency].balance.locked.toFullString())
 							.to.equals('0.0')

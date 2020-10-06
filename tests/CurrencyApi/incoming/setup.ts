@@ -1,7 +1,6 @@
 import io from 'socket.io-client'
-import PersonDoc, { Person } from '../../../src/db/models/person'
+import Person from '../../../src/db/models/person'
 import Transaction from '../../../src/db/models/transaction'
-import * as UserApi from '../../../src/userApi'
 import type { SuportedCurrencies } from '../../../src/libs/currencies'
 import type { ExternalEvents, MainEvents } from '../../../interfaces/communication/external-socket'
 
@@ -10,18 +9,18 @@ import type { ExternalEvents, MainEvents } from '../../../interfaces/communicati
  * Só é usado bitcoin nos testes pq todas as instâncias da classe Currency
  * funcionam da mesma maneira, não sendo necessário testar elas individualmente
  */
-export async function setupPerson(): Promise<Person> {
-	await PersonDoc.deleteMany({})
+export async function setupPerson(): Promise<InstanceType<typeof Person>> {
+	await Person.deleteMany({})
 	await Transaction.deleteMany({})
 
-	const user = await UserApi.createUser('receival_test@example.com', 'userP@ss')
+	const person = await Person.createOne('receival_test@example.com', 'userP@ss')
 
 	// Seta uma dummy account para ser usada nos testes
-	user.person.currencies.bitcoin.accounts.push('bitcoin-account')
+	person.currencies.bitcoin.accounts.push('bitcoin-account')
 
-	await user.person.save({ validateBeforeSave: false })
+	await person.save({ validateBeforeSave: false })
 
-	return user.person
+	return person
 }
 
 /**

@@ -6,20 +6,18 @@ import Person from '../../src/db/models/person'
 import Transaction from '../../src/db/models/transaction'
 import { currencyNames } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
-import * as UserApi from '../../src/userApi'
-import type User from '../../src/userApi/user'
 import type { TxSend } from '../../interfaces/transaction'
 
 type SocketCallback = (err: any, response?: string) => void;
 
 describe('Testing if CurrencyApi is making requests to the websocket', () => {
 	const port = process.env.CURRENCY_API_PORT || 5808
-	let user: User
+	let person: InstanceType<typeof Person>
 
 	before(async () => {
 		await Person.deleteMany({})
 
-		user = await UserApi.createUser('sending_request@example.com', 'userP@ss')
+		person = await Person.createOne('sending_request@example.com', 'userP@ss')
 		await Transaction.deleteMany({})
 	})
 
@@ -27,9 +25,9 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of currencyNames) {
 			// @ts-expect-error Automaticamente convertido para Decimal128
-			user.person.currencies[currency].balance.available = 10
+			person.person.currencies[currency].balance.available = 10
 		}
-		await user.person.save()
+		await person.save()
 	})
 
 	const url = `http://127.0.0.1:${port}`
@@ -48,7 +46,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 			})
 
 			it('Should receive a create_new_account request', done => {
-				CurrencyApi.createAccount(user.id, currency).catch(err => {
+				CurrencyApi.createAccount(person.id, currency).catch(err => {
 					if (err != 'SocketDisconnected') throw err
 				}).then(() => {
 					client.connect()
@@ -62,7 +60,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 
 			it('Should receive a withdraw request', done => {
 				const amount = 3.456
-				CurrencyApi.withdraw(user.id, currency, `${currency}_account`, amount).then(opid => {
+				CurrencyApi.withdraw(person.id, currency, `${currency}_account`, amount).then(opid => {
 					client.connect()
 
 					client.once('withdraw', async (
@@ -111,7 +109,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					done()
 				})
 
-				CurrencyApi.createAccount(user.id, currency).catch(done)
+				CurrencyApi.createAccount(person.id, currency).catch(done)
 			})
 
 			it('Should receive a withdraw request immediate after requested', done => {
@@ -140,7 +138,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					callback(null, 'request received for' + currency)
 				})
 
-				CurrencyApi.withdraw(user.id, currency, `${currency}_account`, amount)
+				CurrencyApi.withdraw(person.id, currency, `${currency}_account`, amount)
 					.catch(done)
 			})
 
@@ -171,9 +169,9 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					callback(null, `request received for ${currency}`)
 				})
 
-				CurrencyApi.withdraw(user.id, currency, `${currency}_account`, amount).then(opid => {
+				CurrencyApi.withdraw(person.id, currency, `${currency}_account`, amount).then(opid => {
 					_opid = opid
-					return CurrencyApi.cancellWithdraw(user.id, currency, opid)
+					return CurrencyApi.cancellWithdraw(person.id, currency, opid)
 				}).catch(done)
 			})
 		})

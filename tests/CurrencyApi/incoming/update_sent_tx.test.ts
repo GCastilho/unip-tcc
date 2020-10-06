@@ -2,14 +2,14 @@ import '../../../src/libs/extensions'
 import { expect } from 'chai'
 import { Socket, setupPerson } from './setup'
 import Transaction from '../../../src/db/models/transaction'
-import PersonDoc, { Person } from '../../../src/db/models/person'
+import PersonDoc from '../../../src/db/models/person'
 import * as CurrencyApi from '../../../src/currencyApi'
 import * as UserApi from '../../../src/userApi'
 import type { TxSend, UpdtSent } from '../../../interfaces/transaction'
 
 describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 	let client: Socket
-	let person: Person
+	let person: InstanceType<typeof PersonDoc>
 
 	before(async () => {
 		person = await setupPerson()
@@ -152,7 +152,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 
 	describe('If sending invalid data', () => {
 		it('Should return UserNotFound if a user for existing transaction was not found', done => {
-			let userId: Person['_id']
+			let userId: InstanceType<typeof PersonDoc>['_id']
 
 			// Recebe o request de saque
 			client.once('withdraw', async (request: TxSend, callback: (err: any, response?: string) => void) => {
