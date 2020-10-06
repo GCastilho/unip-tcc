@@ -1,9 +1,13 @@
 import '../../src/libs/extensions'
+import assert from 'assert'
+import chai, { expect } from 'chai'
 import randomstring from 'randomstring'
-import { expect } from 'chai'
+import chaiAsPromised from 'chai-as-promised'
 import { Decimal128, ObjectId } from 'mongodb'
 import Person from '../../src/db/models/person'
 import { currencyNames, currenciesObj } from '../../src/libs/currencies'
+
+chai.use(chaiAsPromised)
 
 describe('Testing person model', () => {
 	const db_name = Person.db.name
@@ -121,6 +125,25 @@ describe('Testing person model', () => {
 		it('Should return TRUE to a password check after setting a new password', async () => {
 			person.credentials.password = 'newPassword'
 			expect(person.credentials.check('newPassword')).to.be.true
+		})
+	})
+
+	describe('Testing events on the Person Model', () => {
+		it('Should emit a \'new\' event each time a new document is created', done => {
+			Person.once('new', person => {
+				try {
+					assert(person instanceof Person)
+					done()
+				} catch (err) {
+					done(err)
+				}
+			})
+			Person.create({
+				email: 'person-test@email.com',
+				credentials: {
+					password: 'randomP@ss'
+				}
+			}).catch(done)
 		})
 	})
 
