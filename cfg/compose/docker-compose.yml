@@ -2,32 +2,48 @@ version: "3"
 services:
 #config
   replica-02:
-    hostname: replica-02
+    hostname: 
+      teste
     container_name: replica-02
     image: mongo
+    networks: 
+      - teste
     expose:
-    - 27017
-    entrypoint: ["/usr/bin/mongod","--configsvr", "--replSet", "repset", "--port", "27017" ]
+      - 27027
+    restart: always
+    entrypoint: ["mongod","--configsvr", "--replSet", "repset", "--port", "27027", "--bind_ip", "0.0.0.0" ]
   replica-03:
-    hostname: replica-03
+    hostname: 
+      teste
     container_name: replica-03
     image: mongo
+    restart: always
+    networks: 
+      - teste
     expose:
-    - 27017
-    entrypoint: ["/usr/bin/mongod", "--configsvr", "--replSet", "repset", "--port", "27017" ]
+      - 27037
+    entrypoint: ["mongod","--configsvr", "--replSet", "repset", "--port", "27037", "--bind_ip", "0.0.0.0" ]
   replica-01:
-    hostname: replica-01
-    container_name: replica-01
+    hostname: 
+      teste
+    networks: 
+      - teste
     image: mongo
-    # build:
-    #   context: .
-    #   dockerfile: config
+    container_name: replica-01
+    restart: always
     depends_on:
       - replica-02
       - replica-03
+    build:
+      context: .
+      dockerfile: config
     expose:
       - 27017
-    entrypoint: ["/usr/bin/mongod","--configsvr", "--replSet", "repset", "--port", "27017" ]
+    links:
+      - replica-03
+      - replica-02
+    command: sh mongo --eval 'rs.initiate({ "_id":"repset", "members":[ {"_id":0,"host":"replica-01:27017"}, {"_id":1,"host":"replica-02:27027"}, {"_id":2,"host":"replica-03:27037"} ]})'
+    #entrypoint: ["mongod", "--configsvr", "--replSet", "repset", "--port", "27017", "--bind_ip", "0.0.0.0", ]
 #shard
   shard1a:
     hostname: shard1a
@@ -40,6 +56,8 @@ services:
     image: mongo
     expose:
     - 27019
+    ports:
+      - 27030:27019
     entrypoint: ["/usr/bin/mongod", "--shardsvr", "--replSet", "shard01", "--port", "27019" ]
   shard1b:
     hostname: shard1b
@@ -49,17 +67,26 @@ services:
     - 27019
     entrypoint: ["/usr/bin/mongod", "--shardsvr", "--replSet", "shard01", "--port", "27019" ]
   mongo-router:
-    container_name: "mongo-router" 
+    hostname: 
+      teste
+    networks: 
+      - teste
+    container_name: "mongo-router"
     image: mongo
     expose:
-      - 27018
+      - 27017
     # build:
     #   context: .
     #   dockerfile: router
     depends_on:
       - replica-01
       - shard1a
+    links:
+      - replica-03
+      - replica-02
+      - replica-01
     ports:
-      - 27018:27018
-    entrypoint: ["/usr/bin/mongos","--configdb", "configserver/replica-01:27017,replica-02:27017,replica-03:27017", "--bind_ip_all" , "--port", "27018" ]
-
+      - 27018:27017
+    entrypoint: ["mongos","--configdb", "repset/replica-01:27017,replica-02:27027,replica-03:27037", "--bind_ip", "0.0.0.0" , "--port", "27017" ]
+networks: 
+    teste:

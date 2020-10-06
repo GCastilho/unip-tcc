@@ -1,7 +1,5 @@
 FROM mongo
 
-RUN mongo --port 27017
+RUN mongod --fork --logpath /var/log/mongod.log --configsvr --replSet repset --port 27017 --bind_ip 0.0.0.0 && mongo --eval 'rs.initiate({ "_id":"repset", "members":[ {"_id":0,"host":"replica-01:27017"}, {"_id":1,"host":"replica-02:27027"}, {"_id":2,"host":"replica-03:27037"} ]})'
 
-RUN db = (new Mongo('replica-01:27017')).getDB('test')
-RUN config={"configsvr": true,"_id":"repset",	"members":[		{"_id":0,"host":"replica-01:27017"},{"_id":1,"host":"replica-02:27017"},	{"_id":2,"host":"replica-03:27017"}	]}
-RUN rs.initiate(config)
+
