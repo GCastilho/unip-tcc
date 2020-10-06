@@ -3,8 +3,6 @@ import { ObjectId } from 'mongodb'
 import Session from '../db/models/session'
 import Person from '../db/models/person'
 import User, { hashPassword } from './user'
-import { currencyNames } from '../libs/currencies'
-import * as CurrencyApi from '../currencyApi'
 
 /**
  * Cria um novo usuário no database com as credenciais informadas
@@ -23,19 +21,6 @@ export async function createUser(email: string, password: string): Promise<User>
 			password_hash
 		}
 	}).save()
-
-	/**
-	 * @todo Criar as accounts quando o e-mail for confirmado, não ao
-	 * criar o usuário
-	 */
-	const createAccounts = currencyNames
-		.map(currency => CurrencyApi.createAccount(person._id, currency))
-
-	/** Se múltiplas forem rejeitadas só irá mostrar o valor da primeira */
-	await Promise.all(createAccounts).catch(err => {
-		if (err != 'SocketDisconnected')
-			console.error('Error creating account for new user', err)
-	})
 
 	return new User(person)
 }

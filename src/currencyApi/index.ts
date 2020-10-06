@@ -170,3 +170,24 @@ currencyNames.forEach(currency => {
 			events.emit('update_sent_tx', userId, currency, updtSent)
 		})
 })
+
+/**
+ * Chama o createAccount para cada uma das currencies do sistema quando
+ * o evento de novo documento inserido na person é emitido
+ */
+Person.on('new', async person => {
+	/**
+	 * @todo Criar as accounts quando o e-mail for confirmado, não ao
+	 * criar o usuário
+	 */
+	const createAccountPromises = currencyNames
+		.map(currency => createAccount(person._id, currency))
+
+	/** Se múltiplas forem rejeitadas só irá mostrar o valor da primeira */
+	await Promise.all(createAccountPromises).catch(err => {
+		if (err != 'SocketDisconnected') {
+			console.error('Error creating account for new user', err)
+			throw err
+		}
+	})
+})
