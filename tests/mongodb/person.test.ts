@@ -40,6 +40,13 @@ describe('Testing person model', () => {
 		await expect(person.save()).to.eventually.fulfilled
 	})
 
+	it('Should save a document using the createOne method', async () => {
+		const person = await Person.createOne('person-test@email.com', 'randomP@ss')
+		expect(person).to.be.instanceOf(Person)
+		await expect(Person.findById(person.id)).to.eventually.be
+			.fulfilled.with.an('object')
+	})
+
 	it('Should not save two documents with the same email', async () => {
 		const person = new Person({
 			email: 'person-test@email.com',
