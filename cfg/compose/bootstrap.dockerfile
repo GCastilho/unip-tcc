@@ -1,7 +1,7 @@
 FROM mongo
 
-COPY ./docker-entrypoint.sh /
+COPY ./bootstrap.sh /
 
-RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x /bootstrap.sh
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/bootstrap.sh"]
