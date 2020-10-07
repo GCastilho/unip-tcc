@@ -78,7 +78,7 @@ export default function initListeners(this: Currency) {
 				amount:       +tx.amount.toFullString(),
 				type:          tx.type,
 				confirmations: tx.confirmations,
-				timestamp:     tx.timestamp
+				timestamp:     tx.timestamp.getTime()
 			})
 			callback(null, opid.toHexString())
 		} catch (err) {

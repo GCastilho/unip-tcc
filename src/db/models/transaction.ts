@@ -2,6 +2,7 @@ import { ObjectId, Decimal128 } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
 import { currencies, currenciesObj } from '../../libs/currencies'
 import type User from '../../userApi/user'
+import type { TxInfo } from '../../../interfaces/transaction'
 import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** A interface dessa collection */
@@ -102,6 +103,13 @@ const TransactionSchema: Schema = new Schema({
 	timestamp: {
 		type: Date,
 		required: true
+	}
+}, {
+	toJSON: {
+		transform: function(doc: Transaction, ret: TxInfo) {
+			ret.amount = +doc.amount.toFullString()
+			ret.timestamp = doc.timestamp.getTime()
+		}
 	}
 })
 

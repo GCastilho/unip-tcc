@@ -125,6 +125,7 @@ export interface TransactionInternal extends Transaction {
  * de uma transação
  */
 export interface TxInfo {
+	/** @todo os status deveriam ser apenas 'processing'|'pending'|'confirmed' */
 	status: TransactionDoc['status']
 	currency: TransactionDoc['currency']
 	txid: TransactionDoc['txid']
@@ -132,5 +133,5 @@ export interface TxInfo {
 	amount: number
 	type: TransactionDoc['type']
 	confirmations: TransactionDoc['confirmations']
-	timestamp: TransactionDoc['timestamp']
+	timestamp: number
 }
