@@ -31,8 +31,8 @@ describe('Testing version 1 of HTTP API', () => {
 		await Person.deleteMany({})
 		await Session.deleteMany({})
 		await Transaction.deleteMany({})
-		const newUser = await UserApi.createUser(user.email, user.password)
-		id = newUser.id
+		const { _id } = await Person.createOne(user.email, user.password)
+		id = _id
 	})
 
 	it('Should return information about the API', async () => {

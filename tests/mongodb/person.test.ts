@@ -221,4 +221,54 @@ describe('Testing person model', () => {
 			})
 		}
 	})
+
+	describe('Testing custom queries', () => {
+		describe('When using selectCurrencies', () => {
+			it('Should return a projection with the account of all currencies', async () => {
+				const { id } = await Person.createOne('person-test@email.com', 'randomP@ss')
+				const person = await Person.findById(id).selectAccounts().lean()
+
+				for (const currency of currencyNames) {
+					expect(person.currencies[currency].accounts).to.be.an.instanceOf(Array)
+					expect(Object.keys(person.currencies[currency])).to.deep.equals(['accounts'])
+				}
+			})
+
+			for (const currency of currencyNames) {
+				it(`Should return the projection of currencies for ${currency}`, async () => {
+					const { id } = await Person.createOne('person-test@email.com', 'randomP@ss')
+					const person = await Person.findById(id).selectAccounts([currency]).lean()
+
+					expect(person.currencies[currency].accounts).to.be.an.instanceOf(Array)
+					for (const otherCurrency of currencyNames.filter(name => name != currency)) {
+						expect(person.currencies[otherCurrency]).to.be.undefined
+					}
+				})
+			}
+		})
+
+		describe('When using selectBalances', () => {
+			it('Should return a projection with the balances of all currencies', async () => {
+				const { id } = await Person.createOne('person-test@email.com', 'randomP@ss')
+				const person = await Person.findById(id).selectBalances().lean()
+
+				for (const currency of currencyNames) {
+					expect(person.currencies[currency].balance).to.be.an('object')
+					expect(Object.keys(person.currencies[currency])).to.deep.equals(['balance'])
+				}
+			})
+
+			for (const currency of currencyNames) {
+				it(`Should return the projection of the balances for ${currency}`, async () => {
+					const { id } = await Person.createOne('person-test@email.com', 'randomP@ss')
+					const person = await Person.findById(id).selectBalances([currency]).lean()
+
+					expect(person.currencies[currency].balance).to.be.an('object')
+					for (const otherCurrency of currencyNames.filter(name => name != currency)) {
+						expect(person.currencies[otherCurrency]).to.be.undefined
+					}
+				})
+			}
+		})
+	})
 })

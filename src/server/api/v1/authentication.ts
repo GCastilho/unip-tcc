@@ -19,7 +19,7 @@ router.post('/authentication', async (req, res): Promise<any> => {
 			credentials: true
 		})
 		if (!person) throw 'UserNotFound'
-		if (!person.credentials.check(req.body.password)) throw 'InvalidPassword'
+		if (!person.credentials.check(`${req.body.password}`)) throw 'InvalidPassword'
 
 		const session = await Session.findOneAndUpdate({
 			userId: person.id

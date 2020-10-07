@@ -33,13 +33,19 @@ PersonSchema.statics.balanceOps = balanceOperations
 
 /** Queries personalidas da Person */
 const customQueries = {
-	/** @todo O primeiro arg da interface ser um subset q de fato é retornado */
+	// Retornar PersonDoc (1º arg) não está certo, pois ele retorna apenas parte do doc
 	selectAccounts(this: DocumentQuery<PersonDoc|null, PersonDoc>,
 		currencies = currencyNames
 	) {
 		this.select(currencies.map(currency => `currencies.${currency}.accounts`).join(' '))
 		return this
-	}
+	},
+	selectBalances(this: DocumentQuery<PersonDoc|null, PersonDoc>,
+		currencies = currencyNames
+	) {
+		this.select(currencies.map(currency => `currencies.${currency}.balance`).join(' '))
+		return this
+	},
 }
 
 // Adiciona a customQuery na query

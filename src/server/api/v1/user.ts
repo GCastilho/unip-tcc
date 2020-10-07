@@ -5,7 +5,6 @@ import authentication from './authentication'
 import { currencyNames } from '../../../libs/currencies'
 import Person from '../../../db/models/person'
 import Transaction from '../../../db/models/transaction'
-import * as UserApi from '../../../userApi'
 import * as CurrencyApi from '../../../currencyApi'
 
 const router = express.Router()
@@ -46,10 +45,12 @@ router.use(authentication)
  * Retorna todas as contas do usuario
  */
 router.get('/accounts', async (req, res) => {
-	const user = await UserApi.findUser.byId(req.userId)
+	const person = await Person.findById(req.userId)
+		.selectAccounts()
+		.orFail() as InstanceType<typeof Person>
 	const account = {}
 	for (const currency of currencyNames) {
-		account[currency] = await user.getAccounts(currency)
+		account[currency] = person.currencies[currency].accounts
 	}
 	res.send(account)
 })
@@ -58,10 +59,15 @@ router.get('/accounts', async (req, res) => {
  * Retorna todos os saldos do usuario
  */
 router.get('/balances', async (req, res) => {
-	const user = await UserApi.findUser.byId(req.userId)
+	const person = await Person.findById(req.userId)
+		.selectBalances()
+		.orFail() as InstanceType<typeof Person>
 	const balance = {}
 	for (const currency of currencyNames) {
-		balance[currency] = await user.getBalance(currency, true)
+		balance[currency] = {
+			available: person.currencies[currency].balance.available.toFullString(),
+			locked: person.currencies[currency].balance.locked.toFullString()
+		}
 	}
 	res.send(balance)
 })
@@ -76,11 +82,12 @@ router.get('/info', async (_req, res) => {
  */
 router.get('/transactions/:opid', async (req, res) => {
 	try {
-		const user = await UserApi.findUser.byId(req.userId)
+		const { id: userId } = await Person.findById(req.userId, { _id: true })
+			.orFail() as InstanceType<typeof Person>
 		const tx = await Transaction.findById(req.params.opid)
-		if (!tx) throw 'NotFound'
+			.orFail() as InstanceType<typeof Transaction>
 		// Checa se o usuario da transação é o mesmo que esta logado
-		if (tx.userId.toHexString() !== user.id.toHexString()) throw 'NotAuthorized'
+		if (tx.userId.toHexString() != userId) throw 'NotAuthorized'
 		// Formata o objeto da transação
 		res.send({
 			opid:          tx.id,
@@ -109,7 +116,8 @@ router.get('/transactions/:opid', async (req, res) => {
 })
 
 router.delete('/transactions/:opid', async (req, res) => {
-	const user = await UserApi.findUser.byId(req.userId)
+	const { id: userId } = await Person.findById(req.userId, { _id: true })
+		.orFail() as InstanceType<typeof Person>
 	try {
 		const tx = await Transaction.findById(req.params.opid, {
 			userId: true,
@@ -117,7 +125,7 @@ router.delete('/transactions/:opid', async (req, res) => {
 		})
 		if (!tx) throw 'NotFound'
 		// Checa se o usuario da transação é o mesmo que esta logado
-		if (tx.userId.toHexString() !== user.id.toHexString()) throw 'NotAuthorized'
+		if (tx.userId.toHexString() != userId) throw 'NotAuthorized'
 
 		res.send({
 			message: await CurrencyApi.cancellWithdraw(tx.userId, tx.currency, tx._id)
@@ -144,11 +152,12 @@ router.delete('/transactions/:opid', async (req, res) => {
  * Retorna uma lista de transações do usuário
  */
 router.get('/transactions', async (req, res) => {
-	const user = await UserApi.findUser.byId(req.userId)
+	const { id: userId } = await Person.findById(req.userId, { _id: true })
+		.orFail() as InstanceType<typeof Person>
 	/** Numero de transações que sera puladas */
 	const skip: number = +req.query.skip || 0
 	/** Filtro da query do mongo */
-	const query = { userId: user.id } as any
+	const query = { userId } as any
 	/** Filtro de transações por currency */
 	const currency = currencyNames.find(currency => currency === req.query.currency)
 	if (currency) query.currency = currency
@@ -180,17 +189,17 @@ router.get('/transactions', async (req, res) => {
  * Faz o request 'withdraw' usando as informações do req.body
  */
 router.post('/transactions', async (req, res) => {
-	const user = await UserApi.findUser.byId(req.userId)
+	const { _id: userId } = await Person.findById(req.userId, { _id: true })
+		.orFail() as InstanceType<typeof Person>
 	try {
 		const currency = currencyNames.find(currency => currency === req.body.currency)
 		/** Checa se os dados dados enviados pelo o usuario são do type correto */
 		if (!currency
-			|| !user
 			|| typeof req.body.destination !== 'string'
 			|| isNaN(+req.body.amount)
 		) throw 'BadRequest'
 
-		const opid = await CurrencyApi.withdraw(user.id, currency, req.body.destination, +req.body.amount)
+		const opid = await CurrencyApi.withdraw(userId, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
 	} catch (err) {
 		if (err === 'NotEnoughFunds') {
