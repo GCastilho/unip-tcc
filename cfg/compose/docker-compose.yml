@@ -1,6 +1,7 @@
 version: "3"
 
 services:
+#config servers
   config-03:
     hostname:
       teste
@@ -30,26 +31,16 @@ services:
     depends_on:
       - config-02
       - config-03
-    # build:
-    #   context: .
-    #   dockerfile: config
     expose:
       - 27019
-    links:
-      - config-03
-      - config-02
-    # command: sh mongo --eval 'rs.initiate({ "_id":"repset", "members":[ {"_id":0,"host":"config-01:27017"}, {"_id":1,"host":"config-02:27027"}, {"_id":2,"host":"config-03:27037"} ]})'
     entrypoint: ["/usr/bin/mongod", "--configsvr", "--replSet", "repset", "--port", "27019", "--bind_ip", "0.0.0.0"]
 
-#shard
+#shards
   shard1a:
     hostname: shard1a
     container_name: shard1a
     depends_on:
       - shard1b
-    # build:
-    #   context: .
-    #   dockerfile: shard
     image: mongo
     expose:
     - 27018
@@ -71,20 +62,14 @@ services:
     image: mongo
     expose:
       - 27017
-    # build:
-    #   context: .
-    #   dockerfile: router.dockerfile
     depends_on:
       - config-01
       - shard1a
-    links:
-      - config-03
-      - config-02
-      - config-01
     ports:
       - 27018:27017
     entrypoint: ["mongos","--configdb", "repset/config-01:27019,config-02:27019,config-03:27019", "--bind_ip", "0.0.0.0" , "--port", "27017" ]
 
+#init
   bootstrap:
     depends_on:
       - mongo-router
