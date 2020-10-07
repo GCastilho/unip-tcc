@@ -22,7 +22,7 @@ router.post('/', async (req, res): Promise<any> => {
 		return res.status(400).send({ error: 'BadRequest' })
 
 	try {
-		await UserApi.createUser(req.body.email, req.body.password)
+		await Person.createOne(req.body.email, req.body.password)
 
 		/**
 		 * @todo Enviar e-mail de confirmação de... e-mail e só liberar a conta

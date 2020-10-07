@@ -25,7 +25,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of currencyNames) {
 			// @ts-expect-error Automaticamente convertido para Decimal128
-			person.person.currencies[currency].balance.available = 10
+			person.currencies[currency].balance.available = 10
 		}
 		await person.save()
 	})

@@ -101,7 +101,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 						expect(opid).to.be.a('string')
 						return Transaction.findById(opid)
 					}).then(doc => {
-						expect(doc.userId.toHexString()).to.equals(person.id.toHexString())
+						expect(doc.userId.toHexString()).to.equals(person.id)
 						expect(doc.txid).to.equals(transaction.txid)
 						expect(doc.status).to.equals(transaction.status)
 						expect(doc.amount.toFullString()).to.equals(transaction.amount.toString())
@@ -161,7 +161,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 				}
 
 				CurrencyApi.events.once('new_transaction', (id, coin, tx) => {
-					expect(id.toHexString()).to.equals(person.id.toHexString())
+					expect(id.toHexString()).to.equals(person.id)
 					expect(coin).to.equals(currency)
 					expect(tx).to.be.an('object')
 					expect(tx.txid).to.equals(transaction.txid)
