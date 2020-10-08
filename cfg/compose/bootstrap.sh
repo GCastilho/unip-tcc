@@ -27,7 +27,7 @@ while [ $configLoop -eq 1 ]; do
 	done
 done
 
-/usr/bin/mongo ${hostnames[0]} --eval 'rs.initiate({ "_id":"repset", "members":[ {"_id":0,"host":"config-01:27019"}, {"_id":1,"host":"config-02:27019"}, {"_id":2,"host":"config-03:27019"} ]})'
+/usr/bin/mongo ${hostnames[0]} --eval 'rs.initiate({ "_id":"repset", "configsvr": true, "version": 1, "members":[ {"_id":0,"host":"config-01:27019"}, {"_id":1,"host":"config-02:27019"}, {"_id":2,"host":"config-03:27019"} ]})'
 
 shardLoop=1
 while [ $shardLoop -eq 1 ]; do
@@ -45,10 +45,17 @@ while [ $shardLoop -eq 1 ]; do
 	done
 done
 
-/usr/bin/mongo $shardnames --eval 'rs.initiate({ "_id":"shard01", "members":[ {"_id":0,"host":"shard1a:27018"}, {"_id":1,"host":"shard1b:27018"}]})'
+/usr/bin/mongo shard1a:27018 --eval 'rs.initiate({ _id: "shard01", "version": 1,"members":[ {"_id":0,"host":"shard1a:27018"}, {"_id":1,"host":"shard1b:27018"}]})'
+
+until (/usr/bin/mongo $router --eval '{ ping: 1 }'); do
+	sleep 5
+done
 
 for shard in ${shardnames[@]}; do
-	/usr/bin/mongo $router --eval \'"sh.addShard(shard01/$shard)"\' > /dev/null
+	echo "Adding shard"
+	/usr/bin/mongo $router --eval "sh.addShard(\"shard01/$shard\")"
 done
+
+sleep 60
 
 echo "done"
