@@ -14,7 +14,7 @@ chai.use(chaiAsPromised)
 const app = express()
 app.use(api)
 
-describe('testing authentication on the HHTP API version 1', () => {
+describe('Testing authentication on the HHTP API version 1', () => {
 	let userId: ObjectId
 	let sessionId: string
 
