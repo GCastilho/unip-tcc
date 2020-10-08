@@ -169,7 +169,7 @@ describe('Testing the receival of events on the CurrencyApi', () => {
 					expect(tx.amount).to.equals(transaction.amount)
 					expect(tx.currency).to.equals(currency)
 					expect(tx.account).to.equals(transaction.account)
-					expect(tx.timestamp).to.be.a('Date')
+					expect(tx.timestamp).to.be.a('number')
 					done()
 				})
 

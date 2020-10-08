@@ -113,16 +113,20 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 		}
 
 		CurrencyApi.events.once('new_transaction', (id, coin, tx) => {
-			expect(id.toHexString()).to.equals(person.id)
-			expect(coin).to.equals('bitcoin')
-			expect(tx).to.be.an('object')
-			expect(tx.txid).to.equals(transaction.txid)
-			expect(tx.status).to.equals(transaction.status)
-			expect(tx.amount).to.equals(transaction.amount)
-			expect(tx.currency).to.equals('bitcoin')
-			expect(tx.account).to.equals(transaction.account)
-			expect(tx.timestamp).to.be.a('Date')
-			done()
+			try {
+				expect(id.toHexString()).to.equals(person.id)
+				expect(coin).to.equals('bitcoin')
+				expect(tx).to.be.an('object')
+				expect(tx.txid).to.equals(transaction.txid)
+				expect(tx.status).to.equals(transaction.status)
+				expect(tx.amount).to.equals(transaction.amount)
+				expect(tx.currency).to.equals('bitcoin')
+				expect(tx.account).to.equals(transaction.account)
+				expect(tx.timestamp).to.be.a('number')
+				done()
+			} catch (err) {
+				done(err)
+			}
 		})
 
 		client.emit('new_transaction', transaction).catch(done)

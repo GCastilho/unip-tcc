@@ -1,7 +1,7 @@
 import '../../src/libs/extensions'
 import express from 'express'
 import request from 'supertest'
-import { expect } from 'chai'
+import chai, { expect } from 'chai'
 import { ObjectId, Decimal128 } from 'mongodb'
 import cookieparser from 'cookieparser'
 import * as UserApi from '../../src/userApi'
@@ -12,6 +12,9 @@ import Person from '../../src/db/models/person'
 import Session from '../../src/db/models/session'
 import Transaction from '../../src/db/models/transaction'
 import type { SuportedCurrencies } from '../../src/libs/currencies'
+import chaiAsPromised from 'chai-as-promised'
+
+chai.use(chaiAsPromised)
 
 const app = express()
 app.use(api)
