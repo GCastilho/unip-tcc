@@ -7,7 +7,6 @@ import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** A interface dessa collection */
 export interface Transaction extends Document {
-	_id: ObjectId
 	/** Referência ao usuário dono dessa transação */
 	userId: User['id']
 	/**
@@ -50,6 +49,7 @@ export interface Transaction extends Document {
 	confirmations?: number
 	/** O timestamp da transação na rede da moeda */
 	timestamp: Date
+	toJSON(): TxInfo
 }
 
 /** Schema da collection de transações dos usuários */
@@ -106,9 +106,19 @@ const TransactionSchema: Schema = new Schema({
 	}
 }, {
 	toJSON: {
-		transform: function(doc: Transaction, ret: TxInfo) {
-			ret.amount = +doc.amount.toFullString()
-			ret.timestamp = doc.timestamp.getTime()
+		transform: function(doc: Transaction): TxInfo {
+			return {
+				opid:          doc.id,
+				status:        doc.status,
+				currency:      doc.currency,
+				txid:          doc.txid,
+				account:       doc.account,
+				amount:       +doc.amount.toFullString(),
+				fee:           doc.fee,
+				type:          doc.type,
+				confirmations: doc.confirmations,
+				timestamp:     doc.timestamp.getTime()
+			}
 		}
 	}
 })

@@ -71,6 +71,7 @@ export default function initListeners(this: Currency) {
 				await Person.balanceOps.complete(userId, this.name, opid)
 
 			this.events.emit('new_transaction', userId, {
+				opid:          tx.id,
 				status:        tx.status,
 				currency:      tx.currency,
 				txid:          tx.txid,
