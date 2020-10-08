@@ -37,9 +37,6 @@ describe('Testing user accounts endpoint on the HTTP API version 1', () => {
 
 		for (const currency of currencyNames) {
 			await Person.findByIdAndUpdate(userId, {
-				$push: {
-					[`currencies.${currency}.accounts`]: `${currency}-account`
-				},
 				$set: {
 					[`currencies.${currency}.balance.available`]: 55.19764382,
 					[`currencies.${currency}.balance.locked`]: 67.997

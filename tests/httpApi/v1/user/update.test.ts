@@ -4,7 +4,6 @@ import request from 'supertest'
 import chai, { expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { ObjectId } from 'mongodb'
-import { currencyNames } from '../../../../src/libs/currencies'
 import api from '../../../../src/server/api'
 import Person from '../../../../src/db/models/person'
 import Session from '../../../../src/db/models/session'
@@ -34,18 +33,6 @@ describe('When making a request to update user data on the HTTP API version 1', 
 
 		const { _id } = await Person.createOne(user.email, user.password)
 		userId = _id
-
-		for (const currency of currencyNames) {
-			await Person.findByIdAndUpdate(userId, {
-				$push: {
-					[`currencies.${currency}.accounts`]: `${currency}-account`
-				},
-				$set: {
-					[`currencies.${currency}.balance.available`]: 55.19764382,
-					[`currencies.${currency}.balance.locked`]: 67.997
-				}
-			})
-		}
 
 		const res = await request(app)
 			.post('/v1/user/authentication')

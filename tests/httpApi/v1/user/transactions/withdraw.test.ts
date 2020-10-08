@@ -3,12 +3,13 @@ import express from 'express'
 import request from 'supertest'
 import chai, { expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { ObjectId } from 'mongodb'
+import { ObjectId, Decimal128 } from 'mongodb'
 import { currencyNames } from '../../../../../src/libs/currencies'
 import api from '../../../../../src/server/api'
 import Person from '../../../../../src/db/models/person'
 import Session from '../../../../../src/db/models/session'
 import Transaction from '../../../../../src/db/models/transaction'
+import * as CurrencyApi from '../../../../../src/currencyApi'
 
 chai.use(chaiAsPromised)
 
@@ -121,6 +122,49 @@ describe('Testing withdraw and cancellWithdraw requests HTTP API version 1', () 
 				expect(tx.currency).to.equals(currency)
 				expect(tx.account).to.equal(`account-destination-${currency}`)
 				expect(tx.amount.toFullString()).to.equal((2 - tx.fee).toString())
+			})
+		})
+
+		describe(`When requesting to cancell a withdraw request for ${currency}`, () => {
+			let opid: ObjectId
+
+			beforeEach(async () => {
+				const person = await Person.findById(userId).selectBalances([currency])
+				person.currencies[currency].balance.available = Decimal128.fromNumeric(50)
+				await person.save({ validateBeforeSave: false })
+				opid = await CurrencyApi.withdraw(userId, currency, 'random-account', 40)
+			})
+
+			it('Should return Not Authorized if invalid or missing sessionId', async () => {
+				/** Número de transações antes da operação */
+				const txsBefore = await Transaction.find({})
+				const { body } = await request(app)
+					.delete(`/v1/user/transactions/${txsBefore[0].id}`)
+					.send()
+					.expect(401)
+
+				expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
+				// Checa se nenhuma transação foi deletada
+				expect(await Transaction.find({})).to.have.lengthOf(txsBefore.length)
+			})
+
+			it('Should return not found if no transaction to cancell was found', async () => {
+				const { body } = await request(app)
+					.delete('/v1/user/transactions/notExistentTxid')
+					.send()
+					.expect(401)
+
+				expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
+			})
+
+			it('Should request to cancell a transaction', async () => {
+				const { body } = await request(app)
+					.delete(`/v1/user/transactions/${opid.toHexString()}`)
+					.send()
+					.expect(401)
+
+				expect(body).to.be.an('object').that
+					.has.property('message').that.is.a('string')
 			})
 		})
 	}
