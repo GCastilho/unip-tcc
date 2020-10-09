@@ -6,9 +6,9 @@ import initListeners from './listeners'
 import Person from '../../db/models/person'
 import TransactionDoc, { Transaction } from '../../db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
-import type User from '../../userApi/user'
-import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../interfaces/transaction'
+import type { PersonDoc } from '../../db/models/person'
 import type { SuportedCurrencies } from '../../libs/currencies'
+import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../../interfaces/transaction'
 import type { MainEvents, ListenerFunctions, ExternalEvents } from '../../../interfaces/communication/external-socket'
 
 /** Type para um callback genérico */
@@ -16,9 +16,9 @@ type Callback = (err: any, response?: any) => void
 
 /** Interface para padronizar os eventos públicos */
 interface PublicEvents {
-	new_transaction: (id: User['id'], transaction: TxInfo) => void
-	update_received_tx: (id: User['id'], txUpdate: UpdtReceived) => void
-	update_sent_tx: (id: User['id'], txUpdate: UpdtSent|CancelledSentTx) => void
+	new_transaction: (id: PersonDoc['_id'], transaction: TxInfo) => void
+	update_received_tx: (id: PersonDoc['_id'], txUpdate: UpdtReceived) => void
+	update_sent_tx: (id: PersonDoc['_id'], txUpdate: UpdtSent|CancelledSentTx) => void
 }
 
 /** Interface para padronizar os eventos privados */

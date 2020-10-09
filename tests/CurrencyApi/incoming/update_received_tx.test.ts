@@ -2,13 +2,12 @@ import '../../../src/libs/extensions'
 import { expect } from 'chai'
 import { Socket, setupPerson } from './setup'
 import Transaction from '../../../src/db/models/transaction'
-import PersonDoc from '../../../src/db/models/person'
-import * as UserApi from '../../../src/userApi'
+import Person from '../../../src/db/models/person'
 import type { UpdtReceived } from '../../../interfaces/transaction'
 
 describe('Testing the receival of update_received_tx on the CurrencyApi', () => {
 	let client: Socket
-	let person: InstanceType<typeof PersonDoc>
+	let person: InstanceType<typeof Person>
 
 	before(async () => {
 		person = await setupPerson()
@@ -85,7 +84,7 @@ describe('Testing the receival of update_received_tx on the CurrencyApi', () => 
 		await expect(client.emit('update_received_tx', updReceived))
 			.to.eventually.be.fulfilled.with.a('string')
 
-		const doc = await PersonDoc.findById(person.id)
+		const doc = await Person.findById(person.id)
 		expect(doc.currencies.bitcoin.balance.locked.toFullString())
 			.to.equals(txAmount.toFixed(1))
 		expect(doc.currencies.bitcoin.balance.available.toFullString())
@@ -102,7 +101,7 @@ describe('Testing the receival of update_received_tx on the CurrencyApi', () => 
 		await expect(client.emit('update_received_tx', updReceived))
 			.to.eventually.be.fulfilled.with.a('string')
 
-		const doc = await PersonDoc.findById(person.id)
+		const doc = await Person.findById(person.id)
 		expect(doc.currencies.bitcoin.balance.locked.toFullString())
 			.to.equals('0.0')
 		expect(doc.currencies.bitcoin.balance.available.toFullString())
@@ -126,8 +125,8 @@ describe('Testing the receival of update_received_tx on the CurrencyApi', () => 
 	describe('If sending invalid data', () => {
 		it('Should return UserNotFound if a user for existing transaction was not found', async () => {
 			// Configura o novo usuário
-			const newUser = await UserApi.createUser('receive-UserNotFound@email.com', 'UserP@ass')
-			await PersonDoc.findByIdAndUpdate(newUser.id, {
+			const newPerson = await Person.createOne('receive-UserNotFound@email.com', 'UserP@ass')
+			await Person.findByIdAndUpdate(newPerson.id, {
 				$push: {
 					['currencies.bitcoin.accounts']: 'bitcoin-account-newUser'
 				}
@@ -142,7 +141,7 @@ describe('Testing the receival of update_received_tx on the CurrencyApi', () => 
 			})
 
 			// Deleta o novo usuário
-			await PersonDoc.findByIdAndDelete(newUser.id)
+			await newPerson.remove()
 
 			// Envia um update para a transação do usuário deletado
 			const updateEvent = client.emit('update_received_tx', {

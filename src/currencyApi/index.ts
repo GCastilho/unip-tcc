@@ -1,7 +1,6 @@
 import socketIO from 'socket.io'
 import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
-import User from '../userApi/user'
 import Currency from './currency'
 import Person from '../db/models/person'
 import Transaction from '../db/models/transaction'
@@ -15,9 +14,9 @@ import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../inte
  * Interface para padronizar os eventos públicos
  */
 interface PublicEvents {
-	new_transaction: (userId: User['id'], currency: SuportedCurrencies, transaction: TxInfo) => void
-	update_received_tx: (userId: User['id'], currency: SuportedCurrencies, updtReceived: UpdtReceived) => void
-	update_sent_tx: (userId: User['id'], currency: SuportedCurrencies, updtSent: UpdtSent|CancelledSentTx) => void
+	new_transaction: (userId: PersonDoc['_id'], currency: SuportedCurrencies, transaction: TxInfo) => void
+	update_received_tx: (userId: PersonDoc['_id'], currency: SuportedCurrencies, updtReceived: UpdtReceived) => void
+	update_sent_tx: (userId: PersonDoc['_id'], currency: SuportedCurrencies, updtSent: UpdtSent|CancelledSentTx) => void
 }
 
 /** Módulos das currencies individuais */

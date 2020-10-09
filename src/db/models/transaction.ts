@@ -1,14 +1,14 @@
 import { ObjectId, Decimal128 } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
 import { currencies, currenciesObj } from '../../libs/currencies'
-import type User from '../../userApi/user'
+import type { PersonDoc } from './person'
 import type { TxInfo } from '../../../interfaces/transaction'
 import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** A interface dessa collection */
 export interface Transaction extends Document {
 	/** Referência ao usuário dono dessa transação */
-	userId: User['id']
+	userId: PersonDoc['_id']
 	/**
 	 * Status da transação
 	 *

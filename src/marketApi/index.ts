@@ -89,7 +89,7 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
  * não tenha sido executada
  * @param opid O id da ordem que será removida
  * @throws 'OrderNotFound' Se a ordem não existir ou já tiver sido executada
- * @throws OperationNotFound if UserApi could not found the locked operation
+ * @throws OperationNotFound if Person could not found the locked operation
  * @throws MarketNotFound if the market was not found in the markets map
  */
 export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {

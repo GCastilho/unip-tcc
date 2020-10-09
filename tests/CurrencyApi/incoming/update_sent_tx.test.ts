@@ -2,14 +2,13 @@ import '../../../src/libs/extensions'
 import { expect } from 'chai'
 import { Socket, setupPerson } from './setup'
 import Transaction from '../../../src/db/models/transaction'
-import PersonDoc from '../../../src/db/models/person'
+import Person from '../../../src/db/models/person'
 import * as CurrencyApi from '../../../src/currencyApi'
-import * as UserApi from '../../../src/userApi'
 import type { TxSend, UpdtSent } from '../../../interfaces/transaction'
 
 describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 	let client: Socket
-	let person: InstanceType<typeof PersonDoc>
+	let person: InstanceType<typeof Person>
 
 	before(async () => {
 		person = await setupPerson()
@@ -108,7 +107,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 		await expect(client.emit('update_sent_tx', updSent)).to.eventually.be
 			.fulfilled.with.a('string')
 
-		const doc = await PersonDoc.findById(person.id)
+		const doc = await Person.findById(person.id)
 		expect(doc.currencies.bitcoin.balance.locked.toFullString())
 			.to.equals('10.0')
 		expect(doc.currencies.bitcoin.balance.available.toFullString())
@@ -127,7 +126,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 		await expect(client.emit('update_sent_tx', updSent)).to.eventually.be
 			.fulfilled.with.a('string')
 
-		const doc = await PersonDoc.findById(person.id)
+		const doc = await Person.findById(person.id)
 		expect(doc.currencies.bitcoin.balance.locked.toFullString())
 			.to.equals('0.0')
 		expect(doc.currencies.bitcoin.balance.available.toFullString())
@@ -152,14 +151,14 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 
 	describe('If sending invalid data', () => {
 		it('Should return UserNotFound if a user for existing transaction was not found', done => {
-			let userId: InstanceType<typeof PersonDoc>['_id']
+			let userId: InstanceType<typeof Person>['_id']
 
 			// Recebe o request de saque
 			client.once('withdraw', async (request: TxSend, callback: (err: any, response?: string) => void) => {
 				callback(null, 'received withdraw request for userNotFound test')
 
 				try {
-					await PersonDoc.findByIdAndDelete(userId)
+					await Person.findByIdAndDelete(userId)
 
 					// Emite o update para o usuário deletado
 					const updateEvent = client.emit('update_sent_tx', {
@@ -183,10 +182,10 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 			})
 
 			// Cria o usuário
-			UserApi.createUser('non-existing-user-send-bitcoin@email.com', 'UserP@ass').then(user => {
-				userId = user.person._id
+			Person.createOne('non-existing-user-send-bitcoin@email.com', 'UserP@ass').then(person => {
+				userId = person._id
 				// Seta o saldo do usuário
-				return PersonDoc.findByIdAndUpdate(userId, {
+				return Person.findByIdAndUpdate(userId, {
 					$set: {
 						['currencies.bitcoin.balance.available']: 50,
 						['currencies.bitcoin.balance.locked']: 0

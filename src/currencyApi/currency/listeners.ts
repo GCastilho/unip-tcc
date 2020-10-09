@@ -254,12 +254,12 @@ export default function initListeners(this: Currency) {
 			if (err === 'OperationNotFound') {
 				callback({
 					code: 'OperationNotFound',
-					message: `UserApi could not find operation '${updtSent.opid}'`
+					message: `Could not find operation '${updtSent.opid}'`
 				})
 			} else if (err === 'UserNotFound') {
 				callback({
 					code: 'UserNotFound',
-					message: `UserApi could not find the user for the operation '${updtSent.opid}'`
+					message: `Could not find the user for the operation '${updtSent.opid}'`
 				})
 			} else if (err.name === 'CastError') {
 				callback({

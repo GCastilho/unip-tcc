@@ -12,7 +12,7 @@ describe('Testing BalanceOperations on the person model', () => {
 
 	beforeEach(async () => {
 		await Person.deleteMany({})
-		const { _id } = await Person.createOne('userApi-test@email.com', 'userP@ss')
+		const { _id } = await Person.createOne('balanceOps-test@email.com', 'userP@ss')
 
 		const person = await Person.findByIdAndUpdate(_id, {
 			$set: {
