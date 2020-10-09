@@ -1,29 +1,28 @@
 import randomstring from 'randomstring'
 import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
-import PersonDoc, { Person } from '../../src/db/models/person'
-import OrderDoc, { Order } from '../../src/db/models/order'
-import TradeDoc from '../../src/db/models/trade'
 import trade from '../../src/marketApi/trade'
-import * as UserApi from '../../src/userApi'
+import Order from '../../src/db/models/order'
+import Person from '../../src/db/models/person'
+import TradeDoc from '../../src/db/models/trade'
 
 describe('Testing trade function', () => {
 	/** Doc person para a ordem de buy */
-	let buyPerson: Person
+	let buyPerson: InstanceType<typeof Person>
 	/** Doc person para a ordem de sell */
-	let sellPerson: Person
+	let sellPerson: InstanceType<typeof Person>
 
 	/** Uma ordem válida de type buy */
-	let buyOrder: Order
+	let buyOrder: InstanceType<typeof Order>
 	/** Uma ordem válida de type sell */
-	let sellOrder: Order
+	let sellOrder: InstanceType<typeof Order>
 
 	beforeEach(async () => {
-		await PersonDoc.deleteMany({})
-		await OrderDoc.deleteMany({})
+		await Person.deleteMany({})
+		await Order.deleteMany({})
 
 		// Cria o doc da buyPerson
-		buyPerson = new PersonDoc({
+		buyPerson = new Person({
 			email: 'trade-buy-test@email.com',
 			credentials: {
 				salt: randomstring.generate({ length: 32 }),
@@ -38,7 +37,7 @@ describe('Testing trade function', () => {
 		await buyPerson.save()
 
 		// Cria o doc da buyOrder
-		buyOrder = await new OrderDoc({
+		buyOrder = await new Order({
 			userId: buyPerson._id,
 			status: 'ready',
 			owning: {
@@ -53,14 +52,14 @@ describe('Testing trade function', () => {
 		}).save()
 
 		// Cria o doc da sellPerson
-		sellPerson = new PersonDoc(buyPerson.toObject())
+		sellPerson = new Person(buyPerson.toObject())
 		sellPerson.email = 'trade-sell-test@email.com'
 		sellPerson._id = new ObjectId()
 		sellPerson.isNew = true
 		await sellPerson.save()
 
 		// Cria o doc da sellOrder
-		sellOrder = new OrderDoc(buyOrder.toObject())
+		sellOrder = new Order(buyOrder.toObject())
 		sellOrder._id = new ObjectId()
 		sellOrder.isNew = true
 		sellOrder.userId = sellPerson._id
@@ -87,12 +86,12 @@ describe('Testing trade function', () => {
 	})
 
 	it('Should fail if ordens don\'t have equal amounts', async () => {
-		let sellOrder_copy = new OrderDoc(sellOrder.toObject())
+		let sellOrder_copy = new Order(sellOrder.toObject())
 		sellOrder_copy.requesting.amount = 1.2
 		await expect(trade([[buyOrder, sellOrder_copy]])).to.eventually.be
 			.rejectedWith('A maker order must have owning amount equal to taker order\'s requesting amount')
 
-		sellOrder_copy = new OrderDoc(sellOrder.toObject())
+		sellOrder_copy = new Order(sellOrder.toObject())
 		sellOrder_copy.owning.amount = 1.2
 		await expect(trade([[buyOrder, sellOrder_copy]])).to.eventually.be
 			.rejectedWith('A maker order must have requesting amount equal to taker order\'s owning amount')
@@ -100,8 +99,7 @@ describe('Testing trade function', () => {
 
 	it('Should fail if maker\'s owning amount is not locked in pending', async () => {
 		// Da lock no saldo da sellPerson usando o opid da sellOrder
-		const user = await UserApi.findUser.byId(sellPerson._id)
-		await user.balanceOps.add(sellOrder.owning.currency, {
+		await Person.balanceOps.add(sellPerson._id, sellOrder.owning.currency, {
 			amount: sellOrder.owning.amount,
 			type: 'trade',
 			opid: sellOrder._id
@@ -113,8 +111,7 @@ describe('Testing trade function', () => {
 
 	it('Should fail if takers\'s owning amount is not locked in pending', async () => {
 		// Cria o usuário e da lock em uma ordem com o opid da buyOrder
-		const user = await UserApi.findUser.byId(buyPerson._id)
-		await user.balanceOps.add(buyOrder.owning.currency, {
+		await Person.balanceOps.add(buyPerson._id, buyOrder.owning.currency, {
 			amount: buyOrder.owning.amount,
 			type: 'trade',
 			opid: buyOrder._id
@@ -126,16 +123,14 @@ describe('Testing trade function', () => {
 
 	it('Should trade two orders', async () => {
 		// Da lock no saldo da buyPerson
-		let user = await UserApi.findUser.byId(buyPerson._id)
-		await user.balanceOps.add(buyOrder.owning.currency, {
+		await Person.balanceOps.add(buyPerson._id, buyOrder.owning.currency, {
 			amount: buyOrder.owning.amount,
 			type: 'trade',
 			opid: buyOrder._id
 		})
 
 		// Da lock no saldo da sellPerson
-		user = await UserApi.findUser.byId(sellPerson._id)
-		await user.balanceOps.add(sellOrder.owning.currency, {
+		await Person.balanceOps.add(sellPerson._id, sellOrder.owning.currency, {
 			amount: sellOrder.owning.amount,
 			type: 'trade',
 			opid: sellOrder._id
@@ -145,8 +140,8 @@ describe('Testing trade function', () => {
 		await expect(trade([[buyOrder, sellOrder]])).to.eventually.be.fulfilled
 
 		// Testa se as ordens foram removidas do orderbook
-		expect(await OrderDoc.findById(buyOrder.id), 'buyOrder is still on the orderbook').to.be.null
-		expect(await OrderDoc.findById(sellOrder.id), 'sellOrder is still on the orderbook').to.be.null
+		expect(await Order.findById(buyOrder.id), 'buyOrder is still on the orderbook').to.be.null
+		expect(await Order.findById(sellOrder.id), 'sellOrder is still on the orderbook').to.be.null
 
 		// Testa se um documento de trade com os userIds das ordens foi salvo no db
 		expect(
@@ -176,16 +171,14 @@ describe('Testing trade function', () => {
 			await TradeDoc.deleteMany({})
 
 			// Da lock no saldo da buyPerson
-			let user = await UserApi.findUser.byId(buyPerson._id)
-			await user.balanceOps.add(buyOrder.owning.currency, {
+			await Person.balanceOps.add(buyPerson._id, buyOrder.owning.currency, {
 				amount: - buyOrder.owning.amount,
 				type: 'trade',
 				opid: buyOrder._id
 			})
 
 			// Da lock no saldo da sellPerson
-			user = await UserApi.findUser.byId(sellPerson._id)
-			await user.balanceOps.add(sellOrder.owning.currency, {
+			await Person.balanceOps.add(sellPerson._id, sellOrder.owning.currency, {
 				amount: - sellOrder.owning.amount,
 				type: 'trade',
 				opid: sellOrder._id
@@ -196,42 +189,40 @@ describe('Testing trade function', () => {
 		})
 
 		it('Should have unlocked buyPerson\'s owning amount', async () => {
-			const user = await UserApi.findUser.byId(buyOrder.userId)
-			await expect(user.balanceOps.get(buyOrder.owning.currency, buyOrder._id))
+			await expect(Person.balanceOps.get(buyOrder.userId, buyOrder.owning.currency, buyOrder._id))
 				.to.eventually.be.rejectedWith('OperationNotFound')
 		})
 
 		it('Should have subtracted buyPerson\'s owning amount', async () => {
-			const user = await UserApi.findUser.byId(buyOrder.userId)
-			expect(+user.person.currencies[buyOrder.owning.currency].balance.available)
+			const person = await Person.findById(buyOrder.userId)
+			expect(+person.currencies[buyOrder.owning.currency].balance.available)
 				.to.equal(10 - buyOrder.owning.amount) // 10- pq é o saldo inicial
 		})
 
 		it('Should have incremented buyPerson\'s requesting amount', async () => {
-			const user = await UserApi.findUser.byId(buyOrder.userId)
-			await expect(user.balanceOps.get(buyOrder.requesting.currency, buyOrder._id))
+			const person = await Person.findById(buyOrder.userId)
+			await expect(Person.balanceOps.get(buyOrder.userId, buyOrder.requesting.currency, buyOrder._id))
 				.to.eventually.be.rejectedWith('OperationNotFound')
-			expect(+user.person.currencies[buyOrder.requesting.currency].balance.available)
+			expect(+person.currencies[buyOrder.requesting.currency].balance.available)
 				.to.equal(buyOrder.requesting.amount + 10) // +10 pq é o saldo inicial
 		})
 
 		it('Should have unlocked sellPerson\'s owning amount', async () => {
-			const user = await UserApi.findUser.byId(sellOrder.userId)
-			await expect(user.balanceOps.get(sellOrder.owning.currency, sellOrder._id))
+			await expect(Person.balanceOps.get(sellOrder.userId, sellOrder.owning.currency, sellOrder._id))
 				.to.eventually.be.rejectedWith('OperationNotFound')
 		})
 
 		it('Should have subtracted sellPerson\'s owning amount', async () => {
-			const user = await UserApi.findUser.byId(sellOrder.userId)
-			expect(+user.person.currencies[sellOrder.owning.currency].balance.available)
+			const person = await Person.findById(sellOrder.userId)
+			expect(+person.currencies[sellOrder.owning.currency].balance.available)
 				.to.equal(10 - sellOrder.owning.amount) // 10- pq é o saldo inicial
 		})
 
 		it('Should have incremented sellPerson\'s requesting amount', async () => {
-			const user = await UserApi.findUser.byId(sellOrder.userId)
-			await expect(user.balanceOps.get(sellOrder.requesting.currency, sellOrder._id))
+			const person = await Person.findById(sellOrder.userId)
+			await expect(Person.balanceOps.get(sellOrder.userId, sellOrder.requesting.currency, sellOrder._id))
 				.to.eventually.be.rejectedWith('OperationNotFound')
-			expect(+user.person.currencies[sellOrder.requesting.currency].balance.available)
+			expect(+person.currencies[sellOrder.requesting.currency].balance.available)
 				.to.equal(sellOrder.requesting.amount + 10) // +10 pq é o saldo inicial
 		})
 	})

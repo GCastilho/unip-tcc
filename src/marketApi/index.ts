@@ -1,10 +1,10 @@
 import { ObjectId } from 'mongodb'
 import Market from './market'
-import User from '../userApi/user'
+import Order from '../db/models/order'
 import Person from '../db/models/person'
-import OrderDoc from '../db/models/order'
+import type { OrderDoc } from '../db/models/order'
+import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
-import type { Order } from '../db/models/order'
 
 interface MarketOrder {
 	owning: {
@@ -29,7 +29,7 @@ class MarketNotFound extends Error {
 const markets = new Map<string, Market>()
 
 /** Retorna a string chave de mercado de um par */
-function getMarketKey(orderedPair: Order['orderedPair']) {
+function getMarketKey(orderedPair: OrderDoc['orderedPair']) {
 	return orderedPair.map(item => item.currency).toString()
 }
 
@@ -40,21 +40,21 @@ function getMarketKey(orderedPair: Order['orderedPair']) {
  * @throws 'SameCurrencyOperation' if owning and requesting currency are the same
  * @returns Order's opid
  */
-export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
+export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise<ObjectId> {
 	if (order.owning.currency === order.requesting.currency) throw 'SameCurrencyOperation'
 
 	const opid = new ObjectId()
 
-	const orderDoc = await new OrderDoc({
+	const orderDoc = await new Order({
 		_id: opid,
-		userId: user.id,
+		userId: userId,
 		status: 'preparing',
 		...order,
 		timestamp: new Date()
 	}).save()
 
 	try {
-		await Person.balanceOps.add(user.id, order.owning.currency, {
+		await Person.balanceOps.add(userId, order.owning.currency, {
 			opid,
 			type: 'trade',
 			amount: - Math.abs(order.owning.amount)
@@ -92,13 +92,13 @@ export async function add(user: User, order: MarketOrder): Promise<ObjectId> {
  * @throws OperationNotFound if UserApi could not found the locked operation
  * @throws MarketNotFound if the market was not found in the markets map
  */
-export async function remove(user: User, opid: ObjectId) {
+export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {
 	// Há uma race entre a ordem ser selecionada na execTaker e o trigger no update para status 'matched'
-	const order = await OrderDoc.findOneAndUpdate({ _id: opid, status: 'ready' }, { status: 'cancelled' })
+	const order = await Order.findOneAndUpdate({ _id: opid, status: 'ready' }, { status: 'cancelled' })
 	if (!order) throw 'OrderNotFound'
 	const market = markets.get(getMarketKey(order.orderedPair))
 	if (!market) throw new MarketNotFound(`Market not found while removing: ${order}`)
 	market.remove(order)
 	await order.remove()
-	await Person.balanceOps.cancel(user.id, order.owning.currency, opid)
+	await Person.balanceOps.cancel(userId, order.owning.currency, opid)
 }
