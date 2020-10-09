@@ -42,14 +42,14 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 			})
 
 			afterEach(() => {
-				client.disconnect()
+				client.close()
 			})
 
 			it('Should receive a create_new_account request', done => {
 				CurrencyApi.createAccount(person.id, currency).catch(err => {
 					if (err != 'SocketDisconnected') throw err
 				}).then(() => {
-					client.connect()
+					client.open()
 
 					client.once('create_new_account', (callback: (err: any, account?: string) => void) => {
 						callback(null, `account-${currency}`)
@@ -61,7 +61,13 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 			it('Should receive a withdraw request', done => {
 				const amount = 3.456
 				CurrencyApi.withdraw(person.id, currency, `${currency}_account`, amount).then(opid => {
-					client.connect()
+					client.open()
+
+					// Responde o create_new_account para evitar timeout
+					client.once('create_new_account', callback => {
+						callback(null, `account-${currency}`)
+						done()
+					})
 
 					client.once('withdraw', async (
 						request: TxSend,
@@ -100,7 +106,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 			})
 
 			after(() => {
-				client.disconnect()
+				client.close()
 			})
 
 			it('Should receive a create_new_account request immediate after requested', done => {
