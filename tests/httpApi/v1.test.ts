@@ -588,10 +588,11 @@ describe('Testing version 1 of HTTP API', () => {
 							.set('Cookie', [`sessionId=${sessionId}`])
 
 							.send()
-							.expect(401)
+							.expect(404)
+
 						expect(body).to.be.an('object').that.deep.equals({
-							error: 'NotAuthorized',
-							message: 'This transaction does not belong to your account'
+							error: 'NotFound',
+							message: 'No transaction with the given opid was found on your account'
 						})
 					}
 				})

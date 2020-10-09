@@ -70,17 +70,7 @@ export default function initListeners(this: Currency) {
 			if (status === 'confirmed')
 				await Person.balanceOps.complete(userId, this.name, opid)
 
-			this.events.emit('new_transaction', userId, {
-				opid:          tx.id,
-				status:        tx.status,
-				currency:      tx.currency,
-				txid:          tx.txid,
-				account:       tx.account,
-				amount:       +tx.amount.toFullString(),
-				type:          tx.type,
-				confirmations: tx.confirmations,
-				timestamp:     tx.timestamp.getTime()
-			})
+			this.events.emit('new_transaction', userId, tx.toJSON())
 			callback(null, opid.toHexString())
 		} catch (err) {
 			if (err.code === 11000 && err.keyPattern.txid) {

@@ -14,6 +14,15 @@ router.use(cookieParser())
 router.use(bodyParser.json())
 
 /**
+ * Retorna informações sobre os subpath de /user
+ */
+router.get('/', (_req, res) => {
+	res.send({
+		description: 'Entrypoint for requests specific to a user',
+	})
+})
+
+/**
  * Handler de registros de usuários
  */
 router.post('/', async (req, res): Promise<any> => {
@@ -33,7 +42,7 @@ router.post('/', async (req, res): Promise<any> => {
 			res.status(409).send({ error: 'Email already registered' })
 		} else {
 			res.status(500).send({ error: 'Internal server error' })
-			console.error('Register error:', err)
+			console.error('Error while registering new user:', err)
 		}
 	}
 })
@@ -72,7 +81,7 @@ router.get('/balances', async (req, res) => {
 	res.send(balance)
 })
 
-//Não implementado
+// Não implementado
 router.get('/info', async (_req, res) => {
 	res.send({ error: 'NotImplemented' })
 })
@@ -82,65 +91,43 @@ router.get('/info', async (_req, res) => {
  */
 router.get('/transactions/:opid', async (req, res) => {
 	try {
-		const { id: userId } = await Person.findById(req.userId, { _id: true })
-			.orFail() as InstanceType<typeof Person>
-		const tx = await Transaction.findById(req.params.opid)
-			.orFail() as InstanceType<typeof Transaction>
-		// Checa se o usuario da transação é o mesmo que esta logado
-		if (tx.userId.toHexString() != userId) throw 'NotAuthorized'
-		// Formata o objeto da transação
-		res.send({
-			opid:          tx.id,
-			status:        tx.status,
-			currency:      tx.currency,
-			txid:          tx.txid,
-			account:       tx.account,
-			amount:       +tx.amount.toFullString(),
-			fee:           tx.fee,
-			type:          tx.type,
-			confirmations: tx.confirmations,
-			timestamp:     tx.timestamp.getTime()
-		})
+		const transaction = await Transaction.findById(req.params.opid)
+			.where('userId').equals(req.userId)
+			.orFail()
+		res.send(transaction)
 	} catch (err) {
-		if (err === 'NotFound') {
+		if (err.name == 'DocumentNotFoundError') {
 			res.status(404).send({
 				error: 'NotFound',
-				message: 'Transaction not found'
+				message: 'No transaction with the given opid was found on your account'
 			})
 		} else {
-			res.status(401).send({
-				error: 'NotAuthorized',
-				message: 'This transaction does not belong to your account'
+			res.status(500).send({
+				error: 'Internal Server Error'
 			})
+			console.error('Error fetching specific transaction', err)
 		}
 	}
 })
 
+/**
+ * Handler de cancelamento de transações pendentes
+ */
 router.delete('/transactions/:opid', async (req, res) => {
-	const { id: userId } = await Person.findById(req.userId, { _id: true })
-		.orFail() as InstanceType<typeof Person>
 	try {
-		const tx = await Transaction.findById(req.params.opid, {
-			userId: true,
-			currency: true
-		})
-		if (!tx) throw 'NotFound'
-		// Checa se o usuario da transação é o mesmo que esta logado
-		if (tx.userId.toHexString() != userId) throw 'NotAuthorized'
+		const tx = await Transaction.findById(req.params.opid)
+			.where('userId').equals(req.userId)
+			.select('currency')
+			.orFail() as InstanceType<typeof Transaction>
 
 		res.send({
-			message: await CurrencyApi.cancellWithdraw(tx.userId, tx.currency, tx._id)
+			message: await CurrencyApi.cancellWithdraw(req.userId, tx.currency, tx._id)
 		})
 	} catch (err) {
-		if (err === 'NotFound') {
+		if (err.name == 'DocumentNotFoundError') {
 			res.status(404).send({
 				error: 'NotFound',
-				message: 'No transactions was found with given opid'
-			})
-		} else if (err == 'NotAuthorized') {
-			res.status(401).send({
-				error: 'NotAuthorized',
-				message: 'This transaction does not belong to your account'
+				message: 'No transaction with the given opid was found on your account'
 			})
 		} else if (err.code == 'OperationNotFound') {
 			res.status(404).send(err)
@@ -149,58 +136,39 @@ router.delete('/transactions/:opid', async (req, res) => {
 		}
 	}
 })
+
 /**
  * Retorna uma lista de transações do usuário
  */
 router.get('/transactions', async (req, res) => {
-	const { id: userId } = await Person.findById(req.userId, { _id: true })
-		.orFail() as InstanceType<typeof Person>
-	/** Numero de transações que sera puladas */
-	const skip: number = +req.query.skip || 0
-	/** Filtro da query do mongo */
-	const query = { userId } as any
-	/** Filtro de transações por currency */
-	const currency = currencyNames.find(currency => currency === req.query.currency)
-	if (currency) query.currency = currency
 	/**
 	 * As 10 mais recentes transações do usuário,
 	 * filtrado de acordo com a query e pulando de acordo com skip
 	 */
-	const txs = await Transaction.find(query, null, {
-		sort: { timestamp: -1 },
-		limit: 10,
-		skip
-	})
-	const formattedTransactions = txs.map(tx => ({
-		opid:          tx.id,
-		status:        tx.status,
-		currency:      tx.currency,
-		txid:          tx.txid,
-		account:       tx.account,
-		amount:       +tx.amount.toFullString(),
-		fee:           tx.fee,
-		type:          tx.type,
-		confirmations: tx.confirmations,
-		timestamp:     tx.timestamp.getTime()
-	}))
-	res.send(formattedTransactions)
+	const txs = await Transaction.find()
+		.where('currency').equals(req.query.currency ? req.query.currency : currencyNames)
+		.where('userId').equals(req.userId)
+		.sort('-timestamp')
+		.limit(10)
+		.skip(+req.query.skip || 0)
+
+	res.send(txs)
 })
 
 /**
  * Faz o request 'withdraw' usando as informações do req.body
  */
 router.post('/transactions', async (req, res) => {
-	const { _id: userId } = await Person.findById(req.userId, { _id: true })
-		.orFail() as InstanceType<typeof Person>
 	try {
 		const currency = currencyNames.find(currency => currency === req.body.currency)
+
 		/** Checa se os dados dados enviados pelo o usuario são do type correto */
 		if (!currency
-			|| typeof req.body.destination !== 'string'
+			|| typeof req.body.destination != 'string'
 			|| isNaN(+req.body.amount)
 		) throw 'BadRequest'
 
-		const opid = await CurrencyApi.withdraw(userId, currency, req.body.destination, +req.body.amount)
+		const opid = await CurrencyApi.withdraw(req.userId, currency, req.body.destination, +req.body.amount)
 		res.send({ opid })
 	} catch (err) {
 		if (err === 'NotEnoughFunds') {
@@ -215,15 +183,6 @@ router.post('/transactions', async (req, res) => {
 			})
 		}
 	}
-})
-
-/**
- * Retorna informações sobre os subpath de /user
- */
-router.get('/', (_req, res) => {
-	res.send({
-		description: 'Entrypoint for requests specific to a user',
-	})
 })
 
 router.patch('/password', async (req, res): Promise<any> => {
