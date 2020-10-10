@@ -150,7 +150,7 @@ router.get('/transactions', async (req, res) => {
 		.where('userId').equals(req.userId)
 		.sort('-timestamp')
 		.limit(10)
-		.skip(+req.query.skip || 0)
+		.skip(Number(req.query.skip) || 0)
 
 	res.send(txs)
 })
