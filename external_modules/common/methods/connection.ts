@@ -4,7 +4,7 @@ import Common from '../index'
 import Account from '../db/models/account'
 import Transaction from '../db/models/transaction'
 import { SendPending } from '../db/models/pendingTx'
-import type { TxSend } from '../../../interfaces/transaction'
+import type { WithdrawRequest } from '../../../interfaces/transaction'
 
 /**
  * Essa função é o handler de requests vindos do servidor principal
@@ -65,7 +65,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		}
 	})
 
-	socket.on('withdraw', async (request: TxSend, callback: (...args: any[]) => any) => {
+	socket.on('withdraw', async (request: WithdrawRequest, callback: (...args: any[]) => any) => {
 		console.log('received withdraw request', request)
 		/**
 		 * Salva na pending e retorna um callback dando ciência do recebimento
@@ -101,7 +101,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		this.withdraw_pending()
 	})
 
-	socket.on('cancell_withdraw', async (opid: TxSend['opid'], callback: (...args: any[]) => any) => {
+	socket.on('cancell_withdraw', async (opid: WithdrawRequest['opid'], callback: (...args: any[]) => any) => {
 		console.log('received cancell_withdraw request', opid)
 		try {
 			/**

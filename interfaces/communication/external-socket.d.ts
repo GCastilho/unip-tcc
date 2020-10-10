@@ -1,4 +1,4 @@
-import type { TxSend, TxReceived, UpdtReceived, UpdtSent } from '../transaction'
+import type { WithdrawRequest, TxReceived, UpdtReceived, UpdtSent } from '../transaction'
 
 /** Retorna um type apenas com as propriedades que são funções */
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -8,7 +8,7 @@ type FilterFunctionsProperties<T extends object> = {
 
 interface RawMainEvents {
 	create_new_account: () => string
-	withdraw: (transaction: TxSend) => string
+	withdraw: (request: WithdrawRequest) => string
 	cancell_withdraw: (opid: string) => string
 }
 

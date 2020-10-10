@@ -8,7 +8,7 @@ import { currencies, currencyNames, currenciesObj } from '../libs/currencies'
 import type TypedEmitter from 'typed-emitter'
 import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies } from '../libs/currencies'
-import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../interfaces/transaction'
+import type { TxInfo, UpdtReceived, UpdtSent, CancellSent } from '../../interfaces/transaction'
 
 /**
  * Interface para padronizar os eventos públicos
@@ -16,7 +16,7 @@ import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../../inte
 interface PublicEvents {
 	new_transaction: (userId: PersonDoc['_id'], currency: SuportedCurrencies, transaction: TxInfo) => void
 	update_received_tx: (userId: PersonDoc['_id'], currency: SuportedCurrencies, updtReceived: UpdtReceived) => void
-	update_sent_tx: (userId: PersonDoc['_id'], currency: SuportedCurrencies, updtSent: UpdtSent|CancelledSentTx) => void
+	update_sent_tx: (userId: PersonDoc['_id'], currency: SuportedCurrencies, updtSent: UpdtSent|CancellSent) => void
 }
 
 /** Módulos das currencies individuais */

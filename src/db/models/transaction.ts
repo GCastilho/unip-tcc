@@ -2,7 +2,6 @@ import { ObjectId, Decimal128 } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
 import { currencies, currenciesObj } from '../../libs/currencies'
 import type { PersonDoc } from './person'
-import type { TxInfo } from '../../../interfaces/transaction'
 import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** A interface dessa collection */
@@ -49,11 +48,23 @@ export interface Transaction extends Document {
 	confirmations?: number
 	/** O timestamp da transação na rede da moeda */
 	timestamp: Date
-	toJSON(): TxInfo
+	toJSON(): TxJSON
+}
+
+/** Interface do objeto retornado pelo método toJSON */
+export interface TxJSON extends Omit<
+	Transaction,
+	keyof Document|'userId'|'status'|'amount'|'fee'|'timestamp'
+> {
+	opid: string
+	status: 'processing'|'pending'|'confirmed'
+	amount: number
+	fee?: number
+	timestamp: number
 }
 
 /** Schema da collection de transações dos usuários */
-const TransactionSchema: Schema = new Schema({
+const TransactionSchema = new Schema({
 	userId: {
 		type: ObjectId,
 		required: true,
@@ -82,7 +93,6 @@ const TransactionSchema: Schema = new Schema({
 		min: 0,
 		required: false
 	},
-	/** @todo Adicionar um validador de accounts */
 	account: {
 		type: String,
 		required: true
@@ -106,10 +116,20 @@ const TransactionSchema: Schema = new Schema({
 	}
 }, {
 	toJSON: {
-		transform: function(doc: Transaction): TxInfo {
+		transform: function(doc: Transaction): TxJSON {
+			let status: TxJSON['status']
+			switch (doc.status) {
+				case('pending'):
+				case('confirmed'):
+					status = doc.status
+					break
+				default:
+					status = 'processing'
+			}
+
 			return {
 				opid:          doc.id,
-				status:        doc.status,
+				status:        status,
 				currency:      doc.currency,
 				txid:          doc.txid,
 				account:       doc.account,
