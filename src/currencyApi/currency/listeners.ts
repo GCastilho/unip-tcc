@@ -1,6 +1,6 @@
 import type Currency from './index'
 import { ObjectId } from 'mongodb'
-import Tx from '../../db/models/transaction'
+import Transaction from '../../db/models/transaction'
 import Person from '../../db/models/person'
 import type { PersonDoc } from '../../db/models/person'
 import type { TxReceived } from '../../../interfaces/transaction'
@@ -42,7 +42,7 @@ export default function initListeners(this: Currency) {
 		 */
 		const opid = new ObjectId()
 
-		const tx = new Tx({
+		const tx = new Transaction({
 			_id: opid,
 			userId,
 			txid,
@@ -75,7 +75,7 @@ export default function initListeners(this: Currency) {
 		} catch (err) {
 			if (err.code === 11000 && err.keyPattern.txid) {
 				// A transação já existe
-				const tx = await Tx.findOne({ txid })
+				const tx = await Transaction.findOne({ txid })
 				if (!tx) {
 					throw `Error finding transaction '${txid}' that SHOULD exist`
 				} else if (tx.status === 'processing') {
@@ -142,7 +142,7 @@ export default function initListeners(this: Currency) {
 				 * a execução do programa para evitar potencial dano
 				 */
 				try {
-					await Tx.findByIdAndDelete(opid)
+					await Transaction.deleteOne({ opid })
 					await Person.balanceOps.cancel(userId, this.name, opid)
 				} catch (err) {
 					if (err != 'OperationNotFound')
@@ -167,7 +167,7 @@ export default function initListeners(this: Currency) {
 		const { opid, status, confirmations } = updtReceived
 
 		try {
-			const tx = await Tx.findOne({
+			const tx = await Transaction.findOne({
 				_id: opid,
 				status: 'pending'
 			})
@@ -228,7 +228,7 @@ export default function initListeners(this: Currency) {
 		})
 
 		try {
-			const tx = await Tx.findById(updtSent.opid)
+			const tx = await Transaction.findById(updtSent.opid)
 			if (!tx) return callback({
 				code: 'OperationNotFound',
 				message: `No pending transaction with id: '${updtSent.opid}' found`

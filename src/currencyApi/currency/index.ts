@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
 import initListeners from './listeners'
 import Person from '../../db/models/person'
-import TransactionDoc, { Transaction } from '../../db/models/transaction'
+import Transaction, { TransactionDoc } from '../../db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
 import type { PersonDoc } from '../../db/models/person'
 import type { SuportedCurrencies } from '../../libs/currencies'
@@ -86,9 +86,9 @@ export default class Currency {
 	}
 
 	/** Manda requests de saque para o módulo externos */
-	public async withdraw(transaction: Transaction): Promise<void> {
+	public async withdraw(transaction: TransactionDoc): Promise<void> {
 		try {
-			const { nModified } = await TransactionDoc.updateOne({
+			const { nModified } = await Transaction.updateOne({
 				_id: transaction._id,
 				status: 'ready'
 			}, {
@@ -112,7 +112,7 @@ export default class Currency {
 			}
 		} catch (err) {
 			if (err == 'SocketDisconnected') {
-				await TransactionDoc.updateOne({ _id: transaction._id }, { status: 'ready' })
+				await Transaction.updateOne({ _id: transaction._id }, { status: 'ready' })
 			} else if (err.code != 'OperationExists') {
 				throw err
 			}
@@ -122,9 +122,9 @@ export default class Currency {
 	/** Processa requests de cancelamento de saque */
 	public async cancellWithdraw(userId: ObjectId, opid: ObjectId): Promise<'cancelled'|'requested'> {
 		try {
-			const { deletedCount } = await TransactionDoc.deleteOne({ _id: opid, status: 'ready' })
+			const { deletedCount } = await Transaction.deleteOne({ _id: opid, status: 'ready' })
 			if (!deletedCount) {
-				const { nModified } = await TransactionDoc.updateOne({
+				const { nModified } = await Transaction.updateOne({
 					_id: opid,
 					status: 'external'
 				}, {
@@ -143,7 +143,7 @@ export default class Currency {
 
 			// Pode dar throw em OperationNotFound (não tem handler)
 			await Person.balanceOps.cancel(userId, this.name, opid)
-			await TransactionDoc.deleteOne({ _id: opid })
+			await Transaction.deleteOne({ _id: opid })
 
 			return 'cancelled'
 		} catch (err) {
@@ -263,7 +263,7 @@ export default class Currency {
 		 * Chama a cancellWithdraw para todas as transações que estavam no external
 		 * e foram marcadas para serem canceladas
 		 */
-		await TransactionDoc.find({
+		await Transaction.find({
 			currency: this.name,
 			status: 'cancelled'
 		}).cursor().eachAsync(async tx => {
@@ -279,7 +279,7 @@ export default class Currency {
 		/**
 		 * Chama o withdraw para todas as transações prontas para serem executadas
 		 */
-		await TransactionDoc.find({
+		await Transaction.find({
 			currency: this.name,
 			status: 'ready'
 		}).cursor().eachAsync(tx => this.withdraw(tx))

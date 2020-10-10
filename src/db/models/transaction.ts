@@ -5,7 +5,7 @@ import type { PersonDoc } from './person'
 import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** A interface dessa collection */
-export interface Transaction extends Document {
+export interface TransactionDoc extends Document {
 	/** Referência ao usuário dono dessa transação */
 	userId: PersonDoc['_id']
 	/**
@@ -53,7 +53,7 @@ export interface Transaction extends Document {
 
 /** Interface do objeto retornado pelo método toJSON */
 export interface TxJSON extends Omit<
-	Transaction,
+	TransactionDoc,
 	keyof Document|'userId'|'status'|'amount'|'fee'|'timestamp'
 > {
 	opid: string
@@ -116,7 +116,7 @@ const TransactionSchema = new Schema({
 	}
 }, {
 	toJSON: {
-		transform: function(doc: Transaction): TxJSON {
+		transform: function(doc: TransactionDoc): TxJSON {
 			let status: TxJSON['status']
 			switch (doc.status) {
 				case('pending'):
@@ -156,7 +156,7 @@ TransactionSchema.index({
 	}
 })
 
-TransactionSchema.pre('validate', function(this: Transaction) {
+TransactionSchema.pre('validate', function(this: TransactionDoc) {
 	if (this.amount instanceof Decimal128)
 		this.amount = this.amount.truncate(currenciesObj[this.currency].decimals)
 })
@@ -165,4 +165,6 @@ TransactionSchema.pre('validate', function(this: Transaction) {
  * Model da collection Transactions, responsável por armazenar as transações
  * dos usuários
  */
-export default mongoose.model<Transaction>('Transaction', TransactionSchema)
+const Transaction = mongoose.model<TransactionDoc>('Transaction', TransactionSchema)
+
+export default Transaction

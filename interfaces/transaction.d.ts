@@ -1,4 +1,4 @@
-import type { Transaction as TransactionDoc, TxJSON } from '../src/db/models/transaction'
+import type { TransactionDoc, TxJSON } from '../src/db/models/transaction'
 
 /**
  * Interface base para interfaces de comunicação entre o módulo externo
