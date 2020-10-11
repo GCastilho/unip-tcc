@@ -1,7 +1,12 @@
 <script>
+	export let base
+	export let selected
+
 	let operation = 'Buy'
 	let buttonColor = '#6ec79e'
+	let disableButton
 
+	$: disableButton = base === selected || !base || !selected ? true : false
 	$: buttonColor = operation == 'Sell' ? '#de4949' : '#6ec79e'
 
 	function trade() {
@@ -175,6 +180,11 @@
 	button:active {
 		filter: brightness(85%);
 	}
+	button:disabled {
+		background-color: #6ec79e69;
+		filter: brightness(100%);
+		cursor: not-allowed;
+	}
 
 </style>
 
@@ -191,16 +201,16 @@
 		</div>
 	</div>
 	<div class="float-input">
-		<input placeholder="BTC"/>
+		<input placeholder={base || '...'}/>
 		<label>limite price</label>
 	</div>
 	<div class="float-input">
-		<input placeholder="BTC"/>
+		<input placeholder={base || '...'}/>
 		<label>amount</label>
 	</div>
 	<div class="float-input">
-		<input placeholder="BTC"/>
+		<input placeholder={base || '...'}/>
 		<label>total</label>
 	</div>
-	<button on:click={trade}>{operation} BTC</button>
+	<button on:click={trade} disabled={disableButton}>{operation} {base || '...'}</button>
 </div>

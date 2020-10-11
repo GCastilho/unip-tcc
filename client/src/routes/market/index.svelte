@@ -1,5 +1,19 @@
 <script>
 	import BuySell from './_buySell.svelte'
+	import ExchangeIcon from './exchange.svg'
+	import * as currencies from './../../stores/currencies'
+
+	//nomes temporarios até eu pensar em outro melhor
+	let base
+	let selected
+
+	function exchangeCoin() {
+		let aux = base
+		base = selected
+		selected = aux
+	}
+
+	console.log($currencies)
 </script>
 
 <style>
@@ -15,10 +29,69 @@
 		flex-grow: 1;
 		justify-content: center;
 	}
+
+	.currency-select {
+		display: flex;
+		justify-content: center;
+		margin: 20px;
+	}
+
+	.currency-select > select {
+		height: 32px;
+		width: 80px;
+	}
+
+	.currency-select > select:focus {
+		outline: none;
+	}
+
+	.currency-select > button {
+		align-self: center;
+		background-color: transparent;
+		width: 15px;
+		padding: 0;
+		margin: 0 10px;
+		height: 15px;
+		border: 0;
+		outline: 0;
+		opacity: 0.6;
+		transition: 0.3s;
+		fill: #6f6868;
+		justify-self: center;
+	}
+
+	.currency-select > button:hover {
+		opacity: 1;
+		cursor: pointer;
+	}
+
+	.currency-select > button:active {
+		transition: 0s;
+		fill: black;
+	}
 </style>
 
-<h1>Market</h1>
 
+<h1>Market</h1>
+<div class="currency-select">
+	<select bind:value={base}>
+		<option value={null}>...</option>
+		{#each $currencies as currency }
+			<option value={currency.code}>
+				{currency.name}
+			</option>
+		{/each}
+	</select>
+	<button on:click={exchangeCoin}><ExchangeIcon/></button>
+	<select bind:value={selected}>
+		<option value={null}>...</option>
+		{#each $currencies as currency }
+			<option value={currency.code}>
+				{currency.name}
+			</option>
+		{/each}
+	</select>
+</div>
 <div class="main">
-	<BuySell/>
+	<BuySell {base} {selected}/>
 </div>
