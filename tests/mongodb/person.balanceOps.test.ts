@@ -39,8 +39,7 @@ describe('Testing BalanceOperations on the person model', () => {
 		expect(person.currencies.bitcoin.pending[0]).to.be.an('object')
 		expect(person.currencies.bitcoin.pending[0].opid.toHexString())
 			.to.equals('89fb0d1b05c505618b81ce5e')
-		expect(person.currencies.bitcoin.pending[0].amount.toFullString())
-			.to.equals(Decimal128.fromNumeric(20).toFullString())
+		expect(person.currencies.bitcoin.pending[0].amount).to.equal(20)
 		expect(person.currencies.bitcoin.pending[0].type).to.equals('transaction')
 	})
 
@@ -103,8 +102,7 @@ describe('Testing BalanceOperations on the person model', () => {
 			const op = await Person.balanceOps.get(userId, 'bitcoin', opid)
 			expect(op).to.be.an('object')
 			expect(op.type).to.equals('transaction')
-			expect(op.amount.toFullString())
-				.to.equals(Decimal128.fromNumeric(20).toFullString())
+			expect(op.amount).to.equal(20)
 		})
 
 		it('Should cancel a pending operation', async () => {
@@ -157,8 +155,7 @@ describe('Testing BalanceOperations on the person model', () => {
 					.to.equals(Decimal128.fromNumeric(60).toFullString())
 				expect(person.currencies.bitcoin.balance.locked.toFullString())
 					.to.equals(Decimal128.fromNumeric(10).toFullString())
-				expect(person.currencies.bitcoin.pending[0].amount.toFullString())
-					.to.equals(Decimal128.fromNumeric(10).toFullString())
+				expect(person.currencies.bitcoin.pending[0].amount).to.equal(10)
 			})
 
 			it('Should partially complete a pending operation that reduces balance', async () => {
@@ -178,11 +175,9 @@ describe('Testing BalanceOperations on the person model', () => {
 					.to.equals(Decimal128.fromNumeric(30).toFullString())
 				expect(person.currencies.bitcoin.balance.locked.toFullString())
 					.to.equals(Decimal128.fromNumeric(30).toFullString())
-				expect(person.currencies.bitcoin.pending[1].amount.toFullString())
-					.to.equals(Decimal128.fromNumeric(-10).toFullString())
-				// Checa se nãõ alterou a outra ordem
-				expect(person.currencies.bitcoin.pending[0].amount.toFullString())
-					.to.equals(Decimal128.fromNumeric(20).toFullString())
+				expect(person.currencies.bitcoin.pending[1].amount).to.equal(-10)
+				// Checa se não alterou a outra ordem
+				expect(person.currencies.bitcoin.pending[0].amount).to.equal(20)
 			})
 
 			it('Should complete an operation that was partially completed', async () => {

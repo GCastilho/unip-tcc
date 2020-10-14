@@ -28,7 +28,7 @@ interface PendingOp extends Omit<Pending, 'amount'> {
 	 * O amount da operação. Positivo se é uma operação que aumenta o saldo do
 	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
 	 */
-	amount: Pending['amount']|number|string
+	amount: Pending['amount']|string
 }
 
 /**
@@ -50,8 +50,8 @@ async function remove(
 	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
-	opAmount: Decimal128,
-	changeInAvailable: Decimal128|0,
+	opAmount: number,
+	changeInAvailable: number,
 	rfOpid?: ObjectId
 ): Promise<void> {
 	const balanceObj = `currencies.${currency}.balance`
@@ -62,7 +62,7 @@ async function remove(
 		[`currencies.${currency}.pending.locked.byOpid`]: rfOpid
 	}, {
 		$inc: {
-			[`${balanceObj}.locked`]: opAmount.abs().opposite(),
+			[`${balanceObj}.locked`]: - Math.abs(opAmount),
 			[`${balanceObj}.available`]: changeInAvailable
 		},
 		$pull: {
@@ -130,7 +130,7 @@ async function completePartial(
 	currency: SC,
 	opid: ObjectId,
 	rfOpid: ObjectId,
-	amount: Decimal128
+	amount: number
 ): Promise<void> {
 	const { amount: opAmount } = await get(userId, currency, opid)
 
@@ -139,9 +139,9 @@ async function completePartial(
 	 * e negativo para uma ordem de aumento de saldo
 	 */
 	if (+opAmount > 0) {
-		amount = amount.abs().opposite()
+		amount = - Math.abs(amount)
 	} else {
-		amount = amount.abs()
+		amount = Math.abs(amount)
 	}
 
 	/**
@@ -153,7 +153,7 @@ async function completePartial(
 	 * update não executa se o amount da ordem for menor ou igual ao
 	 * amount fornecido
 	 */
-	if (+opAmount.abs() - +amount.abs() <= 0) throw {
+	if (Math.abs(opAmount) - Math.abs(amount) <= 0) throw {
 		name: 'AmountOutOfRange',
 		message: 'Amount provided is greater or equal than amount in order'
 	}
@@ -190,7 +190,7 @@ async function completePartial(
 								]
 							}, {
 								$lte: [
-									{ $add: ['$$this.amount', amount.abs()]}, 0
+									{ $add: ['$$this.amount', Math.abs(amount)]}, 0
 								]
 							}]
 						}
@@ -200,8 +200,8 @@ async function completePartial(
 		}
 	}, {
 		$inc: {
-			[`currencies.${currency}.balance.available`]: +opAmount > 0 ? amount.abs() : 0,
-			[`currencies.${currency}.balance.locked`]: amount.abs().opposite(),
+			[`currencies.${currency}.balance.available`]: opAmount > 0 ? Math.abs(amount) : 0,
+			[`currencies.${currency}.balance.locked`]: - Math.abs(amount),
 			[`currencies.${currency}.pending.$.amount`]: amount,
 		},
 		$push: {
@@ -239,11 +239,8 @@ export async function add(
 	 * Faz a truncagem do amount, pois o middleware de findOneAndUpdate não é
 	 * executado em um subdocumento
 	 */
-	if (typeof pending.amount == 'string' || typeof pending.amount == 'number') {
-		pending.amount = Decimal128.fromNumeric(pending.amount, currenciesObj[currency].decimals)
-	} else {
-		pending.amount = pending.amount.truncate(currenciesObj[currency].decimals)
-	}
+	const [integer, decimals] = pending.amount.toString().split('.')
+	pending.amount = Number(`${integer}.${(decimals || '0').slice(0, currenciesObj[currency].decimals)}`)
 
 	const response = await Person.findOneAndUpdate({
 		_id: userId,
@@ -254,7 +251,7 @@ export async function add(
 		}
 	}, {
 		$inc: {
-			[`${balanceObj}.locked`]: pending.amount.abs(),
+			[`${balanceObj}.locked`]: Math.abs(pending.amount),
 			[`${balanceObj}.available`]: +pending.amount < 0 ? pending.amount : 0
 		},
 		$push: {
@@ -315,7 +312,7 @@ export async function cancel(
 	 * Calcula o quanto o campo 'available' deverá ser alterado para
 	 * retornar os saldos ao estado original
 	 */
-	const changeInAvailable = +amount < 0 ? amount.abs() : 0
+	const changeInAvailable = +amount < 0 ? Math.abs(amount) : 0
 
 	/**
 	 * Remove a operação pendente e volta os saldos ao estado original
@@ -375,7 +372,7 @@ export async function complete(
 ): Promise<void> {
 	if (amount) {
 		if (!rfOpid) throw 'rfOpid needs to be informed to partially complete an operation'
-		await completePartial(userId, currency, opid, rfOpid, amount)
+		await completePartial(userId, currency, opid, rfOpid, +amount)
 	} else {
 		await completeTotal(userId, currency, opid, rfOpid)
 	}

@@ -1,6 +1,6 @@
 import '../../src/libs/extensions'
 import { expect } from 'chai'
-import { ObjectId, Decimal128 } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import Order from '../../src/db/models/order'
 import Person from '../../src/db/models/person'
 import { currencyNames, currenciesObj } from '../../src/libs/currencies'
@@ -66,7 +66,7 @@ describe('Performing basic tests on the MarketApi', () => {
 
 		const pending = await Person.balanceOps.get(person._id, 'bitcoin', opid)
 		expect(pending).to.be.an('object')
-		expect(+pending.amount.toFullString()).to.equal(-1.23)
+		expect(pending.amount).to.equal(-1.23)
 		expect(pending.type).to.equal('trade')
 	})
 
@@ -110,10 +110,7 @@ describe('Performing basic tests on the MarketApi', () => {
 				})
 				const order = await Person.balanceOps.get(person._id, owning, opid)
 				expect(order.type).to.equal('trade')
-				expect(order.amount.toFullString()).to.equal(
-					Decimal128.fromNumeric(
-						-1 * 2.5987654321, currenciesObj[owning].decimals
-					).toFullString()
+				expect(order.amount).to.equal(+(-1 * 2.5987654321).toFixed(currenciesObj[owning].decimals)
 				)
 			})
 		}

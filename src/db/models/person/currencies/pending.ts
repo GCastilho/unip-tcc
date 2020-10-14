@@ -1,5 +1,5 @@
 import { Schema } from 'mongoose'
-import { Decimal128, ObjectId } from 'mongodb'
+import { ObjectId } from 'mongodb'
 
 /** A interface de operações de alteração de saldo pendentes*/
 export interface Pending {
@@ -15,7 +15,7 @@ export interface Pending {
 	 * O amount da operação. Positivo se é uma operação que aumenta o saldo do
 	 * usuário e negativo caso seja uma operação que reduzirá seu saldo
 	 */
-	amount: Decimal128
+	amount: number
 	/**
 	 * Objeto com opid da operação que requisitou um lock nessa pending junto com
 	 * o timestamp da requisição
@@ -49,7 +49,7 @@ export const PendingSchema = new Schema({
 		required: true
 	},
 	amount: {
-		type: Decimal128,
+		type: Number,
 		required: true,
 		validate: {
 			validator: v => v != 0,
