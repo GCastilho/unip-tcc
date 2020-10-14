@@ -46,11 +46,11 @@ describe('Testing operations on the currencyApi', () => {
 			const tx = await Transaction.findById(opid)
 
 			// Checa se o fee foi descontado
-			expect(+tx.amount.toFullString()).to.be.lessThan(amount)
-			expect(+tx.amount.toFullString() + tx.fee).to.equal(amount)
+			expect(tx.amount).to.be.lessThan(amount)
+			expect(tx.amount + tx.fee).to.equal(amount)
 
 			// Checa se houve erro de arredondamento convertendo pra string
-			expect(+tx.amount.toFullString())
+			expect(tx.amount)
 				.to.equal(+(amount - tx.fee)
 					.toFixed(currenciesObj.bitcoin.decimals))
 
@@ -58,7 +58,7 @@ describe('Testing operations on the currencyApi', () => {
 			 * Checa se houve erros de arredondamento comparando as
 			 * as casas decimais significativas
 			 */
-			const amount_decimals = tx.amount.toFullString().split('.')[1].length
+			const amount_decimals = tx.amount.toString().split('.')[1].length
 			const fee_decimals = tx.fee.toString().split('.')[1].length
 			const tst_amount_decimals = amount.toString().split('.')[1].length
 			expect(tst_amount_decimals).to.be.at.most(Math.max(amount_decimals, fee_decimals))
@@ -67,7 +67,7 @@ describe('Testing operations on the currencyApi', () => {
 			 * Checa se houve erros no arredondamento somando os valores
 			 */
 			const expoencial = 10 * currenciesObj.bitcoin.decimals
-			const _tx_amount = Math.trunc(+tx.amount.toFullString() * expoencial)
+			const _tx_amount = Math.trunc(tx.amount * expoencial)
 			const _fee = Math.trunc(tx.fee * expoencial)
 			const _tst_amount = Math.trunc(amount * expoencial)
 			expect(_tx_amount + _fee).to.equal(_tst_amount)

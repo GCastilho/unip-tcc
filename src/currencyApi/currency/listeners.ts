@@ -112,7 +112,7 @@ export default function initListeners(this: Currency) {
 						opid:          tx.id,
 						txid:          tx.txid,
 						account:       tx.account,
-						amount:        tx.amount.toFullString(),
+						amount:        tx.amount,
 						status:        tx.status,
 						confirmations: tx.confirmations,
 						timestamp:     tx.timestamp.getTime()

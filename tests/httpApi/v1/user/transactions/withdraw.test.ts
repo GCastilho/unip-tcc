@@ -121,7 +121,7 @@ describe('Testing withdraw and cancellWithdraw requests HTTP API version 1', () 
 				expect(tx).to.be.an('object')
 				expect(tx.currency).to.equals(currency)
 				expect(tx.account).to.equal(`account-destination-${currency}`)
-				expect(tx.amount.toFullString()).to.equal((2 - tx.fee).toString())
+				expect(tx.amount).to.equal((2 - tx.fee))
 			})
 		})
 

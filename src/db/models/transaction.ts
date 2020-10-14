@@ -1,4 +1,4 @@
-import { ObjectId, Decimal128 } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
 import { currencies, currenciesObj } from '../../libs/currencies'
 import type { PersonDoc } from './person'
@@ -36,7 +36,7 @@ export interface TransactionDoc extends Document {
 	/** Account de destino da transação */
 	account: string
 	/** Amount da transação */
-	amount: Decimal128
+	amount: number
 	/** Taxa cobrada para a execução da operação */
 	fee: number
 	/** Tipo dessa transação */
@@ -98,7 +98,7 @@ const TransactionSchema = new Schema({
 		required: true
 	},
 	amount: {
-		type: Decimal128,
+		type: Number,
 		required: true,
 		validate: {
 			validator: v => v > 0,
@@ -133,7 +133,7 @@ const TransactionSchema = new Schema({
 				currency:      doc.currency,
 				txid:          doc.txid,
 				account:       doc.account,
-				amount:       +doc.amount.toFullString(),
+				amount:        doc.amount,
 				fee:           doc.fee,
 				type:          doc.type,
 				confirmations: doc.confirmations,
@@ -157,8 +157,11 @@ TransactionSchema.index({
 })
 
 TransactionSchema.pre('validate', function(this: TransactionDoc) {
-	if (this.amount instanceof Decimal128)
-		this.amount = this.amount.truncate(currenciesObj[this.currency].decimals)
+	// Faz a truncagem do amount de acordo com os decimais da currency
+	if (typeof this.amount == 'number') {
+		const [integer, decimals] = this.amount.toString().split('.')
+		this.amount = Number(`${integer}.${(decimals || '0').slice(0, currenciesObj[this.currency].decimals)}`)
+	}
 })
 
 /**

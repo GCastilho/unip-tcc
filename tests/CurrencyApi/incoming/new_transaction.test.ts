@@ -65,7 +65,7 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 		expect(doc.userId.toHexString()).to.equals(person.id)
 		expect(doc.txid).to.equals(transaction.txid)
 		expect(doc.status).to.equals(transaction.status)
-		expect(doc.amount.toFullString()).to.equals(transaction.amount.toString())
+		expect(doc.amount).to.equals(transaction.amount)
 	})
 
 	it('Should add locked balance for pending transactions', async () => {
@@ -154,7 +154,7 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 		expect(err.transaction.opid).to.equals(opid)
 		expect(err.transaction.txid).to.equals(transaction.txid)
 		expect(err.transaction.status).to.equals(transaction.status)
-		expect(err.transaction.amount).to.equals(transaction.amount.toString())
+		expect(err.transaction.amount).to.equals(transaction.amount)
 		expect(err.transaction.account).to.equals(transaction.account)
 	})
 

@@ -6,7 +6,7 @@ import Person from '../../src/db/models/person'
 import Transaction from '../../src/db/models/transaction'
 import { currencyNames } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
-import type { TxSend } from '../../interfaces/transaction'
+import type { WithdrawRequest } from '../../interfaces/transaction'
 
 type SocketCallback = (err: any, response?: string) => void;
 
@@ -70,7 +70,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					})
 
 					client.once('withdraw', async (
-						request: TxSend,
+						request: WithdrawRequest,
 						callback: (err: any, response?: string) => void
 					) => {
 						try {
@@ -84,8 +84,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 							expect(request.account).to.be.a('string')
 								.that.equals(tx.account)
 
-							expect(request.amount).to.be.a('string')
-								.that.equals(tx.amount.toFullString())
+							expect(request.amount).to.be.a('number').that.equals(tx.amount)
 
 							done()
 						} catch (err) {
@@ -121,7 +120,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 			it('Should receive a withdraw request immediate after requested', done => {
 				const amount = 4.567
 				client.once('withdraw', async (
-					request: TxSend,
+					request: WithdrawRequest,
 					callback: (err: any, response?: string) => void
 				) => {
 					try {
@@ -134,8 +133,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						expect(request.account).to.be.a('string')
 							.that.equals(tx.account)
 
-						expect(request.amount).to.be.a('string')
-							.that.equals(tx.amount.toFullString())
+						expect(request.amount).to.be.a('number').that.equals(tx.amount)
 
 						done()
 					} catch (err) {
@@ -153,7 +151,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 				let _opid: ObjectId
 
 				// Reponse o request para evitar timeout
-				client.once('withdraw', (txSent: TxSend, callback: SocketCallback) => {
+				client.once('withdraw', (txSent: WithdrawRequest, callback: SocketCallback) => {
 					callback(null, 'request received for' + currency)
 				})
 

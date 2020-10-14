@@ -33,7 +33,7 @@ describe('Testing transactions collection', () => {
 			timestamp: new Date()
 		})
 		await expect(tx.save()).to.eventually.be
-			.rejectedWith('-1.0 must be a positive number')
+			.rejectedWith('-1 must be a positive number')
 	})
 
 	it('Should truncate the amount after the supported for that currency', async () => {
@@ -48,7 +48,7 @@ describe('Testing transactions collection', () => {
 			timestamp: new Date()
 		})
 		await tx.validate()
-		expect(tx.amount.toFullString()).to.equals('1.12345678')
+		expect(tx.amount.toString()).to.equals('1.12345678')
 	})
 
 	it('Should save a recevie and send transaction with the same txid', async () => {

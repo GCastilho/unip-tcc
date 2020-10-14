@@ -98,14 +98,14 @@ export default class Currency {
 				await this.emit('withdraw', {
 					opid: transaction._id.toHexString(),
 					account: transaction.account,
-					amount: transaction.amount.toFullString()
+					amount: transaction.amount
 				})
 				transaction.status = 'external'
 				await transaction.save()
 				console.log('Sent withdraw request', {
 					opid: transaction._id.toHexString(),
 					account: transaction.account,
-					amount: transaction.amount.toFullString()
+					amount: transaction.amount
 				})
 			} else {
 				console.log('Presuming the transaction', transaction._id, 'was cancelled. Withdraw skipped')

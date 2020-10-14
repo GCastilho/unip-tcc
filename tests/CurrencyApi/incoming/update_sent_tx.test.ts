@@ -4,7 +4,7 @@ import { Socket, setupPerson } from './setup'
 import Transaction from '../../../src/db/models/transaction'
 import Person from '../../../src/db/models/person'
 import * as CurrencyApi from '../../../src/currencyApi'
-import type { TxSend, UpdtSent } from '../../../interfaces/transaction'
+import type { WithdrawRequest, UpdtSent } from '../../../interfaces/transaction'
 
 describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 	let client: Socket
@@ -36,17 +36,12 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 
 			return person.save()
 		}).then(person => {
-			client.once('withdraw', (transaction: TxSend, callback: (err: any, res?: string) => void) => {
+			client.once('withdraw', (transaction: WithdrawRequest, callback: (err: any, res?: string) => void) => {
 				opid = transaction.opid
 				callback(null, 'received withdraw request for' + opid)
 
 				// Espera para garantir que a tx terminou de ser processada
 				setTimeout(done, 50)
-				// done()
-				// Atualiza o status para evitar race condition
-				// Transaction.updateOne({ _id: opid }, { status: 'external' })
-				// 	.then(() => done())
-				// 	.catch(done)
 			})
 			return CurrencyApi.withdraw(person._id, 'bitcoin', 'bitcoin_account', txAmount)
 		}).catch(done)
@@ -154,7 +149,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 			let userId: InstanceType<typeof Person>['_id']
 
 			// Recebe o request de saque
-			client.once('withdraw', async (request: TxSend, callback: (err: any, response?: string) => void) => {
+			client.once('withdraw', async (request: WithdrawRequest, callback: (err: any, response?: string) => void) => {
 				callback(null, 'received withdraw request for userNotFound test')
 
 				try {

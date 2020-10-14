@@ -12,7 +12,7 @@ interface ExternalModuleTransaction {
 	/** Account de destino da transação */
 	account: TransactionDoc['account']
 	/** Amount da transação */
-	amount: string
+	amount: string|number
 	/** Status da transação */
 	status: TransactionDoc['status']
 	/**
