@@ -1,21 +1,40 @@
 <script>
-	export let base
-	export let selected
+	import * as balances from './../../stores/balances.js'
+
+	export let sellingCurrency
+	export let wantedCurrency
 
 	let operation = 'Buy'
 	let buttonColor = '#6ec79e'
 	let disableButton
+	let sellingCode, wantedCode, name
 
-	$: disableButton = base === selected || !base || !selected ? true : false
+	let available, locked
+
+	$: {
+		sellingCode = sellingCurrency ? sellingCurrency.code : null
+		wantedCode = wantedCurrency ? wantedCurrency.code : null
+		name = sellingCurrency ? sellingCurrency.name : null
+	}
+
+	$: {
+		available = $balances[name] ? $balances[name].available : null
+		locked = $balances[name] ? $balances[name].locked : null
+	}
+
+
+	$: disableButton = sellingCode === wantedCode || !sellingCurrency || !wantedCurrency ? true : false
 	$: buttonColor = operation == 'Sell' ? '#de4949' : '#6ec79e'
 
 	function trade() {
+		if (disableButton) return
 		if(operation == 'Buy') {
 			console.log('você esta comprando')
 		} else {
 			console.log('você esta vendendo')
 		}
 	}
+	//#6ec79e69
 </script>
 
 <style>
@@ -41,7 +60,7 @@
 		width: fit-content;
 		align-self: center;
 		padding: var(--radio-switch-padding);
-		margin: 5px 0;
+		margin: 5px 0 20px 0;
 		border-radius: calc(var(--radio-switch-radius) * 1.4);
 		background-color: #f2f2f2;
 	}
@@ -158,6 +177,13 @@
 		background-color: transparent;
 	}
 
+	.balance {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		padding: 0px 20px;
+	}
+
 	button {
 		color: white;
 		background-color: var(--button-color);
@@ -180,9 +206,9 @@
 	button:active {
 		filter: brightness(85%);
 	}
+
 	button:disabled {
-		background-color: #6ec79e69;
-		filter: brightness(100%);
+		filter: opacity(0.5);
 		cursor: not-allowed;
 	}
 
@@ -200,17 +226,25 @@
 			<div aria-hidden="true" class="radio-switch-marker"></div>
 		</div>
 	</div>
+	<div class="balance">
+		<label>available:</label>
+		<label>{typeof available === 'number' ? available.toFixed(8) : '...'}</label>
+	</div>
+	<div class="balance">
+		<label>locked:</label>
+		<label>{typeof locked === 'number' ? locked.toFixed(8) : '...'}</label>
+	</div>
 	<div class="float-input">
-		<input placeholder={base || '...'}/>
+		<input placeholder={sellingCode || '...'}/>
 		<label>limite price</label>
 	</div>
 	<div class="float-input">
-		<input placeholder={base || '...'}/>
+		<input placeholder={sellingCode || '...'}/>
 		<label>amount</label>
 	</div>
 	<div class="float-input">
-		<input placeholder={base || '...'}/>
+		<input placeholder={sellingCode || '...'}/>
 		<label>total</label>
 	</div>
-	<button on:click={trade} disabled={disableButton}>{operation} {base || '...'}</button>
+	<button on:click={trade} disabled={disableButton}>{operation} {sellingCode || '...'}</button>
 </div>

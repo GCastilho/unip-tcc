@@ -4,13 +4,13 @@
 	import * as currencies from './../../stores/currencies'
 
 	//nomes temporarios até eu pensar em outro melhor
-	let base
-	let selected
+	let sellingCurrency
+	let wantedCurrency
 
 	function exchangeCoin() {
-		let aux = base
-		base = selected
-		selected = aux
+		let aux = sellingCurrency
+		sellingCurrency = wantedCurrency
+		wantedCurrency = aux
 	}
 
 	console.log($currencies)
@@ -74,24 +74,24 @@
 
 <h1>Market</h1>
 <div class="currency-select">
-	<select bind:value={base}>
+	<select bind:value={sellingCurrency}>
 		<option value={null}>...</option>
 		{#each $currencies as currency }
-			<option value={currency.code}>
+			<option value={currency}>
 				{currency.name}
 			</option>
 		{/each}
 	</select>
 	<button on:click={exchangeCoin}><ExchangeIcon/></button>
-	<select bind:value={selected}>
+	<select bind:value={wantedCurrency}>
 		<option value={null}>...</option>
 		{#each $currencies as currency }
-			<option value={currency.code}>
+			<option value={currency}>
 				{currency.name}
 			</option>
 		{/each}
 	</select>
 </div>
 <div class="main">
-	<BuySell {base} {selected}/>
+	<BuySell {sellingCurrency} {wantedCurrency}/>
 </div>
