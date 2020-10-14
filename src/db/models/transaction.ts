@@ -54,11 +54,10 @@ export interface TransactionDoc extends Document {
 /** Interface do objeto retornado pelo método toJSON */
 export interface TxJSON extends Omit<
 	TransactionDoc,
-	keyof Document|'userId'|'status'|'amount'|'fee'|'timestamp'
+	keyof Document|'userId'|'status'|'fee'|'timestamp'
 > {
 	opid: string
 	status: 'processing'|'pending'|'confirmed'
-	amount: number
 	fee?: number
 	timestamp: number
 }

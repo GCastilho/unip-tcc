@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb'
+import type { ObjectId } from 'mongodb'
 
 declare module 'express-serve-static-core' {
 	interface Request {
