@@ -150,6 +150,7 @@ async function insertMissingTx(opid) {
 			} else {
 				txs.unshift(data)
 			}
+			return txs
 		})
 	} catch (err) {
 		console.error('Error fetching transaction', err)

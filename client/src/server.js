@@ -32,7 +32,10 @@ express()
 		},
 		sapper.middleware({
 			session: req => {
-				return { loggedIn: typeof req.token == 'string' }
+				return {
+					loggedIn: typeof req.token == 'string',
+					token: req.token
+				}
 			}
 		}),
 	)

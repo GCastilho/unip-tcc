@@ -18,7 +18,12 @@ export { subscribe }
  * @param {ReturnType<writable<{}>>} session A instância da store de sessões
  */
 export async function init(session) {
-	set(get(session).loggedIn)
+	const storeValue = get(session)
+
+	if (storeValue.loggedIn) {
+		set(true)
+		await authentication(storeValue.token)
+	}
 
 	subscribe(auth => {
 		session.update(v => {

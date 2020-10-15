@@ -4,8 +4,8 @@
 	import { format } from 'light-date'
 	import * as currencies from '../../../stores/currencies'
 	import * as transactions from '../../../stores/transactions'
-	import { slide } from 'svelte/transition';
-	import { quintOut } from 'svelte/easing';
+	import { slide } from 'svelte/transition'
+	import { quintOut } from 'svelte/easing'
 
 	export let transaction
 

@@ -1,7 +1,5 @@
 <script>
 	import { onMount } from 'svelte'
-	import axios from '../../../utils/axios'
-	import * as auth from '../../../stores/auth'
 	import * as transactions from '../../../stores/transactions'
 	import TableCell from './_tableCell.svelte'
 
