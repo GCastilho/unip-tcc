@@ -1,47 +1,55 @@
-import '../../src/libs'
+import '../../src/libs/extensions'
 import io from 'socket.io-client'
 import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
 import Person from '../../src/db/models/person'
-import Checklist from '../../src/db/models/checklist'
 import Transaction from '../../src/db/models/transaction'
+import { currencyNames } from '../../src/libs/currencies'
 import * as CurrencyApi from '../../src/currencyApi'
-import * as UserApi from '../../src/userApi'
-import type User from '../../src/userApi/user'
-import type { TxSend } from '../../src/db/models/transaction'
+import type { WithdrawRequest } from '../../interfaces/transaction'
+
+type SocketCallback = (err: any, response?: string) => void;
 
 describe('Testing if CurrencyApi is making requests to the websocket', () => {
 	const port = process.env.CURRENCY_API_PORT || 5808
-	let user: User
+	let person: InstanceType<typeof Person>
 
 	before(async () => {
 		await Person.deleteMany({})
 
-		user = await UserApi.createUser('sending_request@example.com', 'userP@ss')
-		await Checklist.deleteMany({})
+		person = await Person.createOne('sending_request@example.com', 'userP@ss')
+		await Transaction.deleteMany({})
 	})
 
 	beforeEach(async () => {
 		// Manualmente seta o saldo disponível para 10
-		for (const currency of CurrencyApi.currencies) {
-			// @ts-expect-error
-			user.person.currencies[currency].balance.available = 10
+		for (const currency of currencyNames) {
+			// @ts-expect-error Automaticamente convertido para Decimal128
+			person.currencies[currency].balance.available = 10
 		}
-		await user.person.save()
+		await person.save()
 	})
 
 	const url = `http://127.0.0.1:${port}`
-	for (const currency of CurrencyApi.currencies) {
+	for (const currency of currencyNames) {
 		describe(`Once the ${currency} module connects`, () => {
 			let client: SocketIOClient.Socket
 
+			before(() => {
+				client = io(url + '/' + currency, {
+					autoConnect: false
+				})
+			})
+
 			afterEach(() => {
-				client.disconnect()
+				client.close()
 			})
 
 			it('Should receive a create_new_account request', done => {
-				CurrencyApi.create_accounts(user.id, [currency]).then(() => {
-					client = io(url + '/' + currency)
+				CurrencyApi.createAccount(person.id, currency).catch(err => {
+					if (err != 'SocketDisconnected') throw err
+				}).then(() => {
+					client.open()
 
 					client.once('create_new_account', (callback: (err: any, account?: string) => void) => {
 						callback(null, `account-${currency}`)
@@ -52,11 +60,17 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 
 			it('Should receive a withdraw request', done => {
 				const amount = 3.456
-				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount).then(opid => {
-					client = io(url + '/' + currency)
+				CurrencyApi.withdraw(person.id, currency, `${currency}_account`, amount).then(opid => {
+					client.open()
+
+					// Responde o create_new_account para evitar timeout
+					client.once('create_new_account', callback => {
+						callback(null, `account-${currency}`)
+						done()
+					})
 
 					client.once('withdraw', async (
-						request: TxSend,
+						request: WithdrawRequest,
 						callback: (err: any, response?: string) => void
 					) => {
 						try {
@@ -70,61 +84,13 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 							expect(request.account).to.be.a('string')
 								.that.equals(tx.account)
 
-							expect(request.amount).to.be.a('string')
-								.that.equals(tx.amount.toFullString())
+							expect(request.amount).to.be.a('number').that.equals(tx.amount)
 
 							done()
 						} catch (err) {
 							done(err)
 						}
 						callback(null, 'request received for' + currency)
-					})
-				}).catch(done)
-			})
-
-			it('Should receive a cancell_withdraw request', done => {
-				const amount = 3.456
-				let _opid: string
-
-				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount).then(opid => {
-					_opid = opid.toHexString()
-					return CurrencyApi.cancellWithdraw(user.id, currency, opid)
-				}).then(response => {
-					expect(response).to.be.a('string').that.equals('requested')
-					return Checklist.findOne({
-						opid: _opid,
-						command: 'cancell_withdraw',
-					})
-				}).then(check => {
-					expect(check).to.be.a('object')
-					expect(check.opid.toHexString()).to.equals(_opid)
-
-					client = io(url + '/' + currency)
-
-					// Responde o evento de withdraw para evitar timeout
-					client.once('withdraw', (
-						request: TxSend,
-						callback: (err: any, response?: string) => void
-					) => {
-						callback(null, 'request received for' + currency)
-					})
-
-					client.once('cancell_withdraw', async (
-						opid: string,
-						callback: (err: any, response?: string) => void
-					) => {
-						try {
-							const tx = await Transaction.findById(_opid)
-
-							expect(tx).to.be.an('object')
-							expect(opid).to.be.a('string')
-								.that.equals(tx._id.toHexString())
-
-							done()
-						} catch (err) {
-							done(err)
-						}
-						callback(null, `request received for ${currency}`)
 					})
 				}).catch(done)
 			})
@@ -133,12 +99,13 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 		describe(`If the ${currency} module is already connected`, () => {
 			let client: SocketIOClient.Socket
 
-			before(async () => {
+			before(done => {
 				client = io(url + '/' + currency)
+				client.once('connect', done)
 			})
 
 			after(() => {
-				client.disconnect()
+				client.close()
 			})
 
 			it('Should receive a create_new_account request immediate after requested', done => {
@@ -147,13 +114,13 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					done()
 				})
 
-				CurrencyApi.create_accounts(user.id, [currency]).catch(done)
+				CurrencyApi.createAccount(person.id, currency).catch(done)
 			})
 
 			it('Should receive a withdraw request immediate after requested', done => {
 				const amount = 4.567
 				client.once('withdraw', async (
-					request: TxSend,
+					request: WithdrawRequest,
 					callback: (err: any, response?: string) => void
 				) => {
 					try {
@@ -166,8 +133,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						expect(request.account).to.be.a('string')
 							.that.equals(tx.account)
 
-						expect(request.amount).to.be.a('string')
-							.that.equals(tx.amount.toFullString())
+						expect(request.amount).to.be.a('number').that.equals(tx.amount)
 
 						done()
 					} catch (err) {
@@ -176,13 +142,19 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					callback(null, 'request received for' + currency)
 				})
 
-				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount)
+				CurrencyApi.withdraw(person.id, currency, `${currency}_account`, amount)
 					.catch(done)
 			})
 
 			it('Shold receive a request for cancell_withdraw immediate after requested', done => {
 				const amount = 4
 				let _opid: ObjectId
+
+				// Reponse o request para evitar timeout
+				client.once('withdraw', (txSent: WithdrawRequest, callback: SocketCallback) => {
+					callback(null, 'request received for' + currency)
+				})
+
 				client.once('cancell_withdraw', async (
 					opid: string,
 					callback: (err: any, response?: string) => void
@@ -201,9 +173,9 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					callback(null, `request received for ${currency}`)
 				})
 
-				CurrencyApi.withdraw(user, currency, `${currency}_account`, amount).then(opid => {
+				CurrencyApi.withdraw(person.id, currency, `${currency}_account`, amount).then(opid => {
 					_opid = opid
-					return CurrencyApi.cancellWithdraw(user.id, currency, opid)
+					return CurrencyApi.cancellWithdraw(person.id, currency, opid)
 				}).catch(done)
 			})
 		})

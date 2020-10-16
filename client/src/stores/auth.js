@@ -1,80 +1,120 @@
-import { writable } from 'svelte/store'
+import { writable, get } from 'svelte/store'
+import axios from '../utils/axios'
 import { emit, addSocketListener } from '../utils/websocket'
 
 /**
- * Função helper para retornar o token do localStorage
- *
- * @returns {string} o item 'socket-auth-token' do localStorage
+ * Store que armazena se o cliente está autenticado ou não
  */
-const getToken = () => localStorage.getItem('socket-auth-token')
+const { subscribe, set } = writable(false)
 
 /**
- * Função helper para armazenar o token 'socket-auth-token' no localStorage
- *
- * @param {string} token O valor token 'socket-auth-token' para ser armazenado
- * no localStorage
+ * Exporta o subscribe para esse módulo ser uma store
  */
-const setToken = token => localStorage.setItem('socket-auth-token', token)
-
-/**
- * Função helper para remover o token 'socket-auth-token' do localStorage
- */
-const removeToken = () => localStorage.removeItem('socket-auth-token')
-
-/**
- * Caso exista um token salvo, presume que está autenticado (mesmo que
- * desconectado) até o socket emitir um evento de falha de conexão ou de
- * autenticação
- *
- * @type {boolean} Indica se deve presumir autenticado ou não na inicialização
- */
-const initialState = typeof window !== 'undefined'
-	&& window.localStorage
-	&& !!getToken()
-
-/**
- * Store que armazena se o socket está autenticado ou não
- */
-const { subscribe, set } = writable(initialState)
-
-/** Exporta o subscribe para esse módulo ser uma store */
 export { subscribe }
 
 /**
- * Autentica uma conexão com o websocket usando o token fornecido
- * @param {string} token O token de autenticação com o websocket
+ * Inicializa a store de autenticação no modo SSR
+ *
+ * @param {ReturnType<writable<{}>>} session A instância da store de sessões
  */
-export async function authenticate(token) {
+export async function init(session) {
+	const storeValue = get(session)
+
+	if (storeValue.loggedIn) {
+		set(true)
+		await authentication(storeValue.token)
+	}
+
+	subscribe(auth => {
+		session.update(v => {
+			v.loggedIn = auth
+			return v
+		})
+	})
+}
+
+/**
+ * Seta a store de autenticação e emite um evento de autenticação com o soket
+ * usando o token fornecido. A autenticação com a API é presumida como feita
+ * pela função que fizer o init
+ *
+ * @param {string} token O token de autenticação com o webosocket
+ */
+async function authentication(token) {
+	if (typeof token != 'string') return set(false)
+
+	// Impede que o servidor emita um evento de autenticação
+	if (typeof window == 'undefined') return
+
 	try {
 		await emit('authenticate', token)
-		setToken(token)
 		console.log('Authentication successful')
 		set(true)
-	} catch(err) {
-		console.error('autentication error', err)
+	} catch (err) {
+		if (err != 'InvalidToken')
+			console.error('Error authenticating with websocket', err)
+	}
+}
+
+/**
+ * Loga o usuário na API e no websocket
+ * @param {string} email O email do usuário
+ * @param {string} password A senha do usuário
+ */
+export async function login(email, password) {
+	try {
+		/** @type {{data: {token: string}}} */
+		const { data } = await axios.post('/v1/user/authentication', {
+			email, password
+		})
+		await authentication(data.token)
+	} catch (err) {
+		console.error('Authentication error', err)
 		set(false)
 	}
 }
 
 /**
- * Desautentica uma conexão com o websocket
+ * Desloga o usuário da API e com o websocket
  */
-export async function deauthenticate() {
+export async function logout() {
 	try {
-		await emit('deauthenticate')
-		removeToken()
+		await axios.delete('/v1/user/authentication')
+		emit('deauthenticate')
 		console.log('Deauthentication successful')
 		set(false)
-	} catch(err) {
+	} catch (err) {
 		console.error('Deauthentication error:', err)
 		set(false)
 	}
 }
 
 /**
- * Tenta autenticar o socket assim que conectado
+ * Adiciona um listener de connect no socket quando ele desconectar da primeira
+ * vez, para que ele cheque pela autenticação a cada vez que ele se conectar
+ *
+ * Se o listener for colocado diretamente ele fará um check em seguida, e
+ * já que a preload do _layout principal já inicializa a store, isso causa
+ * uma requisição duplicada na API
  */
-addSocketListener('connect', () => {
-	const token = getToken()
-	if (typeof token === 'string') authenticate(token)
+const removeListener = addSocketListener('disconnect', () => {
+	/**
+	 * Remove o listener para evitar que vários listeners de connect sejam
+	 * colocados a cada disconnect
+	 */
+	removeListener()
+
+	/**
+	 * Tenta inicializar a store assim que conectado
+	 */
+	addSocketListener('connect', async () => {
+		try {
+			/** @type {{data: {token: string}}} */
+			const { data } = await axios.get('/v1/user/authentication')
+			await authentication(data.token)
+		} catch (err) {
+			if (!err.response || err.response.status == 401) set(false)
+			else throw err
+		}
+	})
 })

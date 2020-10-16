@@ -13,19 +13,17 @@ export { subscribe, set }
  * Ao autenticar com o socket atualiza o saldo com o valor do servidor
  */
 auth.subscribe(async auth => {
-	if (!auth) return
+	if (!auth || typeof window == 'undefined') return
 	try {
-		const balanceObj = await axios.get('/v1/user/balances')
-		const balances = {}
-		for (const balance of Object.entries(balanceObj.data)) {
-			balances[balance[0]] = {
-				available: +balance[1].available,
-				locked: +balance[1].locked
+		const { data } = await axios.get('/v1/user/balances')
+		for (const currency in data) {
+			for (const key in data[currency]) {
+				data[currency][key] = +data[currency][key]
 			}
 		}
-		set(balances)
-	} catch(err) {
-		console.error('Error while fetching balances:', err)
+		set(data)
+	} catch (err) {
+		console.error('Error while fetching balances:', err.response.statusText)
 	}
 })
 

@@ -1,7 +1,7 @@
 import Common from '../index'
 import { SendPending, PSent } from '../db/models/pendingTx'
-import { UpdtSent } from '../index'
 import Transaction from '../db/models/transaction'
+import type { UpdtSent } from '../../../interfaces/transaction'
 
 export function withdraw_pending(this: Common) {
 	/**
@@ -32,7 +32,7 @@ export function withdraw_pending(this: Common) {
 			})
 
 			await this.informMain.updateWithdraw(transaction)
-		} catch(err) {
+		} catch (err) {
 			console.error(`Error updating/sending txSend: ${transaction}`, err)
 		}
 	}
@@ -105,7 +105,7 @@ export function withdraw_pending(this: Common) {
 		looping = true
 		try {
 			await withdraw_loop()
-		} catch(err) {
+		} catch (err) {
 			console.error('Error in withdraw_loop', err)
 		}
 		looping = false

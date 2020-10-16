@@ -1,107 +1,52 @@
-import socketIO = require('socket.io')
+import socketIO from 'socket.io'
 import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
-import { Nano, Bitcoin } from './currencies'
-import User from '../userApi/user'
-import Checklist from '../db/models/checklist'
+import Currency from './currency'
+import Person from '../db/models/person'
 import Transaction from '../db/models/transaction'
+import { currencies, currencyNames, currenciesObj } from '../libs/currencies'
 import type TypedEmitter from 'typed-emitter'
-import type Common from './currencies/common'
-import type { Person } from '../db/models/person'
-import type { TxInfo, UpdtReceived, UpdtSent, CancelledSentTx } from '../db/models/transaction'
-
-/** Tipo para variáveis/argumentos que precisam ser uma currency suportada */
-export type SuportedCurrencies = Common['name']
+import type { PersonDoc } from '../db/models/person'
+import type { SuportedCurrencies } from '../libs/currencies'
+import type { TxInfo, UpdtReceived, UpdtSent, CancellSent } from '../../interfaces/transaction'
 
 /**
  * Interface para padronizar os eventos públicos
  */
 interface PublicEvents {
-	new_transaction: (userId: User['id'], currency: SuportedCurrencies, transaction: TxInfo) => void
-	update_received_tx: (userId: User['id'], currency: SuportedCurrencies, updtReceived: UpdtReceived) => void
-	update_sent_tx: (userId: User['id'], currency: SuportedCurrencies, updtSent: UpdtSent|CancelledSentTx) => void
+	new_transaction: (userId: PersonDoc['_id'], currency: SuportedCurrencies, transaction: TxInfo) => void
+	update_received_tx: (userId: PersonDoc['_id'], currency: SuportedCurrencies, updtReceived: UpdtReceived) => void
+	update_sent_tx: (userId: PersonDoc['_id'], currency: SuportedCurrencies, updtSent: UpdtSent|CancellSent) => void
 }
 
-/** Módulos das currencies individuais (devem extender a common) */
-const _currencies = {
-	nano: new Nano(),
-	bitcoin: new Bitcoin()
-}
-
-/** Lista das currencies suportadas pela currencyApi */
-export const currencies = Object.values(_currencies).map(currency => currency.name)
-
-/**
- * Retorna informações detalhadas sobre uma currency suportada pela API
- */
-export const detailsOf = (function() {
-	const detailsMap = new Map<SuportedCurrencies, {
-		code: Common['code']
-		decimals: Common['supportedDecimals']
-		fee: Common['fee']
-	}>()
-
-	for (const currency of currencies) {
-		detailsMap.set(currency, {
-			code: _currencies[currency].code,
-			decimals: _currencies[currency].supportedDecimals,
-			fee: _currencies[currency].fee
-		})
-	}
-
-	return function currenciesDetailed(currency: SuportedCurrencies) {
-		const details = detailsMap.get(currency)
-		if (!details) throw new Error(`The currency '${currency}' was not found`)
-		return details
-	}
-})()
-
-/** EventEmmiter para eventos internos */
-// const _events = new EventEmitter()
+/** Módulos das currencies individuais */
+const _currencies = Object.fromEntries(
+	currencies.map(currency => [
+		currency.name,
+		new Currency(currency.name, currency.fee)
+	])
+) as { [key in SuportedCurrencies]: Currency }
 
 /** EventEmmiter para eventos públicos */
 export const events = new EventEmitter() as TypedEmitter<PublicEvents>
 
 /**
- * Adiciona o request de criar accounts na checklist e chama o método
- * create_account das currencies solicitadas. Se nenhum account for
- * especificada, será criado uma account de cada currency
+ * Executa um request de criar account da currency informada. Se houver algum
+ * erro no processo, essa função irá rejeitar
  *
  * @param userId O ObjectId do usuário
- * @param currenciesToCreate As currencies que devem ser criadas accounts
+ * @param currency As currencies que devem ser criadas accounts
  */
-export async function create_accounts(
-	userId: Person['_id'],
-	currenciesToCreate: SuportedCurrencies[] = currencies
-): Promise<void> {
-	const itemsToSave = currenciesToCreate.map(currency => {
-		return new Checklist({
-			opid: new ObjectId(),
-			userId,
-			command: 'create_account',
-			currency,
-			status: 'requested'
-		})
-	})
-
-	const promises = itemsToSave.map(item => item.save())
-
-	await Promise.all(promises)
-
-	/**
-	 * Chama create_account de cada currency que precisa ser criada uma account
-	 */
-	const createAccounts = currenciesToCreate.map(currency => _currencies[currency].create_account())
-
-	/** Se múltiplas forem rejeitadas só irá mostrar o valor da primeira */
-	Promise.all(createAccounts).catch(err => {
-		console.error('Error running create_account', err)
-	})
+export async function createAccount(
+	userId: PersonDoc['_id'],
+	currency: SuportedCurrencies
+): Promise<string> {
+	return _currencies[currency].createAccount(userId)
 }
 
 /**
- * Adiciona o request de withdraw na checklist e chama a função de withdraw
- * desta currency
+ * Adiciona o request de saque, trava o saldo do usuário e chama a função de
+ * withdraw desta currency
  *
  * @param email O email do usuário que a currency será retirada
  * @param currency A currency que será retirada
@@ -112,12 +57,12 @@ export async function create_accounts(
  * @throws ValidationError from mongoose
  */
 export async function withdraw(
-	user: User,
+	userId: PersonDoc['_id'],
 	currency: SuportedCurrencies,
 	account: string,
 	amount: number
 ): Promise<ObjectId> {
-	const { decimals, fee } = detailsOf(currency)
+	const { decimals, fee } = currenciesObj[currency]
 	if (amount < 2 * fee) throw {
 		error: 'AmountOutOfRange',
 		message: `Withdraw amount for ${currency} must be at least '${2 * fee}', but got ${amount}`
@@ -128,15 +73,6 @@ export async function withdraw(
 	 */
 	const opid = new ObjectId()
 
-	// Adiciona o comando de withdraw na checklist
-	const item = await new Checklist({
-		opid,
-		userId: user.id,
-		command: 'withdraw',
-		currency,
-		status: 'preparing'
-	}).save()
-
 	// Desconta o fee do amount
 	const _amount = amount * Math.pow(10, decimals)
 	const _fee = fee * Math.pow(10, decimals)
@@ -144,7 +80,7 @@ export async function withdraw(
 	// Adiciona a operação na Transactions
 	const transaction = await new Transaction({
 		_id: opid,
-		userId: user.id,
+		userId,
 		type: 'send',
 		currency,
 		status: 'processing',
@@ -156,33 +92,28 @@ export async function withdraw(
 
 	try {
 		/** Tenta atualizar o saldo */
-		await user.balanceOps.add(currency, {
+		await Person.balanceOps.add(userId, currency, {
 			opid,
 			type: 'transaction',
 			amount: - Math.abs(amount) // Garante que o amount será negativo
 		})
 	} catch (err) {
 		if (err === 'NotEnoughFunds') {
-			// Remove a transação da collection e o item da checklist
-			await Promise.all([
-				transaction.remove(),
-				item.remove()
-			])
+			await transaction.remove()
 		}
 		/** Da throw no erro independente de qual erro seja */
 		throw err
 	}
 
 	/**
-	 * Atualiza a operação na checklist para o status 'requested', que sinaliza
-	 * para o withdraw_loop que os check iniciais (essa função) foram
-	 * bem-sucedidos
+	 * Atualiza a transação para o status 'ready', que sinaliza para o sistema
+	 * que os check iniciais (essa função) foram bem-sucedidos
 	 */
-	item.status = 'requested'
-	await item.save()
+	transaction.status = 'ready'
+	await transaction.save()
 
 	/** Chama o método da currency para executar o withdraw */
-	_currencies[currency].withdraw()
+	await _currencies[currency].withdraw(transaction)
 
 	return opid
 }
@@ -201,7 +132,7 @@ export async function cancellWithdraw(
 	currency: SuportedCurrencies,
 	opid: ObjectId
 ): Promise<string> {
-	return await _currencies[currency].cancellWithdraw(userId,opid)
+	return await _currencies[currency].cancellWithdraw(userId, opid)
 }
 
 // Inicia o listener da currencyApi
@@ -215,7 +146,7 @@ console.log('CurrencyApi listener is up on port', port)
  * Ao receber uma conexão em '/<currency>' do socket, chama a função connection
  * do módulo desta currency
  */
-currencies.forEach(currency => {
+currencyNames.forEach(currency => {
 	io.of(currency).on('connection', (socket: socketIO.Socket) => {
 		console.log(`Connected to the '${currency}' module`)
 		_currencies[currency].connection(socket)
@@ -226,7 +157,7 @@ currencies.forEach(currency => {
  * Monitora os eventEmitters dos módulos individuais por eventos relevantes
  * e os reemite no eventEmitter público da currencyApi
  */
-currencies.forEach(currency => {
+currencyNames.forEach(currency => {
 	_currencies[currency].events
 		.on('new_transaction', (userId, transaction) => {
 			events.emit('new_transaction', userId, currency, transaction)
@@ -237,4 +168,25 @@ currencies.forEach(currency => {
 		.on('update_sent_tx', (userId, updtSent) => {
 			events.emit('update_sent_tx', userId, currency, updtSent)
 		})
+})
+
+/**
+ * Chama o createAccount para cada uma das currencies do sistema quando
+ * o evento de novo documento inserido na person é emitido
+ */
+Person.on('new', async person => {
+	/**
+	 * @todo Criar as accounts quando o e-mail for confirmado, não ao
+	 * criar o usuário
+	 */
+	const createAccountPromises = currencyNames
+		.map(currency => createAccount(person._id, currency))
+
+	/** Se múltiplas forem rejeitadas só irá mostrar o valor da primeira */
+	await Promise.all(createAccountPromises).catch(err => {
+		if (err != 'SocketDisconnected') {
+			console.error('Error creating account for new user', err)
+			throw err
+		}
+	})
 })

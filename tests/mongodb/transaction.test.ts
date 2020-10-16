@@ -1,4 +1,3 @@
-import '../../src/libs'
 import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
 import Transaction from '../../src/db/models/transaction'
@@ -34,7 +33,7 @@ describe('Testing transactions collection', () => {
 			timestamp: new Date()
 		})
 		await expect(tx.save()).to.eventually.be
-			.rejectedWith('-1.0 must be a positive number')
+			.rejectedWith('-1 must be a positive number')
 	})
 
 	it('Should truncate the amount after the supported for that currency', async () => {
@@ -49,7 +48,7 @@ describe('Testing transactions collection', () => {
 			timestamp: new Date()
 		})
 		await tx.validate()
-		expect(tx.amount.toFullString()).to.equals('1.12345678')
+		expect(tx.amount.toString()).to.equals('1.12345678')
 	})
 
 	it('Should save a recevie and send transaction with the same txid', async () => {
@@ -78,4 +77,21 @@ describe('Testing transactions collection', () => {
 	})
 
 	it('Should fail to save a transaction with invalid account')
+
+	it('Should return amount and time as number when calling toJSON', async () => {
+		const tx = await Transaction.create({
+			userId: new ObjectId(),
+			txid: 'random-txid',
+			type: 'receive',
+			currency: 'bitcoin',
+			status: 'processing',
+			account: 'random-account',
+			amount: 1.12345678910,
+			timestamp: new Date()
+		})
+
+		const jsonRet = tx.toJSON()
+		expect(jsonRet.amount).to.be.a('number')
+		expect(jsonRet.timestamp).to.be.a('number')
+	})
 })

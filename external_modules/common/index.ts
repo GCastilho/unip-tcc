@@ -2,9 +2,8 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import { TxReceived, UpdtSent, UpdtReceived } from '../../src/db/models/transaction'
-export { TxReceived, TxSend, UpdtSent, UpdtReceived } from '../../src/db/models/transaction'
 import { PSent } from './db/models/pendingTx'
+import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
 
 /**
  * EventEmmiter genérico

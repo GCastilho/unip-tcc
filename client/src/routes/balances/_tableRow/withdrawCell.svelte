@@ -1,15 +1,15 @@
 <script>
 	import * as balances from '../../../stores/balances'
 	import { withdraw } from '../../../stores/transactions'
-	import axios from '../../../utils/axios'
 
-	export let name
+	export let currency
 	export let fee
+	export let decimals = 0
 	let withdrawAmount
 	let err = null
 
 	/** Impede que o valor digitado do amount seja maior que o saldo disponível */
-	const filterAmount = () => withdrawAmount = withdrawAmount > $balances[name].available ? $balances[name].available : withdrawAmount
+	const filterAmount = () => withdrawAmount = withdrawAmount > $balances[currency].available ? $balances[currency].available : withdrawAmount
 
 	$: amountToReceive = withdrawAmount - fee > 0 ? withdrawAmount - fee : 0
 
@@ -26,7 +26,7 @@
 		event.target.amount.value = ''
 
 		try {
-			await withdraw(name, destination, amount)
+			await withdraw(currency, destination, amount)
 			err = null
 
 			amountToReceive = 0
@@ -117,7 +117,7 @@
 </style>
 
 <form on:submit|preventDefault={handleWithdraw}>
-	<h4>Withdraw {name.toUpperCase()}</h4>
+	<h4>Withdraw {currency.toUpperCase()}</h4>
 	<div>
 		{#if err}
 			<small>The withdrawal must be at least <b>{(fee*2).toFixed(8)}</b></small>
@@ -135,9 +135,9 @@
 				on:input="{filterAmount}"
 			>
 		</div>
-		<p>Fee: {fee.toFixed(8)}</p>
-		<p>Minimum withdrawal: {(fee*2).toFixed(8)}</p>
-		<p>You will receive: {amountToReceive.toFixed(8)}</p>
+		<p>Fee: {fee.toFixed(decimals)}</p>
+		<p>Minimum withdrawal: {(fee*2).toFixed(decimals)}</p>
+		<p>You will receive: {amountToReceive.toFixed(decimals)}</p>
 	</div>
 	<button type="submit">Withdraw</button>
 </form>
