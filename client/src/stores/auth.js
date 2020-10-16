@@ -43,6 +43,9 @@ export async function init(session) {
 async function authentication(token) {
 	if (typeof token != 'string') return set(false)
 
+	// Impede que o servidor emita um evento de autenticação
+	if (typeof window == 'undefined') return
+
 	try {
 		await emit('authenticate', token)
 		console.log('Authentication successful')
