@@ -1,5 +1,4 @@
 <script>
-	import axios from '../utils/axios'
 	import { onMount } from 'svelte'
 	import { goto } from '@sapper/app'
 	import * as auth from '../stores/auth.js'
@@ -19,15 +18,7 @@
 		const password = event.target.password.value
 
 		try {
-			const { data: { token } } = await axios.post(
-				'/v1/user/authentication',
-				{ email, password }
-			)
-			/**
-			 * @todo Adicionar handlers para os erros vindos do sistema
-			 * de autenticação do websocket
-			 */
-			await auth.authenticate(token)
+			await auth.login(email, password)
 
 			/** Redireciona o usuário para a home */
 			goto('/')

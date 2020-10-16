@@ -1,14 +1,11 @@
 <script>
 	import { stores } from '@sapper/app'
-	import { route } from '../utils/websocket.js'
-	import * as auth from '../stores/auth.js'
-	import '../stores/balances.js' // Inicializa a store de balances
+	import { logout } from '../stores/auth'
 
 	export let segment
 
-	// Roteia o websocket a cada atualização do path da página
-	const { page } = stores()
-	page.subscribe(value => route(value.path))
+	// Store com dados de sessão para permitir SSR
+	const { session } = stores()
 
 	let userdropdown = 'hide'
 </script>
@@ -100,7 +97,7 @@
 		<li><a class:selected="{segment === 'about'}" href="about">about</a></li>
 
 		<div style="float:right">
-			{#if $auth}
+			{#if $session.loggedIn}
 				<li><a class:selected="{segment === 'balances'}" href="balances">balances</a></li>
 				<li on:mouseover="{() => userdropdown = 'show'}" on:mouseleave="{() => userdropdown = 'hide'}">
 					<div class='dropdown-button' class:selected = {userdropdown === 'show' || segment === 'user'}>
@@ -130,7 +127,7 @@
 					</div>
 				</li>
 				<li>
-					<a on:click={auth.deauthenticate} href="/">
+					<a on:click={logout} href="/">
 						<img alt="Logout" title="Logout" src="./assets/logout-icon.svg" />
 					</a>
 				</li>

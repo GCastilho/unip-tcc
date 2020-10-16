@@ -4,8 +4,8 @@
 	import { format } from 'light-date'
 	import * as currencies from '../../../stores/currencies'
 	import * as transactions from '../../../stores/transactions'
-	import { slide } from 'svelte/transition';
-	import { quintOut } from 'svelte/easing';
+	import { slide } from 'svelte/transition'
+	import { quintOut } from 'svelte/easing'
 
 	export let transaction
 
@@ -15,14 +15,12 @@
 		currency,
 		txid,
 		account,
-		amount,
 		type,
 		confirmations,
 		timestamp,
-		fee
 	} = transaction
 
-	let coin, name, code, date, time, tableWidth
+	let coin, name, code, date, time, tableWidth, amount, fee
 
 	let disable = false
 
@@ -40,8 +38,8 @@
 		if (coin) {
 			name = coin.name
 			code = coin.code.toUpperCase()
-			amount = amount.toFixed(coin.decimals)
-			fee = (fee || 0).toFixed(coin.decimals)
+			amount = transaction.amount.toFixed(coin.decimals)
+			fee = transaction.fee.toFixed(coin.decimals)
 		}
 	}
 

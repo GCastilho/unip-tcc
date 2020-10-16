@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import mongoose, { Document, Schema } from '../mongoose'
-import type { SuportedCurrencies as SC } from '../../currencyApi'
+import { currencies } from '../../libs/currencies'
+import type { SuportedCurrencies as SC } from '../../libs/currencies'
 
 export interface Trade extends Document {
 	/**
@@ -63,7 +64,7 @@ const TradeSchema = new Schema({
 		},
 		currency: {
 			type: String,
-			enum: ['bitcoin', 'nano'],
+			enum: currencies.map(currency => currency.name),
 			required: true,
 			validate: {
 				// Garante que a currency da maker é diferente da currency da taker
@@ -100,7 +101,7 @@ const TradeSchema = new Schema({
 		},
 		currency: {
 			type: String,
-			enum: ['bitcoin', 'nano'],
+			enum: currencies.map(currency => currency.name),
 			required: true
 		},
 		amount: {

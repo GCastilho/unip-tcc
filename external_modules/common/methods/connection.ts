@@ -3,8 +3,8 @@ const ss = require('socket.io-stream')
 import Common from '../index'
 import Account from '../db/models/account'
 import Transaction from '../db/models/transaction'
-import { TxSend } from '../index'
 import { SendPending } from '../db/models/pendingTx'
+import type { WithdrawRequest } from '../../../interfaces/transaction'
 
 /**
  * Essa função é o handler de requests vindos do servidor principal
@@ -19,7 +19,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 			socket.emit(event, ...args)
 		} else {
 			/** O último argumento é o callback do evento */
-			const callback: Function = args[args.length - 1]
+			const callback: (...args: any[]) => any = args[args.length - 1]
 			callback('SocketDisconnected')
 		}
 	})
@@ -55,7 +55,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		this._events.emit('disconnected')
 	})
 
-	socket.on('create_new_account', async (callback: Function) => {
+	socket.on('create_new_account', async (callback: (...args: any[]) => any) => {
 		try {
 			const account = await this.getNewAccount()
 			await new Account({ account }).save()
@@ -65,7 +65,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		}
 	})
 
-	socket.on('withdraw', async (request: TxSend, callback: Function) => {
+	socket.on('withdraw', async (request: WithdrawRequest, callback: (...args: any[]) => any) => {
 		console.log('received withdraw request', request)
 		/**
 		 * Salva na pending e retorna um callback dando ciência do recebimento
@@ -101,7 +101,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		this.withdraw_pending()
 	})
 
-	socket.on('cancell_withdraw', async (opid: TxSend['opid'], callback: Function) => {
+	socket.on('cancell_withdraw', async (opid: WithdrawRequest['opid'], callback: (...args: any[]) => any) => {
 		console.log('received cancell_withdraw request', opid)
 		try {
 			/**
