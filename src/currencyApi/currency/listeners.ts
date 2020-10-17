@@ -73,7 +73,7 @@ export default function initListeners(this: Currency) {
 			this.events.emit('new_transaction', userId, tx.toJSON())
 			callback(null, opid.toHexString())
 		} catch (err) {
-			if (err.code === 11000 && err.keyPattern.txid) {
+			if (err.code === 11000) {
 				// A transação já existe
 				const tx = await Transaction.findOne({ txid })
 				if (!tx) {

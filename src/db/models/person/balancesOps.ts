@@ -281,7 +281,7 @@ export async function get(
 		_id: userId,
 		[`currencies.${currency}.pending.opid`]: opid
 	}, {
-		[`currencies.${currency}.pending.$.opid`]: 1
+		[`currencies.${currency}.pending.$`]: 1
 	})
 	if (!person) throw 'OperationNotFound'
 	return person.currencies[currency].pending[0]
