@@ -1,9 +1,10 @@
-import mongoose, { Document, Schema } from '../mongoose'
 import { ObjectId } from 'mongodb'
-import { detailsOf } from '../../currencyApi'
-import type { SuportedCurrencies as SC } from '../../currencyApi'
+import mongoose, { Document, Schema } from '../mongoose'
+import { currencies, currenciesObj } from '../../libs/currencies'
+import type { SuportedCurrencies as SC } from '../../libs/currencies'
 
-export interface Order extends Document {
+/** Documento de uma ordem */
+export interface OrderDoc extends Document {
 	/** ID do usuário dono dessa ordem */
 	userId: ObjectId
 	/**
@@ -34,7 +35,7 @@ export interface Order extends Document {
 	/** O preço dessa operação no orderbook */
 	price: number
 	/** Um array com owning e requesting em ordem alfabética de acordo com a currency */
-	orderedPair: [Order['owning'], Order['requesting']]|[Order['requesting'], Order['owning']]
+	orderedPair: [OrderDoc['owning'], OrderDoc['requesting']]|[OrderDoc['requesting'], OrderDoc['owning']]
 }
 
 const OrderSchema = new Schema({
@@ -51,11 +52,11 @@ const OrderSchema = new Schema({
 	owning: {
 		currency: {
 			type: String,
-			enum: ['bitcoin', 'nano'],
+			enum: currencies.map(currency => currency.name),
 			required: true,
 			validate: {
 				// Garante que owning é diferente de requesting
-				validator: function(this: Order, owning: Order['owning']['currency']) {
+				validator: function(this: OrderDoc, owning: OrderDoc['owning']['currency']) {
 					return this.requesting.currency != owning
 				},
 				message: () => 'OWNING currency must be different than REQUESTING currency'
@@ -73,7 +74,7 @@ const OrderSchema = new Schema({
 	requesting: {
 		currency: {
 			type: String,
-			enum: ['bitcoin', 'nano'],
+			enum: currencies.map(currency => currency.name),
 			required: true
 		},
 		amount: {
@@ -94,26 +95,35 @@ const OrderSchema = new Schema({
 /**
  * Retorna um array com owning e requesting ordenados pelo nome das currencies
  */
-OrderSchema.virtual('orderedPair').get(function(this: Order): Order['orderedPair'] {
+OrderSchema.virtual('orderedPair').get(function(this: OrderDoc): OrderDoc['orderedPair'] {
 	return [this.owning, this.requesting].sort((a, b) => {
 		return a.currency > b.currency ? 1 : a.currency < b.currency ? -1 : 0
-	}) as Order['orderedPair']
+	}) as OrderDoc['orderedPair']
 })
 
-OrderSchema.virtual('type').get(function(this: Order): Order['type'] {
+OrderSchema.virtual('type').get(function(this: OrderDoc): OrderDoc['type'] {
 	const [base] = this.orderedPair
 	return base.currency == this.owning.currency ? 'buy' : 'sell'
 })
 
-OrderSchema.virtual('price').get(function(this: Order): Order['price'] {
+OrderSchema.virtual('price').get(function(this: OrderDoc): OrderDoc['price'] {
 	const [base, target] = this.orderedPair
 	return base.amount / target.amount
 })
 
 // Faz a truncagem dos valores de acordo com a currency que eles se referem
-OrderSchema.pre('validate', function(this: Order) {
-	this.owning.amount = +this.owning.amount.toFixed(detailsOf(this.owning.currency).decimals)
-	this.requesting.amount = +this.requesting.amount.toFixed(detailsOf(this.requesting.currency).decimals)
+OrderSchema.pre('validate', function(this: OrderDoc) {
+	this.owning.amount = +this.owning.amount.toFixed(
+		currenciesObj[this.owning.currency].decimals
+	)
+	this.requesting.amount = +this.requesting.amount.toFixed(
+		currenciesObj[this.requesting.currency].decimals
+	)
 })
 
-export default mongoose.model<Order>('Order', OrderSchema, 'orderbook')
+/**
+ * Model do documento de uma ordem
+ */
+const Order = mongoose.model<OrderDoc>('Order', OrderSchema, 'orderbook')
+
+export default Order

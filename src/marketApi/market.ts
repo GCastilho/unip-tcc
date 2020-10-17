@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb'
-import OrderDoc from '../db/models/order'
+import Order from '../db/models/order'
 import trade from './trade'
-import type { Order } from '../db/models/order'
+import type { OrderDoc } from '../db/models/order'
 
 /**
  * O type da linked list dos nodes do orderbook
@@ -15,7 +15,7 @@ type LinkedList = {
 	price: number
 	previous: null|LinkedList
 	next: null|LinkedList
-	data: Order[]
+	data: OrderDoc[]
 }
 
 /**
@@ -121,7 +121,7 @@ export default class Market {
 	 * alterar o marketPrice e, em caso positivo, faz essa alteração
 	 * @param order A orderm maker que foi/será adicionada ao livro
 	 */
-	private updateMarketPrice(order: Order) {
+	private updateMarketPrice(order: OrderDoc) {
 		if (order.type == 'buy' && order.price > this.buyPrice) {
 			this.buyPrice = order.price
 		} else if (order.type == 'sell' && order.price < this.sellPrice) {
@@ -135,7 +135,7 @@ export default class Market {
 	 *
 	 * @param order A ordem maker que será adicionada
 	 */
-	private unshiftMaker(order: Order) {
+	private unshiftMaker(order: OrderDoc) {
 		const node = this.getNode(order.price)
 		node.data.unshift(order)
 		this.updateMarketPrice(order)
@@ -146,7 +146,7 @@ export default class Market {
 	 * da fila de um preço
 	 * @param maker A ordem maker que será adicionada
 	 */
-	private pushMaker(maker: Order) {
+	private pushMaker(maker: OrderDoc) {
 		const node = this.getNode(maker.price)
 		node.data.push(maker)
 		this.updateMarketPrice(maker)
@@ -165,15 +165,15 @@ export default class Market {
 	 *
 	 * @param taker A ordem taker que será executada
 	 */
-	private async execTaker(taker: Order) {
+	private async execTaker(taker: OrderDoc) {
 		/** Array de touples [maker, taker] */
-		const matchs: [Order, Order][] = []
+		const matchs: [OrderDoc, OrderDoc][] = []
 
 		/**
 		 * Array de 'resto' de ordens que não foram feitas match completamente e
 		 * devem ser recolocadas no orderbook
 		 */
-		const leftovers: Order[] = []
+		const leftovers: OrderDoc[] = []
 
 		/** A quantidade restante de quanto o usuário TEM para executar a ordem */
 		let remaining = taker.owning.amount
@@ -207,7 +207,7 @@ export default class Market {
 			const maker = this.getOrderFromIndex(node, 0)
 
 			if (remaining > maker.requesting.amount) {
-				const takerCopy = new OrderDoc(taker)
+				const takerCopy = new Order(taker)
 				takerCopy._id = new ObjectId()
 				takerCopy.isNew = true
 
@@ -238,7 +238,7 @@ export default class Market {
 					leftovers.push(maker)
 
 					/** Ordem com os valores da taker (para o match) */
-					const makerCopy = new OrderDoc(maker)
+					const makerCopy = new Order(maker)
 					makerCopy._id = new ObjectId()
 					makerCopy.isNew = true
 					makerCopy.owning.amount = taker.requesting.amount
@@ -283,7 +283,7 @@ export default class Market {
 		}
 
 		/** Array de promessas de operações no banco de dados */
-		const promises: Promise<Order>[] = []
+		const promises: Promise<OrderDoc>[] = []
 
 		// Salva as ordens do match no banco de dados com o journaling atualizado
 		promises.push(...matchs.flatMap(orders => orders.map(order => {
@@ -309,7 +309,7 @@ export default class Market {
 	 * maker order ou executando-a imediatamente caso seja uma taker order
 	 * @param order Documento da ordem que será processado
 	 */
-	async add(order: Order) {
+	async add(order: OrderDoc) {
 		if (order.type == 'buy' && order.price >= this.sellPrice) {
 			await this.execTaker(order)
 		} else if (order.type == 'sell' && order.price <= this.buyPrice) {
@@ -324,7 +324,7 @@ export default class Market {
 	 * Se a ordem for a última do node ele também será removido do orderbook
 	 * @param order A ordem que deverá ser removida
 	 */
-	remove(order: Order) {
+	remove(order: OrderDoc) {
 		const node = this.orderbook.get(order.price)
 		if (!node) throw 'PriceNotFound'
 		const index = node.data.findIndex(v => v.id == order.id)

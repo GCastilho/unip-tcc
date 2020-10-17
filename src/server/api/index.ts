@@ -14,7 +14,7 @@ api.use('/v1', v1)
 api.get('/', (_req, res) => {
 	res.send({
 		description: 'HTTP API subdomain',
-		entries: [ 'v1' ]
+		entries: ['v1']
 	})
 })
 

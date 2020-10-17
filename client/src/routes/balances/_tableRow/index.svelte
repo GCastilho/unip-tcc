@@ -10,9 +10,9 @@
 	import WithdrawCell from './withdrawCell.svelte'
 
 	export let code
-	export let name
+	export let currency
+	export let decimals
 	export let fee
-	export let accounts = []
 
 	let hidden = true
 	let selectedAction = ''
@@ -24,8 +24,8 @@
 	 * Checa se existe uma prop na store com o nome dessa currency e, se sim,
 	 * seta available e locked para os valores da store
 	 */
-	$: if ($balances[name]) {
-		({ available, locked } = $balances[name])
+	$: if ($balances[currency]) {
+		({ available, locked } = $balances[currency])
 	}
 
 	onMount(() => {
@@ -96,9 +96,9 @@
 
 <tr>
 	<td class="coin-cell">{code}</td>
-	<td class="name-cell">{name}</td>
-	<td class="balance-cell">{typeof available === 'number' ? available.toFixed(8) : 'Loading...'}</td>
-	<td class="balance-cell">{typeof locked === 'number' ? locked.toFixed(8) : 'Loading...'}</td>
+	<td class="name-cell">{currency}</td>
+	<td class="balance-cell">{typeof available === 'number' ? available.toFixed(decimals || 0) : 'Loading...'}</td>
+	<td class="balance-cell">{typeof locked === 'number' ? locked.toFixed(decimals || 0) : 'Loading...'}</td>
 	<td>
 		<button on:click="{() => openActionCell('deposit')}">Deposit</button>
 		<button on:click="{() => openActionCell('withdraw')}">Withdraw</button>
@@ -108,9 +108,9 @@
 	<td colspan="5">
 		<div>
 			{#if selectedAction === 'deposit'}
-				<DepositCell {name} {accounts} />
+				<DepositCell {currency} />
 			{:else if selectedAction === 'withdraw'}
-				<WithdrawCell {name} {fee} />
+				<WithdrawCell {currency} {fee} {decimals} />
 			{/if}
 		</div>
 	</td>

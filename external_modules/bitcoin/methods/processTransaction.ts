@@ -3,7 +3,7 @@ import Account from '../../common/db/models/account'
 import Transaction from '../../common/db/models/transaction'
 import { ReceivedPending } from '../../common/db/models/pendingTx'
 import { Bitcoin } from '../index'
-import { TxReceived } from '../../common'
+import type { TxReceived } from '../../../interfaces/transaction'
 
 /**
  * Recebe um txid e uma função para pegar informações brutas dessa transação
@@ -14,7 +14,7 @@ import { TxReceived } from '../../common'
  * @param getInfo Uma função que recebe um txid e retorna informações brutas da
  * transação da blockchain
  */
-async function formatTransaction(txid: string, getInfo: Function): Promise<TxReceived|void> {
+async function formatTransaction(txid: string, getInfo: (...args: any[]) => any): Promise<TxReceived|void> {
 	/**
 	 * Informações da transação pegas da blockchain
 	 */
@@ -31,7 +31,7 @@ async function formatTransaction(txid: string, getInfo: Function): Promise<TxRec
 	const received = txInfo.details.find(details =>
 		details.category === 'receive'
 	)
-	if(!received) return
+	if (!received) return
 
 	const address: TxReceived['account'] = received.address
 

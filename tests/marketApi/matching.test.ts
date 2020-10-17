@@ -1,32 +1,31 @@
 import sinon from 'sinon'
 import { expect } from 'chai'
 import { ImportMock } from 'ts-mock-imports'
-import User from '../../src/userApi/user'
 import Order from '../../src/db/models/order'
+import Person from '../../src/db/models/person'
 import * as Trade from '../../src/marketApi/trade'
-import * as UserApi from '../../src/userApi'
 import * as MarketApi from '../../src/marketApi'
-import * as CurrencyApi from '../../src/currencyApi'
+import { currencyNames } from '../../src/libs/currencies'
 import type { SinonStub } from 'sinon'
 
 describe('Performing match tests on the MarketApi', () => {
-	let user: User
+	let person: InstanceType<typeof Person>
 	let spy: SinonStub<Parameters<typeof Trade['default']>>
 
 	before(async () => {
-		user = await UserApi.createUser('match-test-marketApi@email.com', 'userP@ss')
+		person = await Person.createOne('match-test-marketApi@email.com', 'userP@ss')
 	})
 
 	beforeEach(async () => {
 		// Manualmente seta o saldo disponível para 10
-		for (const currency of CurrencyApi.currencies)
-			// @ts-expect-error
-			user.person.currencies[currency].balance.available = 10
-		await user.person.save()
+		for (const currency of currencyNames)
+			// @ts-expect-error Automaticamente convertido para Decimal128
+			person.currencies[currency].balance.available = 10
+		await person.save()
 
 		// Remove as ordens do orderbook para impedir que um teste influencie outro
 		for (const order of await Order.find({ status: 'ready' }))
-			await MarketApi.remove(user, order._id).catch(err => {
+			await MarketApi.remove(person._id, order._id).catch(err => {
 				if (
 					err != 'OrderNotFound' &&
 					err != 'OperationNotFound' &&
@@ -43,7 +42,7 @@ describe('Performing match tests on the MarketApi', () => {
 	})
 
 	it('Should match two orders of the same amount if they have the same price and different types', async () => {
-		const makerOpid = await MarketApi.add(user, {
+		const makerOpid = await MarketApi.add(person._id, {
 			owning: {
 				currency: 'bitcoin',
 				amount: 1.23,
@@ -54,7 +53,7 @@ describe('Performing match tests on the MarketApi', () => {
 			}
 		})
 
-		const takerOpid = await MarketApi.add(user, {
+		const takerOpid = await MarketApi.add(person._id, {
 			owning: {
 				currency: 'nano',
 				amount: 2.46
@@ -101,10 +100,10 @@ describe('Performing match tests on the MarketApi', () => {
 		}
 
 		const makersOpid: Parameters<Parameters<ReturnType<typeof MarketApi['add']>['then']>[0]>[0][] = []
-		makersOpid.push(await MarketApi.add(user, makerOrder))
-		makersOpid.push(await MarketApi.add(user, makerOrder))
+		makersOpid.push(await MarketApi.add(person._id, makerOrder))
+		makersOpid.push(await MarketApi.add(person._id, makerOrder))
 
-		const takerOpid = await MarketApi.add(user, takerOrder)
+		const takerOpid = await MarketApi.add(person._id, takerOrder)
 
 		sinon.assert.calledOnce(spy)
 
@@ -158,8 +157,8 @@ describe('Performing match tests on the MarketApi', () => {
 		}
 
 		it('Should split the maker order in two and send to trade a pair with the same amount', async () => {
-			const makerOpid = await MarketApi.add(user, makerOrder)
-			const takerOpid = await MarketApi.add(user, takerOrder)
+			const makerOpid = await MarketApi.add(person._id, makerOrder)
+			const takerOpid = await MarketApi.add(person._id, takerOrder)
 
 			sinon.assert.calledOnce(spy)
 
@@ -187,11 +186,11 @@ describe('Performing match tests on the MarketApi', () => {
 		})
 
 		it('Should put the leftover order back on the orderbook', async () => {
-			const makerOpid = await MarketApi.add(user, makerOrder)
-			await MarketApi.add(user, takerOrder)
+			const makerOpid = await MarketApi.add(person._id, makerOrder)
+			await MarketApi.add(person._id, takerOrder)
 
 			// Envia uma segunda ordem com os amounts que a leftover deve ter
-			const secondTakerOpid = await MarketApi.add(user, {
+			const secondTakerOpid = await MarketApi.add(person._id, {
 				owning: {
 					currency: 'nano',
 					amount: makerOrder.requesting.amount - takerOrder.owning.amount
@@ -247,8 +246,8 @@ describe('Performing match tests on the MarketApi', () => {
 		}
 
 		it('Should split the taker order in two and send to trade a pair with the same amount', async () => {
-			const makerOpid = await MarketApi.add(user, makerOrder)
-			const takerOpid = await MarketApi.add(user, takerOrder)
+			const makerOpid = await MarketApi.add(person._id, makerOrder)
+			const takerOpid = await MarketApi.add(person._id, takerOrder)
 
 			sinon.assert.calledOnce(spy)
 
@@ -276,15 +275,15 @@ describe('Performing match tests on the MarketApi', () => {
 		})
 
 		it('Should put the leftover order on the orderbook as a maker', async () => {
-			await MarketApi.add(user, makerOrder)
+			await MarketApi.add(person._id, makerOrder)
 			/*
 			 * Essa primeira taker será executada parcialmente. Sua leftover será
 			 * adicionada ao livro como uma maker
 			 */
-			const takerOpid = await MarketApi.add(user, takerOrder)
+			const takerOpid = await MarketApi.add(person._id, takerOrder)
 
 			// Envia uma segunda ordem com os amounts que a leftover deve ter
-			const secondTakerOpid = await MarketApi.add(user, {
+			const secondTakerOpid = await MarketApi.add(person._id, {
 				owning: {
 					currency: 'nano',
 					amount: takerOrder.requesting.amount - makerOrder.owning.amount
@@ -323,9 +322,9 @@ describe('Performing match tests on the MarketApi', () => {
 
 			// Adiciona a quantidade de makers necessária para ter amount igual (ou maior) a taker
 			for (let i = matchs; i > 0; i--)
-				makersOpid.push(await MarketApi.add(user, makerOrder))
+				makersOpid.push(await MarketApi.add(person._id, makerOrder))
 
-			const takerOpid = await MarketApi.add(user, takerOrder)
+			const takerOpid = await MarketApi.add(person._id, takerOrder)
 
 			sinon.assert.calledOnce(spy)
 
@@ -378,8 +377,8 @@ describe('Performing match tests on the MarketApi', () => {
 				}
 			}
 
-			const buyOpid = await MarketApi.add(user, buyOrder)
-			const sellOpid = await MarketApi.add(user, sellOrder)
+			const buyOpid = await MarketApi.add(person._id, buyOrder)
+			const sellOpid = await MarketApi.add(person._id, sellOrder)
 
 			sinon.assert.calledOnce(spy)
 
@@ -429,8 +428,8 @@ describe('Performing match tests on the MarketApi', () => {
 				}
 			}
 
-			const sellOpid = await MarketApi.add(user, sellOrder)
-			const buyOpid = await MarketApi.add(user, buyOrder)
+			const sellOpid = await MarketApi.add(person._id, sellOrder)
+			const buyOpid = await MarketApi.add(person._id, buyOrder)
 
 			sinon.assert.calledOnce(spy)
 
@@ -483,8 +482,8 @@ describe('Performing match tests on the MarketApi', () => {
 				}
 			}
 
-			const makersOpid = await Promise.all(makers.map(maker => MarketApi.add(user, maker)))
-			const takerOpid = await MarketApi.add(user, taker)
+			const makersOpid = await Promise.all(makers.map(maker => MarketApi.add(person._id, maker)))
+			const takerOpid = await MarketApi.add(person._id, taker)
 
 			sinon.assert.calledOnce(spy)
 
@@ -543,8 +542,8 @@ describe('Performing match tests on the MarketApi', () => {
 				}
 			}
 
-			const makersOpid = await Promise.all(makers.map(maker => MarketApi.add(user, maker)))
-			const takerOpid = await MarketApi.add(user, taker)
+			const makersOpid = await Promise.all(makers.map(maker => MarketApi.add(person._id, maker)))
+			const takerOpid = await MarketApi.add(person._id, taker)
 
 			sinon.assert.calledOnce(spy)
 

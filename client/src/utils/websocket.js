@@ -1,6 +1,7 @@
 import socketIOClient from 'socket.io-client'
+import { apiServerUrl } from './axios'
 
-const socket = socketIOClient()
+const socket = socketIOClient(apiServerUrl)
 
 socket.on('connect', () => {
 	console.log('Connected to the socket')
@@ -9,14 +10,6 @@ socket.on('connect', () => {
 socket.on('disconnect', reason => {
 	console.log('Disconnected from the socket:', reason)
 })
-
-/**
- * Re-roteia o websocket para um novo path
- * @param {string} path O novo path do websocket
- */
-export function route(path) {
-	socket.emit('_path', path)
-}
 
 /**
  * Checa a conexão; A promessa retornada por essa função só será resolvida caso
@@ -41,22 +34,11 @@ export function emit(event, ...args) {
 	return new Promise((resolve, reject) => {
 		checkConnection().then(() => {
 			socket.emit(event, ...args, ((error, response) => {
-				if (error)
-					reject(error)
-				else
-					resolve(response)
+				if (error) reject(error)
+				else resolve(response)
 			}))
 		})
 	})
-}
-
-/**
- * Adiciona um event listener no socket para um evento específico
- * @param {string} event O nome do evento que será ouvido
- * @param {function} fn A função que deverá ser chamada quando o evento ocorrer
- */
-export function addSocketListener(event, fn) {
-	socket.on(event, fn)
 }
 
 /**
@@ -66,4 +48,14 @@ export function addSocketListener(event, fn) {
  */
 export function removeSocketListner(event, fn) {
 	socket.removeListener(event, fn)
+}
+
+/**
+ * Adiciona um event listener no socket para um evento específico
+ * @param {string} event O nome do evento que será ouvido
+ * @param {function} fn A função que deverá ser chamada quando o evento ocorrer
+ */
+export function addSocketListener(event, fn) {
+	socket.on(event, fn)
+	return () => removeSocketListner(event, fn)
 }

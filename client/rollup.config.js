@@ -1,19 +1,24 @@
+import typescript from '@rollup/plugin-typescript'
 import resolve from '@rollup/plugin-node-resolve'
 import replace from '@rollup/plugin-replace'
 import commonjs from '@rollup/plugin-commonjs'
 import svelteSVG from 'rollup-plugin-svelte-svg'
 import svelte from 'rollup-plugin-svelte'
-import babel from 'rollup-plugin-babel'
+import babel from '@rollup/plugin-babel'
 import { terser } from 'rollup-plugin-terser'
+import sveltePreprocess from 'svelte-preprocess'
 import config from 'sapper/config/rollup.js'
 import pkg from './package.json'
 
 const mode = process.env.NODE_ENV
 const dev = mode === 'development'
+const production = !process.env.ROLLUP_WATCH
 const legacy = !!process.env.SAPPER_LEGACY_BUILD
 
-const onwarn = (warning, onwarn) => (warning.code === 'CIRCULAR_DEPENDENCY' && /[/\\]@sapper[/\\]/.test(warning.message)) || onwarn(warning)
-const dedupe = importee => importee === 'svelte' || importee.startsWith('svelte/')
+const onwarn = (warning, onwarn) =>
+	(warning.code === 'MISSING_EXPORT' && /'preload'/.test(warning.message)) ||
+	(warning.code === 'CIRCULAR_DEPENDENCY' && /[/\\]@sapper[/\\]/.test(warning.message)) ||
+	onwarn(warning)
 
 export default {
 	client: {
@@ -26,19 +31,23 @@ export default {
 			}),
 			svelte({
 				dev,
+				preprocess: sveltePreprocess({
+					sourceMap: !production
+				}),
 				hydratable: true,
 				emitCss: true
 			}),
 			resolve({
 				browser: true,
-				dedupe
+				dedupe: ['svelte']
 			}),
 			commonjs(),
+			typescript(),
 			svelteSVG({ dev }),
 
 			legacy && babel({
 				extensions: ['.js', '.mjs', '.html', '.svelte'],
-				runtimeHelpers: true,
+				babelHelpers: 'runtime',
 				exclude: ['node_modules/@babel/**'],
 				presets: [
 					['@babel/preset-env', {
@@ -58,6 +67,7 @@ export default {
 			})
 		],
 
+		preserveEntrySignatures: false,
 		onwarn,
 	},
 
@@ -70,19 +80,24 @@ export default {
 				'process.env.NODE_ENV': JSON.stringify(mode)
 			}),
 			svelte({
+				preprocess: sveltePreprocess({
+					sourceMap: !production
+				}),
 				generate: 'ssr',
+				hydratable: true,
 				dev
 			}),
 			resolve({
-				dedupe
+				dedupe: ['svelte']
 			}),
 			commonjs(),
+			typescript(),
 			svelteSVG({ generate: 'ssr', dev }),
 		],
-		external: Object.keys(pkg.dependencies).concat(
-			require('module').builtinModules || Object.keys(process.binding('natives'))
-		),
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
+		external: Object.keys(pkg.dependencies).concat(require('module').builtinModules),
 
+		preserveEntrySignatures: 'strict',
 		onwarn,
 	},
 
@@ -99,6 +114,7 @@ export default {
 			!dev && terser()
 		],
 
+		preserveEntrySignatures: false,
 		onwarn,
 	}
 }

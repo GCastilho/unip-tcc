@@ -7,3 +7,4 @@ public/
 !.vscode/tasks.json
 !.vscode/extensions.json
 cfg/nano-dev.env
+cfg/custom.env

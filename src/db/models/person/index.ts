@@ -1,70 +1,78 @@
-import { ObjectId } from 'mongodb'
-import mongoose, { Document, Schema } from '../../mongoose'
-import currenciesSchema from './currencies'
-import type { Currencies } from './currencies'
+import '../../../libs/extensions'
+import mongoose, { Model } from '../../mongoose'
+import PersonSchema, { events as documentEvents } from './schema'
+import { currencyNames } from '../../../libs/currencies'
+import * as balanceOperations from './balancesOps'
+import type { DocumentQuery } from 'mongoose'
+import type { PersonDoc as PersonDocument, Events } from './schema'
 
-/**
- * Interface do documento 'person', da collection 'people', que contém
- * informações relacionadas ao usuários
- */
-export interface Person extends Document {
-	_id: ObjectId
-	/** O email do usuário */
-	email: string
-	/** Dados de credenciais */
-	credentials: {
-		/** O salt usado para fazer o hash do password */
-		salt: string
-		/** Hash do salt + password */
-		password_hash: string
-	}
-	/** Informações de currencies desse usuário */
-	currencies: Currencies
+// Re-exporta a interface do documento da person
+export type PersonDoc = PersonDocument
+
+/** Interface do Model da Person, com os métodos estáticos do mesmo */
+interface PersonModel extends Model<PersonDoc, typeof customQueries> {
+	/** Métodos para a manipulação de operações de mudança de saldo */
+	balanceOps: typeof balanceOperations
+
+	/** Cria o documento de uma única pessoa e o retorna */
+	createOne(email: string, password: string): Promise<PersonDocument>
+
+	emit: <E extends keyof Events>(event: E, ...args: Parameters<Events[E]>) => boolean
+	on: <E extends keyof Events>(
+		event: E,
+		fn: (...args: Parameters<Events[E]>) => void
+	) => this
+	once: <E extends keyof Events>(
+		event: E,
+		fn: (...args: Parameters<Events[E]>) => void
+	) => this
 }
 
-/**
- * Schema do documento de usuários
- */
-const PersonSchema = new Schema({
-	email: {
-		type: String,
-		trim: true,
-		lowercase: true,
-		unique: true,
-		required: true,
-	},
-	credentials: {
-		salt: {
-			type: String,
-			required: true,
-			validate: {
-				validator: v => v.length >= 32,
-				message: props => `salt can not have length less than 32 characters, found ${props.value.length}`
-			}
-		},
-		password_hash: {
-			type: String,
-			required: true,
-			validate: {
-				validator: v => v.length >= 128,
-				message: props => `password_hash can not have length less than 128 characters, found ${props.value.length}`
-			}
-		}
-	},
-	currencies: currenciesSchema
-})
+/** Faz a balanceOps ser uma propriedade estática do model da Person */
+PersonSchema.statics.balanceOps = balanceOperations
 
-PersonSchema.pre('validate', function(this: Person) {
-	// Ao criar o documento, props de sub-schemas serão undefined
-	if (!this.isNew) return
-	if (typeof this.currencies == 'undefined')
-		// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-		// @ts-ignore
-		this.currencies = {}
+/** Queries personalidas da Person */
+const customQueries = {
+	// Retornar PersonDoc (1º arg) não está certo, pois ele retorna apenas parte do doc
+	selectAccounts(this: DocumentQuery<PersonDoc|null, PersonDoc>,
+		currencies = currencyNames
+	) {
+		this.select(currencies.map(currency => `currencies.${currency}.accounts`).join(' '))
+		return this
+	},
+	selectBalances(this: DocumentQuery<PersonDoc|null, PersonDoc>,
+		currencies = currencyNames
+	) {
+		this.select(currencies.map(currency => `currencies.${currency}.balance`).join(' '))
+		return this
+	},
+}
+
+// Adiciona a customQuery na query
+PersonSchema.query = customQueries
+
+// Insere o createOne nos statics do schema
+PersonSchema.static('createOne', function(this: PersonModel,
+	email: string,
+	password: string
+): ReturnType<PersonModel['createOne']> {
+	return this.create({
+		email, credentials: { password }
+	})
 })
 
 /**
  * Model da collection people, responsável por armazenar as informações dos
  * usuários
  */
-export default mongoose.model<Person>('Person', PersonSchema)
+const Person = mongoose.model<PersonDoc, PersonModel>('Person', PersonSchema)
+
+// Passa a referência do model para o balanceOps
+balanceOperations.init(Person)
+
+// Retransmite todos os eventos de um documento no emitter do Model
+documentEvents.onAny((event, args) => {
+	Person.emit(event, ...args)
+})
+
+export default Person

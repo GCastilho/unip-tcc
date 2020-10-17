@@ -1,5 +1,10 @@
 {
+	"files.insertFinalNewline": true,
 	"editor.codeLens": true,
+	"editor.tabSize": 2,
+	"editor.defaultFormatter": "vscode.typescript-language-features",
+	"editor.insertSpaces": false,
+	"editor.renderWhitespace": "boundary",
 	"editor.wordWrap": "on",
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": true
@@ -7,12 +12,10 @@
 	"editor.rulers": [
 		80
 	],
-	"eslint.validate": [
-		"javascript",
-		"typescript",
-	],
-	"files.insertFinalNewline": true,
+	"typescript.tsdk": "node_modules/typescript/lib",
 	"git.autofetch": true,
-	"typescript.tsdk": "node_modules\\typescript\\lib",
-	"typescript.updateImportsOnFileMove.enabled": "prompt"
+	"javascript.updateImportsOnFileMove.enabled": "always",
+	"task.autoDetect": "off",
+	"terminal.integrated.rendererType": "dom",
+	"typescript.updateImportsOnFileMove.enabled": "always"
 }

@@ -1,161 +1,26 @@
-import { ObjectId, Decimal128 } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
-import { detailsOf } from '../../currencyApi'
-import type User from '../../userApi/user'
-import type { SuportedCurrencies } from '../../currencyApi'
-
-/** Interface base de uma transaction */
-interface Transaction {
-	/** Identificador único dessa transação */
-	txid: string
-	/** Account de destino da transação */
-	account: string
-	/** Amount da transação */
-	amount: number|bigint|string
-	/**
-	 * Status da transação
-	 *
-	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
-	 *
-	 * confirmed: A transação foi confirmada pela rede e é considerada
-	 * irreversível
-	 */
-	status: 'pending'|'confirmed'
-	/**
-	 * A quantidade de confirmações que uma transação tem. Transações
-	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
-	 */
-	confirmations?: number
-	/**
-	 * Timestamp da transação, o servidor principal usa Date, os módulos
-	 * externos transmitem o timestamp em milisegundos como um number
-	 */
-	timestamp: number|Date
-}
-
-/**
- * Interface base para interfaces de comunicação entre o módulo externo
- * e o main server
- */
-interface ExternalModuleTransaction extends Transaction {
-	amount: string
-	timestamp: number
-	/** Identificador da operação da transação no servidor principal */
-	opid: string
-}
-
-/** Interface de uma transação recebida */
-export interface TxReceived extends Transaction {
-	/**
-	 * Identificador da operação da transação no servidor principal; O servidor
-	 * principal irá retornar uma TxReceived com opid caso o módulo externo
-	 * esteja informando uma traqnsação já computada
-	 */
-	opid?: ExternalModuleTransaction['opid']
-	timestamp: ExternalModuleTransaction['timestamp']
-	amount: ExternalModuleTransaction['amount']|number
-}
-
-/** Interface para ordens de envio de transações */
-export interface TxSend {
-	/** Identificador da operação da transação no servidor principal */
-	opid: ExternalModuleTransaction['opid']
-	/** Account de destino da transação */
-	account: ExternalModuleTransaction['account']
-	/** Amount da transação na unidade base da moeda */
-	amount: ExternalModuleTransaction['amount']
-}
-
-/**
- * Interface para atualização de transações recebidas utilizando
- * o evento update_received_tx
- */
-export interface UpdtReceived {
-	/** Identificador da operação da transação no servidor principal */
-	opid: ExternalModuleTransaction['opid']
-	/**
-	 * Status da transação
-	 *
-	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
-	 *
-	 * confirmed: A transação foi confirmada pela rede e é considerada irreversível
-	 */
-	status: ExternalModuleTransaction['status']
-	/**
-	 * A quantidade de confirmações que uma transação tem. Transações
-	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
-	 */
-	confirmations?: ExternalModuleTransaction['confirmations']
-}
-
-/**
- * Interface para atualização de transações enviadas utilizando
- * o evento update_sent_tx
- */
-export interface UpdtSent {
-	/** Identificador da operação da transação no servidor principal */
-	opid: ExternalModuleTransaction['opid']
-	/** Identificador da transação na rede da moeda */
-	txid: ExternalModuleTransaction['txid']
-	/**
-	 * Status da transação
-	 *
-	 * pending: A transação foi recebida mas ainda não foi confirmada pela rede
-	 *
-	 * confirmed: A transação foi confirmada pela rede e é considerada irreversível
-	 */
-	status: ExternalModuleTransaction['status']
-	/**
-	 * A quantidade de confirmações que uma transação tem. Transações
-	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
-	 */
-	confirmations?: ExternalModuleTransaction['confirmations']
-	/** O timestamp da transação na rede da moeda */
-	timestamp: ExternalModuleTransaction['timestamp']
-}
-
-export interface CancelledSentTx {
-	/** Identificador da operação da transação que foi cancelada */
-	opid: ExternalModuleTransaction['opid']
-	status: 'cancelled'
-}
-
-/**
- * Interface Transaction do que o servidor principal usa para se comunicar
- * entre seus módulos internos
- */
-export interface TransactionInternal extends Transaction {
-	amount: number|bigint
-	timestamp: Date
-	/** Tipo dessa transação */
-	type: 'receive'|'send'
-}
-
-/**
- * Objeto retornado pelo servidor ao cliente quando é requisitado informações
- * de uma transação
- */
-export interface TxInfo {
-	status: TransactionDoc['status']
-	currency: TransactionDoc['currency']
-	txid: TransactionDoc['txid']
-	account: TransactionDoc['account']
-	amount: number
-	type: TransactionDoc['type']
-	confirmations: TransactionDoc['confirmations']
-	timestamp: TransactionDoc['timestamp']
-}
+import { currencies, currenciesObj } from '../../libs/currencies'
+import type { PersonDoc } from './person'
+import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** A interface dessa collection */
-interface TransactionDoc extends Document {
-	_id: ObjectId
+export interface TransactionDoc extends Document {
 	/** Referência ao usuário dono dessa transação */
-	userId: User['id']
+	userId: PersonDoc['_id']
 	/**
 	 * Status da transação
 	 *
 	 * pending: A transação já foi processada e aceita no saldo do usuário e
 	 * está pendente para ser confirmada na rede
+	 *
+	 * ready: O processamento inicial foi concluído e a tranação está pronta para
+	 * ser enviada ao módulo externo
+	 *
+	 * picked: A transação foi selecionada pelo método de withdraw para ser
+	 * enviada ao módulo externo
+	 *
+	 * external: A transação foi envada ao módulo externo
 	 *
 	 * confirmed: A transação foi confirmada na rede e teve o saldo do usuário
 	 * atualizado no database
@@ -163,30 +28,42 @@ interface TransactionDoc extends Document {
 	 * processing: A transação ainda não foi processada no saldo do usuário,
 	 * podendo ser negada quando isso ocorrer (e deletada do db)
 	 */
-	status: ExternalModuleTransaction['status']|'processing'
+	status: 'processing'|'ready'|'picked'|'external'|'cancelled'|'pending'|'confirmed'
 	/** De qual currency essa transação se refere */
 	currency: SuportedCurrencies
 	/** Identificador da transação na rede da moeda */
-	txid: TransactionInternal['txid']
+	txid: string
 	/** Account de destino da transação */
-	account: TransactionInternal['account']
+	account: string
 	/** Amount da transação */
-	amount: Decimal128
+	amount: number
 	/** Taxa cobrada para a execução da operação */
 	fee: number
 	/** Tipo dessa transação */
-	type: TransactionInternal['type']
+	type: 'receive'|'send'
 	/**
 	 * A quantidade de confirmações que uma transação tem. Transações
 	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
 	 */
-	confirmations?: TransactionInternal['confirmations']
+	confirmations?: number
 	/** O timestamp da transação na rede da moeda */
-	timestamp: TransactionInternal['timestamp']
+	timestamp: Date
+	toJSON(): TxJSON
+}
+
+/** Interface do objeto retornado pelo método toJSON */
+export interface TxJSON extends Omit<
+	TransactionDoc,
+	keyof Document|'userId'|'status'|'fee'|'timestamp'
+> {
+	opid: string
+	status: 'processing'|'pending'|'confirmed'
+	fee?: number
+	timestamp: number
 }
 
 /** Schema da collection de transações dos usuários */
-const TransactionSchema: Schema = new Schema({
+const TransactionSchema = new Schema({
 	userId: {
 		type: ObjectId,
 		required: true,
@@ -202,12 +79,12 @@ const TransactionSchema: Schema = new Schema({
 	},
 	currency: {
 		type: String,
-		enum: ['bitcoin', 'nano'],
+		enum: currencies.map(currency => currency.name),
 		required: true
 	},
 	status: {
 		type: String,
-		enum: [ 'processing', 'pending', 'confirmed' ],
+		enum: ['processing', 'ready', 'picked', 'external', 'cancelled', 'pending', 'confirmed'],
 		required: true
 	},
 	confirmations: {
@@ -215,13 +92,12 @@ const TransactionSchema: Schema = new Schema({
 		min: 0,
 		required: false
 	},
-	/** @todo Adicionar um validador de accounts */
 	account: {
 		type: String,
 		required: true
 	},
 	amount: {
-		type: Decimal128,
+		type: Number,
 		required: true,
 		validate: {
 			validator: v => v > 0,
@@ -236,6 +112,33 @@ const TransactionSchema: Schema = new Schema({
 	timestamp: {
 		type: Date,
 		required: true
+	}
+}, {
+	toJSON: {
+		transform: function(doc: TransactionDoc): TxJSON {
+			let status: TxJSON['status']
+			switch (doc.status) {
+				case('pending'):
+				case('confirmed'):
+					status = doc.status
+					break
+				default:
+					status = 'processing'
+			}
+
+			return {
+				opid:          doc.id,
+				status:        status,
+				currency:      doc.currency,
+				txid:          doc.txid,
+				account:       doc.account,
+				amount:        doc.amount,
+				fee:           doc.fee,
+				type:          doc.type,
+				confirmations: doc.confirmations,
+				timestamp:     doc.timestamp.getTime()
+			}
+		}
 	}
 })
 
@@ -253,12 +156,17 @@ TransactionSchema.index({
 })
 
 TransactionSchema.pre('validate', function(this: TransactionDoc) {
-	if (this.amount instanceof Decimal128)
-		this.amount = this.amount.truncate(detailsOf(this.currency).decimals)
+	// Faz a truncagem do amount de acordo com os decimais da currency
+	if (typeof this.amount == 'number') {
+		const [integer, decimals] = this.amount.toString().split('.')
+		this.amount = Number(`${integer}.${(decimals || '0').slice(0, currenciesObj[this.currency].decimals)}`)
+	}
 })
 
 /**
  * Model da collection Transactions, responsável por armazenar as transações
  * dos usuários
  */
-export default mongoose.model<TransactionDoc>('Transaction', TransactionSchema)
+const Transaction = mongoose.model<TransactionDoc>('Transaction', TransactionSchema)
+
+export default Transaction

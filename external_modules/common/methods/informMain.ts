@@ -1,9 +1,9 @@
 import { ObjectId } from 'mongodb'
 import Account from '../db/models/account'
 import Transaction from '../db/models/transaction'
-import Common, { TxReceived, UpdtReceived } from '../index'
-import { UpdtSent } from '../../../src/db/models/transaction'
 import { ReceivedPending, PReceived, PSent, SendPending } from '../db/models/pendingTx'
+import type Common from '../index'
+import type { UpdtSent, TxReceived, UpdtReceived } from '../../../interfaces/transaction'
 
 /**
  * Contém métodos para atualizar o main server de transações
@@ -108,7 +108,7 @@ export function informMain(this: Common) {
 				console.log('deleting confirmed sended transaction', txUpdate)
 				await SendPending.deleteOne({ opid: txUpdate.opid })
 			}
-		} catch(err) {
+		} catch (err) {
 			if (err === 'SocketDisconnected') return
 			if (err.code === 'OperationNotFound') {
 				console.error('Deleting non-existent withdraw transaction', txUpdate)
@@ -159,7 +159,7 @@ export function informMain(this: Common) {
 		}).cursor()
 
 		let doc: PSent
-		while((doc = await transactions.next())) {
+		while ((doc = await transactions.next())) {
 			const { txid, status, timestamp, opid } = doc.transaction
 			/** Checa se a transação foi enviada e salva sem erros */
 			if (!txid || !status || !timestamp) continue
@@ -173,7 +173,7 @@ export function informMain(this: Common) {
 	 * transações pendentes
 	 */
 	this._events.on('connected', () => {
-		const operations = [ _updateAllReceived, _updateAllsended ]
+		const operations = [_updateAllReceived, _updateAllsended]
 		const promises = operations.map(op => op())
 		Promise.all(promises).catch(err => {
 			console.error('Error on informMain:', err)
