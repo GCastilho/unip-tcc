@@ -1,6 +1,10 @@
 import mongoose from 'mongoose'
 
-const mongodb_url = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/exchange'
+const ip = process.env.MONGODB_IP || '127.0.0.1'
+const port = process.env.MONGODB_PORT || '27018'
+const dbName = process.env.MONGODB_DB_NAME || 'exchange'
+
+const mongodb_url = process.env.MONGODB_URL || `mongodb://${ip}:${port}/${dbName}`
 
 /**
  * Conecta ao database usando as variáveis de ambiente informadas
