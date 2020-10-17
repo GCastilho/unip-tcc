@@ -71,6 +71,7 @@ services:
 
 #init
   bootstrap:
+    container_name: "bootstrap"
     depends_on:
       - mongo-router
     build:

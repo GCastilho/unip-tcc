@@ -11,51 +11,51 @@ shardnames=(
 
 router="mongo-router:27017"
 
-configLoop=1
-while [ $configLoop -eq 1 ]; do
-	sleep 5
+echo -n "Waiting for config servers to accept connections... "
+configServersOnline=0
+# Se configServersOnline é igual ao length do array de hostnames
+until [ $configServersOnline -eq ${#hostnames[@]} ]; do
+	sleep 1
+	configServersOnline=0
 	for host in ${hostnames[@]}; do
-		configLoop=0
-		echo -n "connecting to config server ${host}... "
 		/usr/bin/mongo $host --eval '{ ping: 1 }' > /dev/null
-		if [ $? -eq 1 ]; then
-			echo "Fail"
-			configLoop=1
-		else
-			echo "Success"
+		if [ $? -eq 0 ]; then
+			configServersOnline=$((configServersOnline+1))
 		fi
 	done
 done
+echo "Done"
 
-/usr/bin/mongo ${hostnames[0]} --eval 'rs.initiate({ "_id":"repset", "configsvr": true, "version": 1, "members":[ {"_id":0,"host":"config-01:27019"}, {"_id":1,"host":"config-02:27019"}, {"_id":2,"host":"config-03:27019"} ]})'
+# Inicializa o replicaSet dos config servers
+echo "Initializing config server's replicaSet"
+/usr/bin/mongo ${hostnames[0]} --eval 'rs.initiate({ "_id":"repset", "configsvr": true, "version": 1, "members":[ {"_id":0,"host":"config-01:27019"}, {"_id":1,"host":"config-02:27019"}, {"_id":2,"host":"config-03:27019"} ]})' > /dev/null
 
-shardLoop=1
-while [ $shardLoop -eq 1 ]; do
-	sleep 5
+echo -n "Waiting for shard servers to accept connections... "
+shardServersOnline=0
+# Se shardServersOnline é igual ao length do array de shardnames
+until [ $shardServersOnline -eq ${#shardnames[@]} ]; do
+	sleep 1
+	shardServersOnline=0
 	for shard in ${shardnames[@]}; do
-		shardLoop=0
-		echo -n "connecting to shard server ${shard}... "
 		/usr/bin/mongo $shard --eval '{ ping: 1 }' > /dev/null
-		if [ $? -eq 1 ]; then
-			echo "Fail"
-			shardLoop=1
-		else
-			echo "Success"
+		if [ $? -eq 0 ]; then
+			shardServersOnline=$((shardServersOnline+1))
 		fi
 	done
 done
+echo "Done"
 
-/usr/bin/mongo shard1a:27018 --eval 'rs.initiate({ _id: "shard01", "version": 1,"members":[ {"_id":0,"host":"shard1a:27018"}, {"_id":1,"host":"shard1b:27018"}]})'
+# Inicializa o replicaSet dos shards
+echo "Initializing shards's replicaSet..."
+/usr/bin/mongo shard1a:27018 --eval 'rs.initiate({ _id: "shard01", "version": 1,"members":[ {"_id":0,"host":"shard1a:27018"}, {"_id":1,"host":"shard1b:27018"}]})' > /dev/null
 
-until (/usr/bin/mongo $router --eval '{ ping: 1 }'); do
-	sleep 5
+until (/usr/bin/mongo $router --eval '{ ping: 1 }' >/dev/null 2>&1); do
+	sleep 1
 done
 
 for shard in ${shardnames[@]}; do
-	echo "Adding shard"
-	/usr/bin/mongo $router --eval "sh.addShard(\"shard01/$shard\")"
+	echo "Adding shard $shard to router"
+	/usr/bin/mongo $router --eval "sh.addShard(\"shard01/$shard\")" > /dev/null
 done
-
-sleep 60
 
 echo "done"
