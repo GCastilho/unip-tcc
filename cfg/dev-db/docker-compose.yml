@@ -2,56 +2,69 @@ version: "3"
 
 services:
 #config servers
-  config-03:
-    container_name: config-03
-    image: mongo
-    restart: always
-    expose:
-      - 27019
-    entrypoint: ["/usr/bin/mongod","--configsvr", "--replSet", "repset", "--port", "27019", "--bind_ip", "0.0.0.0" ]
-
-  config-02:
-    container_name: config-02
-    image: mongo
-    expose:
-      - 27019
-    restart: always
-    entrypoint: ["/usr/bin/mongod","--configsvr", "--replSet", "repset", "--port", "27019", "--bind_ip", "0.0.0.0" ]
-
   config-01:
-    image: mongo
+    image: mongo:4.4
     container_name: config-01
-    restart: always
+    restart: unless-stopped
     depends_on:
       - config-02
       - config-03
     expose:
       - 27019
+    volumes:
+      - config-01:/data/db
     entrypoint: ["/usr/bin/mongod", "--configsvr", "--replSet", "repset", "--port", "27019", "--bind_ip", "0.0.0.0"]
+
+  config-02:
+    image: mongo:4.4
+    container_name: config-02
+    expose:
+      - 27019
+    restart: unless-stopped
+    volumes:
+      - config-02:/data/db
+    entrypoint: ["/usr/bin/mongod","--configsvr", "--replSet", "repset", "--port", "27019", "--bind_ip", "0.0.0.0" ]
+
+  config-03:
+    image: mongo:4.4
+    container_name: config-03
+    restart: unless-stopped
+    expose:
+      - 27019
+    volumes:
+      - config-03:/data/db
+    entrypoint: ["/usr/bin/mongod","--configsvr", "--replSet", "repset", "--port", "27019", "--bind_ip", "0.0.0.0" ]
 
 #shards
   shard1a:
+    image: mongo:4.4
     hostname: shard1a
     container_name: shard1a
+    restart: unless-stopped
     depends_on:
       - shard1b
-    image: mongo
     expose:
-    - 27018
+      - 27018
+    volumes:
+      - shard1a:/data/db
     entrypoint: ["/usr/bin/mongod", "--shardsvr", "--replSet", "shard01", "--port", "27018", "--bind_ip", "0.0.0.0" ]
 
   shard1b:
+    image: mongo:4.4
     hostname: shard1b
     container_name: shard1b
-    image: mongo
+    restart: unless-stopped
     expose:
     - 27018
+    volumes:
+      - shard1b:/data/db
     entrypoint: ["/usr/bin/mongod", "--shardsvr", "--replSet", "shard01", "--port", "27018", "--bind_ip", "0.0.0.0"]
 
 #router
   mongo-router:
+    image: mongo:4.4
     container_name: "mongo-router"
-    image: mongo
+    restart: unless-stopped
     expose:
       - 27017
     depends_on:
@@ -69,3 +82,10 @@ services:
     build:
       context: .
       dockerfile: bootstrap.dockerfile
+
+volumes:
+  shard1a:
+  shard1b:
+  config-01:
+  config-02:
+  config-03:
