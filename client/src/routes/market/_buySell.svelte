@@ -7,19 +7,27 @@
 	let operation = 'Buy'
 	let buttonColor = '#6ec79e'
 	let disableButton
-	let sellingCode, wantedCode, name
+	let sellingCode, wantedCode, sellingName, wantedName
 
-	let available, locked
+	let sellingBalance, wantedBalance
 
 	$: {
 		sellingCode = sellingCurrency ? sellingCurrency.code : null
 		wantedCode = wantedCurrency ? wantedCurrency.code : null
-		name = sellingCurrency ? sellingCurrency.name : null
+		sellingName = sellingCurrency ? sellingCurrency.name : null
+		wantedName = wantedCurrency ? wantedCurrency.name : null
 	}
 
+	
+
+
 	$: {
-		available = $balances[name] ? $balances[name].available : null
-		locked = $balances[name] ? $balances[name].locked : null
+		sellingBalance = $balances[sellingName] ?
+			$balances[sellingName].available.toFixed(sellingCurrency.decimals)
+			: null
+		wantedBalance = $balances[wantedName] ?
+			$balances[wantedName].available.toFixed(wantedCurrency.decimals)
+			: null
 	}
 
 
@@ -34,7 +42,6 @@
 			console.log('você esta vendendo')
 		}
 	}
-	//#6ec79e69
 </script>
 
 <style>
@@ -129,7 +136,7 @@
 
 	.float-input {
 		position: relative;
-		margin: 20px;
+		margin: 10px 20px;
 	}
 
 	.float-input > input {
@@ -184,6 +191,10 @@
 		padding: 0px 20px;
 	}
 
+	.balance > p {
+		margin: 0;
+	}
+
 	button {
 		color: white;
 		background-color: var(--button-color);
@@ -227,24 +238,23 @@
 		</div>
 	</div>
 	<div class="balance">
-		<label>available:</label>
-		<label>{typeof available === 'number' ? available.toFixed(8) : '...'}</label>
+		<p>{sellingName || '...'}:</p>
+		<p>{sellingBalance || '...'}</p>
 	</div>
 	<div class="balance">
-		<label>locked:</label>
-		<label>{typeof locked === 'number' ? locked.toFixed(8) : '...'}</label>
+		<p>{wantedName || '...'}:</p>
+		<p>{wantedBalance || '...'}</p>
+	</div>
+
+	<div class="float-input">
+		<input placeholder={wantedCode || '...'}/>
+		<!-- svelte-ignore a11y-label-has-associated-control -->
+		<label>{operation == 'Buy' ? 'Purchase' : 'Sale'} quantity</label>
 	</div>
 	<div class="float-input">
 		<input placeholder={sellingCode || '...'}/>
-		<label>limite price</label>
+		<!-- svelte-ignore a11y-label-has-associated-control -->
+		<label>Limit price</label>
 	</div>
-	<div class="float-input">
-		<input placeholder={sellingCode || '...'}/>
-		<label>amount</label>
-	</div>
-	<div class="float-input">
-		<input placeholder={sellingCode || '...'}/>
-		<label>total</label>
-	</div>
-	<button on:click={trade} disabled={disableButton}>{operation} {sellingCode || '...'}</button>
+	<button on:click={trade} disabled={disableButton}>{operation} {wantedCode || '...'}</button>
 </div>

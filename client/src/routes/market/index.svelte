@@ -12,8 +12,6 @@
 		sellingCurrency = wantedCurrency
 		wantedCurrency = aux
 	}
-
-	console.log($currencies)
 </script>
 
 <style>
