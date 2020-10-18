@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "env-cmd -f ../../../cfg/nano-dev.env node index.js",
-    "dev": "env-cmd -f ../../cfg/nano-dev.env ts-node-dev index.ts",
+    "start": "env-cmd -f ../../../cfg/nano-dev.env --silent node index.js",
+    "dev": "env-cmd -f ../../cfg/nano-dev.env --silent ts-node-dev index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
