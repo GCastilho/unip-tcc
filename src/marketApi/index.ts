@@ -37,7 +37,6 @@ function getMarketKey(orderedPair: OrderDoc['orderedPair']) {
  * Adiciona uma nova ordem ao livro de ordens do mercado
  * @param order A nova odem que deve ser adicionada ao livro de ordens
  * @throws ValidationError from mongoose
- * @throws 'SameCurrencyOperation' if owning and requesting currency are the same
  * @returns Order's opid
  */
 export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise<ObjectId> {

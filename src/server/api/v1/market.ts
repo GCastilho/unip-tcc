@@ -1,0 +1,24 @@
+import { Router } from 'express'
+import * as MarketApi from '../../../marketApi'
+
+const router = Router()
+
+router.post('/orderbook', async (req, res) => {
+	try {
+		const opid = await MarketApi.add(req.userId, req.body)
+
+		res.json({ opid })
+	} catch (err) {
+		if (err.name == 'ValidationError') {
+			res.status(400).json({
+				error: 'BadRequest',
+				message: 'Error validating input'
+			})
+		} else {
+			res.status(500).json({ error: 'InternalServerError' })
+			console.error('Error inserting order into orderbook', err)
+		}
+	}
+})
+
+export default router
