@@ -41,12 +41,7 @@ function getMarketKey(orderedPair: OrderDoc['orderedPair']) {
  * @returns Order's opid
  */
 export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise<ObjectId> {
-	if (order.owning.currency === order.requesting.currency) throw 'SameCurrencyOperation'
-
-	const opid = new ObjectId()
-
 	const orderDoc = await new Order({
-		_id: opid,
 		userId: userId,
 		status: 'preparing',
 		...order,
@@ -55,7 +50,7 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
 
 	try {
 		await Person.balanceOps.add(userId, order.owning.currency, {
-			opid,
+			opid: orderDoc._id,
 			type: 'trade',
 			amount: - Math.abs(order.owning.amount)
 		})
@@ -81,7 +76,7 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
 
 	await market.add(orderDoc)
 
-	return opid
+	return orderDoc._id
 }
 
 /**
