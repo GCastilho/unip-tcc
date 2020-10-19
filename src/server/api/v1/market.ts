@@ -1,7 +1,11 @@
 import { Router } from 'express'
+import { authentication } from './middlewares'
 import * as MarketApi from '../../../marketApi'
 
 const router = Router()
+
+// Chama o middleware de autenticação
+router.use(authentication)
 
 router.post('/orderbook', async (req, res) => {
 	try {
