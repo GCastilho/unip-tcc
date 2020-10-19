@@ -11,7 +11,7 @@ router.post('/orderbook', async (req, res) => {
 	try {
 		const opid = await MarketApi.add(req.userId, req.body)
 
-		res.json({ opid })
+		res.status(201).json({ opid })
 	} catch (err) {
 		if (err.name == 'ValidationError') {
 			res.status(400).json({

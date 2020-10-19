@@ -1,15 +1,93 @@
+import '../../../../src/libs/extensions'
+import sinon from 'sinon'
+import express from 'express'
+import request from 'supertest'
+import randomstring from 'randomstring'
+import { expect } from 'chai'
+import { ObjectId } from 'mongodb'
 import { ImportMock } from 'ts-mock-imports'
+import Session from '../../../../src/db/models/session'
+import api from '../../../../src/server/api'
 import * as MarketApi from '../../../../src/marketApi'
 import type { SinonStub } from 'sinon'
 
+/** Mock do método 'add' da marketApi */
+type MockAdd = SinonStub<Parameters<typeof MarketApi['add']>>;
+
+const app = express()
+app.use(api)
+
 describe('Testing orderbook endpoint for HTTP API version 1', () => {
-	let spy: SinonStub<Parameters<typeof MarketApi['add']>>
+	let sessionId: string
+	let spy: MockAdd
+
+	const notAuthorizedModel = {
+		error: 'NotAuthorized',
+		message: 'A valid cookie \'sessionId\' is required to perform this operation'
+	}
+
+	before(async () => {
+		const session = await Session.create({
+			userId: new ObjectId(),
+			sessionId: randomstring.generate({ length: 128 }),
+			token: randomstring.generate({ length: 128 }),
+			date: new Date()
+		})
+		sessionId = session.sessionId
+	})
 
 	beforeEach(() => {
-		spy = ImportMock.mockFunction(MarketApi.add) as SinonStub<Parameters<typeof MarketApi['add']>>
+		spy = ImportMock.mockFunction(MarketApi, 'add', new ObjectId()) as MockAdd
 	})
 
 	afterEach(() => {
 		spy.restore()
+	})
+
+	describe('When sending a new order', () => {
+		it('Should call the MarketApi to insert a new order', async () => {
+			const { body } = await request(app)
+				.post('/v1/market/orderbook')
+				.set('Cookie', [`sessionId=${sessionId}`])
+				.send({
+					owning: {
+						currency: 'bitcoin',
+						amount: 1
+					},
+					requesting: {
+						currency: 'nano',
+						amount: 0.5
+					}
+				})
+				.expect('Content-Type', /json/)
+				.expect(201)
+			expect(body).to.be.an('object').that
+				.haveOwnProperty('opid').that.is.a('string')
+
+			sinon.assert.calledOnce(spy)
+
+			const [userId, order] = spy.getCall(0).args
+			expect(userId).to.be.instanceOf(ObjectId)
+			expect(order).to.be.an('object')
+			expect(order).to.deep.equal({
+				owning: {
+					currency: 'bitcoin',
+					amount: 1
+				},
+				requesting: {
+					currency: 'nano',
+					amount: 0.5
+				}
+			})
+		})
+
+		it('Should return Not Authorized if invalid or missing sessionId', async () => {
+			const { body } = await request(app)
+				.post('/v1/market/orderbook')
+				.send({})
+				.expect(401)
+			expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
+			sinon.assert.notCalled(spy)
+		})
 	})
 })

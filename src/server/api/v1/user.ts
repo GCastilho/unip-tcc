@@ -1,6 +1,4 @@
 import express from 'express'
-import bodyParser from 'body-parser'
-import cookieParser from 'cookie-parser'
 import authentication from './authentication'
 import { currencyNames } from '../../../libs/currencies'
 import Person from '../../../db/models/person'
@@ -8,10 +6,6 @@ import Transaction from '../../../db/models/transaction'
 import * as CurrencyApi from '../../../currencyApi'
 
 const router = express.Router()
-
-// Parsers
-router.use(cookieParser())
-router.use(bodyParser.json())
 
 /**
  * Retorna informações sobre os subpath de /user
