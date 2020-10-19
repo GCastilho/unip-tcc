@@ -42,7 +42,7 @@ describe('Performing basic tests on the MarketApi', () => {
 				currency: 'bitcoin',
 				amount: 2.46
 			}
-		})).to.eventually.be.rejectedWith('SameCurrencyOperation')
+		})).to.eventually.be.rejectedWith('OWNING currency must be different than REQUESTING currency')
 
 		const ordersAfter = await Order.find()
 		expect(ordersBefore.length).to.equal(ordersAfter.length)

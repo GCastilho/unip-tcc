@@ -8,7 +8,7 @@
     "start:sapper": "npm start --prefix ./build/sapper",
     "start:nano": "npm start --prefix ./build/external_modules/nano",
     "start:bitcoin": "npm start --prefix ./build/external_modules/bitcoin",
-    "test": "env-cmd -f ./cfg/test.env ts-mocha --exit \"tests/**/*.test.+(ts|js)\"",
+    "test": "env-cmd -f ./cfg/custom.env --silent env-cmd -f ./cfg/test.env ts-mocha --exit \"tests/**/*.test.+(ts|js)\"",
     "dev": "npm run eslint && concurrently --kill-others-on-fail \"npm run dev-server\" \"npm run dev-client\"",
     "dev-server": "env-cmd -f ./cfg/custom.env --silent ts-node-dev --inspect -- src/index.ts",
     "dev-client": "npm run dev --prefix ./client",

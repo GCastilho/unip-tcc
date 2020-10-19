@@ -1,0 +1,71 @@
+version: "3"
+
+services:
+#config servers
+  config-03:
+    container_name: config-03
+    image: mongo
+    restart: always
+    expose:
+      - 27019
+    entrypoint: ["/usr/bin/mongod","--configsvr", "--replSet", "repset", "--port", "27019", "--bind_ip", "0.0.0.0" ]
+
+  config-02:
+    container_name: config-02
+    image: mongo
+    expose:
+      - 27019
+    restart: always
+    entrypoint: ["/usr/bin/mongod","--configsvr", "--replSet", "repset", "--port", "27019", "--bind_ip", "0.0.0.0" ]
+
+  config-01:
+    image: mongo
+    container_name: config-01
+    restart: always
+    depends_on:
+      - config-02
+      - config-03
+    expose:
+      - 27019
+    entrypoint: ["/usr/bin/mongod", "--configsvr", "--replSet", "repset", "--port", "27019", "--bind_ip", "0.0.0.0"]
+
+#shards
+  shard1a:
+    hostname: shard1a
+    container_name: shard1a
+    depends_on:
+      - shard1b
+    image: mongo
+    expose:
+    - 27018
+    entrypoint: ["/usr/bin/mongod", "--shardsvr", "--replSet", "shard01", "--port", "27018", "--bind_ip", "0.0.0.0" ]
+
+  shard1b:
+    hostname: shard1b
+    container_name: shard1b
+    image: mongo
+    expose:
+    - 27018
+    entrypoint: ["/usr/bin/mongod", "--shardsvr", "--replSet", "shard01", "--port", "27018", "--bind_ip", "0.0.0.0"]
+
+#router
+  mongo-router:
+    container_name: "mongo-router"
+    image: mongo
+    expose:
+      - 27017
+    depends_on:
+      - config-01
+      - shard1a
+    ports:
+      - 27018:27017
+    entrypoint: ["/usr/bin/mongos","--configdb", "repset/config-01:27019,config-02:27019,config-03:27019", "--bind_ip", "0.0.0.0" , "--port", "27017" ]
+
+#init
+  bootstrap:
+    container_name: "bootstrap"
+    depends_on:
+      - mongo-router
+    build:
+      context: .
+      dockerfile: bootstrap.dockerfile
