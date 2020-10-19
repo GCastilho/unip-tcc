@@ -13,13 +13,13 @@ import type { SinonStub } from 'sinon'
 
 /** Mock do método 'add' da marketApi */
 type MockAdd = SinonStub<Parameters<typeof MarketApi['add']>>;
+type MockRemove = SinonStub<Parameters<typeof MarketApi['remove']>>;
 
 const app = express()
 app.use(api)
 
 describe('Testing orderbook endpoint for HTTP API version 1', () => {
 	let sessionId: string
-	let spy: MockAdd
 
 	const notAuthorizedModel = {
 		error: 'NotAuthorized',
@@ -36,15 +36,17 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 		sessionId = session.sessionId
 	})
 
-	beforeEach(() => {
-		spy = ImportMock.mockFunction(MarketApi, 'add', new ObjectId()) as MockAdd
-	})
-
-	afterEach(() => {
-		spy.restore()
-	})
-
 	describe('When sending a new order', () => {
+		let spy: MockAdd
+
+		beforeEach(() => {
+			spy = ImportMock.mockFunction(MarketApi, 'add', new ObjectId()) as MockAdd
+		})
+
+		afterEach(() => {
+			spy.restore()
+		})
+
 		it('Should call the MarketApi to insert a new order', async () => {
 			const { body } = await request(app)
 				.post('/v1/market/orderbook')
@@ -87,6 +89,61 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 				.send({})
 				.expect(401)
 			expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
+			sinon.assert.notCalled(spy)
+		})
+	})
+
+	describe('When deleting an existent order', () => {
+		let spy: MockRemove
+
+		beforeEach(() => {
+			spy = ImportMock.mockFunction(MarketApi, 'remove') as MockRemove
+		})
+
+		afterEach(() => {
+			spy.restore()
+		})
+
+		it('Should call the MarketApi to remove an existing order', async () => {
+			const requestOpid = new ObjectId()
+
+			const { body } = await request(app)
+				.delete(`/v1/market/orderbook/${requestOpid}`)
+				.set('Cookie', [`sessionId=${sessionId}`])
+				.send()
+				.expect('Content-Type', /json/)
+				.expect(200)
+			expect(body).to.be.an('object').that
+				.haveOwnProperty('message').that.is.a('string')
+
+			sinon.assert.calledOnce(spy)
+
+			const [userId, opid] = spy.getCall(0).args
+			expect(userId).to.be.instanceOf(ObjectId)
+			expect(opid).to.be.instanceOf(ObjectId)
+
+			expect(opid).to.deep.equal(requestOpid)
+		})
+
+		it('Should return Not Authorized if invalid or missing sessionId', async () => {
+			const { body } = await request(app)
+				.delete('/v1/market/orderbook/random-opid')
+				.send()
+				.expect(401)
+			expect(body).to.be.an('object').that.deep.equal(notAuthorizedModel)
+			sinon.assert.notCalled(spy)
+		})
+
+		it('Should return \'Bad Request\' if the informed opid is not 24 characters long', async () => {
+			const { body } = await request(app)
+				.delete('/v1/market/orderbook/veryShortOpid')
+				.set('Cookie', [`sessionId=${sessionId}`])
+				.send()
+				.expect(400)
+			expect(body).to.be.an('object').that.deep.equal({
+				error: 'Bad Request',
+				message: 'The opid \'veryShortOpid\' is not a valid operation id'
+			})
 			sinon.assert.notCalled(spy)
 		})
 	})
