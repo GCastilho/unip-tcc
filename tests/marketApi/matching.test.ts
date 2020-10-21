@@ -13,10 +13,13 @@ describe('Performing match tests on the MarketApi', () => {
 	let spy: SinonStub<Parameters<typeof Trade['default']>>
 
 	before(async () => {
+		await Person.deleteMany({})
 		person = await Person.createOne('match-test-marketApi@email.com', 'userP@ss')
 	})
 
 	beforeEach(async () => {
+		spy = ImportMock.mockFunction(Trade) as SinonStub<Parameters<typeof Trade['default']>>
+
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of currencyNames)
 			// @ts-expect-error Automaticamente convertido para Decimal128
@@ -34,7 +37,6 @@ describe('Performing match tests on the MarketApi', () => {
 				) throw err
 			})
 		await Order.deleteMany({})
-		spy = ImportMock.mockFunction(Trade) as SinonStub<Parameters<typeof Trade['default']>>
 	})
 
 	afterEach(() => {
