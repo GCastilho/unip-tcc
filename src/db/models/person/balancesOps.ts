@@ -1,4 +1,4 @@
-import { Decimal128, ObjectId } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import { Model, ClientSession } from 'mongoose'
 import { currenciesObj } from '../../../libs/currencies'
 import type { PersonDoc } from './schema'
@@ -52,15 +52,13 @@ async function remove(
 	opid: ObjectId,
 	opAmount: number,
 	changeInAvailable: number,
-	rfOpid?: ObjectId,
 	session?: ClientSession
 ): Promise<void> {
 	const balanceObj = `currencies.${currency}.balance`
 
 	const response = await Person.findOneAndUpdate({
 		_id: userId,
-		[`currencies.${currency}.pending.opid`]: opid,
-		[`currencies.${currency}.pending.locked.byOpid`]: rfOpid
+		[`currencies.${currency}.pending.opid`]: opid
 	}, {
 		$inc: {
 			[`${balanceObj}.locked`]: - Math.abs(opAmount),
@@ -84,7 +82,6 @@ async function remove(
  * @param currency A currency que a operação se refere
  * @param opid O ObjectId que referencia o documento da operação em sua
  * respectiva collection
- * @param rfOpid O ID da operação que trancou essa pending
  *
  * @throws OperationNotFound if an operation was not found for THIS user
  */
@@ -92,7 +89,6 @@ async function completeTotal(
 	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
-	rfOpid?: ObjectId,
 	session?: ClientSession
 ): Promise<void> {
 	/**
@@ -109,7 +105,7 @@ async function completeTotal(
 	/**
 	 * Remove a operação pendente e atualiza os saldos
 	 */
-	await remove(userId, currency, opid, amount, changeInAvailable, rfOpid, session)
+	await remove(userId, currency, opid, amount, changeInAvailable, session)
 }
 
 /**
@@ -119,8 +115,6 @@ async function completeTotal(
  * @param userId O _id do documento desse usuário
  * @param currency A currency que essa operação se refere
  * @param opid O identificador único dessa operação
- * @param rfOpid O opid de referência da operação que está parcialmente
- * completando essa pending
  * @param amount O valor que a ordem será parcialmente completa. Não pode
  * ter valor igualou maior que o módulo do valor da ordem
  *
@@ -132,9 +126,8 @@ async function completePartial(
 	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
-	rfOpid: ObjectId,
 	amount: number,
-	session?: ClientSession
+	session?: ClientSession,
 ): Promise<void> {
 	const { amount: opAmount } = await get(userId, currency, opid, session)
 
@@ -142,7 +135,7 @@ async function completePartial(
 	 * Garante que o amount será positivo para uma ordem de redução de saldo
 	 * e negativo para uma ordem de aumento de saldo
 	 */
-	if (+opAmount > 0) {
+	if (opAmount > 0) {
 		amount = - Math.abs(amount)
 	} else {
 		amount = Math.abs(amount)
@@ -170,10 +163,6 @@ async function completePartial(
 	const response = await Person.findOneAndUpdate({
 		_id: userId,
 		[`currencies.${currency}.pending.opid`]: opid,
-		$or: [
-			{ [`currencies.${currency}.pending.locked.byOpid`]: null },
-			{ [`currencies.${currency}.pending.locked.byOpid`]: rfOpid }
-		],
 		$expr: {
 			/** Checa se o amount da operação é maior que o amount informado */
 			$reduce: {
@@ -207,9 +196,6 @@ async function completePartial(
 			[`currencies.${currency}.balance.available`]: opAmount > 0 ? Math.abs(amount) : 0,
 			[`currencies.${currency}.balance.locked`]: - Math.abs(amount),
 			[`currencies.${currency}.pending.$.amount`]: amount,
-		},
-		$push: {
-			[`currencies.${currency}.pending.$.completions`]: rfOpid
 		}
 	}).select({ _id: true })
 		.session(session || null)
@@ -326,67 +312,42 @@ export async function cancel(
 	/**
 	 * Remove a operação pendente e volta os saldos ao estado original
 	 */
-	await remove(userId, currency, opid, amount, changeInAvailable, undefined, session)
+	await remove(userId, currency, opid, amount, changeInAvailable, session)
 }
 
 /**
- * Completa uma operação pendente, atualizando os saldos e removendo a
- * operação do array de 'pending'
+ * Completa uma operação pendente com o amount informado. Se nenhum amount for
+ * informado a operação será completada totalmente.
+ *
+ * Ao executar, os saldos serão atualizados e se a ordem foi completada
+ * totalmente ela será removida do array de 'pending'
  *
  * @param userId O _id do documento desse usuário
  * @param currency A currency que a operação se refere
  * @param opid O ObjectId que referencia o documento da operação em sua
  * respectiva collection
- * @param rfOpid O ID da operação que trancou essa pending
+ * @param session A client session, caso essa operação deva pertencer a uma
+ * @param amount O valor que a ordem será completa. Se não for informado irá
+ * completar a ordem totalmente
  *
- * @throws OperationNotFound if an operation was not found for THIS user
+ * @throws 'OperationNotFound' if an operation was not found for THIS user
  */
 export async function complete(
 	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
-	rfOpid?: ObjectId,
-	amount?: undefined,
-	session?: ClientSession
-): Promise<void>
-
-/**
- * Completa uma ordem pacialmente, liberando o saldo informado mas
- * mantendo a ordem em aberto
- *
- * @param userId O _id do documento desse usuário
- * @param currency A currency que essa operação se refere
- * @param opid O identificador único dessa operação
- * @param rfOpid O opid de referência da operação que está parcialmente
- * completando essa pending
- * @param amount O valor que a ordem será parcialmente completa. Não pode
- * ter valor igualou maior que o módulo do valor da ordem
- *
- * @throws AmountOutOfRange if amount is greater or equal than
- * operation's amount
- * @throws OperationNotFound if the operation was not found for THIS user
- */
-export async function complete(
-	userId: PersonDoc['_id'],
-	currency: SC,
-	opid: ObjectId,
-	rfOpid: ObjectId,
-	amount: Decimal128,
-	session?: ClientSession
-): Promise<void>
-
-export async function complete(
-	userId: PersonDoc['_id'],
-	currency: SC,
-	opid: ObjectId,
-	rfOpid?: ObjectId,
-	amount?: Decimal128,
-	session?: ClientSession
+	session?: ClientSession,
+	amount?: number,
 ): Promise<void> {
 	if (amount) {
-		if (!rfOpid) throw 'rfOpid needs to be informed to partially complete an operation'
-		await completePartial(userId, currency, opid, rfOpid, +amount, session)
+		const { amount: opAmount } = await get(userId, currency, opid, session)
+		// Checa se o amount informado completa a ordem total ou parcialmente
+		if (Math.abs(opAmount) == Math.abs(amount)) {
+			await completeTotal(userId, currency, opid, session)
+		} else {
+			await completePartial(userId, currency, opid, amount, session)
+		}
 	} else {
-		await completeTotal(userId, currency, opid, rfOpid, session)
+		await completeTotal(userId, currency, opid, session)
 	}
 }

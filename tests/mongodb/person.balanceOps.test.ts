@@ -183,7 +183,7 @@ describe('Testing BalanceOperations on the person model', () => {
 			const session = await startSession()
 			session.startTransaction()
 
-			await Person.balanceOps.complete(userId, 'bitcoin', opid, undefined, undefined, session)
+			await Person.balanceOps.complete(userId, 'bitcoin', opid, session)
 
 			await session.commitTransaction()
 			await session.endSession()
@@ -214,12 +214,10 @@ describe('Testing BalanceOperations on the person model', () => {
 		})
 
 		describe('And is requested to partially complete it', () => {
-			const rfOpid = new ObjectId()
-
 			it('Should partially complete a pending operation that increases balance', async () => {
-				const partialAmount = Decimal128.fromNumeric(10)
+				const partialAmount = 10
 
-				await Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
+				await Person.balanceOps.complete(userId, 'bitcoin', opid, null, partialAmount)
 				const person = await Person.findById(userId)
 				expect(person.currencies.bitcoin.pending).to.have.lengthOf(1)
 				expect(person.currencies.bitcoin.balance.available.toFullString())
@@ -237,9 +235,9 @@ describe('Testing BalanceOperations on the person model', () => {
 					amount: -20
 				})
 
-				const partialAmount = Decimal128.fromNumeric(10)
+				const partialAmount = 10
 
-				await Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
+				await Person.balanceOps.complete(userId, 'bitcoin', opid, null, partialAmount)
 				const person = await Person.findById(userId)
 				expect(person.currencies.bitcoin.pending).to.have.lengthOf(2)
 				expect(person.currencies.bitcoin.balance.available.toFullString())
@@ -252,8 +250,8 @@ describe('Testing BalanceOperations on the person model', () => {
 			})
 
 			it('Should complete an operation that was partially completed', async () => {
-				const partialAmount = Decimal128.fromNumeric(10)
-				await Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
+				const partialAmount = 10
+				await Person.balanceOps.complete(userId, 'bitcoin', opid, null, partialAmount)
 
 				await Person.balanceOps.complete(userId, 'bitcoin', opid)
 				const person = await Person.findById(userId)
@@ -265,12 +263,12 @@ describe('Testing BalanceOperations on the person model', () => {
 			})
 
 			it('Should partially complete a pending operation using a session', async () => {
-				const partialAmount = Decimal128.fromNumeric(10)
+				const partialAmount = 10
 
 				const session = await startSession()
 				session.startTransaction()
 
-				await Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount, session)
+				await Person.balanceOps.complete(userId, 'bitcoin', opid, session, partialAmount)
 
 				await session.commitTransaction()
 				await session.endSession()
@@ -285,26 +283,22 @@ describe('Testing BalanceOperations on the person model', () => {
 			})
 
 			it('Should fail when the amount is bigger than the operation', async () => {
-				const partialAmount = Decimal128.fromNumeric(21)
+				const partialAmount = 21
 
-				await expect(Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount))
+				await expect(Person.balanceOps.complete(userId, 'bitcoin', opid, null, partialAmount))
 					.to.eventually.be.rejectedWith('Amount provided is greater or equal than amount in order')
 			})
 
-			it('Should fail when the amount is the same as the operation', async () => {
-				const partialAmount = Decimal128.fromNumeric(20)
+			it('Should complete totally when the amount is the same as the operation', async () => {
+				const partialAmount = 20
 
-				await expect(Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount))
-					.to.eventually.be.rejectedWith('Amount provided is greater or equal than amount in order')
-			})
-
-			it('Should append the opid of the responsable operation', async () => {
-				const partialAmount = Decimal128.fromNumeric(10)
-
-				await Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount)
-				const { completions } = await Person.balanceOps.get(userId, 'bitcoin', opid)
-				expect(completions.find(v => v.toHexString() === rfOpid.toHexString()))
-					.to.be.an.instanceOf(ObjectId)
+				await Person.balanceOps.complete(userId, 'bitcoin', opid, null, partialAmount)
+				const person = await Person.findById(userId)
+				expect(person.currencies.bitcoin.pending).to.have.lengthOf(0)
+				expect(person.currencies.bitcoin.balance.available.toFullString())
+					.to.equals(Decimal128.fromNumeric(70).toFullString())
+				expect(person.currencies.bitcoin.balance.locked.toFullString())
+					.to.equals(Decimal128.fromNumeric(0).toFullString())
 			})
 		})
 	})
