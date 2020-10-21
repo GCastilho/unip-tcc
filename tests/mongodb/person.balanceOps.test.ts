@@ -1,4 +1,5 @@
 import '../../src/libs/extensions'
+import { startSession } from 'mongoose'
 import { Decimal128, ObjectId } from 'mongodb'
 import chai, { expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
@@ -33,6 +34,28 @@ describe('Testing BalanceOperations on the person model', () => {
 			type: 'transaction',
 			amount: 20
 		})
+
+		const person = await Person.findById(userId)
+		expect(person.currencies.bitcoin.pending).to.have.lengthOf(1)
+		expect(person.currencies.bitcoin.pending[0]).to.be.an('object')
+		expect(person.currencies.bitcoin.pending[0].opid.toHexString())
+			.to.equals('89fb0d1b05c505618b81ce5e')
+		expect(person.currencies.bitcoin.pending[0].amount).to.equal(20)
+		expect(person.currencies.bitcoin.pending[0].type).to.equals('transaction')
+	})
+
+	it('Should add a pending operation using a session', async () => {
+		const session = await startSession()
+		session.startTransaction()
+
+		await Person.balanceOps.add(userId, 'bitcoin', {
+			opid: new ObjectId('89fb0d1b05c505618b81ce5e'),
+			type: 'transaction',
+			amount: 20
+		}, session)
+
+		await session.commitTransaction()
+		await session.endSession()
 
 		const person = await Person.findById(userId)
 		expect(person.currencies.bitcoin.pending).to.have.lengthOf(1)
@@ -105,6 +128,20 @@ describe('Testing BalanceOperations on the person model', () => {
 			expect(op.amount).to.equal(20)
 		})
 
+		it('Should return a pending operation using a session', async () => {
+			const session = await startSession()
+			session.startTransaction()
+
+			const op = await Person.balanceOps.get(userId, 'bitcoin', opid, session)
+
+			await session.commitTransaction()
+			await session.endSession()
+
+			expect(op).to.be.an('object')
+			expect(op.type).to.equals('transaction')
+			expect(op.amount).to.equal(20)
+		})
+
 		it('Should cancel a pending operation', async () => {
 			await Person.balanceOps.cancel(userId, 'bitcoin', opid)
 			const person = await Person.findById(userId)
@@ -115,8 +152,42 @@ describe('Testing BalanceOperations on the person model', () => {
 				.to.equals(Decimal128.fromNumeric(0).toFullString())
 		})
 
+		it('Should cancel a pending operation using a session', async () => {
+			const session = await startSession()
+			session.startTransaction()
+
+			await Person.balanceOps.cancel(userId, 'bitcoin', opid, session)
+
+			await session.commitTransaction()
+			await session.endSession()
+
+			const person = await Person.findById(userId)
+			expect(person.currencies.bitcoin.pending).to.have.lengthOf(0)
+			expect(person.currencies.bitcoin.balance.available.toFullString())
+				.to.equals(Decimal128.fromNumeric(50).toFullString())
+			expect(person.currencies.bitcoin.balance.locked.toFullString())
+				.to.equals(Decimal128.fromNumeric(0).toFullString())
+		})
+
 		it('Should complete a pending operation', async () => {
 			await Person.balanceOps.complete(userId, 'bitcoin', opid)
+			const person = await Person.findById(userId)
+			expect(person.currencies.bitcoin.pending).to.have.lengthOf(0)
+			expect(person.currencies.bitcoin.balance.available.toFullString())
+				.to.equals(Decimal128.fromNumeric(70).toFullString())
+			expect(person.currencies.bitcoin.balance.locked.toFullString())
+				.to.equals(Decimal128.fromNumeric(0).toFullString())
+		})
+
+		it('Should complete a pending operation using a session', async () => {
+			const session = await startSession()
+			session.startTransaction()
+
+			await Person.balanceOps.complete(userId, 'bitcoin', opid, undefined, undefined, session)
+
+			await session.commitTransaction()
+			await session.endSession()
+
 			const person = await Person.findById(userId)
 			expect(person.currencies.bitcoin.pending).to.have.lengthOf(0)
 			expect(person.currencies.bitcoin.balance.available.toFullString())
@@ -191,6 +262,26 @@ describe('Testing BalanceOperations on the person model', () => {
 					.to.equals(Decimal128.fromNumeric(70).toFullString())
 				expect(person.currencies.bitcoin.balance.locked.toFullString())
 					.to.equals(Decimal128.fromNumeric(0).toFullString())
+			})
+
+			it('Should partially complete a pending operation using a session', async () => {
+				const partialAmount = Decimal128.fromNumeric(10)
+
+				const session = await startSession()
+				session.startTransaction()
+
+				await Person.balanceOps.complete(userId, 'bitcoin', opid, rfOpid, partialAmount, session)
+
+				await session.commitTransaction()
+				await session.endSession()
+
+				const person = await Person.findById(userId)
+				expect(person.currencies.bitcoin.pending).to.have.lengthOf(1)
+				expect(person.currencies.bitcoin.balance.available.toFullString())
+					.to.equals(Decimal128.fromNumeric(60).toFullString())
+				expect(person.currencies.bitcoin.balance.locked.toFullString())
+					.to.equals(Decimal128.fromNumeric(10).toFullString())
+				expect(person.currencies.bitcoin.pending[0].amount).to.equal(10)
 			})
 
 			it('Should fail when the amount is bigger than the operation', async () => {

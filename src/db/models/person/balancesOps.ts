@@ -1,5 +1,5 @@
-import { Model } from 'mongoose'
 import { Decimal128, ObjectId } from 'mongodb'
+import { Model, ClientSession } from 'mongoose'
 import { currenciesObj } from '../../../libs/currencies'
 import type { PersonDoc } from './schema'
 import type { SuportedCurrencies as SC } from '../../../libs/currencies'
@@ -52,7 +52,8 @@ async function remove(
 	opid: ObjectId,
 	opAmount: number,
 	changeInAvailable: number,
-	rfOpid?: ObjectId
+	rfOpid?: ObjectId,
+	session?: ClientSession
 ): Promise<void> {
 	const balanceObj = `currencies.${currency}.balance`
 
@@ -69,6 +70,7 @@ async function remove(
 			[`currencies.${currency}.pending`]: { opid }
 		}
 	}).select({ _id: true })
+		.session(session || null)
 
 	if (!response)
 		throw 'OperationNotFound'
@@ -90,12 +92,13 @@ async function completeTotal(
 	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
-	rfOpid?: ObjectId
+	rfOpid?: ObjectId,
+	session?: ClientSession
 ): Promise<void> {
 	/**
 	 * O amount da operação
 	 */
-	const { amount } = await get(userId, currency, opid)
+	const { amount } = await get(userId, currency, opid, session)
 
 	/**
 	 * Calcula o quanto o campo 'available' deverá ser alterado para
@@ -106,7 +109,7 @@ async function completeTotal(
 	/**
 	 * Remove a operação pendente e atualiza os saldos
 	 */
-	await remove(userId, currency, opid, amount, changeInAvailable, rfOpid)
+	await remove(userId, currency, opid, amount, changeInAvailable, rfOpid, session)
 }
 
 /**
@@ -130,9 +133,10 @@ async function completePartial(
 	currency: SC,
 	opid: ObjectId,
 	rfOpid: ObjectId,
-	amount: number
+	amount: number,
+	session?: ClientSession
 ): Promise<void> {
-	const { amount: opAmount } = await get(userId, currency, opid)
+	const { amount: opAmount } = await get(userId, currency, opid, session)
 
 	/**
 	 * Garante que o amount será positivo para uma ordem de redução de saldo
@@ -208,6 +212,7 @@ async function completePartial(
 			[`currencies.${currency}.pending.$.completions`]: rfOpid
 		}
 	}).select({ _id: true })
+		.session(session || null)
 
 	if (!response) throw 'OperationNotFound'
 }
@@ -231,7 +236,8 @@ async function completePartial(
 export async function add(
 	userId: PersonDoc['_id'],
 	currency: SC,
-	pending: PendingOp
+	pending: PendingOp,
+	session?: ClientSession
 ): Promise<void> {
 	const balanceObj = `currencies.${currency}.balance`
 
@@ -258,6 +264,7 @@ export async function add(
 			[`currencies.${currency}.pending`]: pending
 		}
 	}).select({ _id: true })
+		.session(session || null)
 
 	if (!response) throw 'NotEnoughFunds'
 }
@@ -275,14 +282,15 @@ export async function add(
 export async function get(
 	userId: PersonDoc['_id'],
 	currency: SC,
-	opid: ObjectId
+	opid: ObjectId,
+	session?: ClientSession
 ): Promise<Pending> {
 	const person = await Person.findOne({
 		_id: userId,
 		[`currencies.${currency}.pending.opid`]: opid
 	}, {
 		[`currencies.${currency}.pending.$`]: 1
-	})
+	}).session(session || null)
 	if (!person) throw 'OperationNotFound'
 	return person.currencies[currency].pending[0]
 }
@@ -301,12 +309,13 @@ export async function get(
 export async function cancel(
 	userId: PersonDoc['_id'],
 	currency: SC,
-	opid: ObjectId
+	opid: ObjectId,
+	session?: ClientSession
 ): Promise<void> {
 	/**
 	 * O amount da operação
 	 */
-	const { amount } = await get(userId, currency, opid)
+	const { amount } = await get(userId, currency, opid, session)
 
 	/**
 	 * Calcula o quanto o campo 'available' deverá ser alterado para
@@ -317,7 +326,7 @@ export async function cancel(
 	/**
 	 * Remove a operação pendente e volta os saldos ao estado original
 	 */
-	await remove(userId, currency, opid, amount, changeInAvailable)
+	await remove(userId, currency, opid, amount, changeInAvailable, undefined, session)
 }
 
 /**
@@ -336,7 +345,9 @@ export async function complete(
 	userId: PersonDoc['_id'],
 	currency: SC,
 	opid: ObjectId,
-	rfOpid?: ObjectId
+	rfOpid?: ObjectId,
+	amount?: undefined,
+	session?: ClientSession
 ): Promise<void>
 
 /**
@@ -360,7 +371,8 @@ export async function complete(
 	currency: SC,
 	opid: ObjectId,
 	rfOpid: ObjectId,
-	amount: Decimal128
+	amount: Decimal128,
+	session?: ClientSession
 ): Promise<void>
 
 export async function complete(
@@ -368,13 +380,14 @@ export async function complete(
 	currency: SC,
 	opid: ObjectId,
 	rfOpid?: ObjectId,
-	amount?: Decimal128
+	amount?: Decimal128,
+	session?: ClientSession
 ): Promise<void> {
 	if (amount) {
 		if (!rfOpid) throw 'rfOpid needs to be informed to partially complete an operation'
-		await completePartial(userId, currency, opid, rfOpid, +amount)
+		await completePartial(userId, currency, opid, rfOpid, +amount, session)
 	} else {
-		await completeTotal(userId, currency, opid, rfOpid)
+		await completeTotal(userId, currency, opid, rfOpid, session)
 	}
 }
 
