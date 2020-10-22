@@ -45,6 +45,12 @@ router.delete('/orderbook/:opid', async (req, res) => {
 					message: 'The requested operation could not be found on the market'
 				})
 				break
+			case('NotEnoughFunds'):
+				res.status(403).send({
+					error: 'NotEnoughFunds',
+					message: 'There are not enough funds on your account to perform this operation'
+				})
+				break
 			default:
 				console.error('Error removing order from market', err)
 				res.status(500).send({ error: 'Internal Server Error' })

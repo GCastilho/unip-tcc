@@ -7,20 +7,48 @@
 	// target
 	export let wantedCurrency: { name: string, code: string, decimals: number }
 
+	/** A operação requisitada pelo cliente */
 	let operation: 'buy'|'sell' = 'buy'
+
+	/** a cor do botao (QUE BOTAO JOAO, EU NAO SEI QUE BOTAO É ESSE) */
 	let buttonColor: string = '#6ec79e'
+
+	/**
+	 * se o botao de executar operaçao esta ativo ou nao
+	 * 
+	 * botao desativado = true
+	 * 
+	 * botao ativado = false
+	 */
 	let disableButton: boolean
 
+	/** base */
+	let sellingName
 
-	let sellingCode, wantedCode, sellingName, wantedName
+	/** target */
+	let wantedName
 
 	let sellingBalance, wantedBalance
 
-	let quantity, limitPrice
+	/** o codigo moeda que esta em limit Price */
+	let priceCurrency: string
+
+	/** o codigo da moeda que esta em operação */
+	let opCurrencyCode: string
+
+	/**
+	 * a quantidade que esta na marketOrder
+	 * 
+	 * purchase/sale quantity
+	 */
+	let amount: number
+
+	/** o preço limite para a operaçao de compra ou venda da moeda */
+	let limitPrice: number
 
 	$: {
-		sellingCode = sellingCurrency ? sellingCurrency.code : null
-		wantedCode = wantedCurrency ? wantedCurrency.code : null
+		priceCurrency = sellingCurrency ? sellingCurrency.code : null
+		opCurrencyCode = wantedCurrency ? wantedCurrency.code : null
 		sellingName = sellingCurrency ? sellingCurrency.name : null
 		wantedName = wantedCurrency ? wantedCurrency.name : null
 	}
@@ -34,69 +62,28 @@
 			: null
 	}
 
-	$: disableButton = sellingCode === wantedCode || !sellingCurrency || !wantedCurrency ? true : false
+	$: disableButton = priceCurrency === opCurrencyCode || !sellingCurrency || !wantedCurrency ? true : false
 	$: buttonColor = operation == 'sell' ? '#de4949' : '#6ec79e'
-
-	function _trade() {
-		if (disableButton) return
-		const [base] = [sellingName, wantedName].sort()
-		const operation = base == sellingName ? 'buy' : 'sell'
-
-		if(operation == 'buy') {
-			orderbook({
-				owning: {
-					currency: sellingName,
-					amount: sellingName == base ? limitPrice * quantity : quantity / limitPrice
-				},
-				requesting: {
-					currency: wantedName,
-					amount: quantity
-				}
-			})
-		} else {
-			orderbook({
-				owning: {
-					currency: wantedName,
-					amount: +limitPrice * +quantity
-				},
-				requesting: {
-					currency: sellingName,
-					amount: +limitPrice
-				}
-			})
-		}
-	}
 
 	function trade() {
 		if (disableButton) return
-		const [base] = [sellingName, wantedName].sort()
+		const [baseCurrency] = [sellingName, wantedName].sort()
 
-		// limitPrice, quantity -> requesting
+		console.log('requesting type:', operation)
 
-		
-		if(operation == 'buy') {
-			orderbook({
-				owning: {
-					currency: sellingName,
-					amount: sellingName == base ? limitPrice * quantity : quantity / limitPrice
-				},
-				requesting: {
-					currency: wantedName,
-					amount: quantity
-				}
-			})
-		} else {
-			orderbook({
-				owning: {
-					currency: sellingName,
-					amount: +limitPrice * +quantity
-				},
-				requesting: {
-					currency: wantedName,
-					amount: +limitPrice
-				}
-			})
+		const base = {
+			currency: sellingName,
+			amount: sellingName == baseCurrency ? limitPrice * amount : amount / limitPrice
 		}
+		const target = {
+			currency: wantedName,
+			amount: amount
+		}
+
+		orderbook({
+			owning: operation == 'buy' ? base : target,
+			requesting: operation == 'sell' ? base : target
+		})
 	}
 </script>
 
@@ -303,37 +290,41 @@
 		<p>{wantedBalance || '...'}</p>
 	</div>
 
+	<!-- Input do amount -->
 	<div class="float-input">
 		<input
 			type="number"
-			placeholder={wantedCode || '...'}
+			placeholder={opCurrencyCode || '...'}
 			step="0.00000001"
-			bind:value={quantity}
+			bind:value={amount}
 		/>
 		<!-- svelte-ignore a11y-label-has-associated-control -->
 		<label>{operation == 'buy' ? 'Purchase' : 'Sale'} quantity</label>
 	</div>
+
+	<!-- Input do preço -->
 	<div class="float-input">
 		<input
 			type="number"
-			placeholder={sellingCode || '...'}
+			placeholder={priceCurrency || '...'}
 			step="0.00000001"
 			bind:value={limitPrice}
 		/>
 		<!-- svelte-ignore a11y-label-has-associated-control -->
 		<label>Limit price</label>
 	</div>
+
 	<div class="balance">
 		<p>market:</p>
-		<p>000000 {(operation == 'buy' ? sellingCode : wantedCode) || '...'}</p>
+		<p>000000 {(operation == 'buy' ? priceCurrency : opCurrencyCode) || '...'}</p>
 	</div>
 	<div class="balance">
 		<p>fee:</p>
-		<p>000000 {(operation == 'buy' ? sellingCode : wantedCode) || '...'}</p>
+		<p>000000 {(operation == 'buy' ? priceCurrency : opCurrencyCode) || '...'}</p>
 	</div>
 	<div class="balance">
 		<p>total:</p>
-		<p>000000 {(operation == 'buy' ? sellingCode : wantedCode) || '...'}</p>
+		<p>000000 {(operation == 'buy' ? priceCurrency : opCurrencyCode) || '...'}</p>
 	</div>
-	<button on:click={trade} disabled={disableButton}>{operation} {wantedCode || '...'}</button>
+	<button on:click={trade} disabled={disableButton}>{operation} {opCurrencyCode || '...'}</button>
 </div>

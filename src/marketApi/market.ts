@@ -317,6 +317,7 @@ export default class Market {
 		} else {
 			this.pushMaker(order)
 		}
+		console.log('orderbook state after order execution:', this.orderbook)
 	}
 
 	/**
@@ -330,5 +331,6 @@ export default class Market {
 		const index = node.data.findIndex(v => v.id == order.id)
 		if (index == -1) throw 'OrderNotFound'
 		this.getOrderFromIndex(node, index)
+		console.log('orderbook state after removing order:', this.orderbook)
 	}
 }

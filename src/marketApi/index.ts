@@ -47,6 +47,8 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
 		timestamp: new Date()
 	}).save()
 
+	console.log('new order received', orderDoc.toObject({ virtuals: true }))
+
 	try {
 		await Person.balanceOps.add(userId, order.owning.currency, {
 			opid: orderDoc._id,
