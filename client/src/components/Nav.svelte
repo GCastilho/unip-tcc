@@ -95,11 +95,11 @@
 	<ul>
 		<li><a class:selected={segment === undefined} href=".">home</a></li>
 		<li><a class:selected={segment === 'about'} href="about">about</a></li>
+		<li><a class:selected={segment === 'market'} href="market">market</a></li>
 
 		<div style="float:right">
 
 			{#if $session.loggedIn}
-				<li><a class:selected={segment === 'market'} href="market">market</a></li>
 				<li><a class:selected={segment === 'balances'} href="balances">balances</a></li>
 				<li on:mouseover={() => userdropdown = 'show'} on:mouseleave={() => userdropdown = 'hide'}>
 					<div class='dropdown-button' class:selected = {userdropdown === 'show' || segment === 'user'}>

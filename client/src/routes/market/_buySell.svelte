@@ -1,15 +1,22 @@
-<script>
+<script lang="ts">
 	import * as balances from './../../stores/balances.js'
+	import { orderbook } from '../../stores/market'
 
-	export let sellingCurrency
-	export let wantedCurrency
+	// base
+	export let sellingCurrency: { name: string, code: string, decimals: number }
+	// target
+	export let wantedCurrency: { name: string, code: string, decimals: number }
 
-	let operation = 'Buy'
-	let buttonColor = '#6ec79e'
-	let disableButton
+	let operation: 'buy'|'sell' = 'buy'
+	let buttonColor: string = '#6ec79e'
+	let disableButton: boolean
+
+
 	let sellingCode, wantedCode, sellingName, wantedName
 
 	let sellingBalance, wantedBalance
+
+	let quantity, limitPrice
 
 	$: {
 		sellingCode = sellingCurrency ? sellingCurrency.code : null
@@ -17,9 +24,6 @@
 		sellingName = sellingCurrency ? sellingCurrency.name : null
 		wantedName = wantedCurrency ? wantedCurrency.name : null
 	}
-
-	
-
 
 	$: {
 		sellingBalance = $balances[sellingName] ?
@@ -30,16 +34,68 @@
 			: null
 	}
 
-
 	$: disableButton = sellingCode === wantedCode || !sellingCurrency || !wantedCurrency ? true : false
-	$: buttonColor = operation == 'Sell' ? '#de4949' : '#6ec79e'
+	$: buttonColor = operation == 'sell' ? '#de4949' : '#6ec79e'
+
+	function _trade() {
+		if (disableButton) return
+		const [base] = [sellingName, wantedName].sort()
+		const operation = base == sellingName ? 'buy' : 'sell'
+
+		if(operation == 'buy') {
+			orderbook({
+				owning: {
+					currency: sellingName,
+					amount: sellingName == base ? limitPrice * quantity : quantity / limitPrice
+				},
+				requesting: {
+					currency: wantedName,
+					amount: quantity
+				}
+			})
+		} else {
+			orderbook({
+				owning: {
+					currency: wantedName,
+					amount: +limitPrice * +quantity
+				},
+				requesting: {
+					currency: sellingName,
+					amount: +limitPrice
+				}
+			})
+		}
+	}
 
 	function trade() {
 		if (disableButton) return
-		if(operation == 'Buy') {
-			console.log('você esta comprando')
+		const [base] = [sellingName, wantedName].sort()
+
+		// limitPrice, quantity -> requesting
+
+		
+		if(operation == 'buy') {
+			orderbook({
+				owning: {
+					currency: sellingName,
+					amount: sellingName == base ? limitPrice * quantity : quantity / limitPrice
+				},
+				requesting: {
+					currency: wantedName,
+					amount: quantity
+				}
+			})
 		} else {
-			console.log('você esta vendendo')
+			orderbook({
+				owning: {
+					currency: sellingName,
+					amount: +limitPrice * +quantity
+				},
+				requesting: {
+					currency: wantedName,
+					amount: +limitPrice
+				}
+			})
 		}
 	}
 </script>
@@ -208,6 +264,7 @@
 		align-self: center;
 		animation: 4s;
 		animation-delay: 4s;
+		text-transform: capitalize;
 	}
 
 	button:hover {
@@ -228,11 +285,11 @@
 <div class="block-1" style={`--button-color: ${buttonColor}`}>
 	<div class="radio-switch">
 		<div class="radio-switch-item">
-			<input type="radio" class="radio-switch-input" bind:group={operation} value="Buy" id="buy">
+			<input type="radio" class="radio-switch-input" bind:group={operation} value="buy" id="buy">
 			<label for="buy" class="radio-switch-label">Buy</label>
 		</div>
 		<div class="radio-switch-item">
-			<input type="radio" class="radio-switch-input" bind:group={operation} value="Sell" id="sell">
+			<input type="radio" class="radio-switch-input" bind:group={operation} value="sell" id="sell">
 			<label for="sell" class="radio-switch-label">Sell</label>
 			<div aria-hidden="true" class="radio-switch-marker"></div>
 		</div>
@@ -247,14 +304,36 @@
 	</div>
 
 	<div class="float-input">
-		<input placeholder={wantedCode || '...'}/>
+		<input
+			type="number"
+			placeholder={wantedCode || '...'}
+			step="0.00000001"
+			bind:value={quantity}
+		/>
 		<!-- svelte-ignore a11y-label-has-associated-control -->
-		<label>{operation == 'Buy' ? 'Purchase' : 'Sale'} quantity</label>
+		<label>{operation == 'buy' ? 'Purchase' : 'Sale'} quantity</label>
 	</div>
 	<div class="float-input">
-		<input placeholder={sellingCode || '...'}/>
+		<input
+			type="number"
+			placeholder={sellingCode || '...'}
+			step="0.00000001"
+			bind:value={limitPrice}
+		/>
 		<!-- svelte-ignore a11y-label-has-associated-control -->
 		<label>Limit price</label>
+	</div>
+	<div class="balance">
+		<p>market:</p>
+		<p>000000 {(operation == 'buy' ? sellingCode : wantedCode) || '...'}</p>
+	</div>
+	<div class="balance">
+		<p>fee:</p>
+		<p>000000 {(operation == 'buy' ? sellingCode : wantedCode) || '...'}</p>
+	</div>
+	<div class="balance">
+		<p>total:</p>
+		<p>000000 {(operation == 'buy' ? sellingCode : wantedCode) || '...'}</p>
 	</div>
 	<button on:click={trade} disabled={disableButton}>{operation} {wantedCode || '...'}</button>
 </div>
