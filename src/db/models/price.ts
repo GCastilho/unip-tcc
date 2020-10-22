@@ -1,6 +1,5 @@
-import { Document, Schema } from '../mongoose'
+import mongoose, { Document, Schema } from '../mongoose'
 import { currencyNames, SuportedCurrencies } from '../../libs/currencies'
-import { mongoose } from '../../../external_modules/common/db/mongoose'
 
 /** Objeto de atualização de preço */
 interface PriceUpdate extends Document {
@@ -29,7 +28,7 @@ const priceUpdateSchema = new Schema({
 			validator: (currencies: SuportedCurrencies[]) => currencies.length == 2
 				&& currencies.every(item => currencyNames.includes(item))
 				&& currencies[0] != currencies[1],
-			message: 'currencies lenght must be two and currency type must be SuportedCurrencies',
+			message: 'currencies lenght must be two and currency type must be a SuportedCurrencies',
 		}
 	}
 })
@@ -40,8 +39,6 @@ priceUpdateSchema.pre('save', function(this:PriceUpdate) {
 	})
 })
 
-const Price = mongoose.model('price', priceUpdateSchema, 'pricehistory')
+const Price = mongoose.model<PriceUpdate>('price', priceUpdateSchema)
 
 export default Price
-
-
