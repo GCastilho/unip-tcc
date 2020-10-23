@@ -27,7 +27,7 @@ describe('Performing match tests on the MarketApi', () => {
 		await person.save()
 
 		// Remove as ordens do orderbook para impedir que um teste influencie outro
-		for (const order of await Order.find({ status: 'ready' }))
+		for (const order of await Order.find({ status: 'ready' })) {
 			await MarketApi.remove(person._id, order._id).catch(err => {
 				if (
 					err != 'OrderNotFound' &&
@@ -36,6 +36,7 @@ describe('Performing match tests on the MarketApi', () => {
 					!err?.message?.includes('Market not found')
 				) throw err
 			})
+		}
 		await Order.deleteMany({})
 	})
 

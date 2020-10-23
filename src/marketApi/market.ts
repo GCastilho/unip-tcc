@@ -310,9 +310,10 @@ export default class Market {
 	 * @param order Documento da ordem que será processado
 	 */
 	async add(order: OrderDoc) {
-		if (order.type == 'buy' && order.price >= this.sellPrice) {
-			await this.execTaker(order)
-		} else if (order.type == 'sell' && order.price <= this.buyPrice) {
+		if (
+			order.type == 'buy' && order.price >= this.sellPrice ||
+			order.type == 'sell' && order.price <= this.buyPrice
+		) {
 			await this.execTaker(order)
 		} else {
 			this.pushMaker(order)
