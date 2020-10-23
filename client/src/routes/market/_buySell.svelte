@@ -47,8 +47,8 @@
 	let limitPrice: number
 
 	$: {
-		priceCurrency = sellingCurrency ? sellingCurrency.code : null
-		opCurrencyCode = wantedCurrency ? wantedCurrency.code : null
+		priceCurrency = sellingCurrency ? sellingCurrency.code.toUpperCase() : null
+		opCurrencyCode = wantedCurrency ? wantedCurrency.code.toUpperCase() : null
 		sellingName = sellingCurrency ? sellingCurrency.name : null
 		wantedName = wantedCurrency ? wantedCurrency.name : null
 	}
@@ -315,16 +315,16 @@
 	</div>
 
 	<div class="balance">
-		<p>market:</p>
-		<p>000000 {(operation == 'buy' ? priceCurrency : opCurrencyCode) || '...'}</p>
+		<p>market price:</p>
+		<p>000000 {priceCurrency || '...'}</p>
 	</div>
 	<div class="balance">
 		<p>fee:</p>
-		<p>000000 {(operation == 'buy' ? priceCurrency : opCurrencyCode) || '...'}</p>
+		<p>000000 {priceCurrency || '...'}</p>
 	</div>
 	<div class="balance">
 		<p>total:</p>
-		<p>000000 {(operation == 'buy' ? priceCurrency : opCurrencyCode) || '...'}</p>
+		<p>{(limitPrice*amount)} {priceCurrency || '...'}</p>
 	</div>
 	<button on:click={trade} disabled={disableButton}>{operation} {opCurrencyCode || '...'}</button>
 </div>
