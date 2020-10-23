@@ -1,11 +1,11 @@
 import { expect } from 'chai'
 import PriceHistory from '../../src/db/models/priceHistory'
 
-describe.only('testing pricehistory collection', async () => {
+describe('testing pricehistory collection', async () => {
 	let priceHistoryDoc: InstanceType<typeof PriceHistory>
 
 	beforeEach(async () => {
-		new PriceHistory({
+		priceHistoryDoc = new PriceHistory({
 			initPrice: 10,
 			finalPrice: 12,
 			maxPrice: 25,
@@ -22,6 +22,11 @@ describe.only('testing pricehistory collection', async () => {
 	it('Should re-order the saved array', async () => {
 		await expect(priceHistoryDoc.save()).to.eventually.be.fulfilled
 		expect(priceHistoryDoc.currencies[0] < priceHistoryDoc.currencies[1], 'the array was not reordered').to.be.true
+	})
+
+	it('Should generate virtual vallues', async () => {
+		await expect(priceHistoryDoc.save()).to.eventually.be.fulfilled
+		expect(priceHistoryDoc.startTime, 'the startTime is not setted').to.be.not.undefined
 	})
 
 	it('Should fail if there is more than 2 currencies in currencies[]', async () => {

@@ -57,9 +57,11 @@ priceHistorySchema.pre('save', function(this: priceHistory) {
 		return a > b ? 1 : a < b ? -1 : 0
 	})
 })
+
 priceHistorySchema.virtual('startTime').get(function(this: priceHistory): priceHistory['startTime'] {
 	return this._id.getTimestamp() as priceHistory['startTime']
 })
+
 const PriceHistory = mongoose.model<priceHistory>('priceHistory', priceHistorySchema, 'pricehistory')
 
 export default PriceHistory
