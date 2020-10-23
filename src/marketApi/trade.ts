@@ -63,18 +63,26 @@ export default async function trade(matchs: [maker: OrderDoc, taker: OrderDoc][]
 			}, session)
 
 			// Da unlock na descida de saldo do owning de ambas
-			await Person.balanceOps.complete(maker.userId, maker.owning.currency, maker._id, session)
-				.catch(err => {
-					throw err == 'OperationNotFound'
-						? `Maker order does not have a locked balance for order ${maker.id}`
-						: err
-				})
-			await Person.balanceOps.complete(taker.userId, taker.owning.currency, taker._id, session)
-				.catch(err => {
-					throw err == 'OperationNotFound'
-						? `Taker order does not have a locked balance for order ${taker.id}`
-						: err
-				})
+			await Person.balanceOps.complete(
+				maker.userId,
+				maker.owning.currency,
+				maker.originalOrderId || maker._id,
+				session
+			).catch(err => {
+				throw err == 'OperationNotFound'
+					? `Maker order does not have a locked balance for order ${maker.id}`
+					: err
+			})
+			await Person.balanceOps.complete(
+				taker.userId,
+				taker.owning.currency,
+				taker.originalOrderId || taker._id,
+				session
+			).catch(err => {
+				throw err == 'OperationNotFound'
+					? `Taker order does not have a locked balance for order ${taker.id}`
+					: err
+			})
 
 			// Da unlock na subida de saldo do requesting de ambas
 			await Person.balanceOps.complete(maker.userId, maker.requesting.currency, trade._id, session)

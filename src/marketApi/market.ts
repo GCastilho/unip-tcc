@@ -209,6 +209,7 @@ export default class Market {
 			if (remaining > maker.requesting.amount) {
 				const takerCopy = new Order(taker)
 				takerCopy._id = new ObjectId()
+				takerCopy.originalOrderId = taker._id
 				takerCopy.isNew = true
 
 				takerCopy.owning.amount = maker.requesting.amount
@@ -240,6 +241,7 @@ export default class Market {
 					/** Ordem com os valores da taker (para o match) */
 					const makerCopy = new Order(maker)
 					makerCopy._id = new ObjectId()
+					makerCopy.originalOrderId = maker._id
 					makerCopy.isNew = true
 					makerCopy.owning.amount = taker.requesting.amount
 					makerCopy.requesting.amount = taker.owning.amount

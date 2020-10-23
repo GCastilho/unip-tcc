@@ -28,12 +28,14 @@ export interface OrderDoc extends Document {
 		/** A quantidade mínima que o usuário quer receber */
 		amount: number
 	}
+	/** ID da ordem original, caso essa tenha sido criada após um split */
+	originalOrderId?: OrderDoc['_id']
 	/** A data que essa operação foi adicionada */
 	timestamp: Date
 	/** O tipo dessa operação no orderbook */
-	type: 'buy'|'sell'
+	readonly type: 'buy'|'sell'
 	/** O preço dessa operação no orderbook */
-	price: number
+	readonly price: number
 	/** Um array com owning e requesting em ordem alfabética de acordo com a currency */
 	orderedPair: [OrderDoc['owning'], OrderDoc['requesting']]|[OrderDoc['requesting'], OrderDoc['owning']]
 }
@@ -85,6 +87,11 @@ const OrderSchema = new Schema({
 				message: props => `${props.value} must be a positive number`
 			}
 		}
+	},
+	originalOrderId: {
+		type: ObjectId,
+		required: false,
+		ref: 'orderbook'
 	},
 	timestamp: {
 		type: Date,

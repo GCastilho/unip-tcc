@@ -9,7 +9,7 @@ import { currencyNames } from '../../src/libs/currencies'
  * Alguns testes de match na market mas sem nenhum mock, para testar o match e
  * trade de ordens juntos
  */
-describe.only('Performing integration tests on the MarketApi', () => {
+describe('Performing integration tests on the MarketApi', () => {
 	let person: InstanceType<typeof Person>
 
 	before(async () => {
@@ -62,8 +62,8 @@ describe.only('Performing integration tests on the MarketApi', () => {
 			}
 		})
 
-		expect(await Order.find({}).count()).to.equals(0)
-		expect(await Trade.find({}).count()).to.equals(1)
+		expect(await Order.find({}).countDocuments()).to.equals(0)
+		expect(await Trade.find({}).countDocuments()).to.equals(1)
 	})
 
 	it('Should trade a maker bigger than a taker', async () => {
@@ -89,10 +89,10 @@ describe.only('Performing integration tests on the MarketApi', () => {
 			}
 		})
 
-		expect(await Order.find({}).count()).to.equals(1)
-		expect(await Trade.find({}).count()).to.equals(1)
-		expect(await Order.findById(takerOpid)).to.be.an('object')
-		expect(await Order.findById(makerOpid)).to.be.null
+		expect(await Order.find({}).countDocuments()).to.equals(1)
+		expect(await Trade.find({}).countDocuments()).to.equals(1)
+		expect(await Order.findById(makerOpid)).to.be.an('object')
+		expect(await Order.findById(takerOpid)).to.be.null
 	})
 
 	it('Should trade a taker bigger than a maker', async () => {
@@ -118,9 +118,9 @@ describe.only('Performing integration tests on the MarketApi', () => {
 			}
 		})
 
-		expect(await Order.find({}).count()).to.equals(1)
-		expect(await Trade.find({}).count()).to.equals(1)
-		expect(await Order.findById(makerOpid)).to.be.an('object')
-		expect(await Order.findById(takerOpid)).to.be.null
+		expect(await Order.find({}).countDocuments()).to.equals(1)
+		expect(await Trade.find({}).countDocuments()).to.equals(1)
+		expect(await Order.findById(takerOpid)).to.be.an('object')
+		expect(await Order.findById(makerOpid)).to.be.null
 	})
 })

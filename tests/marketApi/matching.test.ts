@@ -186,6 +186,9 @@ describe('Performing match tests on the MarketApi', () => {
 			const remainingOrder = await Order.findById(makerOpid)
 			expect(remainingOrder.owning.amount).to.equal(makerOrder.owning.amount - takerOrder.requesting.amount)
 			expect(remainingOrder.requesting.amount).to.equal(makerOrder.requesting.amount - takerOrder.owning.amount)
+
+			// Testa se a nova maker (cópia) tem uma referência à ID da maker original
+			expect(maker.originalOrderId).to.deep.equal(remainingOrder._id)
 		})
 
 		it('Should put the leftover order back on the orderbook', async () => {
@@ -275,6 +278,9 @@ describe('Performing match tests on the MarketApi', () => {
 			const remainingOrder = await Order.findById(takerOpid)
 			expect(remainingOrder.owning.amount).to.equal(takerOrder.owning.amount - makerOrder.requesting.amount)
 			expect(remainingOrder.requesting.amount).to.equal(takerOrder.requesting.amount - makerOrder.owning.amount)
+
+			// Testa se a nova taker (cópia) tem uma referência à ID da taker original
+			expect(taker.originalOrderId).to.deep.equal(remainingOrder._id)
 		})
 
 		it('Should put the leftover order on the orderbook as a maker', async () => {
