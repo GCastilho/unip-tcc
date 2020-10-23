@@ -1,11 +1,11 @@
 import { expect } from 'chai'
-import Price from '../../src/db/models/price'
+import PriceChange from '../../src/db/models/priceChange'
 
-describe.only('testing pricehistory collection', async () => {
-	let priceDoc: InstanceType<typeof Price>
+describe.only('testing price change collection', async () => {
+	let priceDoc: InstanceType<typeof PriceChange>
 
 	beforeEach(async () => {
-		priceDoc = new Price({
+		priceDoc = new PriceChange({
 			price: 1,
 			type: 'buy',
 			currencies: ['nano', 'bitcoin']

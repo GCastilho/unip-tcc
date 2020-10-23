@@ -2,16 +2,18 @@ import mongoose, { Document, Schema } from '../mongoose'
 import { currencyNames, SuportedCurrencies } from '../../libs/currencies'
 
 /** Objeto de atualização de preço */
-interface PriceUpdate extends Document {
+interface PriceChange extends Document {
 	/** Novo preço desse par */
 	price: number
 	/** O preço que está sendo modificado */
 	type: 'buy'|'sell'
 	/** As currencies que fazem parte desse par */
 	currencies: [SuportedCurrencies, SuportedCurrencies]
+	/** O timestamp do momento que o dado foi inserido no DB */
+	time: Date
 }
 
-const priceUpdateSchema = new Schema({
+const priceChangeSchema = new Schema({
 	price: {
 		type: Number,
 		required: true
@@ -33,12 +35,16 @@ const priceUpdateSchema = new Schema({
 	}
 })
 
-priceUpdateSchema.pre('save', function(this:PriceUpdate) {
+priceChangeSchema.pre('save', function(this:PriceChange) {
 	this.currencies = this.currencies.sort((a, b) => {
 		return a > b ? 1 : a < b ? -1 : 0
 	})
 })
 
-const Price = mongoose.model<PriceUpdate>('price', priceUpdateSchema)
+priceChangeSchema.virtual('time').get(function(this: PriceChange): PriceChange['time'] {
+	return this._id.getTimestamp() as PriceChange['time']
+})
+
+const Price = mongoose.model<PriceChange>('priceChange', priceChangeSchema)
 
 export default Price
