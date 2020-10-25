@@ -7,6 +7,9 @@ import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
 
+/** Re-exporta o eventEmitter do módulo da Market */
+export { events } from './market'
+
 interface MarketOrder {
 	owning: {
 		currency: SC
@@ -72,7 +75,7 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
 	// Retorna ou cria uma nova instancia da Market para esse par
 	let market = markets.get(getMarketKey(orderDoc.orderedPair))
 	if (!market) {
-		market = new Market()
+		market = new Market(orderDoc.orderedPair.map(v => v.currency) as [SC, SC])
 		/**
 		 * A chave desse par no mercado é a string do array das currencies em ordem
 		 * alfabética, pois isso torna a chave simples e determinística

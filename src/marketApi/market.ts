@@ -1,7 +1,11 @@
+import { EventEmitter } from 'events'
 import { ObjectId } from 'mongodb'
 import Order from '../db/models/order'
 import trade from './trade'
+import type TypedEmitter from 'typed-emitter'
 import type { OrderDoc } from '../db/models/order'
+import type { PriceUpdate } from '../../interfaces/market'
+import type { SuportedCurrencies } from '../libs/currencies'
 
 /**
  * O type da linked list dos nodes do orderbook
@@ -18,6 +22,41 @@ type LinkedList = {
 	data: OrderDoc[]
 }
 
+/** Event emitter de todas as instâncias da Market */
+export const events: TypedEmitter<{
+	price_update: (price: PriceUpdate) => void
+}> = new EventEmitter()
+
+/**
+ * Decorator para emitir um evento de price update no events a cada vez que as
+ * propriedades de marketPrice forem atualizadas
+ */
+function Emittable<T extends PriceUpdate['type']>(type: T) {
+	let value: number
+
+	return function Decorator(
+		target: Record<string, any>,
+		propertyKey: string,
+	) {
+		Object.defineProperty(target, propertyKey, {
+			enumerable: true,
+			get: function() {
+				return value
+			},
+			set: function(this: Market, newPrice: typeof value) {
+				value = newPrice
+				if (this.emitting) {
+					events.emit('price_update', {
+						price: newPrice,
+						currencies: this.currencies,
+						type
+					})
+				}
+			}
+		})
+	}
+}
+
 /**
  * Market é uma estrutura que armazena todas as ordens de todos os preços
  * desse par de currencies
@@ -25,18 +64,32 @@ type LinkedList = {
 export default class Market {
 	/** Um map com as listas de ordens separadas por preço */
 	private orderbook: Map<number, LinkedList>
+
 	/** Head da linked list */
 	private head: null|LinkedList
+
+	/** Flag de controle se a Market está emitindo eventos ou não */
+	protected emitting: boolean
+
 	/** Preço da maior ordem de compra */
+	@Emittable('buy')
 	private buyPrice: number
+
 	/** Preço da menor ordem de venda */
+	@Emittable('sell')
 	private sellPrice: number
 
-	constructor() {
+
+	/** Noma das currencies desse par ordenados alfabeticamente */
+	public currencies: [SuportedCurrencies, SuportedCurrencies]
+
+	constructor(currencies: [SuportedCurrencies, SuportedCurrencies]) {
+		this.currencies = currencies.sort()
 		this.orderbook = new Map()
 		this.buyPrice = 0
 		this.sellPrice = Infinity
 		this.head = null
+		this.emitting = true
 	}
 
 	/**
