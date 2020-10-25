@@ -79,7 +79,6 @@ export default class Market {
 	@Emittable('sell')
 	private sellPrice: number
 
-
 	/** Noma das currencies desse par ordenados alfabeticamente */
 	public currencies: [SuportedCurrencies, SuportedCurrencies]
 

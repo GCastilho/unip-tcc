@@ -3,30 +3,24 @@ import { expect } from 'chai'
 import Order from '../../src/db/models/order'
 import Person from '../../src/db/models/person'
 import { currencyNames } from '../../src/libs/currencies'
-import * as MarketApi from '../../src/marketApi'
+import Market, { events as marketEvents } from '../../src/marketApi/market'
 
-describe('Testing emittion of events on the MarketApi', () => {
-	let person: InstanceType<typeof Person>
+describe('Testing emittion of events on the market', () => {
+	let userId: InstanceType<typeof Person>['_id']
+	let market: InstanceType<typeof Market>
 
 	before(async () => {
 		await Person.deleteMany({})
-		person = await Person.createOne('events-test-marketApi@email.com', 'userP@ss')
+		const person = await Person.createOne('events-test-market@email.com', 'userP@ss')
+		userId = person._id
 	})
 
 	beforeEach(async () => {
 		// Remove as ordens do orderbook para impedir que um teste influencie outro
-		for (const order of await Order.find({ status: 'ready' }))
-			await MarketApi.remove(person._id, order._id).catch(err => {
-				if (
-					err != 'OrderNotFound' &&
-					err != 'OperationNotFound' &&
-					err != 'PriceNotFound' &&
-					err != 'PriceNotFound' &&
-					!err?.message?.includes('Market not found')
-				) throw err
-			})
 		await Order.deleteMany({})
+		market = new Market(['bitcoin', 'nano'])
 
+		const person = await Person.findById(userId)
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of currencyNames)
 			// @ts-expect-error Automaticamente convertido para Decimal128
@@ -35,14 +29,16 @@ describe('Testing emittion of events on the MarketApi', () => {
 	})
 
 	it('Should emit a price_update when inserting a new buy order', done => {
-		MarketApi.events.once('price_update', update => {
+		marketEvents.once('price_update', update => {
 			expect(update.currencies).to.deep.equal(['bitcoin', 'nano'])
 			expect(update.type).to.equal('buy')
 			expect(update.price).to.equal(0.5)
 			done()
 		})
 
-		MarketApi.add(person._id, {
+		market.add(new Order({
+			userId: userId,
+			status: 'ready',
 			owning: {
 				currency: 'bitcoin',
 				amount: 1.23,
@@ -50,19 +46,22 @@ describe('Testing emittion of events on the MarketApi', () => {
 			requesting: {
 				currency: 'nano',
 				amount: 2.46
-			}
-		}).catch(done)
+			},
+			timestamp: new Date()
+		})).catch(done)
 	})
 
 	it('Should emit a price_update when inserting a sell buy order', done => {
-		MarketApi.events.once('price_update', update => {
+		marketEvents.once('price_update', update => {
 			expect(update.currencies).to.deep.equal(['bitcoin', 'nano'])
 			expect(update.type).to.equal('sell')
 			expect(update.price).to.equal(0.5)
 			done()
 		})
 
-		MarketApi.add(person._id, {
+		market.add(new Order({
+			userId: userId,
+			status: 'ready',
 			owning: {
 				currency: 'nano',
 				amount: 2.46
@@ -70,12 +69,15 @@ describe('Testing emittion of events on the MarketApi', () => {
 			requesting: {
 				currency: 'bitcoin',
 				amount: 1.23,
-			}
-		}).catch(done)
+			},
+			timestamp: new Date()
+		})).catch(done)
 	})
 
 	it('Should emit a price_update when removing a buy order', done => {
-		MarketApi.add(person._id, {
+		const orderDoc = new Order({
+			userId: userId,
+			status: 'ready',
 			owning: {
 				currency: 'bitcoin',
 				amount: 1.23,
@@ -83,20 +85,25 @@ describe('Testing emittion of events on the MarketApi', () => {
 			requesting: {
 				currency: 'nano',
 				amount: 2.46
-			}
-		}).then(opid => {
-			MarketApi.events.once('price_update', update => {
+			},
+			timestamp: new Date()
+		})
+
+		market.add(orderDoc).then(() => {
+			marketEvents.once('price_update', update => {
 				expect(update.currencies).to.deep.equal(['bitcoin', 'nano'])
 				expect(update.type).to.equal('buy')
 				expect(update.price).to.equal(0)
 				done()
 			})
-			return MarketApi.remove(person._id, opid)
+			return market.remove(orderDoc)
 		}).catch(done)
 	})
 
 	it('Should emit a price_update when removing a buy order', done => {
-		MarketApi.add(person._id, {
+		const orderDoc = new Order({
+			userId: userId,
+			status: 'ready',
 			owning: {
 				currency: 'nano',
 				amount: 2.46
@@ -104,15 +111,18 @@ describe('Testing emittion of events on the MarketApi', () => {
 			requesting: {
 				currency: 'bitcoin',
 				amount: 1.23,
-			}
-		}).then(opid => {
-			MarketApi.events.once('price_update', update => {
+			},
+			timestamp: new Date()
+		})
+
+		market.add(orderDoc).then(() => {
+			marketEvents.once('price_update', update => {
 				expect(update.currencies).to.deep.equal(['bitcoin', 'nano'])
 				expect(update.type).to.equal('sell')
 				expect(update.price).to.equal(Infinity)
 				done()
 			})
-			return MarketApi.remove(person._id, opid)
+			return market.remove(orderDoc)
 		}).catch(done)
 	})
 })
