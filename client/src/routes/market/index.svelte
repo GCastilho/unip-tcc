@@ -1,20 +1,20 @@
 <script>
 	import BuySell from './_buySell.svelte'
 	import ExchangeIcon from './exchange.svg'
-	import { getContext } from 'svelte'
 	import * as currencies from './../../stores/currencies'
 
-	let sellingCurrency
-	let wantedCurrency
+	let baseCurrency
+	let targetCurrency
 	let exchangeCurrency = false
-	let limitPricePow = getContext('key')
 
-	function exchangeCoin() {
-		let aux = sellingCurrency
-		sellingCurrency = wantedCurrency
-		wantedCurrency = aux
-		//exchangeCurrency = !exchangeCurrency // descomente para a gambiarra funcionar
-		limitPricePow()
+	/** Bind na função switchPrice exportada na BuySell */
+	let switchPrice
+
+	function switchCoins() {
+		let aux = baseCurrency
+		baseCurrency = targetCurrency
+		targetCurrency = aux
+		switchPrice()
 	}
 </script>
 
@@ -76,7 +76,7 @@
 
 <h1>Market</h1>
 <div class="currency-select">
-	<select bind:value={sellingCurrency}>
+	<select bind:value={baseCurrency}>
 		<option value={null}>...</option>
 		{#each $currencies as currency }
 			<option value={currency}>
@@ -84,8 +84,8 @@
 			</option>
 		{/each}
 	</select>
-	<button on:click={exchangeCoin}><ExchangeIcon/></button>
-	<select bind:value={wantedCurrency}>
+	<button on:click={switchCoins}><ExchangeIcon/></button>
+	<select bind:value={targetCurrency}>
 		<option value={null}>...</option>
 		{#each $currencies as currency }
 			<option value={currency}>
@@ -95,5 +95,10 @@
 	</select>
 </div>
 <div class="main">
-	<BuySell {exchangeCurrency} {sellingCurrency} {wantedCurrency}/>
+	<BuySell
+		bind:switchPrice
+		sellingCurrency={baseCurrency}
+		wantedCurrency={targetCurrency}
+		{exchangeCurrency}
+	/>
 </div>

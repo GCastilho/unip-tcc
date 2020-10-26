@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as balances from './../../stores/balances.js'
-	import { setContext } from 'svelte'
 	import { orderbook } from '../../stores/market'
 
 	// base
@@ -8,7 +7,10 @@
 	// target
 	export let wantedCurrency: { name: string, code: string, decimals: number }
 
-	export let exchangeCurrency: boolean
+	/** Eleva o preço atual a -1 */
+	export function switchPrice() {
+		limitPrice = Math.pow(limitPrice, -1)
+	}
 
 	/** A operação requisitada pelo cliente */
 	let operation: 'buy'|'sell' = 'buy'
@@ -55,17 +57,6 @@
 		sellingName = sellingCurrency ? sellingCurrency.name : null
 		wantedName = wantedCurrency ? wantedCurrency.name : null
 	}
-
-	function limitPricePow(exchangeCurrency) {
-		limitPrice = Math.pow(limitPrice, -1)
-	}
-
-	//ISSO É GAMBIARRA DEMAIS ATÉ PARA MIM, ARRUMAREI ISSO O MAIS RAPIDO QUE PUDER
-	$: {
-		limitPricePow(exchangeCurrency)
-	}
-
-	setContext('key', limitPricePow);
 
 	$: {
 		sellingBalance = $balances[sellingName] ?
