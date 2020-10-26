@@ -10,7 +10,7 @@ describe('testing pricehistory collection', async () => {
 			finalPrice: 12,
 			maxPrice: 25,
 			minPrice: 5,
-			duration: 10000,
+			duration: 60000,
 			currencies: ['nano', 'bitcoin']
 		})
 	})
