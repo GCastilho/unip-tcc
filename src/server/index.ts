@@ -1,7 +1,8 @@
 import express from 'express'
+import socket from 'socket.io'
 import { Server } from 'http'
 import api from './api'
-import initSocket from './socket'
+import socketHandler from './socket'
 
 const app = express()
 app.use(api)
@@ -10,7 +11,7 @@ app.use(api)
 const server = new Server(app)
 
 // Bind websocket to http server
-initSocket(server)
+socketHandler(socket(server))
 
 /** Porta que o servidor HTTP irá ouvir por conexões */
 const port = +(process.env.PORT || 3001)

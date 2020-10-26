@@ -166,6 +166,31 @@ describe('Testing trade function', () => {
 		expect(tradeDoc.taker.amount).to.equal(sellOrder.requesting.amount - tradeDoc.taker.fee)
 	})
 
+	it('Should trade an order that was created from a split', async () => {
+		// Da lock no saldo da buyPerson
+		await Person.balanceOps.add(buyPerson._id, buyOrder.owning.currency, {
+			amount: buyOrder.owning.amount,
+			type: 'trade',
+			opid: buyOrder._id
+		})
+
+		// Da lock no saldo da sellPerson
+		await Person.balanceOps.add(sellPerson._id, sellOrder.owning.currency, {
+			amount: sellOrder.owning.amount,
+			type: 'trade',
+			opid: sellOrder._id
+		})
+
+		// Cria uma cópia de uma dar ordens
+		const buyCopy = new Order(buyOrder)
+		buyCopy._id = new ObjectId()
+		buyCopy.isNew = true
+		buyCopy.originalOrderId = buyOrder._id
+
+		// Testa se o trade de duas ordens executa sem erros
+		await expect(trade([[buyCopy, sellOrder]])).to.eventually.be.fulfilled
+	})
+
 	describe('Once the trade is successfull', () => {
 		beforeEach(async () => {
 			await TradeDoc.deleteMany({})

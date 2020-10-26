@@ -13,10 +13,13 @@ describe('Performing match tests on the MarketApi', () => {
 	let spy: SinonStub<Parameters<typeof Trade['default']>>
 
 	before(async () => {
+		await Person.deleteMany({})
 		person = await Person.createOne('match-test-marketApi@email.com', 'userP@ss')
 	})
 
 	beforeEach(async () => {
+		spy = ImportMock.mockFunction(Trade) as SinonStub<Parameters<typeof Trade['default']>>
+
 		// Manualmente seta o saldo disponível para 10
 		for (const currency of currencyNames)
 			// @ts-expect-error Automaticamente convertido para Decimal128
@@ -24,7 +27,7 @@ describe('Performing match tests on the MarketApi', () => {
 		await person.save()
 
 		// Remove as ordens do orderbook para impedir que um teste influencie outro
-		for (const order of await Order.find({ status: 'ready' }))
+		for (const order of await Order.find({ status: 'ready' })) {
 			await MarketApi.remove(person._id, order._id).catch(err => {
 				if (
 					err != 'OrderNotFound' &&
@@ -33,8 +36,8 @@ describe('Performing match tests on the MarketApi', () => {
 					!err?.message?.includes('Market not found')
 				) throw err
 			})
+		}
 		await Order.deleteMany({})
-		spy = ImportMock.mockFunction(Trade) as SinonStub<Parameters<typeof Trade['default']>>
 	})
 
 	afterEach(() => {
@@ -183,6 +186,9 @@ describe('Performing match tests on the MarketApi', () => {
 			const remainingOrder = await Order.findById(makerOpid)
 			expect(remainingOrder.owning.amount).to.equal(makerOrder.owning.amount - takerOrder.requesting.amount)
 			expect(remainingOrder.requesting.amount).to.equal(makerOrder.requesting.amount - takerOrder.owning.amount)
+
+			// Testa se a nova maker (cópia) tem uma referência à ID da maker original
+			expect(maker.originalOrderId).to.deep.equal(remainingOrder._id)
 		})
 
 		it('Should put the leftover order back on the orderbook', async () => {
@@ -272,6 +278,9 @@ describe('Performing match tests on the MarketApi', () => {
 			const remainingOrder = await Order.findById(takerOpid)
 			expect(remainingOrder.owning.amount).to.equal(takerOrder.owning.amount - makerOrder.requesting.amount)
 			expect(remainingOrder.requesting.amount).to.equal(takerOrder.requesting.amount - makerOrder.owning.amount)
+
+			// Testa se a nova taker (cópia) tem uma referência à ID da taker original
+			expect(taker.originalOrderId).to.deep.equal(remainingOrder._id)
 		})
 
 		it('Should put the leftover order on the orderbook as a maker', async () => {

@@ -1,10 +1,14 @@
 import { ObjectId } from 'mongodb'
+import { startSession } from 'mongoose'
 import Market from './market'
 import Order from '../db/models/order'
 import Person from '../db/models/person'
 import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
+
+/** Re-exporta o eventEmitter do módulo da Market */
+export { events } from './market'
 
 interface MarketOrder {
 	owning: {
@@ -71,7 +75,7 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
 	// Retorna ou cria uma nova instancia da Market para esse par
 	let market = markets.get(getMarketKey(orderDoc.orderedPair))
 	if (!market) {
-		market = new Market()
+		market = new Market(orderDoc.orderedPair.map(v => v.currency) as [SC, SC])
 		/**
 		 * A chave desse par no mercado é a string do array das currencies em ordem
 		 * alfabética, pois isso torna a chave simples e determinística
@@ -93,12 +97,26 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
  * @throws MarketNotFound if the market was not found in the markets map
  */
 export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {
-	// Há uma race entre a ordem ser selecionada na execTaker e o trigger no update para status 'matched'
-	const order = await Order.findOneAndUpdate({ _id: opid, status: 'ready' }, { status: 'cancelled' })
-	if (!order) throw 'OrderNotFound'
-	const market = markets.get(getMarketKey(order.orderedPair))
-	if (!market) throw new MarketNotFound(`Market not found while removing: ${order}`)
-	market.remove(order)
-	await order.remove()
-	await Person.balanceOps.cancel(userId, order.owning.currency, opid)
+	const session = await startSession()
+	session.startTransaction()
+
+	try {
+		const order = await Order.findOne({ _id: opid, status: 'ready' }).session(session)
+		if (!order) throw 'OrderNotFound'
+
+		const market = markets.get(getMarketKey(order.orderedPair))
+		if (!market) throw new MarketNotFound(`Market not found while removing: ${order}`)
+		market.remove(order)
+
+		await order.remove()
+		// Falta session nesse cancell
+		await Person.balanceOps.cancel(userId, order.owning.currency, opid)
+
+		await session.commitTransaction()
+	} catch (err) {
+		await session.abortTransaction()
+		throw err
+	} finally {
+		await session.endSession()
+	}
 }
