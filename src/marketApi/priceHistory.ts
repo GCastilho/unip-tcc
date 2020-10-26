@@ -8,7 +8,7 @@ const changeTime = 60000
 
 let time = new Date().setSeconds(0, 0) + changeTime
 
-export default async function priceChange(newPrice: number, currencies: [SuportedCurrencies]) {
+export default async function priceChange(newPrice: number, currencies: SuportedCurrencies[]) {
 	if (time < Date.now() || !doc){
 		time = new Date().setSeconds(0, 0) + changeTime
 		doc = new PriceHistory({
@@ -31,7 +31,7 @@ export default async function priceChange(newPrice: number, currencies: [Suporte
 /** @param durationTime o periodo que sera comprimido em um document
  *  @param currencies array das duas currencies que fazem o par de trade
  */
-export async function periodicSummary( durationTime:number, currencies: [SuportedCurrencies]) {
+async function periodicSummary( durationTime:number, currencies: SuportedCurrencies[]) {
 	const batchSize = (durationTime / changeTime) - 1
 	const doc = await PriceHistory.findOne({ duration: durationTime, }).sort({ $natural: -1 })
 	let startTime = doc ?
@@ -41,7 +41,7 @@ export async function periodicSummary( durationTime:number, currencies: [Suporte
 	if (!startTime) return
 
 	//garantindo que o tempo inicial seja no começo redondo 00:00 , 00:10 por exemplo
-	startTime = startTime - (startTime % durationTime) * durationTime
+	startTime = startTime - (startTime % durationTime)
 
 	do {
 		const docs = await PriceHistory.find({
