@@ -1,7 +1,6 @@
 import PriceHistory, { priceHistory } from '../db/models/priceHistory'
 import { SuportedCurrencies } from '../libs/currencies'
 
-
 /** O documento que contem os dados da entrada atual de priceHistory */
 let doc: priceHistory | null
 /** O tempo minimo que dura cada documento do historico de preço [ms] */
@@ -17,7 +16,7 @@ export default async function priceChange(newPrice: number, currencies: [Suporte
 			finalPrice: newPrice,
 			maxPrice: newPrice,
 			minPrice: newPrice,
-			startTime: Date.now(),
+			startTime: time,
 			duration: changeTime,
 			currencies
 		})
@@ -27,4 +26,24 @@ export default async function priceChange(newPrice: number, currencies: [Suporte
 		else if (doc.minPrice > newPrice) doc.minPrice = newPrice
 	}
 	await doc.save()
+}
+
+/** @param durationTime o periodo que sera comprimido em um document
+ *  @param currencies array das duas currencies que fazem o par de trade
+ */
+export async function periodicSummary( durationTime:number, currencies: [SuportedCurrencies]) {
+	const batchSize = (durationTime / changeTime) - 1
+	const doc = await PriceHistory.findOne({ duration: durationTime, }).sort({ $natural: -1 })
+	const startTime = doc ? doc.startTime + durationTime : 0
+	const docs = await PriceHistory.find({ startTime:{ $gte : startTime, $lt : startTime + durationTime }}).limit(batchSize)
+
+	await new PriceHistory({
+		initPrice: docs[0].initPrice,
+		finalPrice: docs[docs.length - 1].finalPrice,
+		maxPrice: Math.max(...docs.map(function(item) { return item.maxPrice })),
+		minPrice: Math.min(...docs.map(function(item) { return item.maxPrice })),
+		startTime,
+		duration: durationTime,
+		currencies
+	}).save()
 }

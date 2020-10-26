@@ -12,9 +12,9 @@ export interface priceHistory extends Document {
 	/** Preço minimo no periodo de duraçao da entrada */
 	minPrice: number,
 	/** a hora inicial do documento */
-	startTime: Date,
-	/** a duraçao das entradas do*/
-	duration: string,
+	startTime: number,
+	/** o periodo(ms) ao qual o resumo de preço se refere*/
+	duration: number,
 	/** As currencies que fazem parte desse par */
 	currencies: [SuportedCurrencies, SuportedCurrencies]
 }
@@ -33,6 +33,10 @@ const priceHistorySchema = new Schema({
 		required: true
 	},
 	minPrice: {
+		type: Number,
+		required: true
+	},
+	initTime:{
 		type: Number,
 		required: true
 	},
@@ -56,10 +60,6 @@ priceHistorySchema.pre('save', function(this: priceHistory) {
 	this.currencies = this.currencies.sort((a, b) => {
 		return a > b ? 1 : a < b ? -1 : 0
 	})
-})
-
-priceHistorySchema.virtual('startTime').get(function(this: priceHistory): priceHistory['startTime'] {
-	return this._id.getTimestamp() as priceHistory['startTime']
 })
 
 const PriceHistory = mongoose.model<priceHistory>('priceHistory', priceHistorySchema, 'pricehistory')
