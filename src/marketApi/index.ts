@@ -4,18 +4,7 @@ import Order from '../db/models/order'
 import Person from '../db/models/person'
 import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
-import type { SuportedCurrencies as SC } from '../libs/currencies'
-
-interface MarketOrder {
-	owning: {
-		currency: SC
-		amount: number
-	}
-	requesting: {
-		currency: SC
-		amount: number
-	}
-}
+import type { MarketOrder } from '../../interfaces/market'
 
 /** Classe do objeto do erro de mercado não encontrado */
 class MarketNotFound extends Error {

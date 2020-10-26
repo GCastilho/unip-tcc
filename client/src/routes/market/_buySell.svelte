@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as balances from './../../stores/balances.js'
-	import { orderbook } from '../../stores/market'
+	import * as orderbook from '../../stores/orderbook'
 
 	// base
 	export let sellingCurrency: { name: string, code: string, decimals: number }
@@ -85,7 +85,7 @@
 			amount: amount
 		}
 
-		orderbook({
+		orderbook.add({
 			owning: operation == 'buy' ? base : target,
 			requesting: operation == 'sell' ? base : target
 		})
