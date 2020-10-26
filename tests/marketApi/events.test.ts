@@ -18,7 +18,8 @@ describe('Testing emittion of events on the market', () => {
 	beforeEach(async () => {
 		// Remove as ordens do orderbook para impedir que um teste influencie outro
 		await Order.deleteMany({})
-		market = new Market(['bitcoin', 'nano'])
+		// Instancia a market com a ordem reversa para tbm testar o sort do array
+		market = new Market(['nano', 'bitcoin'])
 
 		const person = await Person.findById(userId)
 		// Manualmente seta o saldo disponível para 10

@@ -1,6 +1,7 @@
 import socket, { Socket } from 'socket.io'
 import { Server } from 'http'
 import Session from '../../db/models/session'
+import * as marketApi from '../../marketApi'
 import * as connectedUsers from './connectedUsers'
 import './emitters'
 
@@ -8,7 +9,7 @@ import './emitters'
  * Handler da conexão de um cliente com o socket
  * @param socket O Socket do cliente que acabou de se conectar
  */
-function connectionHandler(socket: Socket) {
+function onSocketConnection(socket: Socket) {
 	console.log('Incoming socket connection')
 
 	socket.on('disconnect', function(this: SocketIO.Socket, reason) {
@@ -69,5 +70,10 @@ function connectionHandler(socket: Socket) {
 export default function(server: Server) {
 	const io = socket(server)
 
-	io.on('connection', connectionHandler)
+	io.on('connection', onSocketConnection)
+
+	// Transmite o evento para todos os sockets conectados
+	marketApi.events.on('price_update', priceUpdate => {
+		io.emit('price_update', priceUpdate)
+	})
 }
