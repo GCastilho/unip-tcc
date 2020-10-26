@@ -34,16 +34,38 @@ export default async function priceChange(newPrice: number, currencies: [Suporte
 export async function periodicSummary( durationTime:number, currencies: [SuportedCurrencies]) {
 	const batchSize = (durationTime / changeTime) - 1
 	const doc = await PriceHistory.findOne({ duration: durationTime, }).sort({ $natural: -1 })
-	const startTime = doc ? doc.startTime + durationTime : 0
-	const docs = await PriceHistory.find({ startTime:{ $gte : startTime, $lt : startTime + durationTime }}).limit(batchSize)
+	let startTime = doc ?
+		doc.startTime + durationTime :
+		(await PriceHistory.findOne({ duration: changeTime }))?.startTime
 
-	await new PriceHistory({
-		initPrice: docs[0].initPrice,
-		finalPrice: docs[docs.length - 1].finalPrice,
-		maxPrice: Math.max(...docs.map(function(item) { return item.maxPrice })),
-		minPrice: Math.min(...docs.map(function(item) { return item.maxPrice })),
-		startTime,
-		duration: durationTime,
-		currencies
-	}).save()
+	if (!startTime) return
+
+	//garantindo que o tempo inicial seja no começo redondo 00:00 , 00:10 por exemplo
+	startTime = startTime - (startTime % durationTime) * durationTime
+
+	do {
+		const docs = await PriceHistory.find({
+			startTime:{
+				$gte : startTime,
+				$lt : startTime + durationTime
+			}}).limit(batchSize)
+
+		if (docs.length == 0) {
+			startTime += durationTime
+			continue
+		}
+
+		await new PriceHistory({
+			initPrice: docs[0].initPrice,
+			finalPrice: docs[docs.length - 1].finalPrice,
+			maxPrice: Math.max(...docs.map(function(item) { return item.maxPrice })),
+			minPrice: Math.min(...docs.map(function(item) { return item.maxPrice })),
+			startTime,
+			duration: durationTime,
+			currencies
+		}).save()
+
+		startTime += durationTime
+
+	} while ( startTime < Date.now() )
 }
