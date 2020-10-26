@@ -56,17 +56,16 @@
 		wantedName = wantedCurrency ? wantedCurrency.name : null
 	}
 
-	export function limitPricePow() {
+	function limitPricePow(exchangeCurrency) {
 		limitPrice = Math.pow(limitPrice, -1)
 	}
 
 	//ISSO É GAMBIARRA DEMAIS ATÉ PARA MIM, ARRUMAREI ISSO O MAIS RAPIDO QUE PUDER
 	$: {
-		console.log(exchangeCurrency)
-		limitPricePow()
+		limitPricePow(exchangeCurrency)
 	}
 
-	setContext('key', () => limitPrice = Math.pow(limitPrice, -1));
+	setContext('key', limitPricePow);
 
 	$: {
 		sellingBalance = $balances[sellingName] ?

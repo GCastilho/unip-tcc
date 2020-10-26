@@ -1,17 +1,20 @@
 <script>
 	import BuySell from './_buySell.svelte'
 	import ExchangeIcon from './exchange.svg'
+	import { getContext } from 'svelte'
 	import * as currencies from './../../stores/currencies'
 
 	let sellingCurrency
 	let wantedCurrency
 	let exchangeCurrency = false
+	let limitPricePow = getContext('key')
 
 	function exchangeCoin() {
 		let aux = sellingCurrency
 		sellingCurrency = wantedCurrency
 		wantedCurrency = aux
-		exchangeCurrency = !exchangeCurrency
+		//exchangeCurrency = !exchangeCurrency // descomente para a gambiarra funcionar
+		limitPricePow()
 	}
 </script>
 
