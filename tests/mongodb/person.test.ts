@@ -205,7 +205,7 @@ describe('Testing person model', () => {
 					person.currencies[currency].pending.push({
 						opid: new ObjectId(),
 						type: 'transaction',
-						amount: Decimal128.fromString('0')
+						amount: 0
 					})
 					await expect(person.save()).to.eventually.be
 						.rejectedWith('Amount can not be zero')
