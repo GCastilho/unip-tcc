@@ -9,3 +9,15 @@ export interface PriceUpdate {
 	/** As currencies que fazem parte desse par */
 	currencies: [SuportedCurrencies, SuportedCurrencies]
 }
+
+/** Objeto de uma ordem de trade da MarketApi */
+export interface MarketOrder {
+	owning: {
+		currency: SuportedCurrencies
+		amount: number
+	}
+	requesting: {
+		currency: SuportedCurrencies
+		amount: number
+	}
+}
