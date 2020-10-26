@@ -21,3 +21,11 @@ export interface MarketOrder {
 		amount: number
 	}
 }
+
+/** Objeto de informação do depth do mercado */
+export interface MarketDepth {
+	price: number
+	volume: number
+	type: 'buy'|'sell'
+	currencies: [SuportedCurrencies, SuportedCurrencies]
+}

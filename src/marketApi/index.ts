@@ -5,8 +5,8 @@ import Order from '../db/models/order'
 import Person from '../db/models/person'
 import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
-import type { MarketOrder } from '../../interfaces/market'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
+import type { MarketOrder, MarketDepth } from '../../interfaces/market'
 
 /** Re-exporta o eventEmitter do módulo da Market */
 export { events } from './market'
@@ -105,4 +105,9 @@ export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {
 	} finally {
 		await session.endSession()
 	}
+}
+
+export async function getMarketDepth(currencies: [SC, SC]) {
+	console.log('getMarketDepth', currencies)
+	return [] as MarketDepth[]
 }
