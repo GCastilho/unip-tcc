@@ -1,11 +1,14 @@
 <script lang="ts">
 	import * as balances from './../../stores/balances.js'
+	import { setContext } from 'svelte'
 	import { orderbook } from '../../stores/market'
 
 	// base
 	export let sellingCurrency: { name: string, code: string, decimals: number }
 	// target
 	export let wantedCurrency: { name: string, code: string, decimals: number }
+
+	export let exchangeCurrency: boolean
 
 	/** A operação requisitada pelo cliente */
 	let operation: 'buy'|'sell' = 'buy'
@@ -53,6 +56,18 @@
 		wantedName = wantedCurrency ? wantedCurrency.name : null
 	}
 
+	export function limitPricePow() {
+		limitPrice = Math.pow(limitPrice, -1)
+	}
+
+	//ISSO É GAMBIARRA DEMAIS ATÉ PARA MIM, ARRUMAREI ISSO O MAIS RAPIDO QUE PUDER
+	$: {
+		console.log(exchangeCurrency)
+		limitPricePow()
+	}
+
+	setContext('key', () => limitPrice = Math.pow(limitPrice, -1));
+
 	$: {
 		sellingBalance = $balances[sellingName] ?
 			$balances[sellingName].available.toFixed(sellingCurrency.decimals)
@@ -84,6 +99,9 @@
 			owning: operation == 'buy' ? base : target,
 			requesting: operation == 'sell' ? base : target
 		})
+
+		amount = 0
+		sellingName = 0
 	}
 </script>
 
@@ -324,7 +342,7 @@
 	</div>
 	<div class="balance">
 		<p>total:</p>
-		<p>{(limitPrice*amount)} {priceCurrency || '...'}</p>
+		<p>{(limitPrice * amount) || 0} {priceCurrency || '...'}</p>
 	</div>
 	<button on:click={trade} disabled={disableButton}>{operation} {opCurrencyCode || '...'}</button>
 </div>

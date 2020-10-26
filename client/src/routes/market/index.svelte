@@ -3,14 +3,15 @@
 	import ExchangeIcon from './exchange.svg'
 	import * as currencies from './../../stores/currencies'
 
-	//nomes temporarios até eu pensar em outro melhor
 	let sellingCurrency
 	let wantedCurrency
+	let exchangeCurrency = false
 
 	function exchangeCoin() {
 		let aux = sellingCurrency
 		sellingCurrency = wantedCurrency
 		wantedCurrency = aux
+		exchangeCurrency = !exchangeCurrency
 	}
 </script>
 
@@ -91,5 +92,5 @@
 	</select>
 </div>
 <div class="main">
-	<BuySell {sellingCurrency} {wantedCurrency}/>
+	<BuySell {exchangeCurrency} {sellingCurrency} {wantedCurrency}/>
 </div>
