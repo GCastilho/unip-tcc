@@ -107,7 +107,7 @@ export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {
 	}
 }
 
-export async function getMarketDepth(currencies: [SC, SC]) {
-	console.log('getMarketDepth', currencies)
+export async function getMarketDepth(base?: string, target?: string) {
+	console.log('getMarketDepth', base, target)
 	return [] as MarketDepth[]
 }

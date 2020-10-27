@@ -6,6 +6,32 @@ import * as MarketApi from '../../../marketApi'
 const router = Router()
 
 // Chama o middleware de autenticação
+
+router.get('/orderbook/depht', async (req, res) => {
+	if (
+		typeof req.query.base != 'string' || typeof req.query.target != 'string'
+	) return res.status(400).send({
+		error: 'BadRequest',
+		message: 'The the params are not of type "string"'
+	})
+	try {
+		const data = await MarketApi.getMarketDepth(req.query.base, req.query.target)
+
+		res.send(201).send(data)
+	} catch (err) {
+		if (err.name == 'MarketNotFound') {
+			res.status(404).send({
+				error: 'Market Not Found',
+				message: err.message
+			})
+		} else {
+			res.status(500).send({ error: 'InternalServerError' })
+			console.error(`Error while geting the market depht of ${req.query.base} - ${req.query.target} :`, err)
+		}
+	}
+	return
+})
+
 router.use(authentication)
 
 router.post('/orderbook', async (req, res) => {
