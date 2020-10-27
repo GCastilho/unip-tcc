@@ -6,7 +6,7 @@ import Person from '../db/models/person'
 import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
-import type { MarketOrder, MarketDepth, MarketPrice } from '../../interfaces/market'
+import type { MarketOrder, MarketDepth, PriceRequest } from '../../interfaces/market'
 
 /** Re-exporta o eventEmitter do módulo da Market */
 export { events } from './market'
@@ -119,7 +119,7 @@ export async function getMarketDepth(base?: string, target?: string): Promise<Ma
 }
 
 /** Retorna o market price de um par */
-export async function getMarketPrice(base?: string, target?: string): Promise<MarketPrice> {
+export async function getMarketPrice(base?: string, target?: string): Promise<PriceRequest> {
 	console.log('getMarketPrice', base, target)
 
 	// TODO: Isso deveria usar o getMarkeyKey, alterá-la para permitir isso

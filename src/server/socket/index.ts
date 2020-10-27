@@ -66,6 +66,10 @@ export default function socketHandler(io: Server) {
 		io.emit('price_update', priceUpdate)
 	})
 
+	marketApi.events.on('depth_update', depth => {
+		io.emit('depth_update', depth)
+	})
+
 	// Transmite eventos para os sockets autenticados
 
 	currencyApi.events.on('new_transaction', (userId, currency, transaction) => {

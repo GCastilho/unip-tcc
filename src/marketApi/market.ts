@@ -5,7 +5,7 @@ import trade from './trade'
 import type TypedEmitter from 'typed-emitter'
 import type { OrderDoc } from '../db/models/order'
 import type { SuportedCurrencies } from '../libs/currencies'
-import type { MarketDepth, PriceUpdate, MarketPrice } from '../../interfaces/market'
+import type { MarketDepth, PriceUpdate, PriceRequest } from '../../interfaces/market'
 
 /**
  * O type da linked list dos nodes do orderbook
@@ -24,7 +24,8 @@ type LinkedList = {
 
 /** Event emitter de todas as instâncias da Market */
 export const events: TypedEmitter<{
-	price_update: (price: PriceUpdate) => void
+	price_update: (priceUpdt: PriceUpdate) => void
+	depth_update: (depth: MarketDepth) => void
 }> = new EventEmitter()
 
 /**
@@ -99,7 +100,7 @@ export default class Market {
 	}
 
 	/** Retorna um objeto com buyPrice e sellPrice */
-	public get prices(): MarketPrice {
+	public get prices(): PriceRequest {
 		return {
 			buyPrice: this.buyPrice,
 			sellPrice: this.sellPrice,
@@ -398,6 +399,13 @@ export default class Market {
 			this.pushMaker(order)
 		}
 		console.log('orderbook state after order execution:', this.orderbook)
+
+		/**
+		 * Deveria emitir o update apenas daquele preço, mas como calcular isso na
+		 * estrutura atual vai ser mto trampo, vou mandar um evento de atualização
+		 * de todos os depths
+		 */
+		this.depth.forEach(depth => events.emit('depth_update', depth))
 	}
 
 	/**
@@ -411,6 +419,9 @@ export default class Market {
 		const index = node.data.findIndex(v => v.id == order.id)
 		if (index == -1) throw 'OrderNotFound'
 		this.getOrderFromIndex(node, index)
-		console.log('orderbook state after removing order:', this.orderbook)
+		console.log('orderbook state after order removal:', this.orderbook)
+
+		/** Mesmo comment que essa parte no add */
+		this.depth.forEach(depth => events.emit('depth_update', depth))
 	}
 }
