@@ -4,8 +4,9 @@ import Order from '../db/models/order'
 import trade from './trade'
 import type TypedEmitter from 'typed-emitter'
 import type { OrderDoc } from '../db/models/order'
+import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies } from '../libs/currencies'
-import type { MarketDepth, PriceUpdate, PriceRequest } from '../../interfaces/market'
+import type { MarketDepth, PriceUpdate, PriceRequest, OrderUpdate } from '../../interfaces/market'
 
 /**
  * O type da linked list dos nodes do orderbook
@@ -26,6 +27,7 @@ type LinkedList = {
 export const events: TypedEmitter<{
 	price_update: (priceUpdt: PriceUpdate) => void
 	depth_update: (depth: MarketDepth) => void
+	order_update: (userId: PersonDoc['_id'], orderUpdt: OrderUpdate) => void
 }> = new EventEmitter()
 
 /**
@@ -382,6 +384,18 @@ export default class Market {
 
 		// Envia os matchs à função de trade
 		await trade(matchs)
+
+		// Emite o evento de atualização de todas as ordens
+		matchs.flat().forEach(order => {
+			events.emit('order_update', order.userId, {
+				opid: (order.originalOrderId || order._id).toHexString(),
+				status: order.originalOrderId ? 'open' : 'close',
+				completed: order.originalOrderId ? {
+					owning: order.owning.amount,
+					requesting: order.requesting.amount
+				} : undefined,
+			} as OrderUpdate)
+		})
 	}
 
 	/**

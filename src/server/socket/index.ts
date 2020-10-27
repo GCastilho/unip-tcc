@@ -83,4 +83,8 @@ export default function socketHandler(io: Server) {
 	currencyApi.events.on('update_sent_tx', (userId, currency, txUpdate) => {
 		connectedUsers.get(userId)?.emit('update_sent_tx', currency, txUpdate)
 	})
+
+	marketApi.events.on('order_update', (userId, orderUpdt) => {
+		connectedUsers.get(userId)?.emit('order_update', orderUpdt)
+	})
 }
