@@ -14,6 +14,8 @@ import type { SinonStub } from 'sinon'
 /** Mock do método 'add' da marketApi */
 type MockAdd = SinonStub<Parameters<typeof MarketApi['add']>>;
 type MockRemove = SinonStub<Parameters<typeof MarketApi['remove']>>;
+type MockGetDepth = SinonStub<Parameters<typeof MarketApi['getMarketDepth']>>;
+type MockGetPrice = SinonStub<Parameters<typeof MarketApi['getMarketPrice']>>;
 
 const app = express()
 app.use(api)
@@ -188,7 +190,46 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 			expect(body.error).to.be.an('string').that.equal('BadRequest')
 			sinon.assert.notCalled(spy)
 		})
+	})
+	describe('When getin the market Price', () => {
+		let spy: MockGetPrice
+		const obj = {
+			price: 20,
+			type: 'buy',
+			currencies: ['bitcoin', 'nano']
+		}
 
+		beforeEach(() => {
+			spy = ImportMock.mockFunction(MarketApi, 'getMarketPrice', [obj] )as MockGetDepth
+		})
 
+		afterEach(() => {
+			spy.restore()
+		})
+
+		it('shold work as expected', async () => {
+			const { body } = await request(app).get('/v1/market/price').query({
+				base: 'bitcoin',
+				target: 'nano'
+			})
+				.send()
+				.expect('Content-Type', /json/)
+				.expect(201)
+			expect(body).to.be.an('array').that.deep.equal([obj])
+			sinon.assert.calledOnce(spy)
+		})
+
+		it('shold return Market Not Found error', async () => {
+			const { body } = await request(app)
+				.get('/v1/market/orderbook/depth')
+				.query({
+					base: 'dilmas',
+				})
+				.send()
+				.expect('Content-Type', /json/)
+				.expect(400)
+			expect(body.error).to.be.an('string').that.equal('BadRequest')
+			sinon.assert.notCalled(spy)
+		})
 	})
 })
