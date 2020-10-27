@@ -1,8 +1,13 @@
 import type { Socket } from 'socket.io'
 import type { PersonDoc } from '../../db/models/person'
 
-/** Um set de sockets com um método que emite um evento em todos eles */
+/** Um set de sockets */
 class SocketSet extends Set<Socket> {
+	/**
+	 * Emite um eventos em todos os sockets desse set
+	 * @param event O nome do evento que deve ser emitido para os sockets
+	 * @param args Os argumentos desse evento
+	 */
 	public emit(event: string, ...args: any[]) {
 		this.forEach(socket => socket.emit(event, ...args))
 	}

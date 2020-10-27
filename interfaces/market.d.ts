@@ -39,3 +39,22 @@ export interface MarketDepth {
 	type: 'buy'|'sell'
 	currencies: [SuportedCurrencies, SuportedCurrencies]
 }
+
+/** Interface do evento de atualização de uma ordem */
+export type OrderUpdate = {
+	/** O id da ordem no orderbook */
+	opid: string
+} & ({
+	/** O status da ordem após a atualização */
+	status: 'close'|'cancelled'
+} | {
+	/** Status da ordem após ela ser completada parcialmente */
+	status: 'open'
+	/** Os amounts que a ordem foi parcialmente completada */
+	completed: {
+		/** Quando do owning dessa ordem foi executado */
+		owning: number
+		/** Quando do requesting dessa ordem foi executado */
+		requesting: number
+	}
+})
