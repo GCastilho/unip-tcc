@@ -124,6 +124,12 @@ describe('Performing basic tests on the MarketApi', () => {
 			market = new Market(['bitcoin', 'nano'])
 		})
 
+		it('Should return MarketNotFound if the pair is invalid', async () => {
+			await expect(MarketApi.getMarketDepth('dilmas', 'obamas')).to
+				.eventually.be.rejected.with.instanceOf(Error)
+				.that.haveOwnProperty('name').that.equals('MarketNotFound')
+		})
+
 		it('Should return the market depth', async () => {
 			const orders = [
 				new Order({
