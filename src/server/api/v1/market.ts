@@ -7,7 +7,7 @@ const router = Router()
 
 // Chama o middleware de autenticação
 
-router.get('/orderbook/depht', async (req, res) => {
+router.get('/orderbook/depth', async (req, res) => {
 	if (
 		typeof req.query.base != 'string' || typeof req.query.target != 'string'
 	) return res.status(400).send({
@@ -17,7 +17,7 @@ router.get('/orderbook/depht', async (req, res) => {
 	try {
 		const data = await MarketApi.getMarketDepth(req.query.base, req.query.target)
 
-		res.send(201).send(data)
+		res.status(201).send(data)
 	} catch (err) {
 		if (err.name == 'MarketNotFound') {
 			res.status(404).send({

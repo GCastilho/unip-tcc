@@ -147,4 +147,48 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 			sinon.assert.notCalled(spy)
 		})
 	})
+	describe('When getin the market depth', () => {
+		let spy: MockGetDepth
+		const obj = {
+			price: 20,
+			volume: 2.58,
+			type: 'buy',
+			currencies: ['bitcoin', 'nano']
+		}
+
+		beforeEach(() => {
+			spy = ImportMock.mockFunction(MarketApi, 'getMarketDepth', [obj] )as MockGetDepth
+		})
+
+		afterEach(() => {
+			spy.restore()
+		})
+
+		it('shold work as expected', async () => {
+			const { body } = await request(app).get('/v1/market/orderbook/depth').query({
+				base: 'bitcoin',
+				target: 'nano'
+			})
+				.send()
+				.expect('Content-Type', /json/)
+				.expect(201)
+			expect(body).to.be.an('array').that.deep.equal([obj])
+			sinon.assert.calledOnce(spy)
+		})
+
+		it('shold return Market Not Found error', async () => {
+			const { body } = await request(app)
+				.get('/v1/market/orderbook/depth')
+				.query({
+					base: 'dilmas',
+				})
+				.send()
+				.expect('Content-Type', /json/)
+				.expect(400)
+			expect(body.error).to.be.an('string').that.equal('BadRequest')
+			sinon.assert.notCalled(spy)
+		})
+
+
+	})
 })
