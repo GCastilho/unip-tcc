@@ -15,6 +15,7 @@
 	}
 
 	h1 {
+		margin-top: 0.5em;
 		text-align: center;
 	}
 
@@ -23,9 +24,12 @@
 		border-collapse: collapse;
 		border: 1px solid var(--table-borders);
 		border-top: 0;
+		margin: 1.5em;
 		text-align: center;
 		table-layout: auto; /* fixed; */
 		width: 100%;
+		width: -webkit-fill-available;
+		width: -moz-fill-available;
 		font-size: 15px;
 	}
 
@@ -37,6 +41,12 @@
 
 	th:first-child {
 		border-left: 0;
+	}
+	@media only screen and (max-width: 900px){
+		table {
+			margin-right: 0;
+			margin-left: 0;
+		}
 	}
 </style>
 

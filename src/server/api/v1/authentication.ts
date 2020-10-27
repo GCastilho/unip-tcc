@@ -1,6 +1,7 @@
 import express from 'express'
 import Person from '../../../db/models/person'
 import Session from '../../../db/models/session'
+import { authentication } from './middlewares'
 import * as randomstring from 'randomstring'
 
 const router = express.Router()
@@ -61,27 +62,8 @@ router.post('/authentication', async (req, res): Promise<any> => {
 	}
 })
 
-/**
- * Handler de autenticação
- */
-router.use(async (req, res, next) => {
-	try {
-		if (!req.cookies.sessionId) throw 'Cookie Not Found'
-		const session = await Session.findOne({
-			sessionId: req.cookies.sessionId
-		}, {
-			userId: true
-		})
-		if (!session) throw 'CookieNotFound'
-		req.userId = session.userId
-		next()
-	} catch (err) {
-		res.status(401).send({
-			error: 'NotAuthorized',
-			message: 'A valid cookie \'sessionId\' is required to perform this operation'
-		})
-	}
-})
+/** Middleware de autenticação */
+router.use(authentication)
 
 /**
  * Retorna se o usuário está autenticado ou não

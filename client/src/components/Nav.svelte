@@ -93,13 +93,15 @@
 
 <nav>
 	<ul>
-		<li><a class:selected="{segment === undefined}" href=".">home</a></li>
-		<li><a class:selected="{segment === 'about'}" href="about">about</a></li>
+		<li><a class:selected={segment === undefined} href=".">home</a></li>
+		<li><a class:selected={segment === 'about'} href="about">about</a></li>
+		<li><a class:selected={segment === 'market'} href="market">market</a></li>
 
 		<div style="float:right">
+
 			{#if $session.loggedIn}
-				<li><a class:selected="{segment === 'balances'}" href="balances">balances</a></li>
-				<li on:mouseover="{() => userdropdown = 'show'}" on:mouseleave="{() => userdropdown = 'hide'}">
+				<li><a class:selected={segment === 'balances'} href="balances">balances</a></li>
+				<li on:mouseover={() => userdropdown = 'show'} on:mouseleave={() => userdropdown = 'hide'}>
 					<div class='dropdown-button' class:selected = {userdropdown === 'show' || segment === 'user'}>
 						<img alt="Config" title="Config" src="./assets/settings-icon.svg" />
 					</div>
@@ -108,7 +110,7 @@
 							<tr><td>
 								<a
 									class:selected="{segment === 'user/changepass'}"
-									on:click="{() => userdropdown = 'hide'}"
+									on:click={() => userdropdown = 'hide'}
 									href="user/changepass"
 								><img alt="Senha" title="Alterar Senha" src="./assets/key-icon.svg" />
 									Change Password
@@ -116,8 +118,8 @@
 							</td></tr>
 							<tr><td>
 								<a
-									class:selected="{segment === 'user/transactions'}"
-									on:click="{() => userdropdown = 'hide'}"
+									class:selected={segment === 'user/transactions'}
+									on:click={() => userdropdown = 'hide'}
 									href="user/transactions"
 								><img alt="Transactions" title="Transactions" src="./assets/transaction.svg" />
 									Transactions
@@ -132,8 +134,8 @@
 					</a>
 				</li>
 			{:else}
-				<li><a class:selected="{segment === 'login'}" href="login">login</a></li>
-				<li><a class:selected="{segment === 'register'}" href="register">register</a></li>
+				<li><a class:selected={segment === 'login'} href="login">login</a></li>
+				<li><a class:selected={segment === 'register'} href="register">register</a></li>
 			{/if}
 		</div>
 	</ul>

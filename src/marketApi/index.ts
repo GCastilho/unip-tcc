@@ -6,20 +6,10 @@ import Person from '../db/models/person'
 import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
+import type { MarketOrder, MarketDepth } from '../../interfaces/market'
 
 /** Re-exporta o eventEmitter do módulo da Market */
 export { events } from './market'
-
-interface MarketOrder {
-	owning: {
-		currency: SC
-		amount: number
-	}
-	requesting: {
-		currency: SC
-		amount: number
-	}
-}
 
 /** Classe do objeto do erro de mercado não encontrado */
 class MarketNotFound extends Error {
@@ -41,25 +31,21 @@ function getMarketKey(orderedPair: OrderDoc['orderedPair']) {
  * Adiciona uma nova ordem ao livro de ordens do mercado
  * @param order A nova odem que deve ser adicionada ao livro de ordens
  * @throws ValidationError from mongoose
- * @throws 'SameCurrencyOperation' if owning and requesting currency are the same
  * @returns Order's opid
  */
 export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise<ObjectId> {
-	if (order.owning.currency === order.requesting.currency) throw 'SameCurrencyOperation'
-
-	const opid = new ObjectId()
-
 	const orderDoc = await new Order({
-		_id: opid,
 		userId: userId,
 		status: 'preparing',
 		...order,
 		timestamp: new Date()
 	}).save()
 
+	console.log('new order received', orderDoc.toObject({ virtuals: true }))
+
 	try {
 		await Person.balanceOps.add(userId, order.owning.currency, {
-			opid,
+			opid: orderDoc._id,
 			type: 'trade',
 			amount: - Math.abs(order.owning.amount)
 		})
@@ -85,7 +71,7 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
 
 	await market.add(orderDoc)
 
-	return opid
+	return orderDoc._id
 }
 
 /**
@@ -119,4 +105,9 @@ export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {
 	} finally {
 		await session.endSession()
 	}
+}
+
+export async function getMarketDepth(currencies: [SC, SC]) {
+	console.log('getMarketDepth', currencies)
+	return [] as MarketDepth[]
 }
