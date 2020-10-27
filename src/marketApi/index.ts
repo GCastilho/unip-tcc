@@ -6,7 +6,7 @@ import Person from '../db/models/person'
 import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
-import type { MarketOrder, MarketDepth } from '../../interfaces/market'
+import type { MarketOrder, MarketDepth, PriceUpdate } from '../../interfaces/market'
 
 /** Re-exporta o eventEmitter do módulo da Market */
 export { events } from './market'
@@ -107,7 +107,19 @@ export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {
 	}
 }
 
-export async function getMarketDepth(base?: string, target?: string) {
+/** Retorna o market depth de um par */
+export async function getMarketDepth(base?: string, target?: string): Promise<MarketDepth[]> {
 	console.log('getMarketDepth', base, target)
-	return [] as MarketDepth[]
+
+	// TODO: Isso deveria usar o getMarkeyKey, alterá-la para permitir isso
+	const market = markets.get(`${base},${target}`)
+	if (!market) throw new MarketNotFound(`Market not found while getting depth for ${base} and ${target}`)
+
+	return market.depth
+}
+
+/** Retorna o market price de um par */
+export async function getMarketPrice(base?: string, target?: string): Promise<PriceUpdate> {
+	console.log('getMarketPrice', base, target)
+	return {} as PriceUpdate
 }

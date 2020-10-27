@@ -3,6 +3,7 @@ import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
 import Order from '../../src/db/models/order'
 import Person from '../../src/db/models/person'
+import Market from '../../src/marketApi/market'
 import { currencyNames, currenciesObj } from '../../src/libs/currencies'
 import * as MarketApi from '../../src/marketApi'
 
@@ -115,4 +116,159 @@ describe('Performing basic tests on the MarketApi', () => {
 			})
 		}
 	}
+
+	describe('Testing fetch of market depth', () => {
+		let market: InstanceType<typeof Market>
+
+		beforeEach(() => {
+			market = new Market(['bitcoin', 'nano'])
+		})
+
+		it('Should return MarketNotFound if the pair is invalid', async () => {
+			await expect(MarketApi.getMarketDepth('dilmas', 'obamas')).to
+				.eventually.be.rejected.with.instanceOf(Error)
+				.that.haveOwnProperty('name').that.equals('MarketNotFound')
+		})
+
+		it('Should return the market depth', async () => {
+			const orders = [
+				new Order({
+					userId: new ObjectId(),
+					status: 'ready',
+					owning: {
+						currency: 'bitcoin',
+						amount: 1,
+					},
+					requesting: {
+						currency: 'nano',
+						amount: 2
+					},
+					timestamp: new Date()
+				}),
+				new Order({
+					userId: new ObjectId(),
+					status: 'ready',
+					owning: {
+						currency: 'bitcoin',
+						amount: 1,
+					},
+					requesting: {
+						currency: 'nano',
+						amount: 3
+					},
+					timestamp: new Date()
+				}),
+				new Order({
+					userId: new ObjectId(),
+					status: 'ready',
+					owning: {
+						currency: 'bitcoin',
+						amount: 1,
+					},
+					requesting: {
+						currency: 'nano',
+						amount: 4
+					},
+					timestamp: new Date()
+				})
+			]
+
+			await Promise.all(orders.map(order => market.add(order)))
+
+			expect(market.depth).to.be.instanceOf(Array)
+			expect(market.depth).to.have.lengthOf(3)
+			for (const order of orders) {
+				expect(market.depth.find(v => v.price === order.price)).to.be.an('object')
+			}
+		})
+
+		it('Should return the sum of the requesting amounts', async () => {
+			const orders = [
+				new Order({
+					userId: new ObjectId(),
+					status: 'ready',
+					owning: {
+						currency: 'bitcoin',
+						amount: 1,
+					},
+					requesting: {
+						currency: 'nano',
+						amount: 2
+					},
+					timestamp: new Date()
+				}),
+				new Order({
+					userId: new ObjectId(),
+					status: 'ready',
+					owning: {
+						currency: 'bitcoin',
+						amount: 1,
+					},
+					requesting: {
+						currency: 'nano',
+						amount: 2
+					},
+					timestamp: new Date()
+				}),
+				new Order({
+					userId: new ObjectId(),
+					status: 'ready',
+					owning: {
+						currency: 'bitcoin',
+						amount: 1,
+					},
+					requesting: {
+						currency: 'nano',
+						amount: 2
+					},
+					timestamp: new Date()
+				})
+			]
+
+			await Promise.all(orders.map(order => market.add(order)))
+
+			expect(market.depth).to.be.instanceOf(Array)
+			expect(market.depth).to.have.lengthOf(1)
+			expect(market.depth[0].volume)
+				.to.equals(orders.reduce((acc, order) => acc + order.requesting.amount, 0))
+		})
+
+		it('Should return depth from multiple types', async () => {
+			const orders = [
+				new Order({
+					userId: new ObjectId(),
+					status: 'ready',
+					owning: {
+						currency: 'bitcoin',
+						amount: 1,
+					},
+					requesting: {
+						currency: 'nano',
+						amount: 2
+					},
+					timestamp: new Date()
+				}),
+				new Order({
+					userId: new ObjectId(),
+					status: 'ready',
+					owning: {
+						currency: 'nano',
+						amount: 2
+					},
+					requesting: {
+						currency: 'bitcoin',
+						amount: 2,
+					},
+					timestamp: new Date()
+				})
+			]
+
+			await Promise.all(orders.map(order => market.add(order)))
+
+			expect(market.depth).to.be.instanceOf(Array)
+			expect(market.depth).to.have.lengthOf(2)
+			expect(market.depth.find(v => v.type == 'buy')).to.be.an('object')
+			expect(market.depth.find(v => v.type == 'sell')).to.be.an('object')
+		})
+	})
 })
