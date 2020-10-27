@@ -117,6 +117,37 @@ describe('Performing basic tests on the MarketApi', () => {
 		}
 	}
 
+	it('Should return the marketPrice', async () => {
+		await Promise.all([
+			MarketApi.add(person._id, {
+				owning: {
+					currency: 'nano',
+					amount: 1
+				},
+				requesting: {
+					currency: 'bitcoin',
+					amount: 2
+				}
+			}),
+			MarketApi.add(person._id, {
+				owning: {
+					currency: 'bitcoin',
+					amount: 1
+				},
+				requesting: {
+					currency: 'nano',
+					amount: 2
+				}
+			})
+		])
+		await expect(MarketApi.getMarketPrice('bitcoin', 'nano')).to.eventually.be
+			.fulfilled.with.an('object').that.deep.equals({
+				buyPrice: 0.5,
+				sellPrice: 2,
+				currencies: ['bitcoin', 'nano']
+			})
+	})
+
 	describe('Testing fetch of market depth', () => {
 		let market: InstanceType<typeof Market>
 

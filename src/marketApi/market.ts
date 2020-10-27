@@ -4,8 +4,8 @@ import Order from '../db/models/order'
 import trade from './trade'
 import type TypedEmitter from 'typed-emitter'
 import type { OrderDoc } from '../db/models/order'
-import type { MarketDepth, PriceUpdate } from '../../interfaces/market'
 import type { SuportedCurrencies } from '../libs/currencies'
+import type { MarketDepth, PriceUpdate, MarketPrice } from '../../interfaces/market'
 
 /**
  * O type da linked list dos nodes do orderbook
@@ -96,6 +96,15 @@ export default class Market {
 		}
 
 		return depth
+	}
+
+	/** Retorna um objeto com buyPrice e sellPrice */
+	public get prices(): MarketPrice {
+		return {
+			buyPrice: this.buyPrice,
+			sellPrice: this.sellPrice,
+			currencies: this.currencies
+		}
 	}
 
 	constructor(currencies: [SuportedCurrencies, SuportedCurrencies]) {
