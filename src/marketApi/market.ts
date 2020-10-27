@@ -4,7 +4,7 @@ import Order from '../db/models/order'
 import trade from './trade'
 import type TypedEmitter from 'typed-emitter'
 import type { OrderDoc } from '../db/models/order'
-import type { PriceUpdate } from '../../interfaces/market'
+import type { MarketDepth, PriceUpdate } from '../../interfaces/market'
 import type { SuportedCurrencies } from '../libs/currencies'
 
 /**
@@ -81,6 +81,22 @@ export default class Market {
 
 	/** Noma das currencies desse par ordenados alfabeticamente */
 	public currencies: [SuportedCurrencies, SuportedCurrencies]
+
+	/** Retorna o depth deste mercado */
+	public get depth(): MarketDepth[] {
+		const depth: MarketDepth[] = []
+
+		for (const node of this.orderbook.values()) {
+			depth.push({
+				price: node.price,
+				type: node.data[0].type,
+				currencies: this.currencies,
+				volume: node.data.reduce((acc, order) => acc + order.requesting.amount, 0)
+			})
+		}
+
+		return depth
+	}
 
 	constructor(currencies: [SuportedCurrencies, SuportedCurrencies]) {
 		this.currencies = currencies.sort()

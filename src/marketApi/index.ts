@@ -107,7 +107,12 @@ export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {
 	}
 }
 
-export async function getMarketDepth(currencies: [SC, SC]) {
-	console.log('getMarketDepth', currencies)
-	return [] as MarketDepth[]
+export async function getMarketDepth(base?: string, target?: string): Promise<MarketDepth[]> {
+	console.log('getMarketDepth', base, target)
+
+	// TODO: Isso deveria usar o getMarkeyKey, alterá-la para permitir isso
+	const market = markets.get(`${base},${target}`)
+	if (!market) throw new MarketNotFound(`Market not found while getting depth for ${base} and ${target}`)
+
+	return market.depth
 }
