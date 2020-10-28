@@ -4,13 +4,13 @@ import { currencyNames, SuportedCurrencies } from '../../libs/currencies'
 /** Objeto de uma modificaçao historica de preço */
 export interface priceHistory extends Document {
 	/** Preço inicial da entrada */
-	initPrice: number,
+	open: number,
 	/** Preço final da entrada */
-	finalPrice: number,
+	close: number,
 	/** Preço maximo no periodo de duraçao da entrada */
-	maxPrice: number,
+	high: number,
 	/** Preço minimo no periodo de duraçao da entrada */
-	minPrice: number,
+	low: number,
 	/** a hora inicial do documento */
 	startTime: number,
 	/** o periodo(ms) ao qual o resumo de preço se refere*/
@@ -20,23 +20,23 @@ export interface priceHistory extends Document {
 }
 
 const priceHistorySchema = new Schema({
-	initPrice: {
+	open: {
 		type: Number,
 		required: true
 	},
-	finalPrice:{
+	close:{
 		type: Number,
 		required: true
 	},
-	maxPrice: {
+	high: {
 		type: Number,
 		required: true
 	},
-	minPrice: {
+	low: {
 		type: Number,
 		required: true
 	},
-	initTime:{
+	startTime:{
 		type: Number,
 		required: true
 	},

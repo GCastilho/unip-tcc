@@ -5,8 +5,6 @@ import * as MarketApi from '../../../marketApi'
 
 const router = Router()
 
-// Chama o middleware de autenticação
-
 router.get('/orderbook/depth', async (req, res) => {
 	if (
 		typeof req.query.base != 'string' || typeof req.query.target != 'string'
@@ -15,9 +13,9 @@ router.get('/orderbook/depth', async (req, res) => {
 		message: 'The the params are not of type "string"'
 	})
 	try {
-		const data = await MarketApi.getMarketDepth(req.query.base, req.query.target)
+		const marketDepth = await MarketApi.getMarketDepth(req.query.base, req.query.target)
 
-		res.status(201).send(data)
+		res.status(200).send(marketDepth)
 	} catch (err) {
 		if (err.name == 'MarketNotFound') {
 			res.status(404).send({
@@ -40,8 +38,8 @@ router.get('/price', async (req, res) => {
 		message: 'The the params are not of type "string"'
 	})
 	try {
-		const data = await MarketApi.getMarketPrice(req.query.base, req.query.target)
-		res.status(201).send(data)
+		const marketPrice = await MarketApi.getMarketPrice(req.query.base, req.query.target)
+		res.status(200).send(marketPrice)
 	} catch (err) {
 		if (err.name == 'MarketNotFound') {
 			res.status(404).send({
@@ -56,6 +54,7 @@ router.get('/price', async (req, res) => {
 	return
 })
 
+// Chama o middleware de autenticação
 router.use(authentication)
 
 router.post('/orderbook', async (req, res) => {
