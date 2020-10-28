@@ -1,6 +1,6 @@
-import { ObjectId } from 'mongodb'
+import { ObjectId, Decimal128 } from 'mongodb'
 import { Model, ClientSession } from 'mongoose'
-import { currenciesObj } from '../../../libs/currencies'
+import { truncateAmount } from '../../../libs/currencies'
 import type { PersonDoc } from './schema'
 import type { SuportedCurrencies as SC } from '../../../libs/currencies'
 import type { Pending } from './currencies/pending'
@@ -231,20 +231,20 @@ export async function add(
 	 * Faz a truncagem do amount, pois o middleware de findOneAndUpdate não é
 	 * executado em um subdocumento
 	 */
-	const [integer, decimals] = pending.amount.toString().split('.')
-	pending.amount = Number(`${integer}.${(decimals || '0').slice(0, currenciesObj[currency].decimals)}`)
+	pending.amount = truncateAmount(pending.amount, currency)
+	const amount = Decimal128.fromNumeric(pending.amount)
 
 	const response = await Person.findOneAndUpdate({
 		_id: userId,
 		$expr: {
 			$gte: [
-				{ $add: [`$${balanceObj}.available`, pending.amount]}, 0
+				{ $add: [`$${balanceObj}.available`, amount]}, 0
 			]
 		}
 	}, {
 		$inc: {
-			[`${balanceObj}.locked`]: Math.abs(pending.amount),
-			[`${balanceObj}.available`]: +pending.amount < 0 ? pending.amount : 0
+			[`${balanceObj}.locked`]: amount.abs(),
+			[`${balanceObj}.available`]: pending.amount < 0 ? amount : 0
 		},
 		$push: {
 			[`currencies.${currency}.pending`]: pending

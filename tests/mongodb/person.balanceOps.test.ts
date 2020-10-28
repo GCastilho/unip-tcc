@@ -80,6 +80,19 @@ describe('Testing BalanceOperations on the person model', () => {
 			.to.equals(Decimal128.fromNumeric(20).toFullString())
 	})
 
+	it('Should NOT prevent an operation due to a rounding error', async () => {
+		// OP de 0.1 com saldo de 0.1 estava acusando 'NotEnoughFunds'
+		await Person.findByIdAndUpdate(userId, {
+			'currencies.bitcoin.balance.available': Decimal128.fromNumeric(0.1)
+		})
+
+		await expect(Person.balanceOps.add(userId, 'bitcoin', {
+			opid: new ObjectId('89fb0d1b05c505618b81ce5e'),
+			type: 'transaction',
+			amount: -0.1
+		})).to.eventually.be.fulfilled
+	})
+
 	it('Should fail to add negative operation greater than the available balance', async () => {
 		await expect(Person.balanceOps.add(userId, 'bitcoin', {
 			opid: new ObjectId('89fb0d1b05c505618b81ce5e'),
