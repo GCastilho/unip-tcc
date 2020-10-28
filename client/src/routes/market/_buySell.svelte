@@ -70,7 +70,7 @@
 	$: disableButton = priceCurrency === opCurrencyCode || !sellingCurrency || !wantedCurrency ? true : false
 	$: buttonColor = operation == 'sell' ? '#de4949' : '#6ec79e'
 
-	function trade() {
+	async function trade() {
 		if (disableButton) return
 		const [baseCurrency] = [sellingName, wantedName].sort()
 
@@ -85,13 +85,13 @@
 			amount: amount
 		}
 
-		orderbook.add({
+		await orderbook.add({
 			owning: operation == 'buy' ? base : target,
 			requesting: operation == 'sell' ? base : target
 		})
 
 		amount = 0
-		sellingName = 0
+		limitPrice = 0
 	}
 </script>
 

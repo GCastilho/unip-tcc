@@ -14,6 +14,7 @@ const { subscribe, update } = writable<Order[]>([])
 export { subscribe }
 
 export async function add(marketOrder: MarketOrder) {
+	console.log('Sending new order to orderbook', marketOrder)
 	try {
 		const { data } = await axios.post('/v1/market/orderbook', marketOrder)
 		const order: Order = {
@@ -21,7 +22,7 @@ export async function add(marketOrder: MarketOrder) {
 			...marketOrder
 		}
 
-		console.log('adding new order to orderbook', order)
+		console.log('Received orderbook response', data)
 		update(orders => [...orders, order])
 
 		updateBalances(order.owning.currency, -order.owning.amount, order.owning.amount)
