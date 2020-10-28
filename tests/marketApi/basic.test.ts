@@ -1,11 +1,16 @@
 import '../../src/libs/extensions'
 import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
+import { ImportMock } from 'ts-mock-imports'
 import Order from '../../src/db/models/order'
 import Person from '../../src/db/models/person'
 import Market from '../../src/marketApi/market'
 import { currencyNames, currenciesObj } from '../../src/libs/currencies'
 import * as MarketApi from '../../src/marketApi'
+import * as Trade from '../../src/marketApi/trade'
+import type { SinonStub } from 'sinon'
+
+type TradeMock = SinonStub<Parameters<typeof Trade['default']>>;
 
 describe('Performing basic tests on the MarketApi', () => {
 	let person: InstanceType<typeof Person>
@@ -19,8 +24,11 @@ describe('Performing basic tests on the MarketApi', () => {
 		// Remove as ordens do orderbook para impedir que um teste influencie outro
 		for (const order of await Order.find({ status: 'ready' }))
 			await MarketApi.remove(person._id, order._id).catch(err => {
-				if (err != 'OrderNotFound' && err != 'OperationNotFound' && !err?.message?.includes('Market not found'))
-					throw err
+				if (
+					err != 'OrderNotFound' &&
+					err != 'OperationNotFound' &&
+					!err?.message?.includes('Market not found')
+				) throw err
 			})
 		await Order.deleteMany({})
 
@@ -148,7 +156,7 @@ describe('Performing basic tests on the MarketApi', () => {
 			})
 	})
 
-	describe('Testing fetch of market depth', () => {
+	describe('When fetching market depth', () => {
 		let market: InstanceType<typeof Market>
 
 		beforeEach(() => {
@@ -301,5 +309,49 @@ describe('Performing basic tests on the MarketApi', () => {
 			expect(market.depth.find(v => v.type == 'buy')).to.be.an('object')
 			expect(market.depth.find(v => v.type == 'sell')).to.be.an('object')
 		})
+	})
+
+	describe.only('When bootstrapping', () => {
+		let spy: TradeMock
+		const orders: InstanceType<typeof Order>[] = []
+		let market: Market
+
+		before(async () => {
+			for (let i = 0; i < 6; i++) {
+				orders.push(new Order({
+					userId: new ObjectId(),
+					status: 'ready',
+					owning: {
+						currency: 'bitcoin',
+						amount: i + 1
+					},
+					requesting: {
+						currency: 'nano',
+						amount: 10 - i,
+					},
+					timestamp: new Date()
+				}))
+			}
+		})
+
+		beforeEach(async () => {
+			spy = ImportMock.mockFunction(Trade) as TradeMock
+			await Order.deleteMany({})
+			orders.forEach(order => order.isNew = true)
+			await Promise.all(orders.map(order => order.save()))
+			market = new Market(['bitcoin', 'nano'])
+			await market.bootstrap()
+		})
+
+		afterEach(() => {
+			spy.restore()
+		})
+
+		it('Should insert the orders into the orderbook', async () => {
+			await expect(Promise.all(orders.map(order => market.remove(order))))
+				.to.eventually.be.fulfilled
+		})
+
+		it('Should insert older orders first')
 	})
 })

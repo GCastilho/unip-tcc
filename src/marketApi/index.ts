@@ -60,16 +60,21 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
 
 	// Retorna ou cria uma nova instancia da Market para esse par
 	let market = markets.get(getMarketKey(orderDoc.orderedPair))
-	if (!market) {
+
+	if (market) {
+		await market.add(orderDoc)
+	} else {
 		market = new Market(orderDoc.orderedPair.map(v => v.currency) as [SC, SC])
+
+		/** Faz o bootstrap da market, a ordem atual será adicionado aqui */
+		await market.bootstrap()
+
 		/**
 		 * A chave desse par no mercado é a string do array das currencies em ordem
 		 * alfabética, pois isso torna a chave simples e determinística
 		 */
 		markets.set(getMarketKey(orderDoc.orderedPair), market)
 	}
-
-	await market.add(orderDoc)
 
 	return orderDoc._id
 }
@@ -92,7 +97,7 @@ export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {
 
 		const market = markets.get(getMarketKey(order.orderedPair))
 		if (!market) throw new MarketNotFound(`Market not found while removing: ${order}`)
-		market.remove(order)
+		await market.remove(order)
 
 		await order.remove()
 		// Falta session nesse cancell

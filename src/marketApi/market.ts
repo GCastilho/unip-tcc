@@ -119,6 +119,25 @@ export default class Market {
 		this.emitting = true
 	}
 
+	/** Faz o bootstrap da market carregando as ordens salvas no banco */
+	public async bootstrap() {
+		this.emitting = false
+		console.log('Beginning bootstrap for', this.currencies)
+		await Order.find({
+			'owning.currency': { $in: this.currencies },
+			'requesting.currency': { $in: this.currencies },
+			status: 'ready'
+		}).sort({ timestamp: -1 })
+			.cursor()
+			.eachAsync(order => this.add(order))
+			.catch(err => {
+				console.error('Error while bootstrapping market for', this.currencies, err)
+				throw err
+			})
+		console.log('Bootstrap complete for', this.currencies, 'market is online')
+		this.emitting = true
+	}
+
 	/**
 	 * Retorna um node de um preço específico. Se esse node não existir, ele será
 	 * criado e adicionado ao orderbook e a linkedList
@@ -427,7 +446,7 @@ export default class Market {
 	 * Se a ordem for a última do node ele também será removido do orderbook
 	 * @param order A ordem que deverá ser removida
 	 */
-	remove(order: OrderDoc) {
+	async remove(order: OrderDoc) {
 		const node = this.orderbook.get(order.price)
 		if (!node) throw 'PriceNotFound'
 		const index = node.data.findIndex(v => v.id == order.id)
