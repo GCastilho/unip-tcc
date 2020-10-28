@@ -125,7 +125,7 @@ OrderSchema.pre('validate', function(this: OrderDoc) {
 	}
 
 	if (typeof this.requesting.amount == 'number') {
-		this.requesting.amount = truncateAmount(this.owning.amount, this.owning.currency)
+		this.requesting.amount = truncateAmount(this.requesting.amount, this.requesting.currency)
 	}
 })
 
