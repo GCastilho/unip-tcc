@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb'
 import mongoose, { Document, Schema } from '../mongoose'
-import { currencies, currenciesObj } from '../../libs/currencies'
+import { currencies, truncateAmount } from '../../libs/currencies'
 import type { SuportedCurrencies as SC } from '../../libs/currencies'
 
 /** Documento de uma ordem */
@@ -120,12 +120,13 @@ OrderSchema.virtual('price').get(function(this: OrderDoc): OrderDoc['price'] {
 
 // Faz a truncagem dos valores de acordo com a currency que eles se referem
 OrderSchema.pre('validate', function(this: OrderDoc) {
-	this.owning.amount = +this.owning.amount.toFixed(
-		currenciesObj[this.owning.currency].decimals
-	)
-	this.requesting.amount = +this.requesting.amount.toFixed(
-		currenciesObj[this.requesting.currency].decimals
-	)
+	if (typeof this.owning.amount == 'number') {
+		this.owning.amount = truncateAmount(this.owning.amount, this.owning.currency)
+	}
+
+	if (typeof this.requesting.amount == 'number') {
+		this.requesting.amount = truncateAmount(this.owning.amount, this.owning.currency)
+	}
 })
 
 /**

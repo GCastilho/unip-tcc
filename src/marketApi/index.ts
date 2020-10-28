@@ -100,8 +100,7 @@ export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {
 		await market.remove(order)
 
 		await order.remove()
-		// Falta session nesse cancell
-		await Person.balanceOps.cancel(userId, order.owning.currency, opid)
+		await Person.balanceOps.cancel(userId, order.owning.currency, opid, session)
 
 		await session.commitTransaction()
 	} catch (err) {

@@ -21,6 +21,36 @@ describe('Testing transactions collection', () => {
 		await expect(tx.save()).to.eventually.be.fulfilled
 	})
 
+	it('Should fail if the currency is invalid', async () => {
+		const tx = new Transaction({
+			userId: new ObjectId(),
+			txid: 'random-txid',
+			type: 'receive',
+			currency: 'obamas',
+			status: 'processing',
+			account: 'random-account',
+			amount: 1.12345678910,
+			timestamp: new Date()
+		})
+		await expect(tx.validate()).to.eventually.be
+			.rejectedWith('currency: `obamas` is not a valid enum value for path `currency`')
+	})
+
+	it('Should fail to save a transaction with ZERO amount', async () => {
+		const tx = new Transaction({
+			userId: new ObjectId(),
+			txid: 'random-txid',
+			type: 'receive',
+			currency: 'bitcoin',
+			status: 'processing',
+			account: 'random-account',
+			amount: 0,
+			timestamp: new Date()
+		})
+		await expect(tx.save()).to.eventually.be
+			.rejectedWith('0 must be a positive number')
+	})
+
 	it('Should fail to save a transaction with negative amount', async () => {
 		const tx = new Transaction({
 			userId: new ObjectId(),
@@ -49,6 +79,21 @@ describe('Testing transactions collection', () => {
 		})
 		await tx.validate()
 		expect(tx.amount.toString()).to.equals('1.12345678')
+	})
+
+	it('Should fail if truncated value equals zero', async () => {
+		const tx = new Transaction({
+			userId: new ObjectId(),
+			txid: 'random-txid',
+			type: 'receive',
+			currency: 'bitcoin',
+			status: 'processing',
+			account: 'random-account',
+			amount: '0.000000001', // Presume máximo de 8 casas decimais
+			timestamp: new Date()
+		})
+		await expect(tx.validate()).to.eventually.be
+			.rejectedWith('amount: 0 must be a positive number')
 	})
 
 	it('Should save a recevie and send transaction with the same txid', async () => {

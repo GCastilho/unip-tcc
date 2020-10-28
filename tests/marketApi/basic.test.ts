@@ -311,7 +311,7 @@ describe('Performing basic tests on the MarketApi', () => {
 		})
 	})
 
-	describe.only('When bootstrapping', () => {
+	describe('When bootstrapping', () => {
 		let spy: TradeMock
 		const orders: InstanceType<typeof Order>[] = []
 		let market: Market

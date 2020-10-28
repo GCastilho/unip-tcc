@@ -19,6 +19,11 @@ router.post('/orderbook', async (req, res) => {
 				error: 'BadRequest',
 				message: 'Error validating input'
 			})
+		} else if (err == 'NotEnoughFunds') {
+			res.status(403).send({
+				error: 'NotEnoughFunds',
+				message: 'There are not enough funds on your account to perform this operation'
+			})
 		} else {
 			res.status(500).send({ error: 'InternalServerError' })
 			console.error('Error inserting order into orderbook', err)
