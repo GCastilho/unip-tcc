@@ -145,4 +145,44 @@ describe('Testing orders collection', () => {
 		})
 		await expect(doc.save()).to.eventually.be.fulfilled
 	})
+
+	it('Should truncate the price with the decimals of the base', async () => {
+		// Doc tem amounts que causam dízima no preço
+		const doc = new Order({
+			userId: new ObjectId(),
+			status: 'ready',
+			owning: {
+				currency: 'bitcoin',
+				amount: 0.1
+			},
+			requesting: {
+				currency: 'nano',
+				amount: 0.3
+			},
+			timestamp: new Date()
+		})
+		await expect(doc.save()).to.eventually.be.fulfilled
+		expect(doc.price.toString().split('.')[1]).to.have.lengthOf(8)
+	})
+
+	it('Should NOT have a rounding error while calculating the price', async () => {
+		// Doc tem amounts que causam roudng errors em float
+		const doc = new Order({
+			userId: new ObjectId(),
+			status: 'ready',
+			owning: {
+				currency: 'bitcoin',
+				amount: 2.675
+			},
+			requesting: {
+				currency: 'nano',
+				amount: 0.001
+			},
+			timestamp: new Date()
+		})
+		await expect(doc.save()).to.eventually.be.fulfilled
+		expect(doc.price).to.equal(2675)
+	})
+
+	it('Should NOT change the price while using splitting an order')
 })

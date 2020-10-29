@@ -1,6 +1,7 @@
+import currency from 'currency.js'
 import { ObjectId } from 'mongodb'
 import mongoose, { Document, Schema } from '../mongoose'
-import { currencies, truncateAmount } from '../../libs/currencies'
+import { currencies, currenciesObj, truncateAmount } from '../../libs/currencies'
 import type { SuportedCurrencies as SC } from '../../libs/currencies'
 
 /** Documento de uma ordem */
@@ -115,7 +116,9 @@ OrderSchema.virtual('type').get(function(this: OrderDoc): OrderDoc['type'] {
 
 OrderSchema.virtual('price').get(function(this: OrderDoc): OrderDoc['price'] {
 	const [base, target] = this.orderedPair
-	return base.amount / target.amount
+	return currency(base.amount, {
+		precision: currenciesObj[base.currency].decimals
+	}).divide(target.amount).value
 })
 
 // Faz a truncagem dos valores de acordo com a currency que eles se referem
