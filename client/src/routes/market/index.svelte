@@ -1,6 +1,7 @@
 <script>
 	import BuySell from './_buySell.svelte'
 	import ExchangeIcon from './exchange.svg'
+	import Chart from './_components/chart.svelte'
 	import * as currencies from './../../stores/currencies'
 
 	let baseCurrency
@@ -101,4 +102,5 @@
 		wantedCurrency={targetCurrency}
 		{exchangeCurrency}
 	/>
+	<Chart />
 </div>
