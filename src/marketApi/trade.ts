@@ -67,7 +67,8 @@ export default async function trade(matchs: [maker: OrderDoc, taker: OrderDoc][]
 				maker.userId,
 				maker.owning.currency,
 				maker.originalOrderId || maker._id,
-				session
+				session,
+				maker.owning.amount
 			).catch(err => {
 				throw err == 'OperationNotFound'
 					? `Maker order does not have a locked balance for order ${maker.id}`
@@ -77,7 +78,8 @@ export default async function trade(matchs: [maker: OrderDoc, taker: OrderDoc][]
 				taker.userId,
 				taker.owning.currency,
 				taker.originalOrderId || taker._id,
-				session
+				session,
+				taker.owning.amount
 			).catch(err => {
 				throw err == 'OperationNotFound'
 					? `Taker order does not have a locked balance for order ${taker.id}`

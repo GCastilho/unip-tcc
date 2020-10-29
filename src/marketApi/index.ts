@@ -66,14 +66,15 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
 	} else {
 		market = new Market(orderDoc.orderedPair.map(v => v.currency) as [SC, SC])
 
-		/** Faz o bootstrap da market, a ordem atual será adicionado aqui */
-		await market.bootstrap()
-
 		/**
 		 * A chave desse par no mercado é a string do array das currencies em ordem
-		 * alfabética, pois isso torna a chave simples e determinística
+		 * alfabética, pois isso torna a chave simples e determinística; Deve ser
+		 * setado antes de uma operação assíncrona para evitar concorrência
 		 */
 		markets.set(getMarketKey(orderDoc.orderedPair), market)
+
+		/** Faz o bootstrap da market, a ordem atual será adicionado aqui */
+		await market.bootstrap()
 	}
 
 	return orderDoc._id
