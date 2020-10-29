@@ -226,6 +226,17 @@ describe('Performing match tests on the MarketApi', () => {
 			// Testa se todas as ordens 'ready' foram executadas
 			expect(await Order.find({ status: 'ready' })).to.have.lengthOf(0)
 		})
+
+		it('Should be able to partially complete an order at least 3 times', async () => {
+			await MarketApi.add(person._id, makerOrder)
+			const takerOpids: ReturnType<typeof MarketApi['add']>[] = []
+			for (let i = 0; i < 3; i++) {
+				takerOpids.push(MarketApi.add(person._id, takerOrder))
+			}
+			await Promise.all(takerOpids)
+
+			sinon.assert.calledThrice(spy)
+		})
 	})
 
 	describe('If taker is bigger than maker', () => {

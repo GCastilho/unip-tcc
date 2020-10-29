@@ -85,6 +85,26 @@ export default class Market {
 	/** Noma das currencies desse par ordenados alfabeticamente */
 	public currencies: [SuportedCurrencies, SuportedCurrencies]
 
+	/**
+	 * WORKAROUND: Ordens que foram adicionadas antes da anterior terminar um
+	 * match ficam aqui esperando para serem executadas quando ela terminar
+	 */
+	private pendingOrders: OrderDoc[]
+
+	/** WORKAROUND: Flag que indica se uma ordem está sendo processada pela add */
+	private trading: boolean
+
+	constructor(currencies: [SuportedCurrencies, SuportedCurrencies]) {
+		this.currencies = currencies.sort()
+		this.orderbook = new Map()
+		this.buyPrice = 0
+		this.sellPrice = Infinity
+		this.head = null
+		this.emitting = true
+		this.pendingOrders = []
+		this.trading = false
+	}
+
 	/** Retorna o depth deste mercado */
 	public get depth(): MarketDepth[] {
 		const depth: MarketDepth[] = []
@@ -108,15 +128,6 @@ export default class Market {
 			sellPrice: this.sellPrice,
 			currencies: this.currencies
 		}
-	}
-
-	constructor(currencies: [SuportedCurrencies, SuportedCurrencies]) {
-		this.currencies = currencies.sort()
-		this.orderbook = new Map()
-		this.buyPrice = 0
-		this.sellPrice = Infinity
-		this.head = null
-		this.emitting = true
 	}
 
 	/** Faz o bootstrap da market carregando as ordens salvas no banco */
@@ -423,6 +434,9 @@ export default class Market {
 	 * @param order Documento da ordem que será processado
 	 */
 	async add(order: OrderDoc) {
+		if (this.trading) return this.pendingOrders.push(order)
+		this.trading = true
+
 		if (
 			order.type == 'buy' && order.price >= this.sellPrice ||
 			order.type == 'sell' && order.price <= this.buyPrice
@@ -439,6 +453,10 @@ export default class Market {
 		 * de todos os depths
 		 */
 		this.depth.forEach(depth => events.emit('depth_update', depth))
+
+		this.trading = false
+		const firstPending = this.pendingOrders.shift()
+		if (firstPending) return this.add(firstPending)
 	}
 
 	/**
