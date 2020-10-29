@@ -7,7 +7,7 @@ import axios from './utils/axios'
 
 const { PORT, NODE_ENV } = process.env
 const dev = NODE_ENV === 'development'
-console.log(PORT)
+
 express()
 	.use(
 		compression({ threshold: 0 }),

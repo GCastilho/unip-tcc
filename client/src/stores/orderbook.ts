@@ -56,7 +56,7 @@ addSocketListener('order_update', (orderUpdt: OrderUpdate) => {
 	console.log('Received orderbook update', orderUpdt)
 	update(orders => {
 		const index = orders.findIndex(v => v.opid == orderUpdt.opid)
-		if (index) {
+		if (index >= 0) {
 			const order = orders[index]
 
 			if (orderUpdt.status == 'open') {
