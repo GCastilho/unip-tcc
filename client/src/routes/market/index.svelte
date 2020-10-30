@@ -98,8 +98,8 @@
 <div class="main">
 	<BuySell
 		bind:switchPrice
-		sellingCurrency={baseCurrency}
-		wantedCurrency={targetCurrency}
+		{baseCurrency}
+		{targetCurrency}
 		{exchangeCurrency}
 	/>
 	<Chart />

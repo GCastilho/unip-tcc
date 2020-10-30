@@ -1,11 +1,12 @@
 <script lang="ts">
-	import * as balances from './../../stores/balances.js'
+	import * as balances from './../../stores/balances'
 	import * as orderbook from '../../stores/orderbook'
+	import type { SuportedCurrencies } from '../../../../src/libs/currencies'
 
 	// base
-	export let sellingCurrency: { name: string, code: string, decimals: number }
+	export let baseCurrency: { name: string, code: string, decimals: number }
 	// target
-	export let wantedCurrency: { name: string, code: string, decimals: number }
+	export let targetCurrency: { name: string, code: string, decimals: number }
 
 	/** Eleva o preço atual a -1 */
 	export function switchPrice() {
@@ -15,31 +16,11 @@
 	/** A operação requisitada pelo cliente */
 	let operation: 'buy'|'sell' = 'buy'
 
-	/** a cor do botao (QUE BOTAO JOAO, EU NAO SEI QUE BOTAO É ESSE) */
-	let buttonColor: string = '#6ec79e'
+	/** saldo da currency base */
+	$: baseBalance = $balances[baseCurrency?.name]?.available.toFixed(baseCurrency?.decimals)
 
-	/**
-	 * se o botao de executar operaçao esta ativo ou nao
-	 * 
-	 * botao desativado = true
-	 * 
-	 * botao ativado = false
-	 */
-	let disableButton: boolean
-
-	/** base */
-	let sellingName
-
-	/** target */
-	let wantedName
-
-	let sellingBalance, wantedBalance
-
-	/** o codigo moeda que esta em limit Price */
-	let priceCurrency: string
-
-	/** o codigo da moeda que esta em operação */
-	let opCurrencyCode: string
+	/** saldo da currency base */
+	$: targetBalance = $balances[targetCurrency?.name]?.available.toFixed(targetCurrency?.decimals)
 
 	/**
 	 * a quantidade que esta na marketOrder
@@ -51,37 +32,36 @@
 	/** o preço limite para a operaçao de compra ou venda da moeda */
 	let limitPrice: number
 
-	$: {
-		priceCurrency = sellingCurrency ? sellingCurrency.code.toUpperCase() : null
-		opCurrencyCode = wantedCurrency ? wantedCurrency.code.toUpperCase() : null
-		sellingName = sellingCurrency ? sellingCurrency.name : null
-		wantedName = wantedCurrency ? wantedCurrency.name : null
-	}
+	/** o codigo moeda que esta em limit Price */
+	$: priceCurrency = baseCurrency?.code.toUpperCase()
 
-	$: {
-		sellingBalance = $balances[sellingName] ?
-			$balances[sellingName].available.toFixed(sellingCurrency.decimals)
-			: null
-		wantedBalance = $balances[wantedName] ?
-			$balances[wantedName].available.toFixed(wantedCurrency.decimals)
-			: null
-	}
+	/** o codigo da moeda que esta em operação */
+	$: opCurrencyCode = targetCurrency?.code.toUpperCase()
 
-	$: disableButton = priceCurrency === opCurrencyCode || !sellingCurrency || !wantedCurrency ? true : false
+	/**
+	 * se o botao de executar operaçao esta ativo ou nao
+	 * 
+	 * botao desativado = true
+	 * 
+	 * botao ativado = false
+	 */
+	$: disableButton = priceCurrency === opCurrencyCode || !baseCurrency || !targetCurrency
+
+	/** define a cor dos botões que apareceram na pagina de market */
 	$: buttonColor = operation == 'sell' ? '#de4949' : '#6ec79e'
 
 	async function trade() {
 		if (disableButton) return
-		const [baseCurrency] = [sellingName, wantedName].sort()
+		const [apiBaseCurrency] = [baseCurrency?.name, targetCurrency?.name].sort()
 
 		console.log('requesting type:', operation)
 
 		const base = {
-			currency: sellingName,
-			amount: sellingName == baseCurrency ? limitPrice * amount : amount / limitPrice
+			currency: baseCurrency?.name as SuportedCurrencies,
+			amount: baseCurrency?.name == apiBaseCurrency ? limitPrice * amount : amount / limitPrice
 		}
 		const target = {
-			currency: wantedName,
+			currency: targetCurrency?.name as SuportedCurrencies,
 			amount: amount
 		}
 
@@ -290,36 +270,36 @@
 		</div>
 	</div>
 	<div class="balance">
-		<p>{sellingName || '...'}:</p>
-		<p>{sellingBalance || '...'}</p>
+		<p>{baseCurrency ? baseCurrency.name : '...'}:</p>
+		<p>{baseBalance || '...'}</p>
 	</div>
 	<div class="balance">
-		<p>{wantedName || '...'}:</p>
-		<p>{wantedBalance || '...'}</p>
+		<p>{targetCurrency ? targetCurrency.name : '...'}:</p>
+		<p>{targetBalance || '...'}</p>
 	</div>
 
 	<!-- Input do amount -->
 	<div class="float-input">
 		<input
 			type="number"
+			id="quantity"
 			placeholder={opCurrencyCode || '...'}
 			step="0.00000001"
 			bind:value={amount}
 		/>
-		<!-- svelte-ignore a11y-label-has-associated-control -->
-		<label>{operation == 'buy' ? 'Purchase' : 'Sale'} quantity</label>
+		<label for="quantity">{operation == 'buy' ? 'Purchase' : 'Sale'} quantity</label>
 	</div>
 
 	<!-- Input do preço -->
 	<div class="float-input">
 		<input
 			type="number"
+			id="Limit-price"
 			placeholder={priceCurrency || '...'}
 			step="0.00000001"
 			bind:value={limitPrice}
 		/>
-		<!-- svelte-ignore a11y-label-has-associated-control -->
-		<label>Limit price</label>
+		<label for="Limit-price">Limit price</label>
 	</div>
 
 	<div class="balance">
