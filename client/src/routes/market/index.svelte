@@ -3,7 +3,9 @@
 	import * as prices from '../../stores/prices'
 	import BuySell from './_buySell.svelte'
 	import ExchangeIcon from './exchange.svg'
-	import * as currencies from '../../stores/currencies'
+	import Candle from './_components/chart.svelte'
+	import Depth from './_components/depth.svelte'
+	import * as currencies from './../../stores/currencies'
 
 	// Client-side only components
 	let Candle
@@ -111,3 +113,4 @@
 	/>
 	<svelte:component this={Candle} prices={$prices} />
 </div>
+<Depth />
