@@ -6,6 +6,8 @@
 	import { onMount } from 'svelte'
 	import _ from 'lodash'
 	import * as d3 from 'd3'
+	import type { PriceHistory } from '../../../../../interfaces/market'
+	import * as prices from '../../../stores/prices'
 
 	function drawChart() {
 		d3.csv("FTSE.csv").then(function(prices) {

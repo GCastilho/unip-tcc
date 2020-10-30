@@ -58,3 +58,24 @@ export type OrderUpdate = {
 		requesting: number
 	}
 })
+
+/** Interface de uma candle do gráfico de preço */
+export interface PriceHistory {
+	/** Preço inicial da entrada */
+	open: number
+	/** Preço final da entrada */
+	close: number
+	/** Preço maximo no periodo de duraçao da entrada */
+	high: number
+	/** Preço minimo no periodo de duraçao da entrada */
+	low: number
+	/** a hora inicial do documento */
+	startTime: number
+	/** o periodo(ms) ao qual o resumo de preço se refere*/
+	duration: number
+	/** As currencies que fazem parte desse par */
+	currencies: [SuportedCurrencies, SuportedCurrencies]
+
+	'adj close'?: number
+	volume?: number
+}
