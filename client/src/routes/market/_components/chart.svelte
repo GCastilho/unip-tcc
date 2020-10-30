@@ -11,6 +11,8 @@
 
 	const months = {0 : 'Jan', 1 : 'Feb', 2 : 'Mar', 3 : 'Apr', 4 : 'May', 5 : 'Jun', 6 : 'Jul', 7 : 'Aug', 8 : 'Sep', 9 : 'Oct', 10 : 'Nov', 11 : 'Dec'}
 
+	const transitionDuration = 800
+	const transitionStartTimeout = 100
 	function formatDate(dates: number[], d: d3.NumberValue | d3.AxisDomain){
 		const date = new Date(dates[d as number])
 		const hours = date.getHours()
@@ -118,18 +120,23 @@
 		const extent: [[number, number], [number, number]] = [[0, 0], [w, h]]
 		var resizeTimer
 
+		//.scaleExtent delimita um limite minimo e maximo para zoom
+		//pequenas mudanças de valores trazem mudanças drasticas no limite inferior e superior do zoom
+		//possivelmente um bom valor para se mudar no futuro
 		var zoom = d3.zoom()
 			.scaleExtent([1, 100])
 			.translateExtent(extent)
 			.extent(extent)
 			.on('zoom', zoomed)
-			.on('zoom.end', zoomend);
+			.on('zoom.end', zoomend)
 		svg.call(zoom)
 
 		function zoomed(this: Element, event) {
 			var t = event.transform;
-			let xScaleZ = t.rescaleX(xScale);
+			let xScaleZ = t.rescaleX(xScale)
 
+			//esse codigo aparentemente nao esta funcionando
+			//acredito que ele serviria para se livrar de NaN quando nao se tem um dado para se colocar na regua
 			const hideTicksWithoutLabel = function() {
 				d3.selectAll('.xAxis .tick text').each(function(d){
 					if (this.innerHTML === '') {
@@ -172,16 +179,17 @@
 
 				yScale.domain([minP - buffer, maxP + buffer])
 				candles.transition()
-					.duration(800)
+					.duration(transitionDuration)
 					.attr('y', (d) => yScale(Math.max(d.open, d.close)))
 					.attr('height',  d => (d.open === d.close) ? 1 : yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)));
 
-				stems.transition().duration(800)
+				stems.transition().duration(transitionDuration)
 					.attr('y1', (d) => yScale(d.high))
 					.attr('y2', (d) => yScale(d.low))
 				
 				gY.transition().duration(800).call(d3.axisLeft(yScale));
 			}, 100)
+			}, transitionStartTimeout)
 		}
 	}
 
@@ -201,13 +209,13 @@
 
 			let word: string
 			while (word = words.pop()) {
-				line.push(word);
-				tspan.text(line.join(' '));
+				line.push(word)
+				tspan.text(line.join(' '))
 				if (tspan.node().getComputedTextLength() > width) {
-					line.pop();
-					tspan.text(line.join(' '));
-					line = [word];
-					tspan = text.append('tspan').attr('x', 0).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(word);
+					line.pop()
+					tspan.text(line.join(' '))
+					line = [word]
+					tspan = text.append('tspan').attr('x', 0).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(word)
 				}
 			}
 		});
