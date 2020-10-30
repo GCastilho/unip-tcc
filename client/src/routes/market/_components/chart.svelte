@@ -11,8 +11,9 @@
 
 	const months = {0 : 'Jan', 1 : 'Feb', 2 : 'Mar', 3 : 'Apr', 4 : 'May', 5 : 'Jun', 6 : 'Jul', 7 : 'Aug', 8 : 'Sep', 9 : 'Oct', 10 : 'Nov', 11 : 'Dec'}
 
-	const transitionDuration = 800
+	const transitionDuration = 600
 	const transitionStartTimeout = 100
+
 	function formatDate(dates: number[], d: d3.NumberValue | d3.AxisDomain){
 		const date = new Date(dates[d as number])
 		const hours = date.getHours()
@@ -26,8 +27,7 @@
 		const margin = {top: 15, right: 65, bottom: 205, left: 50}
 		const w = 1000 - margin.left - margin.right
 		const h = 625 - margin.top - margin.bottom
-
-		const svg = d3.select('#container')
+		const svg = d3.select('#candleGraph')
 			.attr('width', w + margin.left + margin.right)
 			.attr('height', h + margin.top + margin.bottom)
 			.append('g')
@@ -81,10 +81,11 @@
 				d3.axisLeft(yScale).tickFormat(d3.format("$~f")).tickValues(
 					d3.scaleLinear().domain(yScale.domain()).ticks()
 				)
-			).call(g => g.selectAll(".tick line")
+			)
+			.call(g => g.selectAll(".tick line")
 				.clone()
 				.attr("stroke-opacity", 0.2)
-				.attr("x2", w - margin.left - margin.right)
+				.attr("x2", w )
 			)
 
 		const chartBody = svg.append('g')
@@ -195,7 +196,8 @@
 				gY.transition().duration(transitionDuration)
 					.call(d3.axisLeft(yScale)
 						.tickValues(d3.scaleLinear().domain(yScale.domain()).ticks())
-					).call(g => g.selectAll(".tick line")
+					)
+					.call(g => g.selectAll(".tick line")
 						.attr("stroke-opacity", 0.2)
 						.attr("x2", w )
 					)
@@ -230,10 +232,9 @@
 			}
 		});
 	}
-
 	onMount(() => {
 		drawChart($prices)
 	})
 </script>
 
-<svg id='container'></svg>
+<svg id='candleGraph'></svg>
