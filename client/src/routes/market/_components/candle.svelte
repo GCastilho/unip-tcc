@@ -136,16 +136,14 @@
 			.on('zoom.end', zoomend)
 		svg.call(zoom)
 
-		function zoomed(this: Element, event) {
+		function zoomed(event) {
 			var t = event.transform;
 			let xScaleZ = t.rescaleX(xScale)
 
-			//esse codigo aparentemente nao esta funcionando
-			//acredito que ele serviria para se livrar de NaN quando nao se tem um dado para se colocar na regua
 			const hideTicksWithoutLabel = function() {
-				d3.selectAll('.xAxis .tick text').each(function(d){
+				d3.selectAll('.xAxis .tick text').each(function(this: any){
 					if (this.innerHTML === '') {
-					this.parentNode.style.display = 'none'
+						this.parentNode.style.display = 'none'
 					}
 				})
 			}
@@ -178,8 +176,8 @@
 				const xmin = xDateScale(Math.floor(xScaleZ.domain()[0]))
 				xmax = xDateScale(Math.floor(xScaleZ.domain()[1]))
 				filtered = prices.filter(d => ((d.startTime >= xmin) && (d.startTime <= xmax)))
-				minP = +d3.min(filtered, d => d.low)
-				maxP = +d3.max(filtered, d => d.high)
+				minP = +d3.min(filtered, d => d['low'])
+				maxP = +d3.max(filtered, d => d['high'])
 				buffer = Math.floor((maxP - minP) * 0.1)
 
 				yScale.domain([minP - buffer, maxP + buffer])
