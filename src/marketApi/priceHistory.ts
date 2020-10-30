@@ -1,6 +1,6 @@
 import { events } from './index'
-import PriceHistory, { priceHistory } from '../db/models/priceHistory'
-import { SuportedCurrencies } from '../libs/currencies'
+import PriceHistory from '../db/models/priceHistory'
+import { SuportedCurrencies as SC } from '../libs/currencies'
 
 /** O documento que contem os dados da entrada atual de priceHistory */
 //let doc: priceHistory | null
@@ -37,12 +37,12 @@ events.on('price_update', async priceUpdt => {
 /** @param durationTime o periodo que sera comprimido em um document
  *  @param currencies array das duas currencies que fazem o par de trade
  */
-export async function periodicSummary(durationTime:number, currencies: SuportedCurrencies[]) {
+export async function periodicSummary(durationTime:number, currencies: [SC, SC]) {
 	const batchSize = (durationTime / changeTime) - 1
-	const doc = await PriceHistory.findOne({ duration: durationTime }).sort({ $natural: -1 })
+	const doc = await PriceHistory.findOne({ duration: durationTime, currencies }).sort({ $natural: -1 })
 	let startTime = doc ?
 		doc.startTime + durationTime :
-		(await PriceHistory.findOne({ duration: changeTime }))?.startTime
+		(await PriceHistory.findOne({ duration: changeTime, currencies }))?.startTime
 
 	if (!startTime) return
 
