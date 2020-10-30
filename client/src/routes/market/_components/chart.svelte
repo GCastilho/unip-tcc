@@ -76,11 +76,16 @@
 		const ymin = d3.min(prices.map(r => r.low))
 		const ymax = d3.max(prices.map(r => r.high))
 		const yScale = d3.scaleLinear().domain([ymin, ymax]).range([h, 0]).nice()
-		const yAxis = d3.axisLeft(yScale)
-
 		const gY = svg.append('g')
-			.attr('class', 'axis y-axis')
-			.call(yAxis);
+			.call(
+				d3.axisLeft(yScale).tickFormat(d3.format("$~f")).tickValues(
+					d3.scaleLinear().domain(yScale.domain()).ticks()
+				)
+			).call(g => g.selectAll(".tick line")
+				.clone()
+				.attr("stroke-opacity", 0.2)
+				.attr("x2", w - margin.left - margin.right)
+			)
 
 		const chartBody = svg.append('g')
 			.attr('class', 'chartBody')
@@ -187,8 +192,13 @@
 					.attr('y1', (d) => yScale(d.high))
 					.attr('y2', (d) => yScale(d.low))
 				
-				gY.transition().duration(800).call(d3.axisLeft(yScale));
-			}, 100)
+				gY.transition().duration(transitionDuration)
+					.call(d3.axisLeft(yScale)
+						.tickValues(d3.scaleLinear().domain(yScale.domain()).ticks())
+					).call(g => g.selectAll(".tick line")
+						.attr("stroke-opacity", 0.2)
+						.attr("x2", w )
+					)
 			}, transitionStartTimeout)
 		}
 	}
