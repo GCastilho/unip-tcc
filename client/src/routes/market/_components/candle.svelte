@@ -4,10 +4,9 @@
 
 <script lang='ts'>
 	import { onMount } from 'svelte'
-	import _ from 'lodash'
 	import * as d3 from 'd3'
-	import type { PriceHistory } from '../../../../../interfaces/market'
 	import * as prices from '../../../stores/prices'
+	import type { PriceHistory } from '../../../../../interfaces/market'
 
 	const months = {0 : 'Jan', 1 : 'Feb', 2 : 'Mar', 3 : 'Apr', 4 : 'May', 5 : 'Jun', 6 : 'Jul', 7 : 'Aug', 8 : 'Sep', 9 : 'Oct', 10 : 'Nov', 11 : 'Dec'}
 
@@ -178,7 +177,7 @@
 			resizeTimer = setTimeout(function() {
 				const xmin = xDateScale(Math.floor(xScaleZ.domain()[0]))
 				xmax = xDateScale(Math.floor(xScaleZ.domain()[1]))
-				filtered = _.filter(prices, d => ((d.startTime >= xmin) && (d.startTime <= xmax)))
+				filtered = prices.filter(d => ((d.startTime >= xmin) && (d.startTime <= xmax)))
 				minP = +d3.min(filtered, d => d.low)
 				maxP = +d3.max(filtered, d => d.high)
 				buffer = Math.floor((maxP - minP) * 0.1)

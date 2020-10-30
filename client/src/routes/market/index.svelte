@@ -1,7 +1,7 @@
 <script>
 	import BuySell from './_buySell.svelte'
 	import ExchangeIcon from './exchange.svg'
-	import Candle from './_components/chart.svelte'
+	import Candle from './_components/candle.svelte'
 	import * as currencies from './../../stores/currencies'
 
 	let baseCurrency
@@ -73,7 +73,6 @@
 		fill: black;
 	}
 </style>
-
 
 <h1>Market</h1>
 <div class="currency-select">
