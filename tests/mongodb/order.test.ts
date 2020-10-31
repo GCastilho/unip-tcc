@@ -184,5 +184,63 @@ describe('Testing orders collection', () => {
 		expect(doc.price).to.equal(2675)
 	})
 
-	it('Should NOT change the price while using splitting an order')
+	describe('When splitting an order', () => {
+		let orderPrice: number
+		let doc: InstanceType<typeof Order>
+
+		beforeEach(async () => {
+			doc = await new Order({
+				userId: new ObjectId(),
+				status: 'ready',
+				owning: {
+					currency: 'bitcoin',
+					amount: 4
+				},
+				requesting: {
+					currency: 'nano',
+					amount: 8
+				},
+				timestamp: new Date()
+			}).save()
+			orderPrice = doc.price
+		})
+
+		it('Should NOT change the price from the original or the copy', () => {
+			const splittedDoc = doc.split(1, 2)
+			expect(orderPrice).to.equal(splittedDoc.price)
+			expect(orderPrice).to.equal(doc.price)
+		})
+
+		it('Should split an order only informing the amount', () => {
+			const splittedDoc = doc.split(1)
+			expect(orderPrice).to.equal(splittedDoc.price)
+			expect(orderPrice).to.equal(doc.price)
+			expect(splittedDoc.requesting.amount).to.equal(2)
+		})
+
+		it('Should set originalOrderId when creating a copy', () => {
+			const splittedDoc = doc.split(1)
+			expect(splittedDoc.originalOrderId).to.deep.equal(doc._id)
+		})
+
+		it('Should set originalOrderId when creating a copy of a copy', () => {
+			const splittedDoc = doc.split(3)
+			const splittedDoc2 = splittedDoc.split(1)
+			expect(splittedDoc2.originalOrderId).to.deep.equal(doc._id)
+		})
+
+		it('Should fail to split an order if the amounts result in a different price', () => {
+			expect(() => doc.split(1, 1)).to.throw('Split can not change the order\'s price')
+		})
+
+		it('Should fail if owning is equal that the original amount', () => {
+			expect(() => doc.split(4))
+				.to.throw('Split amounts can not be greater nor equal than original\'s amount')
+		})
+
+		it('Should fail if owning is greater that the original amount', () => {
+			expect(() => doc.split(10))
+				.to.throw('Split amounts can not be greater nor equal than original\'s amount')
+		})
+	})
 })

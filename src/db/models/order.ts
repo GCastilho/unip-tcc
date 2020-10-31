@@ -1,3 +1,4 @@
+import assert from 'assert'
 import currency from 'currency.js'
 import { ObjectId } from 'mongodb'
 import mongoose, { Document, Schema } from '../mongoose'
@@ -39,6 +40,15 @@ export interface OrderDoc extends Document {
 	readonly price: number
 	/** Um array com owning e requesting em ordem alfabética de acordo com a currency */
 	orderedPair: [OrderDoc['owning'], OrderDoc['requesting']]|[OrderDoc['requesting'], OrderDoc['owning']]
+	/**
+	 * Divide uma ordem em duas ordens que somam os valores da original mantendo
+	 * o mesmo preço. Os valores passados serão os da ordem retornada. A ordem
+	 * original também será modificada com os valores restantes do split
+	 * @param owning O valor do amounting que a nova ordem deve ter
+	 * @param requesting O valor do requesting que a nova ordem deve ter. Será
+	 * calculado automaticamente caso não informado
+	 */
+	split(owning: number, requesting?: number): OrderDoc
 }
 
 const OrderSchema = new Schema({
@@ -130,6 +140,53 @@ OrderSchema.pre('validate', function(this: OrderDoc) {
 	if (typeof this.requesting.amount == 'number') {
 		this.requesting.amount = truncateAmount(this.requesting.amount, this.requesting.currency)
 	}
+})
+
+// Divide uma ordem em duas ordens que somam os valores da original, mantendo o mesmo preço
+OrderSchema.method('split', function(this: OrderDoc,
+	owning: number,
+	requesting?: number
+): ReturnType<OrderDoc['split']> {
+	if (owning >= this.owning.amount || Number(requesting) >= this.requesting.amount)
+		throw new Error('Split amounts can not be greater nor equal than original\'s amount')
+
+	// A conta é feita com alta precisão para evitar erros de arredondamento
+	if (!requesting) {
+		requesting = currency(this.requesting.amount, {
+			precision: 20
+		}).multiply(
+			currency(owning, {
+				precision: 20
+			}).divide(this.owning.amount)
+		).value
+	}
+
+	const priceBefore = this.price
+
+	const copy = new Order(this)
+	copy._id = new ObjectId()
+	copy.isNew = true
+	copy.originalOrderId = this.originalOrderId || this._id
+
+	// Modifica os valores do objeto original
+	this.owning.amount = currency(this.owning.amount, {
+		precision: currenciesObj[this.owning.currency].decimals
+	}).subtract(owning).value
+	this.requesting.amount = currency(this.requesting.amount, {
+		precision: currenciesObj[this.requesting.currency].decimals
+	}).subtract(requesting).value
+
+	// Modifica os valores do objeto cópia
+	copy.owning.amount = owning
+	copy.requesting.amount = requesting
+
+	// Checar se o preço continua igual
+	assert(
+		this.price == priceBefore && copy.price == priceBefore,
+		`Split can not change the order's price, expected ${priceBefore} to equal ${this.price} and ${copy.price}`
+	)
+
+	return copy
 })
 
 /**

@@ -1,9 +1,9 @@
 import '../../../libs/extensions'
-import mongoose, { Model } from '../../mongoose'
+import mongoose from '../../mongoose'
 import PersonSchema, { events as documentEvents } from './schema'
 import { currencyNames } from '../../../libs/currencies'
 import * as balanceOperations from './balancesOps'
-import type { DocumentQuery } from 'mongoose'
+import type { DocumentQuery, Model } from 'mongoose'
 import type { PersonDoc as PersonDocument, Events } from './schema'
 
 // Re-exporta a interface do documento da person
