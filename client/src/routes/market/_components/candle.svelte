@@ -12,12 +12,40 @@
 	const transitionDuration = 600
 	const transitionStartTimeout = 100
 
+	let xmin
+
+	let xScale
+
+	let xBand
+
+	let xAxis
+
+	let gX
+
+	let ymin
+
+	let ymax
+
+	let yScale
+
+	let dates
+
+	/** desenha a escala Y e as linhas */
+	let gY
+
+	// draw rectangles
+	let candles
+
+	// draw high and low
+	let stems
+
+	let chartBody
 	export let prices: PriceHistory[] = []
 
 	onMount(() => {
 		drawChart(prices)
 	})
-	$: drawChart(prices)
+	$: updateCandles(prices)
 
 	function drawChart(prices: PriceHistory[]) {
 		let hours, minutes, amPM, filtered, minP, maxP, buffer
@@ -31,17 +59,17 @@
 			.attr('transform', 'translate(' +margin.left+ ',' +margin.top+ ')')
 
 		let xmax = Math.max(...prices.map(v => v.startTime))
-		const dates = prices.map(p => p.startTime)
+		dates = prices.map(p => p.startTime)
 
-		const xScale = d3.scaleLinear()
+		xScale = d3.scaleLinear()
 			.domain([-1, dates.length])
 			.range([0, w])
 
-		const xBand = d3.scaleBand()
+		xBand = d3.scaleBand()
 			.domain(d3.range(-1, dates.length).map(v => v.toString()))
 			.range([0, w]).padding(0.3)
 
-		const xAxis = d3.axisBottom(xScale)
+		xAxis = d3.axisBottom(xScale)
 			.tickFormat(d => formatDate(dates, d))
 
 		svg.append('rect')
@@ -52,7 +80,7 @@
 			.style('pointer-events', 'all')
 			.attr('clip-path', 'url(#clip)')
 
-		const gX = svg.append('g')
+		gX = svg.append('g')
 			.attr('class', 'axis x-axis') // Assign 'axis' class
 			.attr('transform', 'translate(0,' + h + ')')
 			.call(xAxis)
@@ -60,11 +88,12 @@
 		gX.selectAll('.tick text')
 			.call(wrap, xBand.bandwidth())
 
-		const ymin = d3.min(prices.map(r => r.low)) || 1
-		const ymax = d3.max(prices.map(r => r.high)) || 100
-		const yScale = d3.scaleLinear().domain([ymin, ymax]).range([h, 0]).nice()
-
-		const gY = svg.append('g')
+		ymin = d3.min(prices.map(r => r.low)) || 1
+		ymax = d3.max(prices.map(r => r.high)) || 100
+		yScale = d3.scaleLinear().domain([ymin, ymax]).range([h, 0]).nice()
+		
+		//desenha a escala Y e as linhas
+		gY = svg.append('g')
 			.call(
 				d3.axisLeft(yScale).tickFormat(d3.format("$~f")).tickValues(
 					d3.scaleLinear().domain(yScale.domain()).ticks()
@@ -76,12 +105,12 @@
 				.attr("x2", w )
 			)
 
-		const chartBody = svg.append('g')
+			chartBody = svg.append('g')
 			.attr('class', 'chartBody')
 			.attr('clip-path', 'url(#clip)');
 
 		// draw rectangles
-		const candles = chartBody.selectAll('.candle')
+		candles = chartBody.selectAll('.candle')
 			.data(prices)
 			.enter()
 			.append('rect')
@@ -93,7 +122,7 @@
 			.attr('fill', d => (d.open === d.close) ? 'silver' : (d.open > d.close) ? 'red' : 'green')
 
 		// draw high and low
-		const stems = chartBody.selectAll('g.line')
+		stems = chartBody.selectAll('g.line')
 			.data(prices)
 			.enter()
 			.append('line')
@@ -112,12 +141,12 @@
 			.attr('height', h)
 
 		const extent: [[number, number], [number, number]] = [[0, 0], [w, h]]
-		var resizeTimer
+		let resizeTimer
 
 		//.scaleExtent delimita um limite minimo e maximo para zoom
 		//pequenas mudanças de valores trazem mudanças drasticas no limite inferior e superior do zoom
 		//possivelmente um bom valor para se mudar no futuro
-		var zoom = d3.zoom()
+		let zoom = d3.zoom()
 			.scaleExtent([1, 100])
 			.translateExtent(extent)
 			.extent(extent)
@@ -126,7 +155,7 @@
 		svg.call(zoom)
 
 		function zoomed(event) {
-			var t = event.transform;
+			let t = event.transform;
 			let xScaleZ = t.rescaleX(xScale)
 
 			const hideTicksWithoutLabel = function() {
@@ -161,12 +190,12 @@
 				.domain([0, dates.length])
 				.range(dates)
 
-			var t = event.transform
+			let t = event.transform
 			let xScaleZ = t.rescaleX(xScale)
 			clearTimeout(resizeTimer)
-
+/***/
 			resizeTimer = setTimeout(function() {
-				const xmin = xDateScale(Math.floor(xScaleZ.domain()[0]))
+				xmin = xDateScale(Math.floor(xScaleZ.domain()[0]))
 				xmax = xDateScale(Math.floor(xScaleZ.domain()[1]))
 				filtered = prices.filter(d => ((d.startTime >= xmin) && (d.startTime <= xmax)))
 				minP = +d3.min(filtered, d => d['low'])
@@ -193,8 +222,28 @@
 					)
 			}, transitionStartTimeout)
 		}
+		return 
 	}
-
+	function updateCandles (prices:PriceHistory[]) {
+		if(!xScale) return
+		dates = prices.map(p => p.startTime)
+		xScale.domain([-1, prices.length])
+		//redefine dominio da escala
+		ymin = d3.min(prices.map(r => r.low)) || 1
+		ymax = d3.max(prices.map(r => r.high)) || 100
+		yScale.domain([ymin, ymax])
+		candles.data(prices)
+		console.log('yeahhhh')
+		chartBody.selectAll('.candle').remove()
+		const updt = chartBody.selectAll('.candle').update()
+			.append('rect')
+			.attr('x', (d, i) => xScale(i) - xBand.bandwidth())
+			.attr('class', 'candle')
+			.attr('y', d => yScale(Math.max(d.open, d.close)))
+			.attr('width', xBand.bandwidth())
+			.attr('height', d => (d.open === d.close) ? 1 : yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)))
+			.attr('fill', d => (d.open === d.close) ? 'silver' : (d.open > d.close) ? 'red' : 'green')
+	}
 	function formatDate(dates: number[], d: d3.NumberValue | d3.AxisDomain){
 		const date = new Date(dates[d.valueOf()])
 		if (Number.isNaN(date.valueOf())) return ''
