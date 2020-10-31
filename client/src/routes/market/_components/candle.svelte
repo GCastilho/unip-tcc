@@ -5,7 +5,6 @@
 <script lang='ts'>
 	import { onMount } from 'svelte'
 	import * as d3 from 'd3'
-	import * as prices from '../../../stores/prices'
 	import type { PriceHistory } from '../../../../../interfaces/market'
 
 	const months = {0 : 'Jan', 1 : 'Feb', 2 : 'Mar', 3 : 'Apr', 4 : 'May', 5 : 'Jun', 6 : 'Jul', 7 : 'Aug', 8 : 'Sep', 9 : 'Oct', 10 : 'Nov', 11 : 'Dec'}
@@ -13,13 +12,12 @@
 	const transitionDuration = 600
 	const transitionStartTimeout = 100
 
-	function formatDate(dates: number[], d: d3.NumberValue | d3.AxisDomain){
-		const date = new Date(dates[d as number])
-		const hours = date.getHours()
-		const minutes = (date.getMinutes()<10?'0':'') + date.getMinutes()
-		const amPM = hours < 13 ? 'am' : 'pm'
-		return `${hours}:${minutes}${amPM} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
-	}
+	export let prices: PriceHistory[] = []
+
+	onMount(() => {
+		drawChart(prices)
+	})
+	$: drawChart(prices)
 
 	function drawChart(prices: PriceHistory[]) {
 		let hours, minutes, amPM, filtered, minP, maxP, buffer
@@ -39,22 +37,12 @@
 			.domain([-1, dates.length])
 			.range([0, w])
 
-		const xDateScale = d3.scaleQuantize()
-			.domain([0, dates.length])
-			.range(dates)
-
 		const xBand = d3.scaleBand()
 			.domain(d3.range(-1, dates.length).map(v => v.toString()))
 			.range([0, w]).padding(0.3)
 
 		const xAxis = d3.axisBottom(xScale)
-			.tickFormat((d) => {
-				const date = new Date(dates[d as number])
-				const hours = date.getHours()
-				const minutes = (date.getMinutes()<10?'0':'') + date.getMinutes()
-				const amPM = hours < 13 ? 'am' : 'pm'
-				return `${hours}:${minutes}${amPM} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
-			})
+			.tickFormat(d => formatDate(dates, d))
 
 		svg.append('rect')
 			.attr('id','rect')
@@ -72,9 +60,10 @@
 		gX.selectAll('.tick text')
 			.call(wrap, xBand.bandwidth())
 
-		const ymin = d3.min(prices.map(r => r.low))
-		const ymax = d3.max(prices.map(r => r.high))
+		const ymin = d3.min(prices.map(r => r.low)) || 1
+		const ymax = d3.max(prices.map(r => r.high)) || 100
 		const yScale = d3.scaleLinear().domain([ymin, ymax]).range([h, 0]).nice()
+
 		const gY = svg.append('g')
 			.call(
 				d3.axisLeft(yScale).tickFormat(d3.format("$~f")).tickValues(
@@ -168,6 +157,10 @@
 		}
 
 		function zoomend(event) {
+			const xDateScale = d3.scaleQuantize()
+				.domain([0, dates.length])
+				.range(dates)
+
 			var t = event.transform
 			let xScaleZ = t.rescaleX(xScale)
 			clearTimeout(resizeTimer)
@@ -202,6 +195,15 @@
 		}
 	}
 
+	function formatDate(dates: number[], d: d3.NumberValue | d3.AxisDomain){
+		const date = new Date(dates[d.valueOf()])
+		if (Number.isNaN(date.valueOf())) return ''
+		const hours = date.getHours()
+		const minutes = (date.getMinutes()<10?'0':'') + date.getMinutes()
+		const amPM = hours < 13 ? 'am' : 'pm'
+		return `${hours}:${minutes}${amPM} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
+	}
+
 	function wrap(
 		selection: d3.Selection<d3.BaseType, unknown, SVGGElement, unknown>,
 		width: number
@@ -227,11 +229,8 @@
 					tspan = text.append('tspan').attr('x', 0).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(word)
 				}
 			}
-		});
+		})
 	}
-	onMount(() => {
-		drawChart($prices)
-	})
 </script>
 
 <svg id='candleGraph'></svg>

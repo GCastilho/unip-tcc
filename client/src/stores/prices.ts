@@ -1,10 +1,14 @@
 import { writable } from 'svelte/store'
 import type { PriceHistory } from '../../../interfaces/market'
 
-const { subscribe, set } = writable<PriceHistory[]>([])
+const { subscribe, update, set } = writable<PriceHistory[]>([])
 
 /** Exporta o subscribe para essa variável se ruma store */
 export { subscribe }
+
+// setInterval(() => {
+// 	update(v => [v[v.length - 1], ...v])
+// }, 1000)
 
 set([
 	{
