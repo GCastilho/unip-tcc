@@ -38,7 +38,13 @@
 		height: 100%;
 		width: 100%;
 		flex-grow: 1;
+		flex-direction: row;
 		justify-content: center;
+	}
+
+	.graphs {
+		display: flex;
+		flex-direction: column;
 	}
 
 	.currency-select {
@@ -109,5 +115,8 @@
 		{targetCurrency}
 		{exchangeCurrency}
 	/>
-	<svelte:component this={Candle} prices={$prices} />
+	<div class="graphs">
+		<svelte:component this={Candle} prices={$prices} />
+
+	</div>
 </div>

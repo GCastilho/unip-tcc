@@ -87,9 +87,11 @@
 
 	.block-1 {
 		display: flex;
+		height: 100%;
 		padding: 20px;
 		flex-direction: column;
-		background-color: rgb(184, 184, 190);
+		border: 1.5px solid #F0AE98;
+		border-radius: 5px;
 	}
 
 	.radio-switch {
@@ -186,7 +188,7 @@
 	}
 
 	.float-input > input:focus {
-		border: 1px solid #3951b2;
+		border: 1px solid #F0AE98;
 	}
 
 	.float-input > input::placeholder {
@@ -211,7 +213,7 @@
 		font-size: 13px;
 		top: -17px;
 		padding: 0 3px;
-		color: #3951b2;
+		color: #F0AE98;
 		background-color: transparent;
 	}
 
