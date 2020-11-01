@@ -8,7 +8,8 @@
 	import type { PriceHistory } from '../../../../../interfaces/market'
 
 	const months = {0 : 'Jan', 1 : 'Feb', 2 : 'Mar', 3 : 'Apr', 4 : 'May', 5 : 'Jun', 6 : 'Jul', 7 : 'Aug', 8 : 'Sep', 9 : 'Oct', 10 : 'Nov', 11 : 'Dec'}
-
+	let k
+	let t
 	let transitionDuration = 600
 	let transitionStartTimeout = 100
 
@@ -34,6 +35,10 @@
 
 	let yScale
 
+	let xmax
+
+	let hours, minutes, amPM, filtered, minP, maxP, buffer
+
 	let zoom
 	
 	let dates
@@ -56,9 +61,6 @@
 	$: updateCandles(prices)
 
 	function drawChart(prices: PriceHistory[]) {
-		let e = d3.event;
-		let dx = e.translate[0]
-		let hours, minutes, amPM, filtered, minP, maxP, buffer
 		const itenNumber = prices.length < 100 ? prices.length : prices.length
 		svg = d3.select('#candleGraph')
 			.attr('width', w + margin.left + margin.right)
@@ -66,7 +68,7 @@
 			.append('g')
 			.attr('transform', 'translate(' +margin.left+ ',' +margin.top+ ')')
 
-		let xmax = Math.max(...prices.map(v => v.startTime))
+		xmax = Math.max(...prices.map(v => v.startTime))
 		dates = prices.map(p => p.startTime)
 
 		xScale = d3.scaleLinear()
@@ -173,7 +175,8 @@
 		transitionStartTimeout = transitionTimeouBefore
 		
 		function zoomed(event) {
-			let t = event.transform;
+			t = event.transform;
+			k = t.k
 			let xScaleZ = t.rescaleX(xScale)
 			console.log(t)
 			const hideTicksWithoutLabel = function() {
@@ -246,28 +249,44 @@
 	}
 	function updateCandles (prices:PriceHistory[]) {
 		if(!xScale) return
+		let xScaleZ = t.rescaleX(xScale)
+		const itemNumber =  prices.length < 100 ? prices.length : prices.length
+		const firstItem = prices.length - itemNumber 
 		dates = prices.map(p => p.startTime)
 		xScale.domain([-1, prices.length])
 		//redefine dominio da escala
 		ymin = d3.min(prices.map(r => r.low)) || 1
 		ymax = d3.max(prices.map(r => r.high)) || 100
-		yScale.domain([ymin, ymax])
 		candles.data(prices)
 		console.log('yeahhhh')
 		chartBody.selectAll('.candle').remove()
+
+		const xDateScale = d3.scaleQuantize()
+				.domain([0, dates.length])
+				.range(dates)
+				xmin = xDateScale(Math.floor(xScaleZ.domain()[0]))
+				xmax = xDateScale(Math.floor(xScaleZ.domain()[1]))
+				filtered = prices.filter(d => ((d.startTime >= xmin) && (d.startTime <= xmax)))
+				minP = +d3.min(filtered, d => d['low'])
+				maxP = +d3.max(filtered, d => d['high'])
+				buffer = Math.floor((maxP - minP) * 0.1)
+
+				yScale.domain([minP - buffer, maxP + buffer])
+
+
 
 		candles = chartBody.selectAll('.candle')
 			.data(prices)
 			.enter()
 			.append('rect')
-			.attr('x', (d, i) => xScale(i) - xBand.bandwidth())
+			.attr('x', (d, i) => xScale(i) - xBand.bandwidth()*k)
 			.attr('class', 'candle')
 			.attr('y', d => yScale(Math.max(d.open, d.close)))
-			.attr('width', xBand.bandwidth())
-			.attr('height', d => (d.open === d.close) ? 1 : yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)))
+			.attr('width', xBand.bandwidth()*k)
 			.attr('fill', d => (d.open === d.close) ? 'silver' : (d.open > d.close) ? 'red' : 'green')
-		
-		zoom.scaleTo(svg, dates.length/100)
+			.attr('height',  d => (d.open === d.close) ? 1 : yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)))
+
+		//zoom.scaleTo(svg, dates.length/100)
 		zoom.translateBy(svg,-w,-h)
 
 	}
