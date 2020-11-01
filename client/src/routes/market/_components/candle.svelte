@@ -9,8 +9,14 @@
 
 	const months = {0 : 'Jan', 1 : 'Feb', 2 : 'Mar', 3 : 'Apr', 4 : 'May', 5 : 'Jun', 6 : 'Jul', 7 : 'Aug', 8 : 'Sep', 9 : 'Oct', 10 : 'Nov', 11 : 'Dec'}
 
-	const transitionDuration = 600
-	const transitionStartTimeout = 100
+	let transitionDuration = 600
+	let transitionStartTimeout = 100
+
+	const margin = {top: 15, right: 65, bottom: 205, left: 50}
+	const w = 1000 - margin.left - margin.right
+	const h = 625 - margin.top - margin.bottom
+
+	let svg
 
 	let xmin
 
@@ -28,6 +34,8 @@
 
 	let yScale
 
+	let zoom
+	
 	let dates
 
 	/** desenha a escala Y e as linhas */
@@ -48,11 +56,11 @@
 	$: updateCandles(prices)
 
 	function drawChart(prices: PriceHistory[]) {
+		let e = d3.event;
+		let dx = e.translate[0]
 		let hours, minutes, amPM, filtered, minP, maxP, buffer
-		const margin = {top: 15, right: 65, bottom: 205, left: 50}
-		const w = 1000 - margin.left - margin.right
-		const h = 625 - margin.top - margin.bottom
-		const svg = d3.select('#candleGraph')
+		const itenNumber = prices.length < 100 ? prices.length : prices.length
+		svg = d3.select('#candleGraph')
 			.attr('width', w + margin.left + margin.right)
 			.attr('height', h + margin.top + margin.bottom)
 			.append('g')
@@ -62,7 +70,7 @@
 		dates = prices.map(p => p.startTime)
 
 		xScale = d3.scaleLinear()
-			.domain([-1, dates.length])
+			.domain([ -1 , dates.length])
 			.range([0, w])
 
 		xBand = d3.scaleBand()
@@ -104,11 +112,10 @@
 				.attr("stroke-opacity", 0.2)
 				.attr("x2", w )
 			)
-
 			chartBody = svg.append('g')
 			.attr('class', 'chartBody')
 			.attr('clip-path', 'url(#clip)');
-
+		
 		// draw rectangles
 		candles = chartBody.selectAll('.candle')
 			.data(prices)
@@ -140,24 +147,35 @@
 			.attr('width', w)
 			.attr('height', h)
 
-		const extent: [[number, number], [number, number]] = [[0, 0], [w, h]]
+		const extent: [[number, number], [number, number]] = [[0, 0], [w, h/2]] // eu nao sei o que esse h/2 faz
 		let resizeTimer
-
+		
 		//.scaleExtent delimita um limite minimo e maximo para zoom
 		//pequenas mudanças de valores trazem mudanças drasticas no limite inferior e superior do zoom
 		//possivelmente um bom valor para se mudar no futuro
-		let zoom = d3.zoom()
+		zoom = d3.zoom()
 			.scaleExtent([1, 100])
 			.translateExtent(extent)
 			.extent(extent)
 			.on('zoom', zoomed)
 			.on('zoom.end', zoomend)
 		svg.call(zoom)
+		
+		const transitionTimeouBefore = transitionStartTimeout
+		const transitionDurationBefore = transitionDuration
+		transitionStartTimeout = 0
+		transitionDuration = 0
 
+		zoom.scaleTo(svg, dates.length/100)
+		zoom.translateBy(svg,-w,-h)
+
+		transitionDuration = transitionDurationBefore
+		transitionStartTimeout = transitionTimeouBefore
+		
 		function zoomed(event) {
 			let t = event.transform;
 			let xScaleZ = t.rescaleX(xScale)
-
+			console.log(t)
 			const hideTicksWithoutLabel = function() {
 				d3.selectAll('.xAxis .tick text').each(function(this: any){
 					if (this.innerHTML === '') {
@@ -186,14 +204,16 @@
 		}
 
 		function zoomend(event) {
+
 			const xDateScale = d3.scaleQuantize()
 				.domain([0, dates.length])
 				.range(dates)
 
 			let t = event.transform
+			console.log(t)
 			let xScaleZ = t.rescaleX(xScale)
 			clearTimeout(resizeTimer)
-/***/
+
 			resizeTimer = setTimeout(function() {
 				xmin = xDateScale(Math.floor(xScaleZ.domain()[0]))
 				xmax = xDateScale(Math.floor(xScaleZ.domain()[1]))
@@ -235,7 +255,10 @@
 		candles.data(prices)
 		console.log('yeahhhh')
 		chartBody.selectAll('.candle').remove()
-		const updt = chartBody.selectAll('.candle').update()
+
+		candles = chartBody.selectAll('.candle')
+			.data(prices)
+			.enter()
 			.append('rect')
 			.attr('x', (d, i) => xScale(i) - xBand.bandwidth())
 			.attr('class', 'candle')
@@ -243,7 +266,12 @@
 			.attr('width', xBand.bandwidth())
 			.attr('height', d => (d.open === d.close) ? 1 : yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)))
 			.attr('fill', d => (d.open === d.close) ? 'silver' : (d.open > d.close) ? 'red' : 'green')
+		
+		zoom.scaleTo(svg, dates.length/100)
+		zoom.translateBy(svg,-w,-h)
+
 	}
+
 	function formatDate(dates: number[], d: d3.NumberValue | d3.AxisDomain){
 		const date = new Date(dates[d.valueOf()])
 		if (Number.isNaN(date.valueOf())) return ''
