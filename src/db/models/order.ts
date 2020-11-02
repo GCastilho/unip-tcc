@@ -30,25 +30,29 @@ export interface OrderDoc extends Document {
 		/** A quantidade mínima que o usuário quer receber */
 		amount: number
 	}
-	/** ID da ordem original, caso essa tenha sido criada após um split */
-	originalOrderId?: OrderDoc['_id']
 	/** A data que essa operação foi adicionada */
 	timestamp: Date
+	/** ID da ordem original, caso essa tenha sido criada após um split */
+	readonly originalOrderId?: OrderDoc['_id']
 	/** O tipo dessa operação no orderbook */
 	readonly type: 'buy'|'sell'
 	/** O preço dessa operação no orderbook */
 	readonly price: number
 	/** Um array com owning e requesting em ordem alfabética de acordo com a currency */
-	orderedPair: [OrderDoc['owning'], OrderDoc['requesting']]|[OrderDoc['requesting'], OrderDoc['owning']]
+	readonly orderedPair: [OrderDoc['owning'], OrderDoc['requesting']]|[OrderDoc['requesting'], OrderDoc['owning']]
 	/**
 	 * Divide uma ordem em duas ordens que somam os valores da original mantendo
 	 * o mesmo preço. Os valores passados serão os da ordem retornada. A ordem
 	 * original também será modificada com os valores restantes do split
+	 *
+	 * Nota: O timestamp da ordem "cópia" é diferente (mais recente) do que o da
+	 * ordem original
+	 *
 	 * @param owning O valor do amounting que a nova ordem deve ter
 	 * @param requesting O valor do requesting que a nova ordem deve ter. Será
 	 * calculado automaticamente caso não informado
 	 */
-	split(owning: number, requesting?: number): OrderDoc
+	split(owning: number, requesting?: number, targetPrice?: number): OrderDoc
 }
 
 const OrderSchema = new Schema({
@@ -145,10 +149,11 @@ OrderSchema.pre('validate', function(this: OrderDoc) {
 // Divide uma ordem em duas ordens que somam os valores da original, mantendo o mesmo preço
 OrderSchema.method('split', function(this: OrderDoc,
 	owning: number,
-	requesting?: number
+	requesting?: number,
+	targetPrice?: number
 ): ReturnType<OrderDoc['split']> {
-	if (owning >= this.owning.amount || Number(requesting) >= this.requesting.amount)
-		throw new Error('Split amounts can not be greater nor equal than original\'s amount')
+	if (owning >= this.owning.amount)
+		throw new Error('Split amount can not be greater nor equal than original\'s amount')
 
 	// A conta é feita com alta precisão para evitar erros de arredondamento
 	if (!requesting) {
@@ -166,24 +171,35 @@ OrderSchema.method('split', function(this: OrderDoc,
 	const copy = new Order(this)
 	copy._id = new ObjectId()
 	copy.isNew = true
+
+	// @ts-expect-error Esse é o único método que pode alterar esse valor
 	copy.originalOrderId = this.originalOrderId || this._id
 
 	// Modifica os valores do objeto original
+	this.requesting.amount = currency(this.requesting.amount, {
+		precision: 20
+	}).multiply(
+		currency(this.owning.amount, { precision: 20 })
+			.subtract(owning)
+			.divide(this.owning.amount)
+	).value
 	this.owning.amount = currency(this.owning.amount, {
 		precision: currenciesObj[this.owning.currency].decimals
 	}).subtract(owning).value
-	this.requesting.amount = currency(this.requesting.amount, {
-		precision: currenciesObj[this.requesting.currency].decimals
-	}).subtract(requesting).value
 
 	// Modifica os valores do objeto cópia
 	copy.owning.amount = owning
 	copy.requesting.amount = requesting
 
-	// Checar se o preço continua igual
+	// Checar se o preço continua igual na original
 	assert(
-		this.price == priceBefore && copy.price == priceBefore,
-		`Split can not change the order's price, expected ${priceBefore} to equal ${this.price} and ${copy.price}`
+		this.price == priceBefore,
+		`Split can not change the original order's price, expected ${priceBefore} to equal ${this.price}`
+	)
+	// O preço da cópia deve ser o preço original o preço target informado manualmente
+	assert(
+		copy.price == priceBefore || copy.price === targetPrice,
+		`Copy order's resulting price must be the original price of ${priceBefore} or the target price of ${targetPrice}, found: ${copy.price}`
 	)
 
 	return copy

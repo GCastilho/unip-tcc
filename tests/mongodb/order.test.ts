@@ -207,14 +207,14 @@ describe('Testing orders collection', () => {
 
 		it('Should NOT change the price from the original or the copy', () => {
 			const splittedDoc = doc.split(1, 2)
-			expect(orderPrice).to.equal(splittedDoc.price)
-			expect(orderPrice).to.equal(doc.price)
+			expect(doc.price).to.equal(orderPrice)
+			expect(splittedDoc.price).to.equal(orderPrice)
 		})
 
 		it('Should split an order only informing the amount', () => {
 			const splittedDoc = doc.split(1)
-			expect(orderPrice).to.equal(splittedDoc.price)
-			expect(orderPrice).to.equal(doc.price)
+			expect(doc.price).to.equal(orderPrice)
+			expect(splittedDoc.price).to.equal(orderPrice)
 			expect(splittedDoc.requesting.amount).to.equal(2)
 		})
 
@@ -230,17 +230,31 @@ describe('Testing orders collection', () => {
 		})
 
 		it('Should fail to split an order if the amounts result in a different price', () => {
-			expect(() => doc.split(1, 1)).to.throw('Split can not change the order\'s price')
+			expect(() => doc.split(1, 1)).to.throw('Copy order\'s resulting price must be the original price of 0.5 or the target price of undefined, found: 1')
+		})
+
+		it('Should allow a change in the order\'s price if it was explicitly informed', () => {
+			const originalOwning = doc.owning.amount
+			const originalRequesting = doc.requesting.amount
+
+			const splittedDoc = doc.split(1, 2, 0.5)
+			expect(splittedDoc.price).to.equal(0.5)
+			expect(doc.price).to.equal(orderPrice)
+
+			expect(doc.owning.amount).to.equal(originalOwning - 1)
+			expect(doc.requesting.amount).to.equal(originalRequesting - 2)
+			expect(splittedDoc.owning.amount).to.equal(1)
+			expect(splittedDoc.requesting.amount).to.equal(2)
 		})
 
 		it('Should fail if owning is equal that the original amount', () => {
 			expect(() => doc.split(4))
-				.to.throw('Split amounts can not be greater nor equal than original\'s amount')
+				.to.throw('Split amount can not be greater nor equal than original\'s amount')
 		})
 
 		it('Should fail if owning is greater that the original amount', () => {
 			expect(() => doc.split(10))
-				.to.throw('Split amounts can not be greater nor equal than original\'s amount')
+				.to.throw('Split amount can not be greater nor equal than original\'s amount')
 		})
 	})
 })

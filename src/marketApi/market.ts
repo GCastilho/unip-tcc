@@ -317,61 +317,43 @@ export default class Market {
 			const maker = this.getOrderFromIndex(node, 0)
 
 			if (remaining > maker.requesting.amount) {
-				const takerCopy = new Order(taker)
-				takerCopy._id = new ObjectId()
-				takerCopy.originalOrderId = taker._id
-				takerCopy.isNew = true
+				/**
+				 * Divide a taker em uma ordem com amounts e preço da maker. O preço da
+				 * maker sempre será melhor (mais vantajoso) ou igual ao da taker,
+				 * então a mudança de preço não é um problema
+				 */
+				const takerCopy = taker.split(
+					maker.requesting.amount,
+					maker.owning.amount,
+					maker.price
+				)
 
-				takerCopy.owning.amount = maker.requesting.amount
-				takerCopy.requesting.amount = maker.owning.amount
 				matchs.push([maker, takerCopy])
+			} else if (taker.owning.amount < maker.requesting.amount) {
+				/** Divide a maker em uma ordem com os valores da taker (para o match) */
+				const makerCopy = maker.split(
+					taker.requesting.amount,
+					taker.owning.amount
+				)
+
+				/** Envia o restante da maker de volta ao orderbook */
+				leftovers.push(maker)
+
+				matchs.push([makerCopy, taker])
 			} else {
 				/**
-				 * Atualiza owning e requesting da taker com os valores do remaining
+				 * Se o código cair aqui, então
+				 * taker.owning.amount == maker.requesting.amount
+				 * Entretando, se as ordens tiverem preços diferentes, o reverso
+				 * (requesting da taker e owning da maker) não é válido
 				 *
-				 * Owning e requesting devem ficar na mesma proporção, então o
-				 * requesting será atualizado na proporção em que o owning foi reduzido
+				 * Como a maker nunca tem um owning que é desvantajoso ao requesting
+				 * da taker, então essa linha garante que os valores sejam iguais sem
+				 * prejudicar a taker, garantindo o preço igual que as ordens precisam
+				 * ter para um 'match' ser feito
 				 */
-				taker.requesting.amount = taker.requesting.amount * remaining / taker.owning.amount
-				taker.owning.amount = remaining
-
-				if (taker.owning.amount < maker.requesting.amount) {
-					/*
-					 * A maker é maior que o restante da taker. Ela deve ser
-					 * dividida em duas:
-					 * a primeira com os amounts da taker para ser enviada ao match
-					 * e a segunda com o restante que deverá retornar ao orderbook
-					 */
-
-					// Ordem com os valores da diferença entre maker e taker
-					maker.owning.amount = maker.owning.amount - taker.requesting.amount
-					maker.requesting.amount = maker.requesting.amount - taker.owning.amount
-					leftovers.push(maker)
-
-					/** Ordem com os valores da taker (para o match) */
-					const makerCopy = new Order(maker)
-					makerCopy._id = new ObjectId()
-					makerCopy.originalOrderId = maker._id
-					makerCopy.isNew = true
-					makerCopy.owning.amount = taker.requesting.amount
-					makerCopy.requesting.amount = taker.owning.amount
-
-					matchs.push([makerCopy, taker])
-				} else {
-					/**
-					 * Se o código cair aqui, então
-					 * taker.owning.amount == maker.requesting.amount
-					 * Entretando, se as ordens tiverem preços diferentes, o reverso
-					 * (requesting da taker e owning da maker) não é válido
-					 *
-					 * Como a maker nunca tem um owning que é desvantajoso ao requesting
-					 * da taker, então essa linha garante que os valores sejam iguais sem
-					 * prejudicar a taker, garantindo o preço igual que as ordens precisam
-					 * ter para um 'match' ser feito
-					 */
-					taker.requesting.amount = maker.owning.amount
-					matchs.push([maker, taker])
-				}
+				taker.requesting.amount = maker.owning.amount
+				matchs.push([maker, taker])
 			}
 
 			/**
@@ -387,10 +369,6 @@ export default class Market {
 
 		// Taker não executou completamente
 		if (remaining > 0) {
-			// Atualiza owning e requesting da taker com os valores do remaining
-			taker.requesting.amount = taker.requesting.amount * remaining / taker.owning.amount
-			taker.owning.amount = remaining
-
 			leftovers.push(taker)
 		}
 
