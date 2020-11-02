@@ -38,18 +38,36 @@ events.on('price_update', async priceUpdt => {
  *  @param currencies array das duas currencies que fazem o par de trade
  */
 export async function periodicSummary(durationTime:number, currencies: [SC, SC]) {
+	/**
+	 * Qtdade de documentos daquela duração que será usado para fazer o resumo.
+	 * Ex: 10 documentos de 10 minutos nos últimos 10 minutos
+	 */
 	const batchSize = (durationTime / changeTime) - 1
+	// Pega o doc mais recente daquela duração e currency
 	const doc = await PriceHistory.findOne({ duration: durationTime, currencies }).sort({ $natural: -1 })
+	/**
+	 * Momento que do primeiro documento daquele resumo, tipo 00:10. Se o doc
+	 * existe, ele irá começar no próximo "ciclo", tipo 00:20. Se ele não existe,
+	 * ele pega o primeiro documento de 1 minuto, ou seja, começa a fazer do
+	 * zero
+	 */
 	let startTime = doc ?
 		doc.startTime + durationTime :
 		(await PriceHistory.findOne({ duration: changeTime, currencies }))?.startTime
 
+	// False se não existe nenhum doc de preço no sistema
 	if (!startTime) return
 
-	//garantindo que o tempo inicial seja no começo redondo 00:00 , 00:09 por exemplo
+	/**
+	 * garantindo que o tempo inicial seja no começo redondo 00:00, 00:10 por
+	 * exemplo. Se a hora for, 00:04, os 4 minutos serão subtraídos do startTime.
+	 * Vale para qualquer valor do durationTime, de acordo com o @gabr1gus
+	 */
 	startTime = startTime - (startTime % durationTime)
 
+	// N tem ctz se tá funfando o loop 100%
 	do {
+		// N está deletando os docs antigos
 		const docs = await PriceHistory.find({
 			startTime:{
 				$gte : startTime,
