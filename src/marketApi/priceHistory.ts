@@ -46,7 +46,7 @@ export async function periodicSummary(durationTime:number, currencies: [SC, SC])
 
 	if (!startTime) return
 
-	//garantindo que o tempo inicial seja no começo redondo 00:00 , 00:10 por exemplo
+	//garantindo que o tempo inicial seja no começo redondo 00:00 , 00:09 por exemplo
 	startTime = startTime - (startTime % durationTime)
 
 	do {
@@ -54,7 +54,10 @@ export async function periodicSummary(durationTime:number, currencies: [SC, SC])
 			startTime:{
 				$gte : startTime,
 				$lt : startTime + durationTime
-			}}).limit(batchSize)
+			},
+			currencies,
+			duration: changeTime
+		}).limit(batchSize)
 
 		if (docs.length == 0) {
 			startTime += durationTime
@@ -70,7 +73,7 @@ export async function periodicSummary(durationTime:number, currencies: [SC, SC])
 			duration: durationTime,
 			currencies
 		}).save()
-		await PriceHistory.find({ low: 10 | 20 })
+
 		startTime += durationTime
 
 	} while ( startTime < Date.now() )
