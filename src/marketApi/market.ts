@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events'
-import { ObjectId } from 'mongodb'
 import Order from '../db/models/order'
 import trade from './trade'
 import type TypedEmitter from 'typed-emitter'
