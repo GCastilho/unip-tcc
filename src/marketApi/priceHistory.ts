@@ -1,5 +1,5 @@
 import { events } from './index'
-import PriceHistory from '../db/models/priceHistory'
+import Price from '../db/models/price'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
 
 /** O tempo minimo que dura cada documento do historico de preço [ms] */
@@ -8,13 +8,13 @@ const changeTime = 60000
 let time = new Date().setSeconds(0, 0) + changeTime
 
 events.on('price_update', async priceUpdt => {
-	let doc = await PriceHistory.findOne({
+	let doc = await Price.findOne({
 		startTime: new Date().setSeconds(0, 0),
 		currencies: priceUpdt.currencies
 	})
 	if (!doc || doc.startTime + changeTime < Date.now() ){
 		time = new Date().setSeconds(0, 0)
-		doc = new PriceHistory({
+		doc = new Price({
 			open: doc?.close || priceUpdt.price,
 			close: priceUpdt.price,
 			high: priceUpdt.price,
@@ -44,7 +44,7 @@ export async function periodicSummary(durationTime:number, currencies: [SC, SC])
 	const batchSize = (durationTime / changeTime) - 1
 
 	// Pega o doc mais recente daquela duração e currency
-	const doc = await PriceHistory.findOne({ duration: durationTime, currencies }).sort({ $natural: -1 })
+	const doc = await Price.findOne({ duration: durationTime, currencies }).sort({ $natural: -1 })
 
 	/**
 	 * Momento que do primeiro documento daquele resumo, tipo 00:10. Se o doc
@@ -54,7 +54,7 @@ export async function periodicSummary(durationTime:number, currencies: [SC, SC])
 	 */
 	let startTime = doc
 		? doc.startTime + durationTime
-		: (await PriceHistory.findOne({ duration: changeTime, currencies }))?.startTime
+		: (await Price.findOne({ duration: changeTime, currencies }))?.startTime
 
 	// False se não existe nenhum doc de preço no sistema
 	if (!startTime) return
@@ -70,7 +70,7 @@ export async function periodicSummary(durationTime:number, currencies: [SC, SC])
 		startTime += durationTime
 	) {
 		// N está deletando os docs antigos
-		const docs = await PriceHistory.find({
+		const docs = await Price.find({
 			startTime:{
 				$gte : startTime,
 				$lt : startTime + durationTime
@@ -83,7 +83,7 @@ export async function periodicSummary(durationTime:number, currencies: [SC, SC])
 			continue
 		}
 
-		await new PriceHistory({
+		await new Price({
 			open: docs[0].open,
 			cose: docs[docs.length - 1].close,
 			high: Math.max(...docs.map(item => item.high )),

@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from '../mongoose'
 import { currencyNames, SuportedCurrencies } from '../../libs/currencies'
 
 /** Objeto de uma modificaçao historica de preço */
-export interface priceHistory extends Document {
+export interface PriceDoc extends Document {
 	/** Preço inicial da entrada */
 	open: number,
 	/** Preço final da entrada */
@@ -19,7 +19,7 @@ export interface priceHistory extends Document {
 	currencies: [SuportedCurrencies, SuportedCurrencies]
 }
 
-const priceHistorySchema = new Schema({
+const PriceSchema = new Schema({
 	open: {
 		type: Number,
 		required: true
@@ -56,12 +56,12 @@ const priceHistorySchema = new Schema({
 	}
 })
 
-priceHistorySchema.pre('save', function(this: priceHistory) {
+PriceSchema.pre('save', function(this: PriceDoc) {
 	this.currencies = this.currencies.sort((a, b) => {
 		return a > b ? 1 : a < b ? -1 : 0
 	})
 })
 
-const PriceHistory = mongoose.model<priceHistory>('priceHistory', priceHistorySchema, 'pricehistory')
+const Price = mongoose.model<PriceDoc>('Price', PriceSchema, 'pricehistory')
 
-export default PriceHistory
+export default Price
