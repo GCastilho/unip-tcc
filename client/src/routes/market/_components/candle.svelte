@@ -12,50 +12,47 @@
 	let transitionStartTimeout = 50
 	const maxItemView = 150
 	let currentMaxItemView = 150
-	let virtualWidth
+	let virtualWidth: number
 	const margin = {top: 15, right: 65, bottom: 205, left: 50}
 	const w = 1000 - margin.left - margin.right
 	const h = 625 - margin.top - margin.bottom
 
 	/** the current zoon scale */
-	let k
+	let k : number
 	/** the current transform data */
-	let t
+	let t : d3.ZoomTransform
 
-	let svg
+	let xmin : number
 
-	let xmin
+	let xmax : number
 
-	let xScale
-
-	let xBand
-
-	let xAxis
-
-	let gX
-
-	let ymin
-
-	let ymax
-
-	let yScale
-
-	let xmax
-
-	let hours, minutes, amPM, filtered, minP, maxP, buffer
-
-	let zoom
+	let xScale : d3.ScaleLinear<number,number>
 	
-	let dates
+	let yScale : d3.ScaleLinear<number,number>
 
+	let xBand : d3.ScaleBand<string>
+
+	let xAxis : d3.Axis<d3.NumberValue>
+	/** desenha a escala X e seus valores*/
+	let gX : d3.Selection<SVGGElement, unknown, HTMLElement, any>
 	/** desenha a escala Y e as linhas */
-	let gY
+	let gY : d3.Selection<SVGGElement, unknown, HTMLElement, any>
+
+	//	Selection<BaseType, unknown, HTMLElement, any>' is not assignable to parameter of type ' 
+
+	let svg : d3.Selection<Element, unknown, any, any>
+
+	let filtered: PriceHistory[], minP: number, maxP: number, buffer : number
+
+	let zoom : d3.ZoomBehavior<Element, unknown>
+	
+	let dates : number[]
 
 	// draw rectangles
-	let candles
+	let candles : d3.Selection<SVGGElement, unknown, HTMLElement, any>
 
 	// draw high and low
-	let stems
+	let stems : d3.Selection<SVGGElement, unknown, HTMLElement, any>
 
 	let chartBody
 	export let prices: PriceHistory[] = []
@@ -105,8 +102,9 @@
 		gX.selectAll('.tick text')
 			.call(wrap, xBand.bandwidth())
 
-		ymin = d3.min(prices.map(r => r.low)) || 1
-		ymax = d3.max(prices.map(r => r.high)) || 100
+		const ymin = d3.min(prices.map(r => r.low)) || 1
+		const ymax = d3.max(prices.map(r => r.high)) || 100
+
 		yScale = d3.scaleLinear().domain([ymin, ymax]).range([h, 0]).nice()
 		
 		//desenha a escala Y e as linhas
@@ -123,7 +121,7 @@
 			)
 			chartBody = svg.append('g')
 			.attr('class', 'chartBody')
-			.attr('clip-path', 'url(#clip)');
+			.attr('clip-path', 'url(#clip)')
 		
 		// draw rectangles
 		candles = chartBody.selectAll('.candle')
@@ -147,7 +145,7 @@
 			.attr('x2', (d, i) => xScale(i) - xBand.bandwidth()/2)
 			.attr('y1', d => yScale(d.high))
 			.attr('y2', d => yScale(d.low))
-			.attr('stroke', d => (d.open === d.close) ? 'white' : (d.open > d.close) ? 'red' : 'green');
+			.attr('stroke', d => (d.open === d.close) ? 'white' : (d.open > d.close) ? 'red' : 'green')
 
 		svg.append('defs')
 			.append('clipPath')
@@ -155,7 +153,6 @@
 			.append('rect')
 			.attr('width', virtualWidth)
 			.attr('height', h)
-
 		const extent: [[number, number], [number, number]] = [[0, 0], [xScale(prices.length-1), h/2]] // eu nao sei o que esse h/2 faz
 		let resizeTimer
 		
@@ -182,7 +179,7 @@
 		transitionStartTimeout = transitionTimeouBefore
 	console.log(xBand.bandwidth()*k )
 		function zoomed(event) {
-			t = event.transform;
+			t = event.transform
 			k = t.k
 			let xScaleZ = t.rescaleX(xScale)
 			console.log(t)
@@ -207,7 +204,7 @@
 			stems.attr('x1', (d, i) => xScaleZ(i) - xBand.bandwidth()/2 + xBand.bandwidth()*0.5)
 			stems.attr('x2', (d, i) => xScaleZ(i) - xBand.bandwidth()/2 + xBand.bandwidth()*0.5)
 
-			hideTicksWithoutLabel();
+			hideTicksWithoutLabel()
 
 			gX.selectAll('.tick text')
 			.call(wrap, xBand.bandwidth())
@@ -235,12 +232,14 @@
 				yScale.domain([minP - buffer, maxP + buffer])
 				candles.transition()
 					.duration(transitionDuration)
-					.attr('y', (d) => yScale(Math.max(d.open, d.close)))
-					.attr('height',  d => (d.open === d.close) ? 1 : yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)));
+					.attr('y', (d : PriceHistory) => yScale(Math.max(d.open, d.close)))
+					.attr('height', (d : PriceHistory) =>  (d.open === d.close) 
+						? 1 
+						: yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)))
 
 				stems.transition().duration(transitionDuration)
-					.attr('y1', (d) => yScale(d.high))
-					.attr('y2', (d) => yScale(d.low))
+					.attr('y1', (d : PriceHistory) => yScale(d.high))
+					.attr('y2', (d : PriceHistory) => yScale(d.low))
 				
 				gY.transition().duration(transitionDuration)
 					.call(d3.axisLeft(yScale)
@@ -274,9 +273,6 @@
 		let xScaleZ = t.rescaleX(xScale)
 	
 		//redefine dominio da escala
-		ymin = d3.min(prices.map(r => r.low)) || 1
-		ymax = d3.max(prices.map(r => r.high)) || 100
-		
 		const xDateScale = d3.scaleQuantize()
 			.domain([0, dates.length])
 			.range(dates)
@@ -313,7 +309,7 @@
 			.attr('x2', (d, i) => xScale(i) - (xBand.bandwidth()/2)*modifier)
 			.attr('y1', d => yScale(d.high))
 			.attr('y2', d => yScale(d.low))
-			.attr('stroke', d => (d.open === d.close) ? 'white' : (d.open > d.close) ? 'red' : 'green');
+			.attr('stroke', d => (d.open === d.close) ? 'white' : (d.open > d.close) ? 'red' : 'green')
 
 			zoom.translateBy(svg,-virtualWidth,0)
 			gX.selectAll('.tick text')
