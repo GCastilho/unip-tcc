@@ -2,8 +2,8 @@
 	import { afterUpdate } from 'svelte'
 	import Close from './cross-icon.svg'
 	import { format } from 'light-date'
-	import * as currencies from '../../../stores/currencies'
-	import * as transactions from '../../../stores/transactions'
+	import * as currencies from '../../stores/currencies'
+	import * as transactions from '../../stores/transactions'
 	import { slide } from 'svelte/transition'
 	import { quintOut } from 'svelte/easing'
 
@@ -26,7 +26,7 @@
 	let tableWidth: Number
 
 	/** Define se o menu de detalhes da transações esta aberto */
-	let disable = false
+	let disable: Boolean = false
 
 	// Seta para null se a transação for confimada
 	afterUpdate(() => {
