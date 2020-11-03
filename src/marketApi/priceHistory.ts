@@ -1,9 +1,7 @@
 import { events } from './index'
 import PriceHistory from '../db/models/priceHistory'
-import { SuportedCurrencies as SC } from '../libs/currencies'
+import type { SuportedCurrencies as SC } from '../libs/currencies'
 
-/** O documento que contem os dados da entrada atual de priceHistory */
-//let doc: priceHistory | null
 /** O tempo minimo que dura cada documento do historico de preço [ms] */
 const changeTime = 60000
 
@@ -34,8 +32,9 @@ events.on('price_update', async priceUpdt => {
 })
 
 
-/** @param durationTime o periodo que sera comprimido em um document
- *  @param currencies array das duas currencies que fazem o par de trade
+/**
+ * @param durationTime o periodo que sera comprimido em um document
+ * @param currencies array das duas currencies que fazem o par de trade
  */
 export async function periodicSummary(durationTime:number, currencies: [SC, SC]) {
 	/**
@@ -43,30 +42,33 @@ export async function periodicSummary(durationTime:number, currencies: [SC, SC])
 	 * Ex: 10 documentos de 10 minutos nos últimos 10 minutos
 	 */
 	const batchSize = (durationTime / changeTime) - 1
+
 	// Pega o doc mais recente daquela duração e currency
 	const doc = await PriceHistory.findOne({ duration: durationTime, currencies }).sort({ $natural: -1 })
+
 	/**
 	 * Momento que do primeiro documento daquele resumo, tipo 00:10. Se o doc
 	 * existe, ele irá começar no próximo "ciclo", tipo 00:20. Se ele não existe,
 	 * ele pega o primeiro documento de 1 minuto, ou seja, começa a fazer do
 	 * zero
 	 */
-	let startTime = doc ?
-		doc.startTime + durationTime :
-		(await PriceHistory.findOne({ duration: changeTime, currencies }))?.startTime
+	let startTime = doc
+		? doc.startTime + durationTime
+		: (await PriceHistory.findOne({ duration: changeTime, currencies }))?.startTime
 
 	// False se não existe nenhum doc de preço no sistema
 	if (!startTime) return
 
-	/**
-	 * garantindo que o tempo inicial seja no começo redondo 00:00, 00:10 por
-	 * exemplo. Se a hora for, 00:04, os 4 minutos serão subtraídos do startTime.
-	 * Vale para qualquer valor do durationTime, de acordo com o @gabr1gus
-	 */
-	startTime = startTime - (startTime % durationTime)
-
-	// N tem ctz se tá funfando o loop 100%
-	do {
+	for (
+		/**
+		 * garantindo que o tempo inicial seja no começo redondo 00:00, 00:10 por
+		 * exemplo. Se a hora for, 00:04, os 4 minutos serão subtraídos do startTime.
+		 * Vale para qualquer valor do durationTime, de acordo com o @gabr1gus
+		 */
+		startTime = startTime - (startTime % durationTime);
+		startTime < Date.now();
+		startTime += durationTime
+	) {
 		// N está deletando os docs antigos
 		const docs = await PriceHistory.find({
 			startTime:{
@@ -78,21 +80,17 @@ export async function periodicSummary(durationTime:number, currencies: [SC, SC])
 		}).limit(batchSize)
 
 		if (docs.length == 0) {
-			startTime += durationTime
 			continue
 		}
 
 		await new PriceHistory({
-			initPrice: docs[0].open,
-			finalPrice: docs[docs.length - 1].close,
-			maxPrice: Math.max(...docs.map(function(item) { return item.high })),
-			minPrice: Math.min(...docs.map(function(item) { return item.low })),
+			open: docs[0].open,
+			cose: docs[docs.length - 1].close,
+			high: Math.max(...docs.map(item => item.high )),
+			low: Math.min(...docs.map(item => item.low )),
 			startTime,
 			duration: durationTime,
 			currencies
 		}).save()
-
-		startTime += durationTime
-
-	} while ( startTime < Date.now() )
+	}
 }
