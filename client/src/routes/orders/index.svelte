@@ -105,7 +105,7 @@
 			<TableCell transaction={transaction}/>
 		{:else}
 			<tr>
-				<td colspan="100%" style="border-right:none">
+				<td colspan="4" style="border-right:none">
 					{#if $synchronized}
 						<h5 class="text-center">There are no Transactions here.</h5>
 					{:else}
