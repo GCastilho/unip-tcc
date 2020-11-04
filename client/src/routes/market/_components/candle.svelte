@@ -179,7 +179,7 @@
 		transitionDuration = transitionDurationBefore
 		transitionStartTimeout = transitionTimeouBefore
 	console.log(xBand.bandwidth()*zoomQuantity )
-		function zoomed(event) {
+		function zoomed(event: { transform: d3.ZoomTransform; }) {
 			transform = event.transform
 			zoomQuantity = transform.k
 			let xScaleZ = transform.rescaleX(xScale)
@@ -254,6 +254,7 @@
 	}
 	function updateCandles (prices:PriceHistory[]) {
 		if(!svg) return
+		const translateDistance = (virtualWidth*transform.k - ((width / currentMaxItemView) * prices.length)*transform.k)
 		virtualWidth = (width / currentMaxItemView) * prices.length
 		const extent: [[number, number], [number, number]] = [[0, 0], [xScale(prices.length-1), height/2]] 
 		zoom.translateExtent(extent)
@@ -278,6 +279,7 @@
 		const xmax = xDateScale(Math.floor(xScaleZ.domain()[1]))
 
 		filtered = prices.filter(d => ((d.startTime >= xmin) && (d.startTime <= xmax)))
+
 		minP = +d3.min(filtered, d => d['low'])
 		maxP = +d3.max(filtered, d => d['high'])
 		buffer = Math.floor((maxP - minP) * 0.1)
@@ -297,8 +299,7 @@
 			.attr('width', xBand.bandwidth()*zoomQuantity)
 			.attr('fill', d => (d.open === d.close) ? 'silver' : (d.open > d.close) ? 'red' : 'green')
 			.attr('height',  d => (d.open === d.close) ? 1 : yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)))
-		//const modifier = zoomQuantity > 1 ? 0 : 1
-
+		
 		stems = chartBody.selectAll('g.line')
 			.data(prices)
 			.enter()
@@ -312,9 +313,13 @@
 
 		gX.selectAll('.tick text')
 			.call(wrap, xBand.bandwidth())
-			
+		const tAux = transform.x
 		zoom.translateBy(svg,-virtualWidth,0)
-
+		//o multiplier esta ai por mo
+		if( (tAux + translateDistance*1.001 > transform.x)){
+			console.log(	transform.x - tAux)
+			zoom.translateBy(svg,	-(transform.x - tAux)/transform.k,transform.y)
+		}
 	}
 	/**
 	 * muda a escrita de uma data especifica e esconde valores invalidos
