@@ -2,7 +2,7 @@
 	import * as prices from '../../stores/prices'
 	import BuySell from './_buySell.svelte'
 	import ExchangeIcon from './exchange.svg'
-	import Candle from './_components/candle.svelte'
+	import Candle from './_components/chart.svelte'
 	import Depth from './_components/depth.svelte'
 	import * as currencies from '../../stores/currencies'
 
