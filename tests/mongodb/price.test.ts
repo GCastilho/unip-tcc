@@ -1,11 +1,11 @@
 import { expect } from 'chai'
-import PriceHistory from '../../src/db/models/priceHistory'
+import Price from '../../src/db/models/price'
 
 describe('testing pricehistory collection', async () => {
-	let priceHistoryDoc: InstanceType<typeof PriceHistory>
+	let priceHistoryDoc: InstanceType<typeof Price>
 
 	beforeEach(async () => {
-		priceHistoryDoc = new PriceHistory({
+		priceHistoryDoc = new Price({
 			initPrice: 10,
 			finalPrice: 12,
 			maxPrice: 25,
