@@ -1,18 +1,10 @@
 <script>
-	import { onMount } from 'svelte'
 	import * as prices from '../../stores/prices'
 	import BuySell from './_buySell.svelte'
 	import ExchangeIcon from './exchange.svg'
-	import Candle from './_components/chart.svelte'
+	import Candle from './_components/candle.svelte'
 	import Depth from './_components/depth.svelte'
-	import * as currencies from './../../stores/currencies'
-
-	// Client-side only components
-	let Candle
-
-	onMount(async () => {
-		Candle = (await import('./_components/candle.svelte')).default
-	})
+	import * as currencies from '../../stores/currencies'
 
 	let baseCurrency
 	let targetCurrency
@@ -111,6 +103,6 @@
 		{targetCurrency}
 		{exchangeCurrency}
 	/>
-	<svelte:component this={Candle} prices={$prices} />
+	<Candle prices={$prices} />
 </div>
 <Depth />

@@ -4,13 +4,8 @@
 
 <script lang='ts'>
 	import { onMount } from 'svelte'
-	import _ from 'lodash'
 	import * as d3 from 'd3'
-	import type { PriceHistory } from '../../../../../interfaces/market'
-	import * as prices from '../../../stores/prices'
 
-	const transitionDuration = 600
-	const transitionStartTimeout = 100
 
 	const bids = 
 [
@@ -318,6 +313,13 @@
 ]
 	const asks =
 [
+	{
+		"side": "sell",
+		"price": 9651,
+		"amount": 0,
+		"timestamp": 1512117867566,
+		"datetime": "Dec 5 2017, 01:44:27:566 AM"
+	},
 		{
 		"side": "sell",
 		"price": 9651.00000003,
@@ -615,9 +617,285 @@
 	}
 ]
 
+	/** a largura real do grafico, visivel + invisivel */
+	let virtualWidth: number
+	const margin = {top: 15, right: 65, bottom: 205, left: 50}
+	/** a largura visivel da porçao do grafico */
+	const width = 1000 - margin.left - margin.right
+	const height = 625 - margin.top - margin.bottom
+
+	/** mapeia o posicionamento ordenado dos itens, referente a graduaçao Inferior (X) */
+	let xScale : d3.ScaleLinear<number,number>
+	/** mapeia o posicionamento ordenado dos itens, referente a graduaçao Lateral (Y) */
+	let yScale : d3.ScaleLinear<number,number>
+
+	let xBand : d3.ScaleBand<string>
+	/** ordena os valores presentes na regua, referente a graduaçao Lateral (Y) */
+	let xAxis : d3.Axis<d3.NumberValue>
+	
+	// algumas variaveis auxiliares que nao tem muita importancia
+	let filtered: any[], minP: number, maxP: number, buffer : number
+
+	/** objeto referente as definiçoes e comportamento de zoom */
+	let zoom : d3.ZoomBehavior<Element, unknown>
+	/** o timeout do zoom, impede que mutiplas transaçoes estejam ocorrendo */
+	let resizeTimer : NodeJS.Timeout
+	/** the current zoon scale */
+	let zoomQuantity : number
+	/** the current transform data */
+	let transform : d3.ZoomTransform
+	/** o tempo de druçao da transiçao do zoom */
+	let transitionDuration = 800
+	/** o tempo de espera antes do inicio da transiçao do zoom */
+	let transitionStartTimeout = 50
+
+	let data
+	/** o corpo inteiro do grafico */
+	let svg : d3.Selection<Element, unknown, any, any>
+	/** o corpo das colunas do grafico */
+	let depth : d3.Selection<SVGGElement, unknown, HTMLElement, any>
+	/** desenha a escala X e seus valores*/
+	let gX : d3.Selection<SVGGElement, unknown, HTMLElement, any>
+	/** desenha a escala Y e as linhas */
+	let gY : d3.Selection<SVGGElement, unknown, HTMLElement, any>
+
+	let chartBody
+	
+	onMount(() => {
+		drawChart()
+	})
+
+	function drawChart() {
+		virtualWidth = width 
+		svg = d3.select('#depthChart')
+			.attr('width', width + margin.left + margin.right)
+			.attr('height', height + margin.top + margin.bottom)
+			.append('g')
+			.attr('transform', 'translate(' +margin.left+ ',' +margin.top+ ')')
+
+		data = prefixSum(bids).reverse()
+		data.push(...prefixSum(asks))
+		let xmax = Math.max(...data.map(v => v.price))
+
+		xScale = d3.scaleLinear()
+			.domain([ -1 , data.length])
+			.range([0, virtualWidth])
+
+		xBand = d3.scaleBand()
+			.domain(d3.range(-1, data.length).map(v => v.toString()))
+			.range([0, width]).padding(0.2)
+
+		xAxis = d3.axisBottom(xScale)
+		.tickFormat((d) => {
+			return `${data[d.valueOf()]?.price}`
+		})
+
+		svg.append('rect')
+			.attr('id','rect')
+			.attr('width', width)
+			.attr('height', height)
+			.style('fill', 'none')
+			.style('pointer-events', 'all')
+			.attr('clip-path', 'url(#clip)')
+
+		gX = svg.append('g')
+			.attr('class', 'axis x-axis') // Assign 'axis' class
+			.attr('transform', 'translate(0,' + height + ')')
+			.call(xAxis)
+
+		gX.selectAll('.tick text')
+			.call(wrap, xBand.bandwidth())
+
+		const ymax = d3.max(data.map(r => r.amount)) || 100
+
+		yScale = d3.scaleLinear().domain([0, ymax]).range([height, 0])
+		
+		gY = svg.append('g')
+			.call(
+				d3.axisLeft(yScale).tickFormat(d3.format("$~f")).tickValues(
+					d3.scaleLinear().domain(yScale.domain()).ticks()
+				)
+			)
+			.call(g => g.selectAll(".tick line")
+				.clone()
+				.attr("stroke-opacity", 0.2)
+				.attr("x2", virtualWidth )
+			)
+		
+		chartBody = svg.append('g')
+			.attr('class', 'chartBody')
+			.attr('clip-path', 'url(#clip)')
+
+		depth = chartBody.selectAll('.depth')
+			.data(data)
+			.enter()
+			.append('rect')
+			.attr('x', (d, i) => xScale(i))
+			.attr('class', 'depth')
+			.attr('price', d => d.price)
+			.attr('amount', d => d.amount)
+			.attr('y', d => yScale(d.amount))
+			.attr('width', xBand.bandwidth())
+			.attr('height', d => height*10 )
+			.attr('fill', d => (d.side === 'sell') ? 'red' : 'green')
+		
+		svg.append('defs')
+			.append('clipPath')
+			.attr('id', 'clip')
+			.append('rect')
+			.attr('width', width)
+			.attr('height', height)
+
+		const extent: [[number, number], [number, number]] = [[0, 0], [width, height/2]]
+
+		zoom = d3.zoom()
+			.scaleExtent([1, 70])
+			.translateExtent(extent)
+			.extent(extent)
+			.on('zoom', zoomed)
+			.on('zoom.end', zoomend)
+		svg.call(zoom)
+		
+		function zoomed(event: { transform: d3.ZoomTransform; }) {
+			transform = event.transform
+			zoomQuantity = transform.k
+			let xScaleZ = transform.rescaleX(xScale)
+			console.log(transform)
+			const hideTicksWithoutLabel = function() {
+				d3.selectAll('.xAxis .tick text').each(function(this: any){
+					if (this.innerHTML === '') {
+						this.parentNode.style.display = 'none'
+					}
+				})
+			}
+
+			gX.call(
+				d3.axisBottom(xScale)
+					.tickFormat((d) => {
+				return `${data[d.valueOf()]?.price}`
+				})
+			)
+
+
+			depth.attr('x', (d, i) => xScaleZ(i) - (xBand.bandwidth()*zoomQuantity)/2)
+				.attr('width', xBand.bandwidth()*zoomQuantity)
+
+			hideTicksWithoutLabel()
+
+			gX.selectAll('.tick text')
+				.call(wrap, xBand.bandwidth())
+		}
+
+		function zoomend(event) {
+
+			const xPriceScale = d3.scaleQuantize()
+				.domain([0, data.length])
+				.range(data.map(d => d.price))
+
+			let xScaleZ = transform.rescaleX(xScale)
+			clearTimeout(resizeTimer)
+
+			resizeTimer = setTimeout(function() {
+				const xmin = xPriceScale(Math.floor(xScaleZ.domain()[0]))
+				xmax = xPriceScale(Math.floor(xScaleZ.domain()[1]))
+				filtered = data.filter(d => ((d.price >= xmin) && (d.price <= xmax)))
+				minP = +d3.min(filtered, d => d['amount'])
+				maxP = +d3.max(filtered, d => d['amount'])
+				buffer = Math.floor((maxP - minP) * 0.1)
+			
+				yScale.domain([0, maxP + buffer])
+				depth.transition()
+					.duration(transitionDuration)
+					.attr('y', d => yScale(d.amount))
+					.attr('height', height*10)// gambiarra pra deixar bonito
+
+				gY.transition().duration(transitionDuration)
+					.call(d3.axisLeft(yScale)
+						.tickValues(d3.scaleLinear().domain(yScale.domain()).ticks())
+					)
+					.call(g => g.selectAll(".tick line")
+						.attr("stroke-opacity", 0.2)
+						.attr("x2", virtualWidth )
+					)
+
+			}, transitionStartTimeout)
+		}
+	}
+
+
+
+	function updateDepth (data) {
+		if(!svg) return
+
+		const extent: [[number, number], [number, number]] = [[0, 0], [width, height/2]] 
+		zoom.translateExtent(extent)
+
+		svg.call(zoom)
+		//dates = prices.map(p => p.startTime)
+
+		xScale=	d3.scaleLinear()
+			.domain([ -1 , data.length])
+			.range([0, virtualWidth])
+		xBand = d3.scaleBand()
+			.domain(d3.range(-1, data.length).map(v => v.toString()))
+			.range([0, virtualWidth]).padding(0.2)
+		let xScaleZ = transform.rescaleX(xScale)
+	
+		//redefine dominio da escala
+		const xPriceScale = d3.scaleQuantize()
+			.domain([0, data.length])
+			.range(data.map(d => d.price))
+	
+		const xmin = xPriceScale(Math.floor(xScaleZ.domain()[0]))
+		const xmax = xPriceScale(Math.floor(xScaleZ.domain()[1]))
+
+		filtered = data.filter(d => ((d.startTime >= xmin) && (d.startTime <= xmax)))
+
+		minP = +d3.min(filtered, d => d['amount'])
+		maxP = +d3.max(filtered, d => d['amount'])
+		buffer = Math.floor((maxP - minP) * 0.1)
+
+		yScale.domain([0, maxP + buffer])
+
+		chartBody.selectAll('line').remove()
+		svg.selectAll('.depth').remove()
+
+		depth = chartBody.selectAll('.depth')
+			.data(data)
+			.enter()
+			.append('rect')
+			.attr('x', (d, i) => xScale(i))
+			.attr('class', 'depth')
+			.attr('price', d => d.price)
+			.attr('amount', d => d.amount)
+			.attr('y', d => yScale(d.amount))
+			.attr('width', xBand.bandwidth()*zoomQuantity)
+			.attr('height', height*10)
+			.attr('fill', d => (d.side === 'sell') ? 'red' : 'green')
+
+		gX.selectAll('.tick text')
+			.call(wrap, xBand.bandwidth())
+
+		zoom.translateBy(svg,0,0)
+	}
+
+	function prefixSum (arr) {
+		const acc = [arr[0]]
+		for(let i = 1 ; i < arr.length; i++){
+			acc.push({
+				amount: arr[i].amount + acc[i-1].amount,
+				side: arr[i].side,
+				price: arr[i].price,
+				timestamp: arr[i].timestamp,
+				datetime: arr[i].datetime
+			})
+		}
+		return acc
+	}
+
 	function wrap(
 		selection: d3.Selection<d3.BaseType, unknown, SVGGElement, unknown>,
-		width: number
+		_width: number
 	) {
 		selection.each(function() {
 			const text = d3.select(this)
@@ -633,198 +911,16 @@
 			while (word = words.pop()) {
 				line.push(word)
 				tspan.text(line.join(' '))
-				if (tspan.node().getComputedTextLength() > width) {
+				if (tspan.node().getComputedTextLength() > _width) {
 					line.pop()
 					tspan.text(line.join(' '))
 					line = [word]
 					tspan = text.append('tspan').attr('x', 0).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(word)
 				}
 			}
-		});
+		})
 	}
-	function drawChart(prices: PriceHistory[]) {
-		let filtered, minP, maxP, buffer
-		const margin = {top: 15, right: 65, bottom: 205, left: 50}
-		const w = 1000 - margin.left - margin.right
-		const h = 625 - margin.top - margin.bottom
 
-
-		function prefixSum (arr) {
-			const acc = [arr[0]]
-			for(let i = 1 ; i < arr.length; i++){
-				acc.push({
-					amount: arr[i].amount + acc[i-1].amount,
-					side: arr[i].side,
-					price: arr[i].price,
-					timestamp: arr[i].timestamp,
-					datetime: arr[i].datetime
-				})
-			}
-			return acc
-		}
-
-		const data = prefixSum(bids).reverse()
-		data.push(...prefixSum(asks))
-
-		const svg = d3.select('#depthChart')
-			.attr('width', w + margin.left + margin.right)
-			.attr('height', h + margin.top + margin.bottom)
-			.append('g')
-			.attr('transform', 'translate(' +margin.left+ ',' +margin.top+ ')')
-
-		let xmax = Math.max(...data.map(v => v.price))
-
-		const xScale = d3.scaleLinear()
-			.domain([ -1 , data.length - 1])
-			.range([0, w])
-
-		const xPriceScale = d3.scaleQuantize()
-			.domain([0, data.length])
-			.range(data.map(d => d.price))
-
-		const xBand = d3.scaleBand()
-			.domain(d3.range(-1, data.length).map(v => 
-				v.toString()))
-			.range([0, w]).padding(0.05)
-
-		const xAxis = d3.axisBottom(xScale)
-			.tickFormat((d) => {
-				return `${data[d.valueOf()]?.price}`
-			})
-
-		svg.append('rect')
-			.attr('id','rect')
-			.attr('width', w)
-			.attr('height', h)
-			.style('fill', 'none')
-			.style('pointer-events', 'all')
-			.attr('clip-path', 'url(#clip)')
-
-		const gX = svg.append('g')
-			.attr('class', 'axis x-axis') // Assign 'axis' class
-			.attr('transform', 'translate(0,' + h + ')')
-			.call(xAxis)
-
-		gX.selectAll('.tick text')
-			.call(wrap, xBand.bandwidth())
-
-		const ymin = d3.min(data.map(r => r.amount))
-		const ymax = d3.max(data.map(r => r.amount))
-		const yScale = d3.scaleLinear().domain([ymin, ymax]).range([h, 0])
-		const gY = svg.append('g')
-			.call(
-				d3.axisLeft(yScale).tickFormat(d3.format("~f")).tickValues(
-					d3.scaleLinear().domain(yScale.domain()).ticks()
-				)
-			)
-			.call(g => g.selectAll(".tick line")
-				.clone()
-				.attr("stroke-opacity", 0.2)
-				.attr("x2", w)
-			)
-
-		const chartBody = svg.append('g')
-			.attr('class', 'chartBody')
-			.attr('clip-path', 'url(#clip)');
-
-		// draw rectangles
-		const depth = chartBody.selectAll('.depth')
-			.data(data)
-			.enter()
-			.append('rect')
-			.attr('x', (d, i) => xScale(i))
-			.attr('class', 'depth')
-			.attr('price', d => d.price)
-			.attr('amount', d => d.amount)
-			.attr('y', d => yScale(d.amount))
-			.attr('width', xBand.bandwidth())
-			.attr('height', d => h )
-			.attr('fill', d => (d.side === 'sell') ? 'red' : 'green')
-
-		svg.append('defs')
-			.append('clipPath')
-			.attr('id', 'clip')
-			.append('rect')
-			.attr('width', w)
-			.attr('height', h)
-
-		const extent: [[number, number], [number, number]] = [[0, 0], [w, h]]
-		var resizeTimer
-
-		//.scaleExtent delimita um limite minimo e maximo para zoom
-		//pequenas mudanças de valores trazem mudanças drasticas no limite inferior e superior do zoom
-		//possivelmente um bom valor para se mudar no futuro
-		var zoom = d3.zoom()
-			.scaleExtent([1, 100])
-			.translateExtent(extent)
-			.extent(extent)
-			.on('zoom', zoomed)
-			.on('zoom.end', zoomend)
-		svg.call(zoom)
-
-		function zoomed(this: Element, event) {
-			var t = event.transform;
-			let xScaleZ = t.rescaleX(xScale)
-
-			//esse codigo aparentemente nao esta funcionando
-			//acredito que ele serviria para se livrar de NaN quando nao se tem um dado para se colocar na regua
-			const hideTicksWithoutLabel = function() {
-				d3.selectAll('.xAxis .tick text').each(function(d){
-					if (this.innerHTML === '') {
-					this.parentNode.style.display = 'none'
-					}
-				})
-			}
-			gX.call(
-				d3.axisBottom(xScaleZ).tickFormat(d => {
-					if (d >= 0 && d <= data.length-1) {
-						return `${data[d.valueOf()].price}`
-					}
-				})
-			)
-
-			depth.attr('x', (d, i) => xScaleZ(i) - (xBand.bandwidth()*t.k)/2)
-				.attr('width', xBand.bandwidth()*t.k);
-
-			hideTicksWithoutLabel();
-
-			gX.selectAll('.tick text')
-			.call(wrap, xBand.bandwidth())
-		}
-
-		function zoomend(event) {
-			var t = event.transform
-			let xScaleZ = t.rescaleX(xScale)
-			clearTimeout(resizeTimer)
-
-			resizeTimer = setTimeout(function() {
-				const xmin = xPriceScale(Math.floor(xScaleZ.domain()[0]))
-				xmax = xPriceScale(Math.floor(xScaleZ.domain()[1]))
-				filtered = _.filter(data, d => ((d.price >= xmin) && (d.price <= xmax)))
-				minP = +d3.min(filtered, d => d.amount)
-				maxP = +d3.max(filtered, d => d.amount)
-				buffer = Math.floor((maxP - minP) * 0.1)
-
-				yScale.domain([minP - buffer, maxP + buffer])
-				depth.transition()
-					.duration(transitionDuration)
-					.attr('y', d => yScale(d.amount))
-					.attr('height',  d => h*10)// gambiarra pra deixar bonito
-				
-				gY.transition().duration(transitionDuration)
-					.call(d3.axisLeft(yScale)
-						.tickValues(d3.scaleLinear().domain(yScale.domain()).ticks())
-					)
-					.call(g => g.selectAll(".tick line")
-						.attr("stroke-opacity", 0.2)
-						.attr("x2", w )
-					)
-			}, transitionStartTimeout)
-		}
-	}
-	onMount(() => {
-		drawChart($prices)
-	})
 </script>
 
 <svg id='depthChart'></svg>
