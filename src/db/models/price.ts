@@ -1,5 +1,7 @@
-import mongoose, { Document, Schema } from '../mongoose'
-import { currencyNames, SuportedCurrencies } from '../../libs/currencies'
+import mongoose, { Schema } from '../mongoose'
+import { currencyNames } from '../../libs/currencies'
+import type { Document, Model } from 'mongoose'
+import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** Objeto de uma modificaçao historica de preço */
 export interface PriceDoc extends Document {
@@ -41,7 +43,7 @@ const PriceSchema = new Schema({
 		required: true
 	},
 	duration: {
-		type : Date,
+		type : Number,
 		required: false
 	},
 	currencies: {
@@ -62,6 +64,63 @@ PriceSchema.pre('save', function(this: PriceDoc) {
 	})
 })
 
-const Price = mongoose.model<PriceDoc>('Price', PriceSchema, 'pricehistory')
+interface PriceModel extends Model<PriceDoc> {
+	/**
+	 * Faz um sumário dos histórico de preços do banco em documentos comprimidos
+	 * @param currencies O array das duas currencies que fazem o par desse preço
+	 */
+	summarize(
+		currencies: [SuportedCurrencies, SuportedCurrencies]
+	): Promise<void>
+}
+
+PriceSchema.static('summarize', async function(this: PriceModel,
+	currencies: [SuportedCurrencies, SuportedCurrencies]
+): ReturnType<PriceModel['summarize']> {
+	/** Garante que o array está na ordem correta */
+	currencies.sort()
+
+	const oldest = await Price.findOne({ currencies }).sort({ $natural: 1 })
+	if (!oldest) return
+
+	/**
+	 * Tempo do documento mais velho arredondado para o início da hora.
+	 * Ex: startTime de 01:04 é arredondado para 01:00 (timestamp em ms)
+	 */
+	const roundedStartTime = oldest.startTime - (oldest.startTime % (60 * 60000))
+
+	// TODO: Adicionar transactions para garantir integridade na operação
+	for (
+		let startTime = roundedStartTime;
+		startTime < Date.now() - 30 * 24 * 60 * 60000; // Docs de até 30 dias atrás
+		startTime += 60 * 60000 // Incrementa 1h
+	) {
+		const docs = await this.find({
+			currencies,
+			duration: {
+				$lte: 60 * 60000 // dura menos que 1h
+			},
+			startTime: {
+				$gte: startTime,
+				$lt: startTime + 60 * 60000 // Docs de até 1h após o startTime
+			}
+		}).sort({ $natural: 1 })
+		if (docs.length == 0) continue
+
+		await new Price({
+			currencies,
+			open: docs[0].open,
+			close: docs[docs.length - 1].close,
+			high: Math.max(...docs.map(item => item.high )),
+			low: Math.min(...docs.map(item => item.low )),
+			startTime,
+			duration: 60 * 60000 // 1h,
+		}).save()
+
+		await Promise.all(docs.map(doc => doc.remove()))
+	}
+})
+
+const Price = mongoose.model<PriceDoc, PriceModel>('Price', PriceSchema, 'pricehistory')
 
 export default Price

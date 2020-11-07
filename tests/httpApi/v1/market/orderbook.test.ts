@@ -149,7 +149,8 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 			sinon.assert.notCalled(spy)
 		})
 	})
-	describe('When getin the market depth', () => {
+
+	describe('When fetching the market depth', () => {
 		let spy: MockGetDepth
 		const obj = {
 			price: 20,
@@ -159,26 +160,28 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 		}
 
 		beforeEach(() => {
-			spy = ImportMock.mockFunction(MarketApi, 'getMarketDepth', [obj] )as MockGetDepth
+			spy = ImportMock.mockFunction(MarketApi, 'getMarketDepth', [obj]) as MockGetDepth
 		})
 
 		afterEach(() => {
 			spy.restore()
 		})
 
-		it('shold work as expected', async () => {
-			const { body } = await request(app).get('/v1/market/orderbook/depth').query({
-				base: 'bitcoin',
-				target: 'nano'
-			})
+		it('Should return the return of MarketApi', async () => {
+			const { body } = await request(app)
+				.get('/v1/market/orderbook/depth')
+				.query({
+					base: 'bitcoin',
+					target: 'nano'
+				})
 				.send()
 				.expect('Content-Type', /json/)
-				.expect(201)
+				.expect(200)
 			expect(body).to.be.an('array').that.deep.equal([obj])
 			sinon.assert.calledOnce(spy)
 		})
 
-		it('shold return Market Not Found error', async () => {
+		it('Should return Market Not Found error', async () => {
 			const { body } = await request(app)
 				.get('/v1/market/orderbook/depth')
 				.query({
@@ -191,7 +194,8 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 			sinon.assert.notCalled(spy)
 		})
 	})
-	describe('When getin the market Price', () => {
+
+	describe('When fetching the market Price', () => {
 		let spy: MockGetPrice
 		const obj = {
 			price: 20,
@@ -200,26 +204,28 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 		}
 
 		beforeEach(() => {
-			spy = ImportMock.mockFunction(MarketApi, 'getMarketPrice', [obj] )as MockGetDepth
+			spy = ImportMock.mockFunction(MarketApi, 'getMarketPrice', [obj]) as MockGetDepth
 		})
 
 		afterEach(() => {
 			spy.restore()
 		})
 
-		it('shold work as expected', async () => {
-			const { body } = await request(app).get('/v1/market/price').query({
-				base: 'bitcoin',
-				target: 'nano'
-			})
+		it('Should return the return of MarketApi', async () => {
+			const { body } = await request(app)
+				.get('/v1/market/price')
+				.query({
+					base: 'bitcoin',
+					target: 'nano'
+				})
 				.send()
 				.expect('Content-Type', /json/)
-				.expect(201)
+				.expect(200)
 			expect(body).to.be.an('array').that.deep.equal([obj])
 			sinon.assert.calledOnce(spy)
 		})
 
-		it('shold return Market Not Found error', async () => {
+		it('Should return Market Not Found error', async () => {
 			const { body } = await request(app)
 				.get('/v1/market/orderbook/depth')
 				.query({
