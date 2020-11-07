@@ -1,6 +1,7 @@
 import mongoose, { Schema } from '../mongoose'
 import { currencyNames } from '../../libs/currencies'
 import type { Document, Model } from 'mongoose'
+import type { PriceUpdate } from '../../../interfaces/market'
 import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** Objeto de uma modificaçao historica de preço */
@@ -69,10 +70,37 @@ interface PriceModel extends Model<PriceDoc> {
 	 * Faz um sumário dos histórico de preços do banco em documentos comprimidos
 	 * @param currencies O array das duas currencies que fazem o par desse preço
 	 */
-	summarize(
-		currencies: [SuportedCurrencies, SuportedCurrencies]
-	): Promise<void>
+	summarize(currencies: [SuportedCurrencies, SuportedCurrencies]): Promise<void>
+	/**
+	 * Insere uma nova entrada de atualização de preço. Entradas inseridas dentro
+	 * de um mesmo minuto (cheio) serão condensadas em um documento de duração
+	 * de um minuto
+	 * @param priceUptd O objeto da atualização de preço
+	 */
+	createOne(priceUptd: PriceUpdate): Promise<void>
 }
+
+PriceSchema.method('createOne', async function(this: PriceModel,
+	{ price, currencies }: PriceUpdate,
+): ReturnType<PriceModel['createOne']> {
+	await this.updateOne({
+		currencies,
+		startTime: Date.now() - (Date.now() % 60000), // Início do minuto atual
+		duration: 60000
+	}, {
+		$setOnInsert: {
+			currencies,
+			open: price,
+			startTime: Date.now() - (Date.now() % 60000),
+			duration: 60000,
+		},
+		$set: { close: price },
+		$max: { high: price },
+		$min: { low: price },
+	}, {
+		upsert: true
+	})
+})
 
 PriceSchema.static('summarize', async function(this: PriceModel,
 	currencies: [SuportedCurrencies, SuportedCurrencies]

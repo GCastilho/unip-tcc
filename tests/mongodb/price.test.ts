@@ -57,6 +57,8 @@ describe('Testing pricehistory collection', async () => {
 			.be.rejectedWith('currencies lenght must be two and currency type must be a SuportedCurrencies')
 	})
 
+	it('Should fail if the price is negative or ZERO')
+
 	describe('When calling summarize method', () => {
 		const docCount = 60
 		const prices: BasePrice[] = []
@@ -130,6 +132,27 @@ describe('Testing pricehistory collection', async () => {
 			// @ts-expect-error Testando um input vazio
 			await Price.summarize([])
 			expect(await Price.find({})).have.lengthOf(prices.length)
+		})
+	})
+
+	describe('When calling createOne', () => {
+		// Check duration
+		it('Should create a new document on the prices collection')
+
+		it('Should NOT update any document is no currencies are informed')
+
+		it('Should fail if the price is ZERO or negative')
+
+		describe('When there is a price document in the collection', () => {
+			it('Should update the closed field on update')
+
+			it('Should update the high field of the price is higher than the current high')
+
+			it('Should NOT update the high field of the price is not higher than the current high')
+
+			it('Should update the low field of the price is lower than the current low')
+
+			it('Should NOT update the low field of the price is not lower than the current low')
 		})
 	})
 })
