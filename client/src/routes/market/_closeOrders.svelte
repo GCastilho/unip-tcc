@@ -40,6 +40,7 @@
 		<th>Quantidade</th>
 		<th>Preço</th>
 		<th>Hora</th>
+		<th>Fee</th>
 		<th>Ação</th>
 	</tr>
 	{#each $openOrders as order (order._id)}
