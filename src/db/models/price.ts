@@ -1,5 +1,5 @@
 import assert from 'assert'
-import mongoose, { Schema } from '../mongoose'
+import mongoose, { Schema, startSession } from '../mongoose'
 import { currencyNames } from '../../libs/currencies'
 import type { Document, Model } from 'mongoose'
 import type { PriceUpdate } from '../../../interfaces/market'
@@ -144,36 +144,52 @@ PriceSchema.static('summarize', async function(this: PriceModel,
 	 */
 	const roundedStartTime = oldest.startTime - (oldest.startTime % (60 * 60000))
 
-	// TODO: Adicionar transactions para garantir integridade na operação
+	/** Array de todos os timestamps que os documentos sumarizados poderão ter */
+	const startTimes: number[] = []
+
+	/** Preenche os startTime espaçados de 1h de roundedStartTime até 30d atrás */
 	for (
 		let startTime = roundedStartTime;
 		startTime < Date.now() - 30 * 24 * 60 * 60000; // Docs de até 30 dias atrás
 		startTime += 60 * 60000 // Incrementa 1h
 	) {
-		const docs = await this.find({
-			currencies,
-			duration: {
-				$lte: 60 * 60000 // dura menos que 1h
-			},
-			startTime: {
-				$gte: startTime,
-				$lt: startTime + 60 * 60000 // Docs de até 1h após o startTime
-			}
-		}).sort({ $natural: 1 })
-		if (docs.length == 0) continue
-
-		await new Price({
-			currencies,
-			open: docs[0].open,
-			close: docs[docs.length - 1].close,
-			high: Math.max(...docs.map(item => item.high )),
-			low: Math.min(...docs.map(item => item.low )),
-			startTime,
-			duration: 60 * 60000 // 1h,
-		}).save()
-
-		await Promise.all(docs.map(doc => doc.remove()))
+		startTimes.push(startTime)
 	}
+
+	/** Operações de sumarização no DB; Todas são disparadas simultaneamente */
+	const dbOperations = startTimes.map(async startTime => {
+		const session = await startSession()
+		await session.withTransaction(async () => {
+			const docs = await this.find({
+				currencies,
+				duration: {
+					$lte: 60 * 60000 // dura menos que 1h
+				},
+				startTime: {
+					$gte: startTime,
+					$lt: startTime + 60 * 60000 // Docs de até 1h após o startTime
+				}
+			}).sort({ $natural: 1 })
+				.session(session)
+			if (docs.length == 0) return
+
+			await new Price({
+				currencies,
+				open: docs[0].open,
+				close: docs[docs.length - 1].close,
+				high: Math.max(...docs.map(item => item.high )),
+				low: Math.min(...docs.map(item => item.low )),
+				startTime,
+				duration: 60 * 60000 // 1h,
+			}).save({ session })
+
+			await Promise.all(docs.map(doc => doc.remove()))
+		}).finally(() => {
+			return session.endSession()
+		})
+	})
+
+	await Promise.all(dbOperations)
 })
 
 const Price = mongoose.model<PriceDoc, PriceModel>('Price', PriceSchema, 'pricehistory')
