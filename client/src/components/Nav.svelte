@@ -96,7 +96,6 @@
 		<li><a class:selected={segment === undefined} href=".">home</a></li>
 		<li><a class:selected={segment === 'about'} href="about">about</a></li>
 		<li><a class:selected={segment === 'market'} href="market">market</a></li>
-		<li><a class:selected={segment === 'orders'} href="orders">orders</a></li>
 
 		<div style="float:right">
 

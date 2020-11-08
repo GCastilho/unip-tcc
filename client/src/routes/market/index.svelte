@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte'
 	import * as prices from '../../stores/prices'
 	import BuySell from './_buySell.svelte'
+	import OpenOrders from './_openOrders.svelte'
 	import ExchangeIcon from './exchange.svg'
 	import * as currencies from '../../stores/currencies'
 
@@ -39,7 +40,7 @@
 		width: 100%;
 		flex-grow: 1;
 		flex-direction: row;
-		justify-content: center;
+		justify-content: flex-start;
 	}
 
 	.graphs {
@@ -88,7 +89,6 @@
 	}
 </style>
 
-<h1>Market</h1>
 <div class="currency-select">
 	<select bind:value={baseCurrency}>
 		<option value={null}>...</option>
@@ -109,6 +109,7 @@
 	</select>
 </div>
 <div class="main">
+
 	<BuySell
 		bind:switchPrice
 		{baseCurrency}
@@ -117,6 +118,6 @@
 	/>
 	<div class="graphs">
 		<svelte:component this={Candle} prices={$prices} />
-
+		<OpenOrders/>
 	</div>
 </div>
