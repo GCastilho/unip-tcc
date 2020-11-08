@@ -1,73 +1,90 @@
-import socket, { Socket } from 'socket.io'
-import { Server } from 'http'
 import Session from '../../db/models/session'
+import * as marketApi from '../../marketApi'
+import * as currencyApi from '../../currencyApi'
 import * as connectedUsers from './connectedUsers'
-import './emitters'
+import type { Server, Socket } from 'socket.io'
 
-/**
- * Handler da conexão de um cliente com o socket
- * @param socket O Socket do cliente que acabou de se conectar
- */
-function connectionHandler(socket: Socket) {
-	console.log('Incoming socket connection')
+export default function socketHandler(io: Server) {
+	io.on('connection', function(socket) {
+		console.log('Incoming socket connection')
 
-	socket.on('disconnect', function(this: SocketIO.Socket, reason) {
-		console.log('Socket disconnected:', reason)
-		connectedUsers.remove(this)
-	})
+		socket.on('disconnect', function(this: Socket, reason) {
+			console.log('Socket disconnected:', reason)
+			connectedUsers.remove(this)
+		})
 
-	/**
-	 * Autentica a conexão de um socket conectado, inserindo referência à Users no
-	 * socket e atualizando a connectedUsers
-	 * @param token O token de autenticação desse usuário
-	 * @param callback O callback de retorno ao cliente
-	 */
-	socket.on('authenticate', async function(this: SocketIO.Socket,
-		token: string,
-		callback: (err: null | string, response?: string) => void
-	) {
-		if (typeof token === 'string') {
-			try {
-				const session = await Session.findOne({ token }, { userId: true })
-				if (!session) throw 'TokenNotFound'
-				this.userId = session.userId.toHexString()
-				connectedUsers.add(this)
-				callback(null, 'authenticated')
-			} catch (err) {
-				this.userId = undefined
-				if (err === 'TokenNotFound' || err === 'UserNotFound') {
-					callback('TokenNotFound')
-				} else {
-					console.error('Error while authenticating user:', err)
-					callback('InternalServerError')
+		/**
+		 * Autentica a conexão de um socket conectado, inserindo referência à Users no
+		 * socket e atualizando a connectedUsers
+		 * @param token O token de autenticação desse usuário
+		 * @param callback O callback de retorno ao cliente
+		 */
+		socket.on('authenticate', async function(this: Socket,
+			token: string,
+			callback: (err: null | string, response?: string) => void
+		) {
+			if (typeof token === 'string') {
+				try {
+					const session = await Session.findOne({ token }, { userId: true })
+					if (!session) throw 'TokenNotFound'
+					this.userId = session.userId.toHexString()
+					connectedUsers.add(this)
+					callback(null, 'authenticated')
+				} catch (err) {
+					this.userId = undefined
+					if (err === 'TokenNotFound' || err === 'UserNotFound') {
+						callback('TokenNotFound')
+					} else {
+						console.error('Error while authenticating user:', err)
+						callback('InternalServerError')
+					}
 				}
+			} else {
+				connectedUsers.remove(this)
+				this.userId = undefined
+				callback('InvalidToken')
 			}
-		} else {
+		})
+
+		/**
+		 * Desautentica uma conexão de um socket conectado, removendo a referência à
+		 * Users no socket e atualizando a connectedUsers
+		 * @param callback O callback de retorno ao cliente
+		 */
+		socket.on('deauthenticate', function(this: Socket,
+			callback: (err: null, response?: string) => void
+		) {
 			connectedUsers.remove(this)
 			this.userId = undefined
-			callback('InvalidToken')
-		}
+			callback(null, 'deauthenticated')
+		})
 	})
 
-	/**
-	 * Desautentica uma conexão de um socket conectado, removendo a referência à
-	 * Users no socket e atualizando a connectedUsers
-	 * @param callback O callback de retorno ao cliente
-	 */
-	socket.on('deauthenticate', function(this: SocketIO.Socket,
-		callback: (err: null, response?: string) => void
-	) {
-		connectedUsers.remove(this)
-		this.userId = undefined
-		callback(null, 'deauthenticated')
+	// Transmite eventos para todos os sockets conectados
+
+	marketApi.events.on('price_update', priceUpdate => {
+		io.emit('price_update', priceUpdate)
 	})
-}
 
-/**
- * Função de inicialização do websocket
- */
-export default function(server: Server) {
-	const io = socket(server)
+	marketApi.events.on('depth_update', depth => {
+		io.emit('depth_update', depth)
+	})
 
-	io.on('connection', connectionHandler)
+	// Transmite eventos para os sockets autenticados
+
+	currencyApi.events.on('new_transaction', (userId, currency, transaction) => {
+		connectedUsers.get(userId)?.emit('new_transaction', currency, transaction)
+	})
+
+	currencyApi.events.on('update_received_tx', (userId, currency, txUpdate) => {
+		connectedUsers.get(userId)?.emit('update_received_tx', currency, txUpdate)
+	})
+
+	currencyApi.events.on('update_sent_tx', (userId, currency, txUpdate) => {
+		connectedUsers.get(userId)?.emit('update_sent_tx', currency, txUpdate)
+	})
+
+	marketApi.events.on('order_update', (userId, orderUpdt) => {
+		connectedUsers.get(userId)?.emit('order_update', orderUpdt)
+	})
 }

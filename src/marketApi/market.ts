@@ -1,7 +1,11 @@
-import { ObjectId } from 'mongodb'
+import { EventEmitter } from 'events'
 import Order from '../db/models/order'
 import trade from './trade'
+import type TypedEmitter from 'typed-emitter'
 import type { OrderDoc } from '../db/models/order'
+import type { PersonDoc } from '../db/models/person'
+import type { SuportedCurrencies } from '../libs/currencies'
+import type { MarketDepth, PriceUpdate, PriceRequest, OrderUpdate } from '../../interfaces/market'
 
 /**
  * O type da linked list dos nodes do orderbook
@@ -18,6 +22,43 @@ type LinkedList = {
 	data: OrderDoc[]
 }
 
+/** Event emitter de todas as instâncias da Market */
+export const events: TypedEmitter<{
+	price_update: (priceUpdt: PriceUpdate) => void
+	depth_update: (depth: MarketDepth) => void
+	order_update: (userId: PersonDoc['_id'], orderUpdt: OrderUpdate) => void
+}> = new EventEmitter()
+
+/**
+ * Decorator para emitir um evento de price update no events a cada vez que as
+ * propriedades de marketPrice forem atualizadas
+ */
+function Emittable<T extends PriceUpdate['type']>(type: T) {
+	let value: number
+
+	return function Decorator(
+		target: Record<string, any>,
+		propertyKey: string,
+	) {
+		Object.defineProperty(target, propertyKey, {
+			enumerable: true,
+			get: function() {
+				return value
+			},
+			set: function(this: Market, newPrice: typeof value) {
+				value = newPrice
+				if (this.emitting) {
+					events.emit('price_update', {
+						price: newPrice,
+						currencies: this.currencies,
+						type
+					})
+				}
+			}
+		})
+	}
+}
+
 /**
  * Market é uma estrutura que armazena todas as ordens de todos os preços
  * desse par de currencies
@@ -25,18 +66,86 @@ type LinkedList = {
 export default class Market {
 	/** Um map com as listas de ordens separadas por preço */
 	private orderbook: Map<number, LinkedList>
+
 	/** Head da linked list */
 	private head: null|LinkedList
+
+	/** Flag de controle se a Market está emitindo eventos ou não */
+	protected emitting: boolean
+
 	/** Preço da maior ordem de compra */
+	@Emittable('buy')
 	private buyPrice: number
+
 	/** Preço da menor ordem de venda */
+	@Emittable('sell')
 	private sellPrice: number
 
-	constructor() {
+	/** Noma das currencies desse par ordenados alfabeticamente */
+	public currencies: [SuportedCurrencies, SuportedCurrencies]
+
+	/**
+	 * WORKAROUND: Ordens que foram adicionadas antes da anterior terminar um
+	 * match ficam aqui esperando para serem executadas quando ela terminar
+	 */
+	private pendingOrders: OrderDoc[]
+
+	/** WORKAROUND: Flag que indica se uma ordem está sendo processada pela add */
+	private trading: boolean
+
+	constructor(currencies: [SuportedCurrencies, SuportedCurrencies]) {
+		this.currencies = currencies.sort()
 		this.orderbook = new Map()
 		this.buyPrice = 0
 		this.sellPrice = Infinity
 		this.head = null
+		this.emitting = true
+		this.pendingOrders = []
+		this.trading = false
+	}
+
+	/** Retorna o depth deste mercado */
+	public get depth(): MarketDepth[] {
+		const depth: MarketDepth[] = []
+
+		for (const node of this.orderbook.values()) {
+			depth.push({
+				price: node.price,
+				type: node.data[0].type,
+				currencies: this.currencies,
+				volume: node.data.reduce((acc, order) => acc + order.requesting.amount, 0)
+			})
+		}
+
+		return depth
+	}
+
+	/** Retorna um objeto com buyPrice e sellPrice */
+	public get prices(): PriceRequest {
+		return {
+			buyPrice: this.buyPrice,
+			sellPrice: this.sellPrice,
+			currencies: this.currencies
+		}
+	}
+
+	/** Faz o bootstrap da market carregando as ordens salvas no banco */
+	public async bootstrap() {
+		this.emitting = false
+		console.log('Beginning bootstrap for', this.currencies)
+		await Order.find({
+			'owning.currency': { $in: this.currencies },
+			'requesting.currency': { $in: this.currencies },
+			status: 'ready'
+		}).sort({ timestamp: -1 })
+			.cursor()
+			.eachAsync(order => this.add(order))
+			.catch(err => {
+				console.error('Error while bootstrapping market for', this.currencies, err)
+				throw err
+			})
+		console.log('Bootstrap complete for', this.currencies, 'market is online')
+		this.emitting = true
 	}
 
 	/**
@@ -207,59 +316,43 @@ export default class Market {
 			const maker = this.getOrderFromIndex(node, 0)
 
 			if (remaining > maker.requesting.amount) {
-				const takerCopy = new Order(taker)
-				takerCopy._id = new ObjectId()
-				takerCopy.isNew = true
+				/**
+				 * Divide a taker em uma ordem com amounts e preço da maker. O preço da
+				 * maker sempre será melhor (mais vantajoso) ou igual ao da taker,
+				 * então a mudança de preço não é um problema
+				 */
+				const takerCopy = taker.split(
+					maker.requesting.amount,
+					maker.owning.amount,
+					maker.price
+				)
 
-				takerCopy.owning.amount = maker.requesting.amount
-				takerCopy.requesting.amount = maker.owning.amount
 				matchs.push([maker, takerCopy])
+			} else if (taker.owning.amount < maker.requesting.amount) {
+				/** Divide a maker em uma ordem com os valores da taker (para o match) */
+				const makerCopy = maker.split(
+					taker.requesting.amount,
+					taker.owning.amount
+				)
+
+				/** Envia o restante da maker de volta ao orderbook */
+				leftovers.push(maker)
+
+				matchs.push([makerCopy, taker])
 			} else {
 				/**
-				 * Atualiza owning e requesting da taker com os valores do remaining
+				 * Se o código cair aqui, então
+				 * taker.owning.amount == maker.requesting.amount
+				 * Entretando, se as ordens tiverem preços diferentes, o reverso
+				 * (requesting da taker e owning da maker) não é válido
 				 *
-				 * Owning e requesting devem ficar na mesma proporção, então o
-				 * requesting será atualizado na proporção em que o owning foi reduzido
+				 * Como a maker nunca tem um owning que é desvantajoso ao requesting
+				 * da taker, então essa linha garante que os valores sejam iguais sem
+				 * prejudicar a taker, garantindo o preço igual que as ordens precisam
+				 * ter para um 'match' ser feito
 				 */
-				taker.requesting.amount = taker.requesting.amount * remaining / taker.owning.amount
-				taker.owning.amount = remaining
-
-				if (taker.owning.amount < maker.requesting.amount) {
-					/*
-					 * A maker é maior que o restante da taker. Ela deve ser
-					 * dividida em duas:
-					 * a primeira com os amounts da taker para ser enviada ao match
-					 * e a segunda com o restante que deverá retornar ao orderbook
-					 */
-
-					// Ordem com os valores da diferença entre maker e taker
-					maker.owning.amount = maker.owning.amount - taker.requesting.amount
-					maker.requesting.amount = maker.requesting.amount - taker.owning.amount
-					leftovers.push(maker)
-
-					/** Ordem com os valores da taker (para o match) */
-					const makerCopy = new Order(maker)
-					makerCopy._id = new ObjectId()
-					makerCopy.isNew = true
-					makerCopy.owning.amount = taker.requesting.amount
-					makerCopy.requesting.amount = taker.owning.amount
-
-					matchs.push([makerCopy, taker])
-				} else {
-					/**
-					 * Se o código cair aqui, então
-					 * taker.owning.amount == maker.requesting.amount
-					 * Entretando, se as ordens tiverem preços diferentes, o reverso
-					 * (requesting da taker e owning da maker) não é válido
-					 *
-					 * Como a maker nunca tem um owning que é desvantajoso ao requesting
-					 * da taker, então essa linha garante que os valores sejam iguais sem
-					 * prejudicar a taker, garantindo o preço igual que as ordens precisam
-					 * ter para um 'match' ser feito
-					 */
-					taker.requesting.amount = maker.owning.amount
-					matchs.push([maker, taker])
-				}
+				taker.requesting.amount = maker.owning.amount
+				matchs.push([maker, taker])
 			}
 
 			/**
@@ -275,10 +368,6 @@ export default class Market {
 
 		// Taker não executou completamente
 		if (remaining > 0) {
-			// Atualiza owning e requesting da taker com os valores do remaining
-			taker.requesting.amount = taker.requesting.amount * remaining / taker.owning.amount
-			taker.owning.amount = remaining
-
 			leftovers.push(taker)
 		}
 
@@ -302,6 +391,18 @@ export default class Market {
 
 		// Envia os matchs à função de trade
 		await trade(matchs)
+
+		// Emite o evento de atualização de todas as ordens
+		matchs.flat().forEach(order => {
+			events.emit('order_update', order.userId, {
+				opid: (order.originalOrderId || order._id).toHexString(),
+				status: order.originalOrderId ? 'open' : 'close',
+				completed: order.originalOrderId ? {
+					owning: order.owning.amount,
+					requesting: order.requesting.amount
+				} : undefined,
+			} as OrderUpdate)
+		})
 	}
 
 	/**
@@ -310,13 +411,29 @@ export default class Market {
 	 * @param order Documento da ordem que será processado
 	 */
 	async add(order: OrderDoc) {
-		if (order.type == 'buy' && order.price >= this.sellPrice) {
-			await this.execTaker(order)
-		} else if (order.type == 'sell' && order.price <= this.buyPrice) {
+		if (this.trading) return this.pendingOrders.push(order)
+		this.trading = true
+
+		if (
+			order.type == 'buy' && order.price >= this.sellPrice ||
+			order.type == 'sell' && order.price <= this.buyPrice
+		) {
 			await this.execTaker(order)
 		} else {
 			this.pushMaker(order)
 		}
+		console.log('orderbook state after order execution:', this.orderbook)
+
+		/**
+		 * Deveria emitir o update apenas daquele preço, mas como calcular isso na
+		 * estrutura atual vai ser mto trampo, vou mandar um evento de atualização
+		 * de todos os depths
+		 */
+		this.depth.forEach(depth => events.emit('depth_update', depth))
+
+		this.trading = false
+		const firstPending = this.pendingOrders.shift()
+		if (firstPending) return this.add(firstPending)
 	}
 
 	/**
@@ -324,11 +441,15 @@ export default class Market {
 	 * Se a ordem for a última do node ele também será removido do orderbook
 	 * @param order A ordem que deverá ser removida
 	 */
-	remove(order: OrderDoc) {
+	async remove(order: OrderDoc) {
 		const node = this.orderbook.get(order.price)
 		if (!node) throw 'PriceNotFound'
 		const index = node.data.findIndex(v => v.id == order.id)
 		if (index == -1) throw 'OrderNotFound'
 		this.getOrderFromIndex(node, index)
+		console.log('orderbook state after order removal:', this.orderbook)
+
+		/** Mesmo comment que essa parte no add */
+		this.depth.forEach(depth => events.emit('depth_update', depth))
 	}
 }

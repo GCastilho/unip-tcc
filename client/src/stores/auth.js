@@ -71,6 +71,7 @@ export async function login(email, password) {
 	} catch (err) {
 		console.error('Authentication error', err)
 		set(false)
+		throw err
 	}
 }
 

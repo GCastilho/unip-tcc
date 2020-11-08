@@ -1,7 +1,6 @@
 {
 	"files.insertFinalNewline": true,
 	"editor.codeLens": true,
-	"editor.tabSize": 2,
 	"editor.defaultFormatter": "vscode.typescript-language-features",
 	"editor.insertSpaces": false,
 	"editor.renderWhitespace": "boundary",

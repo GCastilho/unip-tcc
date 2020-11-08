@@ -8,7 +8,7 @@
     "build": "npm run build:clean && npm run build:sapper && npm run build:repository && npm run build:fix-configs",
     "build:clean": "del-cli ./__sapper__/build",
     "build:sapper": "sapper build",
-    "build:repository": "copyfiles -E static/** package* __sapper__/build/",
+    "build:repository": "copyfiles -E static/** static/**/* package* __sapper__/build/",
     "build:fix-configs": "rexreplace \"__sapper__/build\" \".\" __sapper__/build/server/server.js && rexreplace \"cd __sapper__/build && \" \"\" __sapper__/build/package.json",
     "export": "sapper export",
     "cy:run": "cypress run",
