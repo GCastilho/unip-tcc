@@ -1,5 +1,7 @@
 import { expect } from 'chai'
 import Price from '../../src/db/models/price'
+import { useFakeTimers } from 'sinon'
+import type { SinonFakeTimers } from 'sinon'
 import type { PriceUpdate } from '../../interfaces/market'
 import type { SuportedCurrencies } from '../../src/libs/currencies'
 
@@ -210,18 +212,28 @@ describe('Testing pricehistory collection', async () => {
 
 		describe('When there is a price document in the collection', () => {
 			let priceDoc: InstanceType<typeof Price>
+			let clock: SinonFakeTimers
 
 			beforeEach(async () => {
+				// Faz mock do Date para que Date.now() sempre retorne o mesmo valor
+				clock = useFakeTimers({
+					now: Date.now(),
+					toFake: ['Date']
+				})
+
 				priceDoc = await new Price({
 					open: 10,
 					close: 12,
 					high: 25,
 					low: 5,
 					duration: 60000,
-					// Esse startTime pode falhar se o Date.now() mudar pro próximo segundo
 					startTime: Date.now() - (Date.now() % 60000),
 					currencies: ['bitcoin', 'nano']
 				}).save()
+			})
+
+			afterEach(() => {
+				clock.restore()
 			})
 
 			it('Should update the close field on update', async () => {
