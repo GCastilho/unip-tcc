@@ -56,8 +56,9 @@
 	let gX : d3.Selection<SVGGElement, unknown, HTMLElement, any>
 	/** desenha a escala Y e as linhas */
 	let gY : d3.Selection<SVGGElement, unknown, HTMLElement, any>
-
+	/** a parte do grafico aonde ficam as colunas */
 	let chartBody
+	
 	export let prices: PriceHistory[] = []
 
 	onMount(() => {
@@ -178,12 +179,11 @@
 
 		transitionDuration = transitionDurationBefore
 		transitionStartTimeout = transitionTimeouBefore
-	console.log(xBand.bandwidth()*zoomQuantity )
+
 		function zoomed(event: { transform: d3.ZoomTransform; }) {
 			transform = event.transform
 			zoomQuantity = transform.k
 			let xScaleZ = transform.rescaleX(xScale)
-			console.log(transform)
 			const hideTicksWithoutLabel = function() {
 				d3.selectAll('.xAxis .tick text').each(function(this: any){
 					if (this.innerHTML === '') {
@@ -317,7 +317,6 @@
 		zoom.translateBy(svg,-virtualWidth,0)
 		//o multiplier esta ai por mo
 		if( (tAux + translateDistance*1.001 > transform.x)){
-			console.log(	transform.x - tAux)
 			zoom.translateBy(svg,	-(transform.x - tAux)/transform.k,transform.y)
 		}
 	}

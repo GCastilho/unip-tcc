@@ -1,8 +1,9 @@
 <script>
 	import * as prices from '../../stores/prices'
+	import * as depth from '../../stores/depth'
 	import BuySell from './_buySell.svelte'
 	import ExchangeIcon from './exchange.svg'
-	import Candle from './_components/chart.svelte'
+	import Candle from './_components/candle.svelte'
 	import Depth from './_components/depth.svelte'
 	import * as currencies from '../../stores/currencies'
 
@@ -105,4 +106,5 @@
 	/>
 	<Candle prices={$prices} />
 </div>
-<Depth />
+<Depth data={$depth}/>
+
