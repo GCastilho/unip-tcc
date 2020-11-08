@@ -1,7 +1,8 @@
 import { ObjectId } from 'mongodb'
 import { startSession } from 'mongoose'
-import Market from './market'
+import Market, { events } from './market'
 import Order from '../db/models/order'
+import Price from '../db/models/price'
 import Person from '../db/models/person'
 import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
@@ -10,6 +11,15 @@ import type { MarketOrder, MarketDepth, PriceRequest } from '../../interfaces/ma
 
 /** Re-exporta o eventEmitter do módulo da Market */
 export { events } from './market'
+
+/** Ouve por eventos de atualização de preço e manda-os para o banco de dados */
+events.on('price_update', async priceUpdt => {
+	try {
+		await Price.createOne(priceUpdt)
+	} catch (err) {
+		console.error('Error while inserting priceUpdate', err)
+	}
+})
 
 /** Classe do objeto do erro de mercado não encontrado */
 class MarketNotFound extends Error {
