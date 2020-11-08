@@ -49,21 +49,22 @@
 	/** a parte do grafico aonde ficam as colunas */
 	let chartBody
 	
-	export let data: MarketDepth[] = []
-
+	export let _data: MarketDepth[] = []
+	/** the internal data, used to not modify the store, it does not work otherwise IDKW */
+	let data
 	onMount(() => {
-		drawChart(data)
+		drawChart(_data)
 	})
-	$: updateDepth(data)
+	$: updateDepth(_data)
 
 	function drawChart(depthData: MarketDepth[]) {
+		data = orderData(depthData)
 		svg = d3.select('#depthChart')
 			.attr('width', width + margin.left + margin.right)
 			.attr('height', height + margin.top + margin.bottom)
 			.append('g')
 			.attr('transform', 'translate(' +margin.left+ ',' +margin.top+ ')')
 
-		data = orderData(depthData)
 
 		let xmax = Math.max(...data.map(v => v.price))
 
@@ -96,7 +97,7 @@
 		gX.selectAll('.tick text')
 			.call(wrap, xBand.bandwidth())
 
-		const ymax = d3.max(data.map(r => r.volume)) || 100
+		const ymax = Math.max(data.map( (r: MarketDepth) => r.volume)) || 100
 
 		yScale = d3.scaleLinear().domain([0, ymax]).range([height, 0])
 		
@@ -109,7 +110,7 @@
 			.call(g => g.selectAll(".tick line")
 				.clone()
 				.attr("stroke-opacity", 0.2)
-				.attr("x2", width )
+				.attr("x2", width)
 			)
 		
 		chartBody = svg.append('g')
@@ -190,8 +191,8 @@
 				xmax = xPriceScale(Math.floor(xScaleZ.domain()[1]))
 				filtered = data.filter(d => ((d.price >= xmin) && (d.price <= xmax)))
 
-				minP = +d3.min(filtered, d => d['volume'])
-				maxP = +d3.max(filtered, d => d['volume'])
+				minP = +d3.min(filtered, (d: MarketDepth) => d.volume)
+				maxP = +d3.max(filtered, (d: MarketDepth) => d.volume)
 				buffer = Math.floor((maxP - minP) * 0.1)
 			
 				yScale.domain([0, maxP + buffer])
@@ -214,14 +215,12 @@
 	}
 
 	function updateDepth (depthData: MarketDepth[]) {
-
 		if(!svg) return
 		data = orderData(depthData)
 		const extent: [[number, number], [number, number]] = [[0, 0], [width, height/2]] 
 		zoom.translateExtent(extent)
 
 		svg.call(zoom)
-		//dates = prices.map(p => p.startTime)
 
 		xScale=	d3.scaleLinear()
 			.domain([ -1 , data.length])

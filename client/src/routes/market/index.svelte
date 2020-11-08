@@ -106,5 +106,5 @@
 	/>
 	<Candle prices={$prices} />
 </div>
-<Depth data={$depth}/>
+<Depth _data={$depth}/>
 
