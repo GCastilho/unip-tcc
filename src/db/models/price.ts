@@ -1,5 +1,6 @@
 import assert from 'assert'
-import mongoose, { Schema, startSession } from '../mongoose'
+import { Schema, startSession } from 'mongoose'
+import mongoose from '../mongoose'
 import { currencyNames } from '../../libs/currencies'
 import type { Document, Model } from 'mongoose'
 import type { PriceUpdate } from '../../../interfaces/market'
@@ -28,7 +29,7 @@ const PriceSchema = new Schema({
 		type: Number,
 		required: true,
 		validate: {
-			validator: v => v > 0,
+			validator: v => v >= 0,
 			message: props => `open needs to be greater than zero, found ${props.value}`
 		}
 	},
@@ -36,7 +37,7 @@ const PriceSchema = new Schema({
 		type: Number,
 		required: true,
 		validate: {
-			validator: v => v > 0,
+			validator: v => v >= 0,
 			message: props => `close needs to be greater than zero, found ${props.value}`
 		}
 	},
@@ -44,7 +45,7 @@ const PriceSchema = new Schema({
 		type: Number,
 		required: true,
 		validate: {
-			validator: v => v > 0,
+			validator: v => v >= 0,
 			message: props => `high needs to be greater than zero, found ${props.value}`
 		}
 	},
@@ -52,7 +53,7 @@ const PriceSchema = new Schema({
 		type: Number,
 		required: true,
 		validate: {
-			validator: v => v > 0,
+			validator: v => v >= 0,
 			message: props => `low needs to be greater than zero, found ${props.value}`
 		}
 	},
@@ -64,7 +65,7 @@ const PriceSchema = new Schema({
 		type : Number,
 		required: false,
 		validate: {
-			validator: v => v > 0,
+			validator: v => v >= 0,
 			message: props => `duration needs to be greater than zero, found ${props.value}`
 		}
 	},
@@ -104,7 +105,7 @@ interface PriceModel extends Model<PriceDoc> {
 PriceSchema.static('createOne', async function(this: PriceModel,
 	{ price, currencies }: PriceUpdate,
 ): ReturnType<PriceModel['createOne']> {
-	assert(price > 0, 'Price needs to be a positive number')
+	assert(price >= 0, `Price can NOT be a negative number, found: ${price}`)
 	assert(currencies?.length == 2, 'Supported currencies array must have length of 2')
 
 	/** Garante que o array está na ordem correta */

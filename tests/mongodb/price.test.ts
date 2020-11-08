@@ -193,14 +193,19 @@ describe('Testing pricehistory collection', async () => {
 				.be.rejectedWith('Supported currencies array must have length of 2')
 		})
 
-		it('Should fail if the price is ZERO', async () => {
+		it('Should NOT fail if the price is ZERO', async () => {
 			await expect(Price.createOne({ ...updtModel, price: 0 })).to.eventually
-				.be.rejectedWith('Price needs to be a positive number')
+				.be.fulfilled
+		})
+
+		it('Should NOT fail if the price is Infinity', async () => {
+			await expect(Price.createOne({ ...updtModel, price: Infinity })).to.eventually
+				.be.fulfilled
 		})
 
 		it('Should fail if the price is negative', async () => {
 			await expect(Price.createOne({ ...updtModel, price: -1 })).to.eventually
-				.be.rejectedWith('Price needs to be a positive number')
+				.be.rejectedWith('Price can NOT be a negative number')
 		})
 
 		describe('When there is a price document in the collection', () => {
@@ -213,6 +218,7 @@ describe('Testing pricehistory collection', async () => {
 					high: 25,
 					low: 5,
 					duration: 60000,
+					// Esse startTime pode falhar se o Date.now() mudar pro próximo segundo
 					startTime: Date.now() - (Date.now() % 60000),
 					currencies: ['bitcoin', 'nano']
 				}).save()
