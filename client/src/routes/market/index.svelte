@@ -67,6 +67,7 @@
 
 	.main {
 		display: flex;
+		margin-top: 20px;
 		height: 100%;
 		width: 100%;
 		flex-grow: 1;
@@ -120,49 +121,54 @@
 	}
 </style>
 
-<div class="currency-select">
-	<select bind:value={baseCurrency}>
-		<option value={null}>...</option>
-		{#each $currencies as currency }
-			<option value={currency}>
-				{currency.name}
-			</option>
-		{/each}
-	</select>
-	<button on:click={switchCoins}><ExchangeIcon/></button>
-	<select bind:value={targetCurrency}>
-		<option value={null}>...</option>
-		{#each $currencies as currency }
-			<option value={currency}>
-				{currency.name}
-			</option>
-		{/each}
-	</select>
-</div>
-<div class="main">
 
-	<BuySell
-		bind:switchPrice
-		{baseCurrency}
-		{targetCurrency}
-		{exchangeCurrency}
-	/>
-	<div class="graphs">
-		<svelte:component this={Candle} prices={$prices} />
+<div class="main">
+	<div>
+		<BuySell
+			bind:switchPrice
+			{baseCurrency}
+			{targetCurrency}
+			{exchangeCurrency}
+		>
+			<div class="currency-select">
+				<select bind:value={baseCurrency}>
+					<option value={null}>...</option>
+					{#each $currencies as currency }
+						<option value={currency}>
+							{currency.name}
+						</option>
+					{/each}
+				</select>
+				<button on:click={switchCoins}><ExchangeIcon/></button>
+				<select bind:value={targetCurrency}>
+					<option value={null}>...</option>
+					{#each $currencies as currency }
+						<option value={currency}>
+							{currency.name}
+						</option>
+					{/each}
+				</select>
+			</div>
+		</BuySell>
+
 		
-		<Tabs>
-			<TabList>
-				<Tab>Open Orders</Tab>
-				<Tab>Close Orders</Tab>
-			</TabList>
-			
-			<TabPanel>
-				<OpenOrders/>
-			</TabPanel>
-			
-			<TabPanel>
-				<CloseOrders/>
-			</TabPanel>
-		</Tabs>
+	</div>
+	<Candle prices={$prices} />
+	<div class="graphs">
 	</div>
 </div>
+
+<Tabs>
+	<TabList>
+		<Tab>Open Orders</Tab>
+		<Tab>Close Orders</Tab>
+	</TabList>
+	
+	<TabPanel>
+		<OpenOrders/>
+	</TabPanel>
+	
+	<TabPanel>
+		<CloseOrders/>
+	</TabPanel>
+</Tabs>

@@ -87,7 +87,8 @@
 
 	.block-1 {
 		display: flex;
-		height: 100%;
+		height: 458px;
+		width: 277px;
 		padding: 20px;
 		flex-direction: column;
 		border: 1.5px solid #F0AE98;
@@ -260,6 +261,7 @@
 </style>
 
 <div class="block-1" style={`--button-color: ${buttonColor}`}>
+	<slot></slot>
 	<div class="radio-switch">
 		<div class="radio-switch-item">
 			<input type="radio" class="radio-switch-input" bind:group={operation} value="buy" id="buy">

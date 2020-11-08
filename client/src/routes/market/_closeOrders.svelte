@@ -1,12 +1,12 @@
 <script lang='ts'>
 	import { onMount } from 'svelte'
-	import * as openOrders from '../../stores/orderbook'
-	import TableRow from './_components/tableRowOpenOrders.svelte'
+	import * as trades from '../../stores/trades'
+	import TableRow from './_components/tableRowCloseOrders.svelte'
 
-	const { synchronized } = openOrders
+	const { synchronized } = trades
 
 	onMount(() => {
-		if ($openOrders.length == 0) openOrders.fetch()
+		if ($trades.length == 0) trades.fetch()
 	})
 
 	/**
@@ -15,7 +15,7 @@
 	function handleScroll() {
 		// Checa se chegou a 80% do fim da página
 		if ((window.innerHeight + window.pageYOffset) >= 0.8 * document.body.offsetHeight) {
-			openOrders.fetch()
+			trades.fetch()
 		}
 	}
 </script>
@@ -43,8 +43,8 @@
 		<th>Fee</th>
 		<th>Ação</th>
 	</tr>
-	{#each $openOrders as order (order._id)}
-		<TableRow {order}/>
+	{#each $trades as trade (trade._id)}
+		<TableRow {trade}/>
 	{:else}
 		<tr>
 			<td colspan="6" style="border-right:none">
