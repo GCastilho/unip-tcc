@@ -1,5 +1,6 @@
 import { expect } from 'chai'
 import Price from '../../src/db/models/price'
+import type { PriceUpdate } from '../../interfaces/market'
 import type { SuportedCurrencies } from '../../src/libs/currencies'
 
 /** Type dos valores necessários par preencher o price */
@@ -57,7 +58,32 @@ describe('Testing pricehistory collection', async () => {
 			.be.rejectedWith('currencies lenght must be two and currency type must be a SuportedCurrencies')
 	})
 
-	it('Should fail if the price is negative or ZERO')
+	it('Should fail if duration is negative or ZERO', async () => {
+		const price = new Price({
+			open: 10,
+			close: 12,
+			high: 25,
+			low: 5,
+			duration: -60000,
+			startTime: Date.now(),
+			currencies: ['nano', 'bitcoin']
+		})
+		await expect(price.save()).to.eventually
+			.be.rejectedWith('duration needs to be greater than zero')
+	})
+
+	it('Should fail if the price is negative or ZERO', async () => {
+		const price = new Price({
+			open: -10,
+			close: -12,
+			high: -25,
+			low: -5,
+			duration: 60000,
+			startTime: Date.now(),
+			currencies: ['nano', 'bitcoin']
+		})
+		await expect(price.save()).to.eventually.be.rejected
+	})
 
 	describe('When calling summarize method', () => {
 		const docCount = 60
@@ -82,16 +108,21 @@ describe('Testing pricehistory collection', async () => {
 
 			for (let i = 0; i < docCount; i++) {
 				prices.push({
-					open: 1.1 * basePrice.open - 1 * i % 2 + i / 7,
-					close: - 0.7 * basePrice.close + i * i % 2 - i / 7,
-					high: Math.abs(1.5 * basePrice.open - 1 * i % 2 + i / 6),
-					low: - 1.1 * basePrice.close + 1 * i % 2 - i / 6,
-					startTime: basePrice.startTime + i * 1 * 60000, // espaça cada doc em 1 min
+					open: 1.1 * basePrice.open + i % 2,
+					close: 0.4 * basePrice.close + i % 2,
+					high: 1.5 * basePrice.high + i % 2,
+					low: 0.2 * basePrice.low + i % 2,
+					startTime: basePrice.startTime + i * 60000, // espaça cada doc em 1 min
 					duration: 60000,
 					currencies: ['bitcoin', 'nano']
 				})
 			}
-			expect(prices.every(p => p.high >= p.low && p.high >= p.close && p.low <= p.close))
+			for (const p of prices) {
+				expect(
+					p.high >= p.low && p.high >= p.close && p.low <= p.close,
+					`Invalid prices value for: ${JSON.stringify(p, null, 8)}`
+				).to.be.true
+			}
 			// Salva em seguida para não perder a ordem
 			for (const p of prices) {
 				await Price.create({ ...p })
@@ -136,23 +167,109 @@ describe('Testing pricehistory collection', async () => {
 	})
 
 	describe('When calling createOne', () => {
-		// Check duration
-		it('Should create a new document on the prices collection')
+		const updtModel: PriceUpdate = {
+			price: 10,
+			type: 'buy',
+			currencies: ['nano', 'bitcoin']
+		}
 
-		it('Should NOT update any document is no currencies are informed')
+		beforeEach(async () => {
+			await Price.deleteMany({})
+		})
 
-		it('Should fail if the price is ZERO or negative')
+		it('Should create a new document on the prices collection', async () => {
+			await Price.createOne(updtModel)
+			const doc = await Price.findOne({})
+			expect(doc.open).to.equal(updtModel.price)
+			expect(doc.close).to.equal(updtModel.price)
+			expect(doc.high).to.equal(updtModel.price)
+			expect(doc.low).to.equal(updtModel.price)
+			expect(doc.duration).to.equal(60000)
+		})
+
+		it('Should NOT update any document is no currencies are informed', async () => {
+			// @ts-expect-error Testando não informar currencies
+			await expect(Price.createOne({ price: 1 })).to.eventually
+				.be.rejectedWith('Supported currencies array must have length of 2')
+		})
+
+		it('Should fail if the price is ZERO', async () => {
+			await expect(Price.createOne({ ...updtModel, price: 0 })).to.eventually
+				.be.rejectedWith('Price needs to be a positive number')
+		})
+
+		it('Should fail if the price is negative', async () => {
+			await expect(Price.createOne({ ...updtModel, price: -1 })).to.eventually
+				.be.rejectedWith('Price needs to be a positive number')
+		})
 
 		describe('When there is a price document in the collection', () => {
-			it('Should update the closed field on update')
+			let priceDoc: InstanceType<typeof Price>
 
-			it('Should update the high field of the price is higher than the current high')
+			beforeEach(async () => {
+				priceDoc = await new Price({
+					open: 10,
+					close: 12,
+					high: 25,
+					low: 5,
+					duration: 60000,
+					startTime: Date.now() - (Date.now() % 60000),
+					currencies: ['bitcoin', 'nano']
+				}).save()
+			})
 
-			it('Should NOT update the high field of the price is not higher than the current high')
+			it('Should update the close field on update', async () => {
+				await Price.createOne(updtModel)
 
-			it('Should update the low field of the price is lower than the current low')
+				const docs = await Price.find({})
+				expect(docs).to.have.lengthOf(1)
+				const doc = docs[0]
 
-			it('Should NOT update the low field of the price is not lower than the current low')
+				expect(doc.close).to.equal(updtModel.price)
+				expect(doc.close).to.not.be.equal(priceDoc.close)
+			})
+
+			it('Should update the high field of the price is higher than the current high', async () => {
+				await Price.createOne({ ...updtModel, price: priceDoc.high + 1 })
+
+				const docs = await Price.find({})
+				expect(docs).to.have.lengthOf(1)
+				const doc = docs[0]
+
+				expect(doc.high).to.equal(priceDoc.high + 1)
+			})
+
+			it('Should NOT update the high field of the price is not higher than the current high', async () => {
+				await Price.createOne({ ...updtModel, price: priceDoc.high - 1 })
+
+				const docs = await Price.find({})
+				expect(docs).to.have.lengthOf(1)
+				const doc = docs[0]
+
+				expect(doc.high).to.not.equal(priceDoc.high - 1)
+				expect(doc.high).to.equal(priceDoc.high)
+			})
+
+			it('Should update the low field of the price is lower than the current low', async () => {
+				await Price.createOne({ ...updtModel, price: priceDoc.low - 1 })
+
+				const docs = await Price.find({})
+				expect(docs).to.have.lengthOf(1)
+				const doc = docs[0]
+
+				expect(doc.low).to.equal(priceDoc.low - 1)
+			})
+
+			it('Should NOT update the low field of the price is not lower than the current low', async () => {
+				await Price.createOne({ ...updtModel, price: priceDoc.low + 1 })
+
+				const docs = await Price.find({})
+				expect(docs).to.have.lengthOf(1)
+				const doc = docs[0]
+
+				expect(doc.low).to.not.equal(priceDoc.low + 1)
+				expect(doc.low).to.equal(priceDoc.low)
+			})
 		})
 	})
 })
