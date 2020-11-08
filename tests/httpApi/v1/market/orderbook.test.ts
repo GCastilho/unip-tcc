@@ -14,6 +14,8 @@ import type { SinonStub } from 'sinon'
 /** Mock do método 'add' da marketApi */
 type MockAdd = SinonStub<Parameters<typeof MarketApi['add']>>;
 type MockRemove = SinonStub<Parameters<typeof MarketApi['remove']>>;
+type MockGetDepth = SinonStub<Parameters<typeof MarketApi['getMarketDepth']>>;
+type MockGetPrice = SinonStub<Parameters<typeof MarketApi['getMarketPrice']>>;
 
 const app = express()
 app.use(api)
@@ -144,6 +146,95 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 				error: 'Bad Request',
 				message: 'The opid \'veryShortOpid\' is not a valid operation id'
 			})
+			sinon.assert.notCalled(spy)
+		})
+	})
+
+	describe('When fetching the market depth', () => {
+		let spy: MockGetDepth
+		const obj = {
+			price: 20,
+			volume: 2.58,
+			type: 'buy',
+			currencies: ['bitcoin', 'nano']
+		}
+
+		beforeEach(() => {
+			spy = ImportMock.mockFunction(MarketApi, 'getMarketDepth', [obj]) as MockGetDepth
+		})
+
+		afterEach(() => {
+			spy.restore()
+		})
+
+		it('Should return the return of MarketApi', async () => {
+			const { body } = await request(app)
+				.get('/v1/market/orderbook/depth')
+				.query({
+					base: 'bitcoin',
+					target: 'nano'
+				})
+				.send()
+				.expect('Content-Type', /json/)
+				.expect(200)
+			expect(body).to.be.an('array').that.deep.equal([obj])
+			sinon.assert.calledOnce(spy)
+		})
+
+		it('Should return Market Not Found error', async () => {
+			const { body } = await request(app)
+				.get('/v1/market/orderbook/depth')
+				.query({
+					base: 'dilmas',
+				})
+				.send()
+				.expect('Content-Type', /json/)
+				.expect(400)
+			expect(body.error).to.be.an('string').that.equal('BadRequest')
+			sinon.assert.notCalled(spy)
+		})
+	})
+
+	describe('When fetching the market Price', () => {
+		let spy: MockGetPrice
+		const obj = {
+			price: 20,
+			type: 'buy',
+			currencies: ['bitcoin', 'nano']
+		}
+
+		beforeEach(() => {
+			spy = ImportMock.mockFunction(MarketApi, 'getMarketPrice', [obj]) as MockGetDepth
+		})
+
+		afterEach(() => {
+			spy.restore()
+		})
+
+		it('Should return the return of MarketApi', async () => {
+			const { body } = await request(app)
+				.get('/v1/market/price')
+				.query({
+					base: 'bitcoin',
+					target: 'nano'
+				})
+				.send()
+				.expect('Content-Type', /json/)
+				.expect(200)
+			expect(body).to.be.an('array').that.deep.equal([obj])
+			sinon.assert.calledOnce(spy)
+		})
+
+		it('Should return Market Not Found error', async () => {
+			const { body } = await request(app)
+				.get('/v1/market/orderbook/depth')
+				.query({
+					base: 'dilmas',
+				})
+				.send()
+				.expect('Content-Type', /json/)
+				.expect(400)
+			expect(body.error).to.be.an('string').that.equal('BadRequest')
 			sinon.assert.notCalled(spy)
 		})
 	})

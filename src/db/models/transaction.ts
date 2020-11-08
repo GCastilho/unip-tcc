@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
-import { currencies, currenciesObj } from '../../libs/currencies'
+import { currencies, truncateAmount } from '../../libs/currencies'
 import type { PersonDoc } from './person'
 import type { SuportedCurrencies } from '../../libs/currencies'
 
@@ -158,8 +158,7 @@ TransactionSchema.index({
 TransactionSchema.pre('validate', function(this: TransactionDoc) {
 	// Faz a truncagem do amount de acordo com os decimais da currency
 	if (typeof this.amount == 'number') {
-		const [integer, decimals] = this.amount.toString().split('.')
-		this.amount = Number(`${integer}.${(decimals || '0').slice(0, currenciesObj[this.currency].decimals)}`)
+		this.amount = truncateAmount(this.amount, this.currency)
 	}
 })
 

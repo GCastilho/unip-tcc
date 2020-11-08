@@ -60,3 +60,15 @@ type CurrenciesObj = {
 export const currenciesObj = Object.fromEntries(
 	currencies.map(currency => [currency.name, currency])
 ) as CurrenciesObj
+
+/**
+ * Faz a truncagem de um valor de acordo com as casas decimais de uma currrency.
+ * Se a currency for inválida irá truncar para 0 casas decimais
+ */
+export function truncateAmount(amount: number|string, currency: string): number {
+	const [integer, decimals] = amount.toLocaleString('fullwide', {
+		useGrouping: false,
+		maximumFractionDigits: 20
+	}).split('.')
+	return Number(`${integer}.${(decimals || '0').slice(0, currenciesObj[currency]?.decimals)}`)
+}

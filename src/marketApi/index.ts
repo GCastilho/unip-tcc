@@ -1,10 +1,25 @@
 import { ObjectId } from 'mongodb'
-import Market from './market'
+import { startSession } from 'mongoose'
+import Market, { events } from './market'
 import Order from '../db/models/order'
+import Price from '../db/models/price'
 import Person from '../db/models/person'
 import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
-import type { MarketOrder } from '../../interfaces/market'
+import type { SuportedCurrencies as SC } from '../libs/currencies'
+import type { MarketOrder, MarketDepth, PriceRequest } from '../../interfaces/market'
+
+/** Re-exporta o eventEmitter do módulo da Market */
+export { events } from './market'
+
+/** Ouve por eventos de atualização de preço e manda-os para o banco de dados */
+events.on('price_update', async priceUpdt => {
+	try {
+		await Price.createOne(priceUpdt)
+	} catch (err) {
+		console.error('Error while inserting priceUpdate', err)
+	}
+})
 
 /** Classe do objeto do erro de mercado não encontrado */
 class MarketNotFound extends Error {
@@ -55,16 +70,22 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
 
 	// Retorna ou cria uma nova instancia da Market para esse par
 	let market = markets.get(getMarketKey(orderDoc.orderedPair))
-	if (!market) {
-		market = new Market()
+
+	if (market) {
+		await market.add(orderDoc)
+	} else {
+		market = new Market(orderDoc.orderedPair.map(v => v.currency) as [SC, SC])
+
 		/**
 		 * A chave desse par no mercado é a string do array das currencies em ordem
-		 * alfabética, pois isso torna a chave simples e determinística
+		 * alfabética, pois isso torna a chave simples e determinística; Deve ser
+		 * setado antes de uma operação assíncrona para evitar concorrência
 		 */
 		markets.set(getMarketKey(orderDoc.orderedPair), market)
-	}
 
-	await market.add(orderDoc)
+		/** Faz o bootstrap da market, a ordem atual será adicionado aqui */
+		await market.bootstrap()
+	}
 
 	return orderDoc._id
 }
@@ -78,12 +99,47 @@ export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise
  * @throws MarketNotFound if the market was not found in the markets map
  */
 export async function remove(userId: PersonDoc['_id'], opid: ObjectId) {
-	// Há uma race entre a ordem ser selecionada na execTaker e o trigger no update para status 'matched'
-	const order = await Order.findOneAndUpdate({ _id: opid, status: 'ready' }, { status: 'cancelled' })
-	if (!order) throw 'OrderNotFound'
-	const market = markets.get(getMarketKey(order.orderedPair))
-	if (!market) throw new MarketNotFound(`Market not found while removing: ${order}`)
-	market.remove(order)
-	await order.remove()
-	await Person.balanceOps.cancel(userId, order.owning.currency, opid)
+	const session = await startSession()
+	session.startTransaction()
+
+	try {
+		const order = await Order.findOne({ _id: opid, status: 'ready' }).session(session)
+		if (!order) throw 'OrderNotFound'
+
+		const market = markets.get(getMarketKey(order.orderedPair))
+		if (!market) throw new MarketNotFound(`Market not found while removing: ${order}`)
+		await market.remove(order)
+
+		await order.remove()
+		await Person.balanceOps.cancel(userId, order.owning.currency, opid, session)
+
+		await session.commitTransaction()
+	} catch (err) {
+		await session.abortTransaction()
+		throw err
+	} finally {
+		await session.endSession()
+	}
+}
+
+/** Retorna o market depth de um par */
+export async function getMarketDepth(base?: string, target?: string): Promise<MarketDepth[]> {
+	console.log('getMarketDepth', base, target)
+
+	// TODO: Isso deveria usar o getMarkeyKey, alterá-la para permitir isso
+	const market = markets.get(`${base},${target}`)
+	if (!market) throw new MarketNotFound(`Market not found while getting depth for ${base} and ${target}`)
+
+	return market.depth
+}
+
+/** Retorna o market price de um par */
+export async function getMarketPrice(base?: string, target?: string): Promise<PriceRequest> {
+	console.log('getMarketPrice', base, target)
+
+	// TODO: Isso deveria usar o getMarkeyKey, alterá-la para permitir isso
+	const market = markets.get(`${base},${target}`)
+	if (!market) throw new MarketNotFound(`Market not found while getting depth for ${base} and ${target}`)
+
+	return market.prices
 }
