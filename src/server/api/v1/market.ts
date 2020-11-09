@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { ObjectId } from 'mongodb'
+import Order from '../../../db/models/order'
 import { authentication } from './middlewares'
 import * as MarketApi from '../../../marketApi'
 
@@ -56,6 +57,21 @@ router.get('/price', async (req, res) => {
 
 // Chama o middleware de autenticação
 router.use(authentication)
+
+// Pega as 10 ultimas ordens em aberto
+router.get('/orderbook', async (req, res) => {
+	try {
+		const openOrders = await Order.find({ userId: req.userId })
+			.sort('-timestamp')
+			.limit(10)
+			.skip(Number(req.query.skip) || 0)
+
+		res.send(openOrders)
+	} catch (err) {
+		res.status(500).send({ error: 'InternalServerError' })
+		console.error('Error fetching orders from orderbook', err)
+	}
+})
 
 router.post('/orderbook', async (req, res) => {
 	try {

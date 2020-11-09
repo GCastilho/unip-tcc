@@ -8,10 +8,57 @@
 	import type { PriceHistory } from '../../../../../interfaces/market'
 
 	const months = {0 : 'Jan', 1 : 'Feb', 2 : 'Mar', 3 : 'Apr', 4 : 'May', 5 : 'Jun', 6 : 'Jul', 7 : 'Aug', 8 : 'Sep', 9 : 'Oct', 10 : 'Nov', 11 : 'Dec'}
+	/** o numero maximo possivel de itens da tabela que aparecem ao mesmo tempo */
+	const maxItemView = 150
+	/** o numero de itens que serao exibidos na tabela, valor maximo = maxItemView */
+	let currentMaxItemView = 150
+	/** a largura real do grafico, visivel + invisivel */
+	let virtualWidth: number
+	const margin = {top: 15, right: 65, bottom: 105, left: 50}
+	/** a largura visivel da porçao do grafico */
+	const width = 800 - margin.left - margin.right
+	const height = 450 - margin.top - margin.bottom
 
-	const transitionDuration = 600
-	const transitionStartTimeout = 100
+	/** array de timestamps das ordens */
+	let dates : number[]
+	/** mapeia o posicionamento ordenado dos itens, referente a graduaçao Inferior (X) */
+	let xScale : d3.ScaleLinear<number,number>
+	/** mapeia o posicionamento ordenado dos itens, referente a graduaçao Lateral (Y) */
+	let yScale : d3.ScaleLinear<number,number>
 
+	let xBand : d3.ScaleBand<string>
+	/** ordena os valores presentes na regua, referente a graduaçao Lateral (Y) */
+	let xAxis : d3.Axis<d3.NumberValue>
+	
+	// algumas variaveis auxiliares que nao tem muita importancia
+	let filtered: PriceHistory[], minP: number, maxP: number, buffer : number
+
+	/** objeto referente as definiçoes e comportamento de zoom */
+	let zoom : d3.ZoomBehavior<Element, unknown>
+	/** o timeout do zoom, impede que mutiplas transaçoes estejam ocorrendo */
+	let resizeTimer : NodeJS.Timeout
+	/** the current zoon scale */
+	let zoomQuantity : number
+	/** the current transform data */
+	let transform : d3.ZoomTransform
+	/** o tempo de druçao da transiçao do zoom */
+	let transitionDuration = 800
+	/** o tempo de espera antes do inicio da transiçao do zoom */
+	let transitionStartTimeout = 50
+
+	/** o corpo inteiro do grafico */
+	let svg : d3.Selection<Element, unknown, any, any>
+	/** o corpo das velas */
+	let candles : d3.Selection<SVGGElement, unknown, HTMLElement, any>
+	/** a haste inferior e superior das velas */
+	let stems : d3.Selection<SVGGElement, unknown, HTMLElement, any>
+	/** desenha a escala X e seus valores*/
+	let gX : d3.Selection<SVGGElement, unknown, HTMLElement, any>
+	/** desenha a escala Y e as linhas */
+	let gY : d3.Selection<SVGGElement, unknown, HTMLElement, any>
+	/** a parte do grafico aonde ficam as colunas */
+	let chartBody
+	
 	export let prices: PriceHistory[] = []
 
 	onMount(() => {

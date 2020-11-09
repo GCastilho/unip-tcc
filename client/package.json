@@ -24,7 +24,8 @@
     "light-date": "^1.0.1",
     "qrious": "^4.0.2",
     "sirv": "^1.0.6",
-    "socket.io-client": "^2.3.0"
+    "socket.io-client": "^2.3.0",
+    "svelte-tabs": "^1.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.11.6",
