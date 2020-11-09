@@ -1,22 +1,17 @@
 <script>
-	import { onMount } from 'svelte'
 	import * as prices from '../../stores/prices'
+	import * as depth from '../../stores/depth'
 	import BuySell from './_buySell.svelte'
 	import OpenOrders from './_openOrders.svelte'
 	import CloseOrders from './_closeOrders.svelte'
 	import ExchangeIcon from './exchange.svg'
+	import Candle from './_components/candle.svelte'
+	import Depth from './_components/depth.svelte'
 	import * as currencies from '../../stores/currencies'
 	import Tabs from 'svelte-tabs/src/Tabs.svelte';
 	import Tab from 'svelte-tabs/src/Tab.svelte';
 	import TabList from 'svelte-tabs/src/TabList.svelte';
 	import TabPanel from 'svelte-tabs/src/TabPanel.svelte';
-
-	// Client-side only components
-	let Candle
-
-	onMount(async () => {
-		Candle = (await import('./_components/candle.svelte')).default
-	})
 
 	let baseCurrency
 	let targetCurrency
@@ -157,6 +152,7 @@
 	<div class="graphs">
 	</div>
 </div>
+<Depth _data={$depth}/>
 
 <Tabs>
 	<TabList>
