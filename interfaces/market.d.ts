@@ -81,7 +81,7 @@ export interface PriceHistory {
 }
 
 /** Interface de uma ordem de trade já executada */
-export interface Trade {
+export interface MarketTrade {
 	/** Identificador único dessa ordem de trade */
 	opid: string
 	/** As currencies que fazem parte dessa trade */
