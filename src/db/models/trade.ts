@@ -149,7 +149,9 @@ const customQueries = {
 			{ 'taker.userId': userId }
 		])
 
-		const transform = (doc: Trade) => ({
+		const transform = (doc: Trade): UserTrade => ({
+			opid: doc.id,
+			currencies: doc.orderedPair.map(v => v.currency) as UserTrade['currencies'],
 			price: doc.price,
 			amount: doc.orderedPair[1].amount,
 			fee: doc.maker.userId.toHexString() == userId.toHexString()

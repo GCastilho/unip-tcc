@@ -82,6 +82,10 @@ export interface PriceHistory {
 
 /** Interface de uma ordem de trade já executada */
 export interface Trade {
+	/** Identificador único dessa ordem de trade */
+	opid: string
+	/** As currencies que fazem parte dessa trade */
+	currencies: [SuportedCurrencies, SuportedCurrencies]
 	/** O preço dessa ordem */
 	price: number
 	/** O quanto o usuário comprou/vendeu nessa operação */
