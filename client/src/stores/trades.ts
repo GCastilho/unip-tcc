@@ -60,3 +60,9 @@ export async function fetch() {
 
 	inSync = false
 }
+
+// Adiciona a nova ordem de trade ao início do array de trades
+addSocketListener('new_trade', (trade: MarketTrade) => {
+	console.log('Received new_trade', trade)
+	update(trades => [trade, ...trades])
+})

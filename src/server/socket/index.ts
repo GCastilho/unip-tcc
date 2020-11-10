@@ -2,6 +2,7 @@ import Session from '../../db/models/session'
 import * as marketApi from '../../marketApi'
 import * as currencyApi from '../../currencyApi'
 import * as connectedUsers from './connectedUsers'
+import { events as tradeEvents } from '../../marketApi/trade'
 import type { Server, Socket } from 'socket.io'
 
 export default function socketHandler(io: Server) {
@@ -86,5 +87,9 @@ export default function socketHandler(io: Server) {
 
 	marketApi.events.on('order_update', (userId, orderUpdt) => {
 		connectedUsers.get(userId)?.emit('order_update', orderUpdt)
+	})
+
+	tradeEvents.on('new_trade', (userId, trade) => {
+		connectedUsers.get(userId)?.emit('new_trade', trade)
 	})
 }
