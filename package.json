@@ -20,7 +20,7 @@
     "build:server": "tsc --build",
     "build:svelte": "npm run build --prefix ./client",
     "build:restruct": "move-cli ./build/src ./build/main_server && move-cli ./client/__sapper__/build ./build/sapper",
-    "build:config": "copyfiles -E external_modules/**/package* && copyfiles -E package* build/main_server/",
+    "build:config": "copyfiles -E external_modules/**/package* build/ && copyfiles -E package* build/main_server/",
     "build:dep-install": "npm-recursive-install --rootDir=build --production"
   },
   "author": "",
