@@ -1,7 +1,7 @@
 import type { SuportedCurrencies } from '../src/libs/currencies'
 
-/** Interface de uma ordem de trade da MarketApi */
-export interface MarketOrder {
+/** Interface do request de uma ordem de trade da MarketApi */
+export interface OrderRequest {
 	owning: {
 		currency: SuportedCurrencies
 		amount: number
@@ -10,6 +10,11 @@ export interface MarketOrder {
 		currency: SuportedCurrencies
 		amount: number
 	}
+}
+
+/** Type do request de uma ordem já informada à MarketApi */
+export interface MarketOrder extends OrderRequest {
+	opid: string
 }
 
 /** Interface de um request das margens de preço de um mercado */

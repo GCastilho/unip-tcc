@@ -2,14 +2,10 @@ import { writable } from 'svelte/store'
 import axios from '../utils/axios'
 import { updateBalances } from './balances'
 import { addSocketListener } from '../utils/websocket'
-import type { MarketOrder, OrderUpdate } from '../../../interfaces/market'
-
-interface Order extends MarketOrder {
-	opid: string
-}
+import type { OrderRequest, MarketOrder, OrderUpdate } from '../../../interfaces/market'
 
 /** Store de TODAS as ordens do orderbook */
-const { subscribe, update } = writable<Order[]>([])
+const { subscribe, update } = writable<MarketOrder[]>([])
 
 export { subscribe }
 
@@ -65,13 +61,13 @@ export async function fetch() {
 	inSync = false
 }
 
-export async function add(marketOrder: MarketOrder) {
-	console.log('Sending new order to orderbook', marketOrder)
+export async function add(orderRequest: OrderRequest) {
+	console.log('Sending new order to orderbook', orderRequest)
 	try {
-		const { data } = await axios.post('/v1/market/orderbook', marketOrder)
-		const order: Order = {
+		const { data } = await axios.post('/v1/market/orderbook', orderRequest)
+		const order: MarketOrder = {
 			opid: data.opid,
-			...marketOrder
+			...orderRequest
 		}
 
 		console.log('Received orderbook response', data)

@@ -3,6 +3,7 @@ import currency from 'currency.js'
 import { ObjectId } from 'mongodb'
 import mongoose, { Document, Schema } from '../mongoose'
 import { currencies, currenciesObj, truncateAmount } from '../../libs/currencies'
+import type { MarketOrder } from '../../../interfaces/market'
 import type { SuportedCurrencies as SC } from '../../libs/currencies'
 
 /** Documento de uma ordem */
@@ -53,6 +54,7 @@ export interface OrderDoc extends Document {
 	 * calculado automaticamente caso não informado
 	 */
 	split(owning: number, requesting?: number, targetPrice?: number): OrderDoc
+	toJSON(): MarketOrder
 }
 
 const OrderSchema = new Schema({
@@ -111,6 +113,16 @@ const OrderSchema = new Schema({
 	timestamp: {
 		type: Date,
 		required: true
+	}
+}, {
+	toJSON: {
+		transform: function(doc: OrderDoc): MarketOrder {
+			return {
+				opid: doc.id,
+				owning: doc.owning,
+				requesting: doc.requesting
+			}
+		}
 	}
 })
 

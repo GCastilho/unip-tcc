@@ -3,9 +3,9 @@ import axios from '../utils/axios'
 import { updateBalances } from './balances'
 import { addSocketListener } from '../utils/websocket'
 import type { Trade } from '../../../src/db/models/trade'
-import type { MarketOrder, OrderUpdate } from '../../../interfaces/market'
+import type { OrderRequest, OrderUpdate } from '../../../interfaces/market'
 
-interface Order extends MarketOrder {
+interface Order extends OrderRequest {
 	opid: string
 }
 
