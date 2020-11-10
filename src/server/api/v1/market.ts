@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb'
 import Order from '../../../db/models/order'
 import { authentication } from './middlewares'
 import * as MarketApi from '../../../marketApi'
+import Trade from '../../../db/models/trade'
 
 const router = Router()
 
@@ -125,6 +126,22 @@ router.delete('/orderbook/:opid', async (req, res) => {
 				console.error('Error removing order from market', err)
 				res.status(500).send({ error: 'Internal Server Error' })
 		}
+	}
+})
+
+// retorna 10 operações de trade de um usuário
+router.get('/trades', async (req, res) => {
+	try {
+		const trades = await Trade.find({})
+			.byUser(req.userId)
+			.sort('-timestamp')
+			.limit(10)
+			.skip(Number(req.query.skip) || 0)
+
+		res.send(trades)
+	} catch (err) {
+		res.status(500).send({ error: 'InternalServerError' })
+		console.error('Error fetching trades from database', err)
 	}
 })
 

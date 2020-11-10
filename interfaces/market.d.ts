@@ -84,3 +84,21 @@ export interface PriceHistory {
 	'adj close'?: number
 	volume?: number
 }
+
+/** Interface de uma ordem de trade já executada */
+export interface MarketTrade {
+	/** Identificador único dessa ordem de trade */
+	opid: string
+	/** As currencies que fazem parte dessa trade */
+	currencies: [SuportedCurrencies, SuportedCurrencies]
+	/** O preço dessa ordem */
+	price: number
+	/** O quanto o usuário comprou/vendeu nessa operação */
+	amount: number
+	/** Quanto o usuário pagou de fee por essa operação */
+	fee: number
+	/** O quanto o usuário pagou/recebeu nessa operação */
+	total: number
+	/** O timestamp de quando essa operação foi executada */
+	timestamp: number
+}
