@@ -36,7 +36,6 @@
 <table on:scroll={handleScroll}>
 	<tr>
 		<th>Par</th>
-		<th>Ordem</th>
 		<th>Quantidade</th>
 		<th>Preço</th>
 		<th>Hora</th>
@@ -47,9 +46,9 @@
 		<TableRow {trade}/>
 	{:else}
 		<tr>
-			<td colspan="6" style="border-right:none">
+			<td colspan="6" style="text-align: center">
 				{#if $synchronized}
-					<h5 class="text-center">There are no Transactions here.</h5>
+					<h5 class="text-center">There are no close orders here.</h5>
 				{:else}
 					<h5 class="text-center">Loading...</h5>
 				{/if}

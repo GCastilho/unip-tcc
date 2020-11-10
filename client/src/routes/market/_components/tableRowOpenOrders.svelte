@@ -8,9 +8,7 @@
 	let {
 		owning,
 		requesting,
-		status,
-		timestamp,
-		type
+		timestamp
 	} = order
 
 	// Busca os dados da cunrrency usadas
@@ -43,7 +41,6 @@
 			: '--'
 		}
 	</td>
-	<td>{type}</td>
 	<td>
 		<!-- mostra o amount com o numero de casas decimais correto -->
 		{requesting ? 
@@ -57,5 +54,4 @@
 			: '--'}
 	</td>
 	<td class="date">{time}-{date}</td>
-	<td>{status}</td>
 </tr>
