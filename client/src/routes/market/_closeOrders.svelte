@@ -23,7 +23,7 @@
 <style>
 	table {
 		max-height: 300px;
-		width: 600px;
+		width: 800px;
 		overflow-y: scroll;
 		border: 1px solid #F0AE98;
 	}
@@ -43,7 +43,7 @@
 		<th>Fee</th>
 		<th>Ação</th>
 	</tr>
-	{#each $trades as trade (trade._id)}
+	{#each $trades as trade (trade.opid)}
 		<TableRow {trade}/>
 	{:else}
 		<tr>

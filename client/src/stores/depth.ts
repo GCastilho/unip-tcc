@@ -6,9 +6,9 @@ const { subscribe, update, set } = writable<MarketDepth[]>([])
 /** Exporta o subscribe para essa variável se ruma store */
 export { subscribe }
 
-setInterval(() => {
+/* setInterval(() => {
 	update(v => [...v, v[v.length - 1]])
-}, 1000)
+}, 1000) */
 
 set([
 	{

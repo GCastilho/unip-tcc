@@ -29,10 +29,6 @@
 </script>
 
 <style>
-	:global(.svelte-tabs) {
-		width: 600px;
-	}
-
 	:global(.svelte-tabs .svelte-tabs__tab-list) {
 		border: 0;
 		-webkit-touch-callout: none; 
@@ -70,9 +66,15 @@
 		justify-content: flex-start;
 	}
 
-	.graphs {
+	.main > div {
 		display: flex;
 		flex-direction: column;
+		align-items: center;
+	}
+
+	.main > div > div {
+		display: flex;
+		flex-direction: row;
 	}
 
 	.currency-select {
@@ -118,53 +120,51 @@
 
 
 <div class="main">
+	<BuySell
+		bind:switchPrice
+		{baseCurrency}
+		{targetCurrency}
+		{exchangeCurrency}
+	>
+		<div class="currency-select">
+			<select bind:value={baseCurrency}>
+				<option value={null}>...</option>
+				{#each $currencies as currency }
+					<option value={currency}>
+						{currency.name}
+					</option>
+				{/each}
+			</select>
+			<button on:click={switchCoins}><ExchangeIcon/></button>
+			<select bind:value={targetCurrency}>
+				<option value={null}>...</option>
+				{#each $currencies as currency }
+					<option value={currency}>
+						{currency.name}
+					</option>
+				{/each}
+			</select>
+		</div>
+	</BuySell>
 	<div>
-		<BuySell
-			bind:switchPrice
-			{baseCurrency}
-			{targetCurrency}
-			{exchangeCurrency}
-		>
-			<div class="currency-select">
-				<select bind:value={baseCurrency}>
-					<option value={null}>...</option>
-					{#each $currencies as currency }
-						<option value={currency}>
-							{currency.name}
-						</option>
-					{/each}
-				</select>
-				<button on:click={switchCoins}><ExchangeIcon/></button>
-				<select bind:value={targetCurrency}>
-					<option value={null}>...</option>
-					{#each $currencies as currency }
-						<option value={currency}>
-							{currency.name}
-						</option>
-					{/each}
-				</select>
-			</div>
-		</BuySell>
-
-		
-	</div>
-	<Candle prices={$prices} />
-	<div class="graphs">
+		<div>
+			<Candle prices={$prices} />
+			<Depth _data={$depth}/>		
+		</div>
+		<Tabs>
+			<TabList>
+				<Tab>Open Orders</Tab>
+				<Tab>Close Orders</Tab>
+			</TabList>
+			
+			<TabPanel>
+				<OpenOrders/>
+			</TabPanel>
+			
+			<TabPanel>
+				<CloseOrders/>
+			</TabPanel>
+		</Tabs>
 	</div>
 </div>
-<Depth _data={$depth}/>
 
-<Tabs>
-	<TabList>
-		<Tab>Open Orders</Tab>
-		<Tab>Close Orders</Tab>
-	</TabList>
-	
-	<TabPanel>
-		<OpenOrders/>
-	</TabPanel>
-	
-	<TabPanel>
-		<CloseOrders/>
-	</TabPanel>
-</Tabs>

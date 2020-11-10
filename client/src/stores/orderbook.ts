@@ -45,10 +45,10 @@ export async function fetch() {
 		})
 
 		update(orders => {
-			for (const tx of data) {
-				const index = orders.findIndex(v => v.opid === tx.opid)
+			for (const order of data) {
+				const index = orders.findIndex(v => v.opid === order.opid)
 				if (index == -1)
-					orders.push(tx)
+					orders.push(order)
 			}
 
 			/**

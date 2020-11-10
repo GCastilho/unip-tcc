@@ -18,12 +18,14 @@
 			openOrders.fetch()
 		}
 	}
+
+	console.log($openOrders)
 </script>
 
 <style>
 	table {
 		max-height: 300px;
-		width: 600px;
+		width: 800px;
 		overflow-y: scroll;
 		border: 1px solid #F0AE98;
 	}
@@ -42,7 +44,7 @@
 		<th>Hora</th>
 		<th>Ação</th>
 	</tr>
-	{#each $openOrders as order (order._id)}
+	{#each $openOrders as order (order.opid)}
 		<TableRow {order}/>
 	{:else}
 		<tr>

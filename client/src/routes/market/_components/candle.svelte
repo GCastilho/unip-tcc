@@ -14,9 +14,9 @@
 	let currentMaxItemView = 150
 	/** a largura real do grafico, visivel + invisivel */
 	let virtualWidth: number
-	const margin = {top: 15, right: 65, bottom: 105, left: 50}
+	const margin = {top: 15, right: 55, bottom: 105, left: 50}
 	/** a largura visivel da porçao do grafico */
-	const width = 800 - margin.left - margin.right
+	const width = 600 - margin.left - margin.right
 	const height = 450 - margin.top - margin.bottom
 
 	/** array de timestamps das ordens */

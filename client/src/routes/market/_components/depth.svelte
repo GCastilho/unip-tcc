@@ -8,9 +8,9 @@
 	import type { MarketDepth } from '../../../../../interfaces/market'
 
 	/** a largura real do grafico, visivel + invisivel */
-	const margin = {top: 15, right: 65, bottom: 105, left: 50}
+	const margin = {top: 15, right: 105, bottom: 105, left: 50}
 	/** a largura visivel da porçao do grafico */
-	const width = 800 - margin.left - margin.right
+	const width = 650 - margin.left - margin.right
 	const height = 450 - margin.top - margin.bottom
 
 	/** mapeia o posicionamento ordenado dos itens, referente a graduaçao Inferior (X) */
