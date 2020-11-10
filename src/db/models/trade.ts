@@ -1,7 +1,9 @@
 import { ObjectId } from 'mongodb'
 import mongoose, { Document, Schema } from '../mongoose'
 import { currencies } from '../../libs/currencies'
+import type { Model, DocumentQuery } from 'mongoose'
 import type { SuportedCurrencies as SC } from '../../libs/currencies'
+import type { Trade as UserTrade } from '../../../interfaces/market'
 
 export interface Trade extends Document {
 	/**
@@ -37,12 +39,12 @@ export interface Trade extends Document {
 		/** O fee que o usuário pagou na operação */
 		fee: number
 	}
-	/** O preço dessa trade no orderbook */
-	price: number
 	/** O timestamp dessa operação */
 	timestamp: Date
+	/** O preço dessa trade no orderbook */
+	readonly price: number
 	/** Um array com maker e taker em ordem alfabética de acordo com a currency */
-	orderedPair: [Trade['maker'], Trade['taker']]|[Trade['taker'], Trade['maker']]
+	readonly orderedPair: [Trade['maker'], Trade['taker']]|[Trade['taker'], Trade['maker']]
 }
 
 const TradeSchema = new Schema({
@@ -138,4 +140,32 @@ TradeSchema.virtual('price').get(function(this: Trade): Trade['price'] {
 	return base.amount / target.amount
 })
 
-export default mongoose.model<Trade>('Trade', TradeSchema)
+const customQueries = {
+	byUser(this: DocumentQuery<Trade[]|null, Trade>,
+		userId: ObjectId
+	): DocumentQuery<UserTrade[]|null, Trade> {
+		this.or([
+			{ 'maker.userId': userId },
+			{ 'taker.userId': userId }
+		])
+
+		const transform = (doc: Trade) => ({
+			price: doc.price,
+			amount: doc.orderedPair[1].amount,
+			fee: doc.maker.userId.toHexString() == userId.toHexString()
+				? doc.maker.fee
+				: doc.taker.fee,
+			total: doc.orderedPair[0].amount,
+			timestamp: doc.timestamp.getTime()
+		})
+
+		return this.map(docs => docs == null
+			? null
+			: docs.map(doc => transform(doc))
+		)
+	}
+}
+
+TradeSchema.query = customQueries
+
+export default mongoose.model<Trade, Model<Trade, typeof customQueries>>('Trade', TradeSchema)
