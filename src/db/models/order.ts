@@ -120,7 +120,8 @@ const OrderSchema = new Schema({
 			return {
 				opid: doc.id,
 				owning: doc.owning,
-				requesting: doc.requesting
+				requesting: doc.requesting,
+				timestamp: doc.timestamp.getTime()
 			}
 		}
 	}

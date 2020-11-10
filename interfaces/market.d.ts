@@ -10,6 +10,7 @@ export interface OrderRequest {
 		currency: SuportedCurrencies
 		amount: number
 	}
+	timestamp: number
 }
 
 /** Type do request de uma ordem já informada à MarketApi */
