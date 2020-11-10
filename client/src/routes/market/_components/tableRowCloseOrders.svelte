@@ -1,10 +1,11 @@
 <script lang='ts'>
 	import { format } from 'light-date'
+	import type { MarketTrade } from '../../../../../interfaces/market.d'
 
-	export let trade
+	export let trade: MarketTrade
 
 	let {
-		status,
+		status, // É sempre closed, essa prop não é mais usada (bota closed)
 		maker,
 		taker,
 		price,
