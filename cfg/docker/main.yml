@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  main:
+    image: gcastilho/main-server:latest
+    ports:
+     - 3001:3001
+    restart: unless-stopped
+    environment:
+      PORT: 80
+      MONGODB_URL: ${MONGODB_URL}
