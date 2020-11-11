@@ -57,7 +57,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./build/main_server
-          file: ./cfg/Dockerfile
+          file: ./cfg/docker/Dockerfile
           push: true
           tags: gcastilho/main-server:latest
 
@@ -90,7 +90,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./build/sapper
-          file: ./cfg/Dockerfile
+          file: ./cfg/docker/Dockerfile
           push: true
           tags: gcastilho/frontend:latest
 
@@ -123,7 +123,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./build/external_modules/common
-          file: ./cfg/Dockerfile
+          file: ./cfg/docker/Dockerfile
           push: true
           tags: gcastilho/common:latest
 
@@ -156,7 +156,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./build/external_modules/bitcoin
-          file: ./cfg/external.dockerfile
+          file: ./cfg/docker/external.dockerfile
           push: true
           tags: gcastilho/bitcoin:latest
 
@@ -189,6 +189,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./build/external_modules/nano
-          file: ./cfg/external.dockerfile
+          file: ./cfg/docker/external.dockerfile
           push: true
           tags: gcastilho/nano:latest
