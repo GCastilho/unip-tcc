@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang='ts'>
 	import * as balances from './../../stores/balances'
 	import * as orderbook from '../../stores/orderbook'
 	import type { SuportedCurrencies } from '../../../../src/libs/currencies'

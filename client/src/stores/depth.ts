@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store'
+import axios from '../utils/axios'
 import type { MarketDepth } from '../../../interfaces/market'
 
 const { subscribe, update, set } = writable<MarketDepth[]>([])
@@ -9,6 +10,19 @@ export { subscribe }
 /* setInterval(() => {
 	update(v => [...v, v[v.length - 1]])
 }, 1000) */
+
+/** Pega os dados do grafico e popula a store */
+export async function fetch(base:string, target:string) {
+	try {
+		if (!base || !target) return
+		const { data } = await axios.get('/v1/market/orderbook/depth', {
+			params: { base, target }
+		})
+		set(data)
+	} catch (err) {
+		console.error('Error fetching orders', err)
+	}
+}
 
 set([
 	{
