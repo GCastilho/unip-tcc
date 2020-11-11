@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  main:
+    image: gcastilho/fronend:latest
+    ports:
+     - 80:3000
+    restart: unless-stopped
+    environment:
+      API_SERVER_URL: 10.100.11.80:22085

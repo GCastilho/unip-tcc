@@ -15,6 +15,9 @@ const dev = mode === 'development'
 const production = !process.env.ROLLUP_WATCH
 const legacy = !!process.env.SAPPER_LEGACY_BUILD
 
+const apiUrl = process.env.API_SERVER_URL || 'http://127.0.0.1:3001'
+const apiPort = apiUrl.split(':')[2]
+
 const onwarn = (warning, onwarn) =>
 	(warning.code === 'MISSING_EXPORT' && /'preload'/.test(warning.message)) ||
 	(warning.code === 'CIRCULAR_DEPENDENCY' && /[/\\]@sapper[/\\]/.test(warning.message)) ||
@@ -27,7 +30,8 @@ export default {
 		plugins: [
 			replace({
 				'process.browser': true,
-				'process.env.NODE_ENV': JSON.stringify(mode)
+				'process.env.NODE_ENV': JSON.stringify(mode),
+				'__API_PORT__': apiPort
 			}),
 			svelte({
 				dev,
@@ -77,7 +81,8 @@ export default {
 		plugins: [
 			replace({
 				'process.browser': false,
-				'process.env.NODE_ENV': JSON.stringify(mode)
+				'process.env.NODE_ENV': JSON.stringify(mode),
+				'__API_URL__': apiUrl
 			}),
 			svelte({
 				preprocess: sveltePreprocess({
@@ -108,7 +113,8 @@ export default {
 			resolve(),
 			replace({
 				'process.browser': true,
-				'process.env.NODE_ENV': JSON.stringify(mode)
+				'process.env.NODE_ENV': JSON.stringify(mode),
+				'__API_PORT__': apiPort,
 			}),
 			commonjs(),
 			!dev && terser()
