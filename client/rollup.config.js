@@ -31,7 +31,8 @@ export default {
 			replace({
 				'process.browser': true,
 				'process.env.NODE_ENV': JSON.stringify(mode),
-				'__PUBLIC_API_URL__': publicUrl
+				'__INTERNAL_API_URL__': internalUrl,
+				'__PUBLIC_API_URL__': publicUrl,
 			}),
 			svelte({
 				dev,
@@ -82,7 +83,8 @@ export default {
 			replace({
 				'process.browser': false,
 				'process.env.NODE_ENV': JSON.stringify(mode),
-				'__INTERNAL_API_URL__': internalUrl
+				'__INTERNAL_API_URL__': internalUrl,
+				'__PUBLIC_API_URL__': publicUrl,
 			}),
 			svelte({
 				preprocess: sveltePreprocess({
@@ -114,6 +116,7 @@ export default {
 			replace({
 				'process.browser': true,
 				'process.env.NODE_ENV': JSON.stringify(mode),
+				'__INTERNAL_API_URL__': internalUrl,
 				'__PUBLIC_API_URL__': publicUrl,
 			}),
 			commonjs(),
