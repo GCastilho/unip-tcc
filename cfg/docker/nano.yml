@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     environment:
       MAIN_SERVER_IP: 10.100.11.80
+      MONGODB_URL: ${MONGODB_URL}
       WALLET: ${WALLET}
       SEND_ACCOUNT: ${SEND_ACCOUNT}
   nano-node-beta:
