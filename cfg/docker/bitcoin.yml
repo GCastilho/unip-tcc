@@ -9,6 +9,7 @@ services:
       MONGODB_URL: ${MONGODB_URL}
   bitcoin-core-testnet:
     image: kylemanna/bitcoind
+    restart: unless-stopped
     ports:
       - 8333:8333
       - 127.0.0.1:8332:8332

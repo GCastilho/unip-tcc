@@ -3,9 +3,9 @@ version: '3'
 services:
   frontend:
     image: gcastilho/frontend:latest
+    restart: unless-stopped
     ports:
      - 80:3000
-    restart: unless-stopped
     # environment:
     #   INTERNAL_API_URL: http://10.100.11.80
     #   PUBLIC_API_URL: http://ttodev.ddns.net:22085/

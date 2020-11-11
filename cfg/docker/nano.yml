@@ -11,6 +11,7 @@ services:
       SEND_ACCOUNT: ${SEND_ACCOUNT}
   nano-node-beta:
     image: nanocurrency/nano-beta
+    restart: unless-stopped
     ports:
       - '55000:55000'
       - '57000:57000'
@@ -18,6 +19,7 @@ services:
       - nano-beta:/root
   nano-node-monitor:
     image: nanotools/nanonodemonitor:v1.5.5
+    restart: unless-stopped
     depends_on:
       - nano-node-beta
     ports:
