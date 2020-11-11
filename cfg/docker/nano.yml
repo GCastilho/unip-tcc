@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  nano:
+    image: gcastilho/nano:latest
+    restart: unless-stopped
+    environment:
+      MAIN_SERVER_IP: 10.100.11.80
+      WALLET: ${WALLET}
+      SEND_ACCOUNT: ${SEND_ACCOUNT}
+  nano-node-beta:
+    image: nanocurrency/nano-beta
+    ports:
+      - '55000:55000'
+      - '57000:57000'
+    volumes:
+      - nano-beta:/root
+  nano-node-monitor:
+    image: nanotools/nanonodemonitor:v1.5.5
+    depends_on:
+      - nano-node-beta
+    ports:
+      - '8008:80'
+
+volumes:
+  nano-beta:
