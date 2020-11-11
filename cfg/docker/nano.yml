@@ -21,6 +21,9 @@ services:
       - nano-node-beta
     ports:
       - '8008:80'
+    -volumes:
+      - nano-monitor:/var/www/html
 
 volumes:
   nano-beta:
+  nano-monitor:
