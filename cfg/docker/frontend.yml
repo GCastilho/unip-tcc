@@ -7,4 +7,5 @@ services:
      - 80:3000
     restart: unless-stopped
     environment:
-      API_SERVER_URL: 10.100.11.80:22085
+      INTERNAL_API_URL: http://10.100.11.80
+      PUBLIC_API_URL: http://ttodev.ddns.net:22085/

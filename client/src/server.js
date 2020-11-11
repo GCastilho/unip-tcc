@@ -19,7 +19,7 @@ express()
 			if (typeof sessionId != 'string') return next()
 			try {
 				const { data } = await axios.get('/v1/user/authentication', {
-					baseURL: '__API_URL__',
+					baseURL: '__INTERNAL_API_URL__',
 					headers: {
 						Cookie: `sessionId=${sessionId}`
 					}
