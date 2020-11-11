@@ -4,6 +4,7 @@ import Market, { events } from './market'
 import Order from '../db/models/order'
 import Price from '../db/models/price'
 import Person from '../db/models/person'
+import { currencyNames } from '../libs/currencies'
 import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
@@ -36,6 +37,24 @@ const markets = new Map<string, Market>()
 function getMarketKey(orderedPair: OrderDoc['orderedPair']) {
 	return orderedPair.map(item => item.currency).toString()
 }
+
+/**
+ * Faz o boostrap de TODAS as markets
+ * @todo Isso User a getMarketKey ou a getMarketKey permitir usar só os nomes
+ */
+for (let i = 0; i < currencyNames.length; i++) {
+	for (let j = 0; j < currencyNames.length; j++) {
+		if (i == j) continue
+		const pair = [currencyNames[i], currencyNames[j]].sort() as [SC, SC]
+		const market = new Market(pair)
+		markets.set(pair.toString(), market)
+	}
+}
+markets.forEach(market => {
+	market.bootstrap().catch(err => {
+		console.error('Error bootstrapping market for', market.currencies, err)
+	})
+})
 
 /**
  * Adiciona uma nova ordem ao livro de ordens do mercado
