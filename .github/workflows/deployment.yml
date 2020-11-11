@@ -95,7 +95,7 @@ jobs:
           tags: gcastilho/frontend:latest
 
   upload_common_image:
-    name: Build image and upload common to DockerHub
+    name: Build image for common and upload it to DockerHub
     needs: 'build'
     runs-on: ubuntu-latest
     steps:
@@ -128,7 +128,7 @@ jobs:
           tags: gcastilho/common:latest
 
   upload_bitcoin_image:
-    name: Build image and upload bitcoin to DockerHub
+    name: Build image for bitcoin and upload it to DockerHub
     needs: 'upload_common_image'
     runs-on: ubuntu-latest
     steps:
@@ -161,7 +161,7 @@ jobs:
           tags: gcastilho/bitcoin:latest
 
   upload_nano_image:
-    name: Build image and upload nano to DockerHub
+    name: Build image for nano and upload it to DockerHub
     needs: 'upload_common_image'
     runs-on: ubuntu-latest
     steps:
