@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  bitcoin:
+    image: gcastilho/bitcoin:latest
+    restart: unless-stopped
+    environment:
+      MAIN_SERVER_IP: 10.100.11.80
+      MONGODB_URL: ${MONGODB_URL}
+  bitcoin-core-testnet:
+    image: kylemanna/bitcoind
+    ports:
+      - 8333:8333
+      - 127.0.0.1:8332:8332
+    volumes:
+      - bitcoin-testnet:/bitcoin
+
+volumes:
+  bitcoin-testnet:
