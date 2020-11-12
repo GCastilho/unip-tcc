@@ -9,12 +9,15 @@ const { subscribe, update, set } = writable<PriceHistory[]>([])
 export { subscribe }
 
 /** Pega os dados do grafico e popula a store */
-export async function fetch(base:string, target:string) {
+export async function fetch(currencies:string[]) {
 	try {
-		if (!base || !target) return
-		const { data } = await axios.get('/v1/market/price', {
-			params: { base, target }
+		if (!currencies[0] || !currencies[1] || currencies[0] == currencies[1]) return
+		currencies.sort()
+		const { data } = await axios.get('/v1/market/candle', {
+			params: { base: currencies[0], target: currencies[1] }
 		})
+		console.log(data)
+		data.push(data[0])
 		set(data)
 	} catch (err) {
 		console.error('Error fetching prices', err)
@@ -22,13 +25,14 @@ export async function fetch(base:string, target:string) {
 }
 
 /** Atualiza o array da store ao receber o evento depth_update */
-addSocketListener('price_update', (price:PriceHistory) => {
+/*addSocketListener('price_update', (price:PriceHistory) => {
+	console.log(price)
 	update(columns => {
 		columns.push(price)
 		return columns
 	})
 })
-
+*/
 set([
 	{
 		'startTime': new Date('2017-12-01').getTime(),

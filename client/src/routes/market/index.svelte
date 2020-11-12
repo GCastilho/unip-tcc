@@ -1,6 +1,7 @@
 <script lang='ts'>
 	import * as prices from '../../stores/prices'
 	import * as depth from '../../stores/depth'
+	import * as marketPrice from '../../stores/marketPrice'
 	import BuySell from './_buySell.svelte'
 	import OpenOrders from './_openOrders.svelte'
 	import CloseOrders from './_closeOrders.svelte'
@@ -15,14 +16,16 @@
 
 	let baseCurrency
 	let targetCurrency
-	let exchangeCurrency = false
 
 	/** Bind na função switchPrice exportada na BuySell */
 	let switchPrice
 
 	// popula o grafico de depth
-	$: prices.fetch(baseCurrency?.name, targetCurrency?.name)
-	$: depth.fetch(baseCurrency?.name, targetCurrency?.name)
+	$: {
+		prices.fetch([baseCurrency?.name, targetCurrency?.name])
+		depth.fetch([baseCurrency?.name, targetCurrency?.name])
+		marketPrice.fetch([baseCurrency?.name, targetCurrency?.name])
+	} 
 
 	function switchCoins() {
 		let aux = baseCurrency
@@ -128,7 +131,6 @@
 		bind:switchPrice
 		{baseCurrency}
 		{targetCurrency}
-		{exchangeCurrency}
 	>
 		<div class="currency-select">
 			<select bind:value={baseCurrency}>

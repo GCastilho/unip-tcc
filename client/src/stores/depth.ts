@@ -9,12 +9,14 @@ const { subscribe, update, set } = writable<MarketDepth[]>([])
 export { subscribe }
 
 /** Pega os dados do grafico e popula a store */
-export async function fetch(base:string, target:string) {
+export async function fetch(currencies:string[]) {
 	try {
-		if (!base || !target) return
+		if (!currencies[0] || !currencies[1] || currencies[0] == currencies[1]) return
+		currencies.sort()
 		const { data } = await axios.get('/v1/market/orderbook/depth', {
-			params: { base, target }
+			params: { base: currencies[0], target: currencies[1] }
 		})
+		console.log(data)
 		set(data)
 	} catch (err) {
 		console.error('Error fetching orders', err)

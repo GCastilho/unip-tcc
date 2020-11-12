@@ -1,12 +1,15 @@
 <script lang='ts'>
 	import * as balances from './../../stores/balances'
 	import * as orderbook from '../../stores/orderbook'
+	import * as marketPrice from '../../stores/marketPrice'
 	import type { SuportedCurrencies } from '../../../../src/libs/currencies'
+	import type { PriceRequest } from '../../../../interfaces/market'
 
 	// base
 	export let baseCurrency: { name: string, code: string, decimals: number }
 	// target
 	export let targetCurrency: { name: string, code: string, decimals: number }
+
 
 	/** Eleva o preço atual a -1 */
 	export function switchPrice() {
@@ -308,7 +311,11 @@
 
 	<div class="balance">
 		<p>market price:</p>
-		<p>000000 {priceCurrency || '...'}</p>
+		{#if operation == 'buy'}
+			<p>{$marketPrice.buyPrice ? $marketPrice.buyPrice : '0'}{priceCurrency || '...'}</p>
+		{:else}
+			<p>{$marketPrice.sellPrice ? $marketPrice.sellPrice : '0'}{priceCurrency || '...'}</p>
+		{/if}
 	</div>
 	<div class="balance">
 		<p>fee:</p>
