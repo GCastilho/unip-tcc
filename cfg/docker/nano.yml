@@ -9,6 +9,9 @@ services:
       MONGODB_URL: ${MONGODB_URL}
       WALLET: ${WALLET}
       SEND_ACCOUNT: ${SEND_ACCOUNT}
+    dns:
+      - 10.100.11.30
+    network_mode: "bridge"
   nano-node-beta:
     image: nanocurrency/nano-beta
     restart: unless-stopped
@@ -17,6 +20,9 @@ services:
       - '57000:57000'
     volumes:
       - nano-beta:/root
+    dns:
+      - 10.100.11.30
+    network_mode: "bridge"
   nano-node-monitor:
     image: nanotools/nanonodemonitor:v1.5.5
     restart: unless-stopped
@@ -26,6 +32,9 @@ services:
       - '8008:80'
     volumes:
       - nano-monitor:/var/www/html
+    dns:
+      - 10.100.11.30
+    network_mode: "bridge"
 
 volumes:
   nano-beta:

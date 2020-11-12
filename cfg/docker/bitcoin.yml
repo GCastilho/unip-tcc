@@ -7,6 +7,9 @@ services:
     environment:
       MAIN_SERVER_IP: 10.100.11.80
       MONGODB_URL: ${MONGODB_URL}
+    dns:
+      - 10.100.11.30
+    network_mode: "bridge"
   bitcoin-core-testnet:
     image: kylemanna/bitcoind
     restart: unless-stopped
@@ -15,6 +18,9 @@ services:
       - 127.0.0.1:8332:8332
     volumes:
       - bitcoin-testnet:/bitcoin
+    dns:
+      - 10.100.11.30
+    network_mode: "bridge"
 
 volumes:
   bitcoin-testnet:
