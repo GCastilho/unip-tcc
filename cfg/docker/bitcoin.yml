@@ -8,6 +8,8 @@ services:
       MAIN_SERVER_IP: 10.100.11.80
       BITCOIN_HOST: 10.100.11.83
       MONGODB_URL: ${MONGODB_URL}
+    ports:
+      - 8091:8091
     dns:
       - 10.100.11.30
     network_mode: "bridge"
