@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
     environment:
       MAIN_SERVER_IP: 10.100.11.80
-      NANO_URL: http://nano-node-beta:55000
-      NANO_SOCKET_URL: 'ws://nano-node-beta:57000'
+      NANO_URL: http://10.100.11.82:55000
+      NANO_SOCKET_URL: 'ws://10.100.11.82:57000'
       MONGODB_URL: ${MONGODB_URL}
       WALLET: ${WALLET}
       SEND_ACCOUNT: ${SEND_ACCOUNT}
