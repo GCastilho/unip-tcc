@@ -5,6 +5,7 @@ import { fromNanoToRaw } from '../utils/unitConverter'
 import type { UpdtSent } from '../../../interfaces/transaction'
 
 const nanoUrl = process.env.NANO_URL || 'http://[::1]:55000'
+console.log('nano url is:', nanoUrl)
 
 export function nanoRpc(this: Nano) {
 	const request = async (command: any): Promise<any> => {
