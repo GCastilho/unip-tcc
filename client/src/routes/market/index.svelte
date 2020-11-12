@@ -21,6 +21,7 @@
 	let switchPrice
 
 	// popula o grafico de depth
+	$: prices.fetch(baseCurrency?.name, targetCurrency?.name)
 	$: depth.fetch(baseCurrency?.name, targetCurrency?.name)
 
 	function switchCoins() {

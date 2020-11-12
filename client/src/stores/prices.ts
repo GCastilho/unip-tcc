@@ -1,4 +1,6 @@
 import { writable } from 'svelte/store'
+import axios from '../utils/axios'
+import { addSocketListener } from '../utils/websocket'
 import type { PriceHistory } from '../../../interfaces/market'
 
 const { subscribe, update, set } = writable<PriceHistory[]>([])
@@ -6,9 +8,26 @@ const { subscribe, update, set } = writable<PriceHistory[]>([])
 /** Exporta o subscribe para essa variável se ruma store */
 export { subscribe }
 
-// setInterval(() => {
-// 	update(v => [v[v.length - 1], ...v])
-// }, 1000)
+/** Pega os dados do grafico e popula a store */
+export async function fetch(base:string, target:string) {
+	try {
+		if (!base || !target) return
+		const { data } = await axios.get('/v1/market/price', {
+			params: { base, target }
+		})
+		set(data)
+	} catch (err) {
+		console.error('Error fetching prices', err)
+	}
+}
+
+/** Atualiza o array da store ao receber o evento depth_update */
+addSocketListener('price_update', (price:PriceHistory) => {
+	update(columns => {
+		columns.push(price)
+		return columns
+	})
+})
 
 set([
 	{
