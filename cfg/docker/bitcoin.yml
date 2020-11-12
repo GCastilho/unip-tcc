@@ -17,9 +17,9 @@ services:
     image: kylemanna/bitcoind
     restart: unless-stopped
     ports:
-      - 8333:8333
-      - 40000:40000
-      - 127.0.0.1:8332:8332
+      - 18333:18333
+      # - 127.0.0.1:18332:18332
+      - 18332:18332
     volumes:
       - bitcoin-testnet:/bitcoin
     dns:
