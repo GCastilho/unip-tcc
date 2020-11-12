@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     environment:
       MAIN_SERVER_IP: 10.100.11.80
+      BITCOIN_HOST: 10.100.11.83
       MONGODB_URL: ${MONGODB_URL}
     dns:
       - 10.100.11.30
