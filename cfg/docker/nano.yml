@@ -9,6 +9,7 @@ services:
       MONGODB_URL: ${MONGODB_URL}
       WALLET: ${WALLET}
       SEND_ACCOUNT: ${SEND_ACCOUNT}
+      NANO_URL: http://nano-node-beta:55000
     dns:
       - 10.100.11.30
     network_mode: "bridge"

@@ -4,10 +4,12 @@ import { PSent } from '../../common/db/models/pendingTx'
 import { fromNanoToRaw } from '../utils/unitConverter'
 import type { UpdtSent } from '../../../interfaces/transaction'
 
+const nanoUrl = process.env.NANO_URL || 'http://[::1]:55000'
+
 export function nanoRpc(this: Nano) {
 	const request = async (command: any): Promise<any> => {
 		try {
-			const res = await axios.post('http://[::1]:55000', command)
+			const res = await axios.post(nanoUrl, command)
 			if (res.data.error)
 				throw res.data.error
 			return res.data
