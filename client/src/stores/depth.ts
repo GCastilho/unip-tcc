@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store'
 import axios from '../utils/axios'
+import { addSocketListener } from '../utils/websocket'
 import type { MarketDepth } from '../../../interfaces/market'
 
 const { subscribe, update, set } = writable<MarketDepth[]>([])
@@ -23,6 +24,14 @@ export async function fetch(base:string, target:string) {
 		console.error('Error fetching orders', err)
 	}
 }
+
+/** Atualiza o array da store ao receber o evento depth_update */
+addSocketListener('depth_update', (depth:MarketDepth) => {
+	update(columns => {
+		const index = columns.findIndex(v => v.type === depth.type && v.price > depth.price)
+		return columns.splice(index, 0, depth)
+	})
+})
 
 set([
 	{
