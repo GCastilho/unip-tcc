@@ -1,9 +1,11 @@
 import { Router } from 'express'
 import { ObjectId } from 'mongodb'
 import Order from '../../../db/models/order'
+import Price from '../../../db/models/price'
 import { authentication } from './middlewares'
 import * as MarketApi from '../../../marketApi'
 import Trade from '../../../db/models/trade'
+import type { SuportedCurrencies as SC } from '../../../libs/currencies'
 
 const router = Router()
 
@@ -54,6 +56,18 @@ router.get('/price', async (req, res) => {
 		}
 	}
 	return
+})
+
+router.get('/candle', async (req, res) => {
+	try {
+		const priceHistory = await Price.find({
+			currencies: [req.query.base, req.query.target] as [SC, SC]
+		})
+		res.send(priceHistory)
+	} catch (err) {
+		res.status(500).send({ error: 'InternalServerError' })
+		console.error('Error while fetching price history:', err)
+	}
 })
 
 // Chama o middleware de autenticação

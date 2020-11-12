@@ -3,7 +3,7 @@ import { Schema, startSession } from 'mongoose'
 import mongoose from '../mongoose'
 import { currencyNames } from '../../libs/currencies'
 import type { Document, Model } from 'mongoose'
-import type { PriceUpdate } from '../../../interfaces/market'
+import type { PriceHistory, PriceUpdate } from '../../../interfaces/market'
 import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** Objeto de uma modificaçao historica de preço */
@@ -22,6 +22,7 @@ export interface PriceDoc extends Document {
 	duration: number,
 	/** As currencies que fazem parte desse par */
 	currencies: [SuportedCurrencies, SuportedCurrencies]
+	toJSON(): PriceHistory
 }
 
 const PriceSchema = new Schema({
@@ -77,6 +78,20 @@ const PriceSchema = new Schema({
 				&& currencies.every(item => currencyNames.includes(item))
 				&& currencies[0] != currencies[1],
 			message: 'currencies lenght must be two and currency type must be a SuportedCurrencies',
+		}
+	}
+}, {
+	toJSON: {
+		transform: function(doc: PriceDoc): PriceHistory {
+			return {
+				open: doc.open,
+				close: doc.close,
+				high: doc.high,
+				low: doc.low,
+				startTime: doc.startTime,
+				duration: doc.duration,
+				currencies: doc.currencies
+			}
 		}
 	}
 })
