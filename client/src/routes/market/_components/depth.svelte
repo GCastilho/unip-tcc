@@ -74,12 +74,13 @@
 
 		xBand = d3.scaleBand()
 			.domain(d3.range(-1, data.length).map(v => v.toString()))
-			.range([0, width]).padding(0.2)
+			.range([0, width]).padding(0.35)
 
 		xAxis = d3.axisBottom(xScale)
 		.tickFormat((d) => {
-			return `${data[d.valueOf()]?.price}`
-		})
+			//gambiarra, remover depois da apresentaçao
+			return `${data[d.valueOf()]?.price || ''}`
+		}).ticks(5)
 
 		svg.append('rect')
 			.attr('id','rect')
@@ -161,12 +162,12 @@
 			}
 
 			gX.call(
-				d3.axisBottom(xScale)
+				d3.axisBottom(xScaleZ)
 					.tickFormat((d) => {
-				return `${data[d.valueOf()]?.price}`
-				})
+						//gambiarra, remover depois da apresentaçao
+						return `${data[d.valueOf()]?.price || ''}`
+				}).ticks(6)
 			)
-
 
 			depth.attr('x', (d, i) => xScaleZ(i) - (xBand.bandwidth()*zoomQuantity)/2)
 				.attr('width', xBand.bandwidth()*zoomQuantity)
@@ -227,7 +228,7 @@
 			.range([0, width])
 		xBand = d3.scaleBand()
 			.domain(d3.range(-1, data.length).map(v => v.toString()))
-			.range([0, width]).padding(0.2)
+			.range([0, width]).padding(0.35)
 		let xScaleZ = transform.rescaleX(xScale)
 	
 		//redefine dominio da escala

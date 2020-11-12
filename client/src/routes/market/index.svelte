@@ -155,7 +155,7 @@
 	<div>
 		<div>
 			<Candle prices={$prices} />
-			<Depth _data={$depth}/>		
+			<Depth _data={$depth}/>
 		</div>
 		<Tabs>
 			<TabList>

@@ -1,9 +1,9 @@
 import { writable } from 'svelte/store'
 import axios from '../utils/axios'
 import { addSocketListener } from '../utils/websocket'
-import type { PriceRequest } from '../../../interfaces/market'
+import type { PriceRequest, PriceUpdate } from '../../../interfaces/market'
 
-const { subscribe, set } = writable({})
+const { subscribe, update, set } = writable<PriceRequest>({})
 
 /** Exporta o subscribe para essa variável se ruma store */
 export { subscribe }
@@ -24,7 +24,14 @@ export async function fetch(currencies:string[]) {
 }
 
 /** Atualiza o array da store ao receber o evento price_update */
-addSocketListener('price_update', (price:PriceRequest) => {
-	console.log(price)
-	set(price)
+addSocketListener('price_update', (newPrice:PriceUpdate) => {
+	console.log(newPrice)
+	update(price => {
+		if (newPrice.type == 'buy') {
+			price.buyPrice = newPrice.price
+		} else {
+			price.sellPrice = newPrice.price
+		}
+		return price
+	})
 })

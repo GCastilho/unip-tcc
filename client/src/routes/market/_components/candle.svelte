@@ -18,7 +18,8 @@
 	/** a largura visivel da porçao do grafico */
 	const width = 600 - margin.left - margin.right
 	const height = 450 - margin.top - margin.bottom
-
+	
+	let currencies
 	/** array de timestamps das ordens */
 	let dates : number[]
 	/** mapeia o posicionamento ordenado dos itens, referente a graduaçao Inferior (X) */
@@ -65,25 +66,31 @@
 		drawChart(prices)
 	})
 	$: updateCandles(prices)
-
-	function drawChart(prices: PriceHistory[]) {
-		currentMaxItemView =  Math.min(maxItemView, prices.length)
-		virtualWidth = (width / currentMaxItemView) * prices.length
+	
+	export function _drawChart(){
+		drawChart([])
+	}
+	
+	export function drawChart(prices: PriceHistory[]) {
+		currentMaxItemView =  Math.min(maxItemView, prices.length || 10)
+		virtualWidth = (width / currentMaxItemView) * prices.length || 10
+		currencies = prices[0].currencies || []
 		svg = d3.select('#candleGraph')
 			.attr('width', width + margin.left + margin.right)
 			.attr('height', height + margin.top + margin.bottom)
 			.append('g')
 			.attr('transform', 'translate(' +margin.left+ ',' +margin.top+ ')')
 
+
 		let xmax = Math.max(...prices.map(v => v.startTime))
 		dates = prices.map(p => p.startTime)
 
 		xScale = d3.scaleLinear()
-			.domain([ -1 , dates.length])
+			.domain([ -1 , dates.length || 10])
 			.range([0, virtualWidth])
 
 		xBand = d3.scaleBand()
-			.domain(d3.range(-1, dates.length).map(v => v.toString()))
+			.domain(d3.range(-1, dates.length || 10).map(v => v.toString()))
 			.range([0, width]).padding(0.3)
 
 		xAxis = d3.axisBottom(xScale)
@@ -109,7 +116,8 @@
 		const ymax = d3.max(prices.map(r => r.high)) || 100
 
 		yScale = d3.scaleLinear().domain([ymin, ymax]).range([height, 0]).nice()
-		
+
+		console.log('yScale', yScale(0))
 		gY = svg.append('g')
 			.call(
 				d3.axisLeft(yScale).tickFormat(d3.format("$~f")).tickValues(
@@ -214,7 +222,8 @@
 		function zoomend(event) {
 
 			const xDateScale = d3.scaleQuantize()
-				.domain([0, dates.length])
+				//dates = dates.length ? dates : dates.
+				.domain([0, dates.length || 10])
 				.range(dates)
 
 			let xScaleZ = transform.rescaleX(xScale)
@@ -254,6 +263,15 @@
 	}
 	function updateCandles (prices:PriceHistory[]) {
 		if(!svg) return
+		if(currencies[0] != prices[0].currencies[0]){
+			console.log('redraw graph')
+			svg.selectAll('line').remove()
+			svg.selectAll('.candle').remove()
+			gX.selectAll('.tick text').remove()
+			gY.selectAll('.tick text').remove()
+			drawChart(prices)
+			return
+		}
 		const translateDistance = (virtualWidth*transform.k - ((width / currentMaxItemView) * prices.length)*transform.k)
 		virtualWidth = (width / currentMaxItemView) * prices.length
 		const extent: [[number, number], [number, number]] = [[0, 0], [xScale(prices.length-1), height/2]] 
