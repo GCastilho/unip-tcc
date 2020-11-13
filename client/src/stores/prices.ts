@@ -3,7 +3,14 @@ import axios from '../utils/axios'
 import { addSocketListener } from '../utils/websocket'
 import type { PriceHistory } from '../../../interfaces/market'
 
-const { subscribe, update, set } = writable<PriceHistory[]>([])
+const { subscribe, update, set } = writable<PriceHistory[]>([{
+	'startTime': 0,
+	'open': 0,
+	'high': 0,
+	'low': 0,
+	'close': 0,
+	'volume': 0
+}] as PriceHistory[]) // as está aq pq o joão disse q dá erro sem esse obj inicial
 
 /** Exporta o subscribe para essa variável se ruma store */
 export { subscribe }
@@ -24,22 +31,14 @@ export async function fetch(currencies:string[]) {
 }
 
 /** Atualiza o array da store ao receber o evento depth_update */
-/*addSocketListener('price_update', (price:PriceHistory) => {
-	console.log(price)
-	update(columns => {
-		columns.push(price)
-		return columns
+addSocketListener('price_history', (price: PriceHistory) => {
+	console.log('Received price_history', price)
+	update(prices => {
+		if (price.startTime == prices[prices.length - 1].startTime) {
+			prices[prices.length - 1] = price
+		} else {
+			prices.push(price)
+		}
+		return prices
 	})
 })
-*/
-
-set([{
-	'startTime': 0,
-	'open': 0,
-	'high': 0,
-	'low': 0,
-	'close': 0,
-	'volume': 0
-}])
-
-

@@ -1,3 +1,4 @@
+import Price from '../../db/models/price'
 import Session from '../../db/models/session'
 import * as marketApi from '../../marketApi'
 import * as currencyApi from '../../currencyApi'
@@ -69,6 +70,10 @@ export default function socketHandler(io: Server) {
 
 	marketApi.events.on('depth_update', depth => {
 		io.emit('depth_update', depth)
+	})
+
+	Price.on('price_history', price => {
+		io.emit('price_history', price)
 	})
 
 	// Transmite eventos para os sockets autenticados

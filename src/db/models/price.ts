@@ -6,6 +6,10 @@ import type { Document, Model } from 'mongoose'
 import type { PriceHistory, PriceUpdate } from '../../../interfaces/market'
 import type { SuportedCurrencies } from '../../libs/currencies'
 
+interface PriceEvents {
+	price_history: (price_history: PriceHistory) => void
+}
+
 /** Objeto de uma modificaçao historica de preço */
 export interface PriceDoc extends Document {
 	/** Preço inicial da entrada */
@@ -115,6 +119,16 @@ interface PriceModel extends Model<PriceDoc> {
 	 * @param priceUptd O objeto da atualização de preço
 	 */
 	createOne(priceUptd: PriceUpdate): Promise<void>
+
+	emit: <E extends keyof PriceEvents>(event: E, ...args: Parameters<PriceEvents[E]>) => boolean
+	on: <E extends keyof PriceEvents>(
+		event: E,
+		fn: (...args: Parameters<PriceEvents[E]>) => void
+	) => this
+	once: <E extends keyof PriceEvents>(
+		event: E,
+		fn: (...args: Parameters<PriceEvents[E]>) => void
+	) => this
 }
 
 PriceSchema.static('createOne', async function(this: PriceModel,
@@ -126,7 +140,7 @@ PriceSchema.static('createOne', async function(this: PriceModel,
 	/** Garante que o array está na ordem correta */
 	currencies.sort()
 
-	await this.updateOne({
+	const history = await this.findOneAndUpdate({
 		currencies,
 		startTime: Date.now() - (Date.now() % 60000), // Início do minuto atual
 		duration: 60000
@@ -142,7 +156,9 @@ PriceSchema.static('createOne', async function(this: PriceModel,
 		$min: { low: price },
 	}, {
 		upsert: true
-	})
+	}) as PriceDoc
+
+	Price.emit('price_history', history.toJSON())
 })
 
 PriceSchema.static('summarize', async function(this: PriceModel,
