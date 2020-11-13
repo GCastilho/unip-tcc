@@ -21,6 +21,7 @@ const client = new Client({
 	username: 'exchange',
 	password: 'password',
 	host: bitcoinHost,
+	port: 40000
 })
 
 /**
