@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  nano:
+    image: gcastilho/nano:latest
+    restart: unless-stopped
+    environment:
+      MAIN_SERVER_IP: 10.100.11.80
+      NANO_URL: http://10.100.11.82:55000
+      NANO_SOCKET_URL: 'ws://10.100.11.82:57000'
+      MONGODB_URL: ${MONGODB_URL}
+      WALLET: ${WALLET}
+      SEND_ACCOUNT: ${SEND_ACCOUNT}
+    dns:
+      - 10.100.11.30
+    network_mode: "bridge"
+  nano-node-beta:
+    image: nanocurrency/nano-beta
+    restart: unless-stopped
+    ports:
+      - '55000:55000'
+      - '57000:57000'
+    volumes:
+      - nano-beta:/root
+    dns:
+      - 10.100.11.30
+    network_mode: "bridge"
+  nano-node-monitor:
+    image: nanotools/nanonodemonitor:v1.5.5
+    restart: unless-stopped
+    depends_on:
+      - nano-node-beta
+    ports:
+      - '8008:80'
+    volumes:
+      - nano-monitor:/var/www/html
+    dns:
+      - 10.100.11.30
+    network_mode: "bridge"
+
+volumes:
+  nano-beta:
+  nano-monitor:

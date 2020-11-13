@@ -5,8 +5,8 @@ import commonjs from '@rollup/plugin-commonjs'
 import svelteSVG from 'rollup-plugin-svelte-svg'
 import svelte from 'rollup-plugin-svelte'
 import babel from '@rollup/plugin-babel'
-import { terser } from 'rollup-plugin-terser'
 import sveltePreprocess from 'svelte-preprocess'
+import { terser } from 'rollup-plugin-terser'
 import config from 'sapper/config/rollup.js'
 import pkg from './package.json'
 
@@ -14,6 +14,9 @@ const mode = process.env.NODE_ENV
 const dev = mode === 'development'
 const production = !process.env.ROLLUP_WATCH
 const legacy = !!process.env.SAPPER_LEGACY_BUILD
+
+const internalUrl = process.env.INTERNAL_API_URL || 'http://127.0.0.1:3001'
+const publicUrl = process.env.PUBLIC_API_URL || 'http://127.0.0.1:3001'
 
 const onwarn = (warning, onwarn) =>
 	(warning.code === 'MISSING_EXPORT' && /'preload'/.test(warning.message)) ||
@@ -27,7 +30,9 @@ export default {
 		plugins: [
 			replace({
 				'process.browser': true,
-				'process.env.NODE_ENV': JSON.stringify(mode)
+				'process.env.NODE_ENV': JSON.stringify(mode),
+				'__INTERNAL_API_URL__': internalUrl,
+				'__PUBLIC_API_URL__': publicUrl,
 			}),
 			svelte({
 				dev,
@@ -77,7 +82,9 @@ export default {
 		plugins: [
 			replace({
 				'process.browser': false,
-				'process.env.NODE_ENV': JSON.stringify(mode)
+				'process.env.NODE_ENV': JSON.stringify(mode),
+				'__INTERNAL_API_URL__': internalUrl,
+				'__PUBLIC_API_URL__': publicUrl,
 			}),
 			svelte({
 				preprocess: sveltePreprocess({
@@ -108,7 +115,9 @@ export default {
 			resolve(),
 			replace({
 				'process.browser': true,
-				'process.env.NODE_ENV': JSON.stringify(mode)
+				'process.env.NODE_ENV': JSON.stringify(mode),
+				'__INTERNAL_API_URL__': internalUrl,
+				'__PUBLIC_API_URL__': publicUrl,
 			}),
 			commonjs(),
 			!dev && terser()
