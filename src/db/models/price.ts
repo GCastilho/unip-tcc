@@ -156,8 +156,9 @@ PriceSchema.static('createOne', async function(this: PriceModel,
 		$min: { low: price },
 	}, {
 		upsert: true
-	}) as PriceDoc
+	})
 
+	if (!history) return
 	Price.emit('price_history', history.toJSON())
 })
 
