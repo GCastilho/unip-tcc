@@ -3,8 +3,12 @@ import { Schema, startSession } from 'mongoose'
 import mongoose from '../mongoose'
 import { currencyNames } from '../../libs/currencies'
 import type { Document, Model } from 'mongoose'
-import type { PriceUpdate } from '../../../interfaces/market'
+import type { PriceHistory, PriceUpdate } from '../../../interfaces/market'
 import type { SuportedCurrencies } from '../../libs/currencies'
+
+interface PriceEvents {
+	price_history: (price_history: PriceHistory) => void
+}
 
 /** Objeto de uma modificaçao historica de preço */
 export interface PriceDoc extends Document {
@@ -22,6 +26,7 @@ export interface PriceDoc extends Document {
 	duration: number,
 	/** As currencies que fazem parte desse par */
 	currencies: [SuportedCurrencies, SuportedCurrencies]
+	toJSON(): PriceHistory
 }
 
 const PriceSchema = new Schema({
@@ -79,6 +84,20 @@ const PriceSchema = new Schema({
 			message: 'currencies lenght must be two and currency type must be a SuportedCurrencies',
 		}
 	}
+}, {
+	toJSON: {
+		transform: function(doc: PriceDoc): PriceHistory {
+			return {
+				open: doc.open,
+				close: doc.close,
+				high: doc.high,
+				low: doc.low,
+				startTime: doc.startTime,
+				duration: doc.duration,
+				currencies: doc.currencies
+			}
+		}
+	}
 })
 
 PriceSchema.pre('save', function(this: PriceDoc) {
@@ -100,6 +119,16 @@ interface PriceModel extends Model<PriceDoc> {
 	 * @param priceUptd O objeto da atualização de preço
 	 */
 	createOne(priceUptd: PriceUpdate): Promise<void>
+
+	emit: <E extends keyof PriceEvents>(event: E, ...args: Parameters<PriceEvents[E]>) => boolean
+	on: <E extends keyof PriceEvents>(
+		event: E,
+		fn: (...args: Parameters<PriceEvents[E]>) => void
+	) => this
+	once: <E extends keyof PriceEvents>(
+		event: E,
+		fn: (...args: Parameters<PriceEvents[E]>) => void
+	) => this
 }
 
 PriceSchema.static('createOne', async function(this: PriceModel,
@@ -111,7 +140,7 @@ PriceSchema.static('createOne', async function(this: PriceModel,
 	/** Garante que o array está na ordem correta */
 	currencies.sort()
 
-	await this.updateOne({
+	const history = await this.findOneAndUpdate({
 		currencies,
 		startTime: Date.now() - (Date.now() % 60000), // Início do minuto atual
 		duration: 60000
@@ -128,6 +157,9 @@ PriceSchema.static('createOne', async function(this: PriceModel,
 	}, {
 		upsert: true
 	})
+
+	if (!history) return
+	Price.emit('price_history', history.toJSON())
 })
 
 PriceSchema.static('summarize', async function(this: PriceModel,

@@ -8,7 +8,7 @@ import { currencyNames } from '../libs/currencies'
 import type { OrderDoc } from '../db/models/order'
 import type { PersonDoc } from '../db/models/person'
 import type { SuportedCurrencies as SC } from '../libs/currencies'
-import type { MarketOrder, MarketDepth, PriceRequest } from '../../interfaces/market'
+import type { OrderRequest, MarketDepth, PriceRequest } from '../../interfaces/market'
 
 /** Re-exporta o eventEmitter do módulo da Market */
 export { events } from './market'
@@ -62,7 +62,7 @@ markets.forEach(market => {
  * @throws ValidationError from mongoose
  * @returns Order's opid
  */
-export async function add(userId: PersonDoc['_id'], order: MarketOrder): Promise<ObjectId> {
+export async function add(userId: PersonDoc['_id'], order: OrderRequest): Promise<ObjectId> {
 	const orderDoc = await new Order({
 		userId: userId,
 		status: 'preparing',

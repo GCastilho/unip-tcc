@@ -1,8 +1,16 @@
 import assert from 'assert'
+import { EventEmitter } from 'events'
 import { startSession } from 'mongoose'
 import Trade from '../db/models/trade'
 import Person from '../db/models/person'
+import type TypedEmitter from 'typed-emitter'
 import type { OrderDoc } from '../db/models/order'
+import type { MarketTrade } from '../../interfaces/market'
+
+/** Event emitter do módulo de trade */
+export const events: TypedEmitter<{
+	new_trade: (userId: InstanceType<typeof Person>['_id'], trade: MarketTrade) => void
+}> = new EventEmitter()
 
 /**
  * Roda alguns asserts nas ordens para garantir que elas tem os dados esperados
@@ -93,6 +101,8 @@ export default async function trade(matchs: [maker: OrderDoc, taker: OrderDoc][]
 			await Promise.all(match.map(order => order.remove()))
 
 			await session.commitTransaction()
+
+			match.forEach(order => events.emit('new_trade', order.userId, trade.toJSON()))
 		} catch (err) {
 			await session.abortTransaction()
 			throw err

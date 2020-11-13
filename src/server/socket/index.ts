@@ -1,7 +1,9 @@
+import Price from '../../db/models/price'
 import Session from '../../db/models/session'
 import * as marketApi from '../../marketApi'
 import * as currencyApi from '../../currencyApi'
 import * as connectedUsers from './connectedUsers'
+import { events as tradeEvents } from '../../marketApi/trade'
 import type { Server, Socket } from 'socket.io'
 
 export default function socketHandler(io: Server) {
@@ -70,6 +72,10 @@ export default function socketHandler(io: Server) {
 		io.emit('depth_update', depth)
 	})
 
+	Price.on('price_history', price => {
+		io.emit('price_history', price)
+	})
+
 	// Transmite eventos para os sockets autenticados
 
 	currencyApi.events.on('new_transaction', (userId, currency, transaction) => {
@@ -86,5 +92,9 @@ export default function socketHandler(io: Server) {
 
 	marketApi.events.on('order_update', (userId, orderUpdt) => {
 		connectedUsers.get(userId)?.emit('order_update', orderUpdt)
+	})
+
+	tradeEvents.on('new_trade', (userId, trade) => {
+		connectedUsers.get(userId)?.emit('new_trade', trade)
 	})
 }

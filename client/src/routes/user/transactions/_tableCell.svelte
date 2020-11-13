@@ -1,4 +1,4 @@
-<script>
+<script lang='ts'>
 	import { afterUpdate } from 'svelte'
 	import Close from './cross-icon.svg'
 	import { format } from 'light-date'
@@ -20,14 +20,20 @@
 		timestamp,
 	} = transaction
 
-	let coin, name, code, date, time, tableWidth, amount, fee
+	let coin, code, amount, fee
 
+	/** Largura da tabela em pixels*/
+	let tableWidth: Number
+
+	/** Define se o menu de detalhes da transações esta aberto */
 	let disable = false
 
+	// Seta para null se a transação for confimada
 	afterUpdate(() => {
 		if (status == 'confirmed') confirmations = null
 	})
 
+	/** Define qual sera a cor de status da transação */
 	$: txColor = status == 'confirmed' ? 'green'
 		: status == 'canceled' ? '#e64d51'
 		: status == 'pending' ? '#c2c21c'
@@ -35,24 +41,24 @@
 
 	$: {
 		coin = $currencies.find(value => currency === value.name)
-		if (coin) {
-			name = coin.name
-			code = coin.code.toUpperCase()
-			amount = transaction.amount.toFixed(coin.decimals)
-			fee = transaction.fee.toFixed(coin.decimals)
-		}
+		code = coin.code?.toUpperCase()
+		amount = transaction.amount?.toFixed(coin.decimals)
+		fee = transaction.fee?.toFixed(coin.decimals)
 	}
 
+	/** Handler da função de cancelamento das transações */
 	function cancelTx() {
 		transactions.cancell(opid)
 	}
 
+	// Se a largura da tela for maior que 850px, ele seta para false
+	$: disable = tableWidth >= 850 ? false : disable
+
+	/** Handler das linha da tabela, ao clicar na linha a função é acionada */
 	function handlerMobile() {
 		if(tableWidth > 850) return
 		disable = !disable
 	}
-
-	$: disable = tableWidth >= 850 ? false : disable
 
 	/**
 	 * Converte um timestamp para um padrão legivel
@@ -248,7 +254,7 @@
 		
 		<div class="amount-tx" title="Amount" style="text-align: end">
 			<span title="Amount">{amount}</span>
-			<span title={name}>{code}</span>
+			<span title={coin.name}>{code}</span>
 			{#if fee > 0}
 				<span title="Fee">{fee}</span>
 				<span title="Fee">Fee</span>
