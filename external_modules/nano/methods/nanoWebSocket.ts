@@ -3,12 +3,14 @@ import { Nano } from '../index'
 // eslint-disable-next-line
 const ReconnectingWebSocket = require('reconnecting-websocket')
 
+const nanoSocketUrl = process.env.NANO_SOCKET_URL || 'ws://[::1]:57000'
+
 export function nanoWebSocket(this: Nano) {
 	/**
 	 * Create a reconnecting WebSocket. In this example, we wait a maximum of
 	 * 2 seconds before retrying
 	 */
-	const ws = new ReconnectingWebSocket('ws://[::1]:57000', [], {
+	const ws = new ReconnectingWebSocket(nanoSocketUrl, [], {
 		WebSocket: WS,
 		connectionTimeout: 10000,
 		maxRetries: 100000,

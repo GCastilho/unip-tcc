@@ -3,7 +3,7 @@ import log from 'loglevel'
 let log_level: keyof log.LogLevel
 
 switch (process.env.NODE_ENV) {
-	case('production'):
+	// case('production'):
 	case('test'):
 		log_level = 'WARN'
 		break

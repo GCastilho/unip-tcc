@@ -6,6 +6,8 @@ import type { UpdtSent } from '../../../interfaces/transaction'
 /** EventEmmiter genérico */
 class Events extends EventEmitter {}
 
+const bitcoinHost = process.env.BITCOIN_HOST || '127.0.0.1'
+
 /**
  * Eventos do rpc da bitcoin, emite dois eventos: 'rpc_success' e 'rpc_refused',
  * o primeiro para qualquer evento bem sucedido, o segundo para quando o erro
@@ -18,6 +20,7 @@ const client = new Client({
 	network: 'testnet',
 	username: 'exchange',
 	password: 'password',
+	host: bitcoinHost,
 	port: 40000
 })
 
