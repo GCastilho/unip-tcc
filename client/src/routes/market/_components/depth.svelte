@@ -58,7 +58,8 @@
 	$: updateDepth(_data)
 
 	function drawChart(depthData: MarketDepth[]) {
-		data = orderData(depthData)
+		data = orderData( depthData)
+		console.log('l', data.length)
 		svg = d3.select('#depthChart')
 			.attr('width', width + margin.left + margin.right)
 			.attr('height', height + margin.top + margin.bottom)
@@ -66,14 +67,14 @@
 			.attr('transform', 'translate(' +margin.left+ ',' +margin.top+ ')')
 
 
-		let xmax = Math.max(...data.map(v => v.price))
+		let xmax = Math.max(...data.map(v => v?.price))
 
 		xScale = d3.scaleLinear()
-			.domain([ -1 , data.length])
+			.domain([ -1 , data.length || 1])
 			.range([0, width])
 
 		xBand = d3.scaleBand()
-			.domain(d3.range(-1, data.length).map(v => v.toString()))
+			.domain(d3.range(-1, data.length || 10).map(v => v.toString()))
 			.range([0, width]).padding(0.35)
 
 		xAxis = d3.axisBottom(xScale)
@@ -98,9 +99,9 @@
 		gX.selectAll('.tick text')
 			.call(wrap, xBand.bandwidth())
 
-		const ymax = Math.max(...data.map( (r: MarketDepth) => r.volume)) || 100
+		const ymax = Math.max(...data.map((r: MarketDepth) => r?.volume)) || 10
 
-		yScale = d3.scaleLinear().domain([0, ymax]).range([height, 0])
+		yScale = d3.scaleLinear().domain([0, ymax ]).range([height, 0]).nice()
 		
 		gY = svg.append('g')
 			.call(
@@ -117,19 +118,20 @@
 		chartBody = svg.append('g')
 			.attr('class', 'chartBody')
 			.attr('clip-path', 'url(#clip)')
-
-		depth = chartBody.selectAll('.depth')
+		
+		depth = depthData.length? chartBody.selectAll('.depth')
 			.data(data)
 			.enter()
 			.append('rect')
 			.attr('x', (d, i) => xScale(i))
 			.attr('class', 'depth')
-			.attr('price', d => d.price)
-			.attr('volume', d => d.volume)
-			.attr('y', d => yScale(d.volume))
+			.attr('price', d => d?.price)
+			.attr('volume', d => d?.volume)
+			.attr('y', d => yScale(d?.volume) )
 			.attr('width', xBand.bandwidth())
 			.attr('height', d => height*10 )
-			.attr('fill', (d: MarketDepth)=> (d.type === 'sell') ? 'red' : 'green')
+			.attr('fill', (d: MarketDepth)=> (d?.type === 'sell') ? 'red' : 'green')
+			: null
 		
 		svg.append('defs')
 			.append('clipPath')
@@ -168,7 +170,7 @@
 						return `${data[d.valueOf()]?.price || ''}`
 				}).ticks(6)
 			)
-
+			if(!depth) return
 			depth.attr('x', (d, i) => xScaleZ(i) - (xBand.bandwidth()*zoomQuantity)/2)
 				.attr('width', xBand.bandwidth()*zoomQuantity)
 
@@ -182,7 +184,7 @@
 
 			const xPriceScale = d3.scaleQuantize()
 				.domain([0, data.length])
-				.range(data.map(d => d.price))
+				.range(data.map(d => d?.price))
 
 			let xScaleZ = transform.rescaleX(xScale)
 			clearTimeout(resizeTimer)
@@ -190,16 +192,17 @@
 			resizeTimer = setTimeout(function() {
 				const xmin = xPriceScale(Math.floor(xScaleZ.domain()[0]))
 				xmax = xPriceScale(Math.floor(xScaleZ.domain()[1]))
-				filtered = data.filter(d => ((d.price >= xmin) && (d.price <= xmax)))
+				filtered = data.filter(d => ((d?.price >= xmin) && (d?.price <= xmax)))
 
-				minP = +d3.min(filtered, (d: MarketDepth) => d.volume)
-				maxP = +d3.max(filtered, (d: MarketDepth) => d.volume)
+				minP = +d3.min(filtered, (d: MarketDepth) => d?.volume)
+				maxP = +d3.max(filtered, (d: MarketDepth) => d?.volume)
 				buffer = Math.floor((maxP - minP) * 0.1)
 			
 				yScale.domain([0, maxP + buffer])
+				if(!depth) return
 				depth.transition()
 					.duration(transitionDuration)
-					.attr('y', (d: MarketDepth) => yScale(d.volume))
+					.attr('y', (d: MarketDepth) => yScale(d?.volume))
 					.attr('height', height*10)// gambiarra pra deixar bonito
 
 				gY.transition().duration(transitionDuration)
@@ -234,33 +237,34 @@
 		//redefine dominio da escala
 		const xPriceScale = d3.scaleQuantize()
 			.domain([0, data.length])
-			.range(data.map(d => d.price))
+			.range(data.map(d => d?.price))
 	
 		const xmin = xPriceScale(Math.floor(xScaleZ.domain()[0]))
 		const xmax = xPriceScale(Math.floor(xScaleZ.domain()[1]))
 
-		filtered = data.filter(d => ((d.price >= xmin) && (d.price <= xmax)))
+		filtered = data.filter(d => ((d?.price >= xmin) && (d?.price <= xmax)))
 
-		minP = +d3.min(filtered, (d: MarketDepth) => d.volume)
-		maxP = +d3.max(filtered, (d: MarketDepth) => d.volume)
+		minP = +d3.min(filtered, (d: MarketDepth) => d?.volume)
+		maxP = +d3.max(filtered, (d: MarketDepth) => d?.volume)
 		buffer = Math.floor((maxP - minP) * 0.1)
 
 		yScale.domain([0, maxP + buffer])
 
 		svg.selectAll('.depth').remove()
 
-		depth = chartBody.selectAll('.depth')
+		depth = depth? chartBody.selectAll('.depth')
 			.data(data)
 			.enter()
 			.append('rect')
 			.attr('x', (d, i) => xScale(i))
 			.attr('class', 'depth')
-			.attr('price', d => d.price)
+			.attr('price', d => d?.price)
 			.attr('volume', d => d.volume)
-			.attr('y', d => yScale(d.volume))
+			.attr('y', d => yScale(d.volume||0))
 			.attr('width', xBand.bandwidth()*zoomQuantity)
 			.attr('height', height*10)
-			.attr('fill', d => (d.type == 'sell') ? 'red' : 'green')
+			.attr('fill', d => (d?.type == 'sell') ? 'red' : 'green')
+			: null
 
 		gX.selectAll('.tick text')
 			.call(wrap, xBand.bandwidth())
@@ -272,21 +276,21 @@
 		const acc = [arr[0]]
 		for(let i = 1 ; i < arr.length; i++){
 			acc.push({
-				volume: arr[i].volume + acc[i-1].volume,
-				type: arr[i].type,
-				price: arr[i].price,
-				currencies: arr[i].currencies
+				volume: arr[i]?.volume + acc[i-1].volume,
+				type: arr[i]?.type,
+				price: arr[i]?.price,
+				currencies: arr[i]?.currencies
 			})
 		}
 		return acc
 	}
 
 	function orderData (array: MarketDepth[]){
-		array = array.sort((a, b) => {
-			return (a.price > b.price) ? 1 : ((b.price > a.price) ? -1 : 0);
-		})
+		// array = array.sort((a, b) => {
+		// 	return (a.price > b.price) ? 1 : ((b.price > a.price) ? -1 : 0);
+		// })
 
-		const typeSeparationIndex = array.findIndex(v=> v.type == 'sell')
+		const typeSeparationIndex = array.findIndex(v=> v?.type == 'sell')
 		const bids = prefixSum(array.slice(0, typeSeparationIndex).reverse()).reverse()
 		
 		const asks = prefixSum(array.slice(typeSeparationIndex, array.length))

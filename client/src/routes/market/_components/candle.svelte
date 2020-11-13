@@ -74,7 +74,7 @@
 	export function drawChart(prices: PriceHistory[]) {
 		currentMaxItemView =  Math.min(maxItemView, prices.length || 10)
 		virtualWidth = (width / currentMaxItemView) * prices.length || 10
-		currencies = prices[0].currencies || []
+		currencies = prices[0]?.currencies || []
 		svg = d3.select('#candleGraph')
 			.attr('width', width + margin.left + margin.right)
 			.attr('height', height + margin.top + margin.bottom)
@@ -84,7 +84,9 @@
 
 		let xmax = Math.max(...prices.map(v => v.startTime))
 		dates = prices.map(p => p.startTime)
-
+		if(dates.length == 0){
+			dates = [new Date(1).getTime() , Date.now()]
+		}
 		xScale = d3.scaleLinear()
 			.domain([ -1 , dates.length || 10])
 			.range([0, virtualWidth])
@@ -263,7 +265,7 @@
 	}
 	function updateCandles (prices:PriceHistory[]) {
 		if(!svg) return
-		if(currencies[0] != prices[0].currencies[0]){
+		if(currencies[0] != prices[0]?.currencies[0]){
 			console.log('redraw graph')
 			svg.selectAll('line').remove()
 			svg.selectAll('.candle').remove()
@@ -279,9 +281,11 @@
 
 		svg.call(zoom)
 		dates = prices.map(p => p.startTime)
-
+		if(dates.length == 0){
+			dates = [new Date(1).getTime() , Date.now()]
+		}
 		xScale=	d3.scaleLinear()
-			.domain([ -1 , dates.length])
+			.domain([ -1 , dates.length || 1])
 			.range([0, virtualWidth])
 		xBand = d3.scaleBand()
 			.domain(d3.range(-1, dates.length).map(v => v.toString()))
