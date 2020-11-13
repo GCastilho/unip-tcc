@@ -81,6 +81,32 @@ export async function add(orderRequest: OrderRequest) {
 }
 
 /**
+ * Requisita uma remoção de uma ordem do orderbook e em seguida remove-a do
+ * orderbook local
+ *
+ * @param opid O opid da ordem que deve ser cancelada
+ */
+export async function remove(opid: string): Promise<void> {
+	console.log(`Trying to cancell order '${opid}' from the orderbook`)
+	try {
+		await axios.post(`/v1/market/orderbook/${opid}`)
+		update(orders => {
+			const idx = orders.findIndex(v => v.opid == opid)
+			if (idx) {
+				orders.slice(idx, 1)
+			} else {
+				console.error(`Order with opid ${opid} was not found in the LOCAL orderbook AFTER the request was made`)
+			}
+			return orders
+		})
+		console.log(`Order ${opid} was cancelled from the orderbook`)
+	} catch (err) {
+		console.error('Error cancelling order', err)
+		throw err
+	}
+}
+
+/**
  * Requisita da API e adiciona ao array uma ordem que não está
  * na store de ordens
  * @param opid O opid da ordem que não está na store

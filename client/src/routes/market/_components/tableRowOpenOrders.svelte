@@ -1,11 +1,13 @@
 <script lang='ts'>
 	import { format } from 'light-date'
 	import * as currencies from './../../../stores/currencies'
+	import * as orderbook from './../../../stores/orderbook'
 	import type { MarketOrder } from '../../../../../interfaces/market.d'
 
 	export let order: MarketOrder
 
 	let {
+		opid,
 		owning,
 		requesting,
 		timestamp
@@ -17,6 +19,11 @@
 
 	$: time = timestamp ? format(new Date(timestamp), '{HH}:{mm} ') : null
 	$: date = timestamp ? format(new Date(timestamp), ' {dd}/{MM}/{yyyy}') : null
+
+	function cancelOrder() {
+		// O erro é ignorado pq não vamos mostrar msg de erro pro usuário AINDA
+		orderbook.remove(opid).catch(err => err)
+	}
 </script>
 <style>
 	tr {
@@ -54,4 +61,5 @@
 			: '--'}
 	</td>
 	<td class="date">{time}-{date}</td>
+	<td><button on:click={cancelOrder}>cancel</button></td>
 </tr>
