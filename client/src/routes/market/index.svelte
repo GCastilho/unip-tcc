@@ -1,13 +1,13 @@
 <script lang='ts'>
 	import * as prices from '../../stores/prices'
-	import * as depth from '../../stores/depth'
+	//import * as depth from '../../stores/depth'
 	import * as marketPrice from '../../stores/marketPrice'
 	import BuySell from './_buySell.svelte'
 	import OpenOrders from './_openOrders.svelte'
 	import CloseOrders from './_closeOrders.svelte'
 	import ExchangeIcon from './exchange.svg'
 	import Candle from './_components/candle.svelte'
-	import Depth from './_components/depth.svelte'
+	// import Depth from './_components/depth.svelte'
 	import * as currencies from '../../stores/currencies'
 	import Tabs from 'svelte-tabs/src/Tabs.svelte';
 	import Tab from 'svelte-tabs/src/Tab.svelte';
@@ -23,7 +23,7 @@
 	// popula o grafico de depth
 	$: {
 		prices.fetch([baseCurrency?.name, targetCurrency?.name])
-		depth.fetch([baseCurrency?.name, targetCurrency?.name])
+		//depth.fetch([baseCurrency?.name, targetCurrency?.name])
 		marketPrice.fetch([baseCurrency?.name, targetCurrency?.name])
 	} 
 
@@ -155,7 +155,7 @@
 	<div>
 		<div>
 			<Candle prices={$prices} />
-			<Depth _data={$depth}/>
+			<!-- <Depth _data={$depth}/> -->
 		</div>
 		<Tabs>
 			<TabList>

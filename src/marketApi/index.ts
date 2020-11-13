@@ -15,6 +15,9 @@ export { events } from './market'
 
 /** Ouve por eventos de atualização de preço e manda-os para o banco de dados */
 events.on('price_update', async priceUpdt => {
+	// Workaround para não logar esses preços na collection e não crashar a candle
+	if (priceUpdt.price == 0 || priceUpdt.price == Infinity) return
+
 	try {
 		await Price.createOne(priceUpdt)
 	} catch (err) {
