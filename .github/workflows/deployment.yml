@@ -1,0 +1,194 @@
+name: Project's Continuous Deployment
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Build the project and upload to GitHub as an artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Setup NodeJS 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Install build dependencies
+        run: |
+          npm ci
+          npm run dep-install
+      - name: Build project
+        run: npm run build
+      - name: Upload build results as an artifact
+        if: success()
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-results
+          path: build/
+
+  upload_main-server_image:
+    name: Build a docker image for the main-server an upload it to DockerHub
+    needs: 'build'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Setup NodeJS 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Download build results artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-results
+          path: build/
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push Docker image to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./build/main_server
+          file: ./cfg/docker/Dockerfile
+          push: true
+          tags: gcastilho/main-server:latest
+
+  upload_frontend_image:
+    name: Build a docker image for the frontend an upload it to DockerHub
+    needs: 'build'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Setup NodeJS 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Download build results artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-results
+          path: build/
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push Docker image to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./build/sapper
+          file: ./cfg/docker/Dockerfile
+          push: true
+          tags: gcastilho/frontend:latest
+
+  upload_common_image:
+    name: Build image for common and upload it to DockerHub
+    needs: 'build'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Setup NodeJS 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Download build results artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-results
+          path: build/
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push Docker image to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./build/external_modules/common
+          file: ./cfg/docker/Dockerfile
+          push: true
+          tags: gcastilho/common:latest
+
+  upload_bitcoin_image:
+    name: Build image for bitcoin and upload it to DockerHub
+    needs: 'upload_common_image'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Setup NodeJS 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Download build results artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-results
+          path: build/
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push Docker image to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./build/external_modules/bitcoin
+          file: ./cfg/docker/external.dockerfile
+          push: true
+          tags: gcastilho/bitcoin:latest
+
+  upload_nano_image:
+    name: Build image for nano and upload it to DockerHub
+    needs: 'upload_common_image'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Setup NodeJS 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Download build results artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-results
+          path: build/
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push Docker image to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./build/external_modules/nano
+          file: ./cfg/docker/external.dockerfile
+          push: true
+          tags: gcastilho/nano:latest

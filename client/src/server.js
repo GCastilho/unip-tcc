@@ -1,13 +1,13 @@
 import sirv from 'sirv'
+import axios from 'axios'
 import express from 'express'
 import compression from 'compression'
 import cookieParser from 'cookie-parser'
 import * as sapper from '@sapper/server'
-import axios from './utils/axios'
 
 const { PORT, NODE_ENV } = process.env
 const dev = NODE_ENV === 'development'
-console.log(PORT)
+
 express()
 	.use(
 		compression({ threshold: 0 }),
@@ -19,6 +19,7 @@ express()
 			if (typeof sessionId != 'string') return next()
 			try {
 				const { data } = await axios.get('/v1/user/authentication', {
+					baseURL: '__INTERNAL_API_URL__',
 					headers: {
 						Cookie: `sessionId=${sessionId}`
 					}
@@ -26,7 +27,7 @@ express()
 				req.token = data.token
 				next()
 			} catch (err) {
-				if (err.response.status == 401) next()
+				if (err && err.response && err.response.status == 401) next()
 				else next(err)
 			}
 		},

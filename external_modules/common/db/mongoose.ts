@@ -10,7 +10,12 @@ export function init(database: string): Promise<Mongoose> {
 		if (!database) reject('database needs to be informed')
 		process.stdout.write('Connecting to mongodb... ')
 
-		mongoose.connect(`${mongodb_url}/${database}`, {
+		/** URL de conexão; Workaround para funcionar no Atlas */
+		const url = mongodb_url.includes('exchange')
+			? mongodb_url.replace('exchange', database)
+			: `${mongodb_url}/${database}`
+
+		mongoose.connect(url, {
 			user: process.env.MONGODB_USER,
 			pass: process.env.MONGODB_PASS,
 			useNewUrlParser: true,
