@@ -18,8 +18,6 @@
 	/** mapeia o posicionamento ordenado dos itens, referente a graduaçao Lateral (Y) */
 	let yScale : d3.ScaleLinear<number,number>
 
-	let currencies 
-
 	let xBand : d3.ScaleBand<string>
 	/** ordena os valores presentes na regua, referente a graduaçao Lateral (Y) */
 	let xAxis : d3.Axis<d3.NumberValue>
@@ -61,7 +59,7 @@
 
 	function drawChart(depthData: MarketDepth[]) {
 		data = orderData( depthData)
-		currencies = depthData[0]?.currencies || []
+		console.log('l', data.length)
 		svg = d3.select('#depthChart')
 			.attr('width', width + margin.left + margin.right)
 			.attr('height', height + margin.top + margin.bottom)
@@ -104,7 +102,7 @@
 		const ymax = Math.max(...data.map((r: MarketDepth) => r?.volume)) || 10
 
 		yScale = d3.scaleLinear().domain([0, ymax ]).range([height, 0]).nice()
-		console.log(yScale(0))
+		
 		gY = svg.append('g')
 			.call(
 				d3.axisLeft(yScale).tickFormat(d3.format("~f")).tickValues(
@@ -127,12 +125,14 @@
 			.append('rect')
 			.attr('x', (d, i) => xScale(i))
 			.attr('class', 'depth')
-			.attr('y', d => yScale(d?.volume))
+			.attr('price', d => d?.price)
+			.attr('volume', d => d?.volume)
+			.attr('y', d => yScale(d?.volume) )
 			.attr('width', xBand.bandwidth())
 			.attr('height', d => height*10 )
 			.attr('fill', (d: MarketDepth)=> (d?.type === 'sell') ? 'red' : 'green')
 			: null
-		console.log(depth)
+		
 		svg.append('defs')
 			.append('clipPath')
 			.attr('id', 'clip')
@@ -220,15 +220,6 @@
 
 	function updateDepth (depthData: MarketDepth[]) {
 		if(!svg) return
-		if(currencies[0] != depthData[0]?.currencies[0]){
-			console.log('redraw graph')
-			svg.selectAll('depth').remove()
-			svg.selectAll('g').remove()
-			gX.selectAll('.tick text').remove()
-			gY.selectAll('.tick text').remove()
-			drawChart(depthData)
-			return
-		}
 		data = orderData(depthData)
 		const extent: [[number, number], [number, number]] = [[0, 0], [width, height/2]] 
 		zoom.translateExtent(extent)
@@ -261,13 +252,15 @@
 
 		svg.selectAll('.depth').remove()
 
-		depth = depthData.length != 0 ? chartBody.selectAll('.depth')
+		depth = depth? chartBody.selectAll('.depth')
 			.data(data)
 			.enter()
 			.append('rect')
 			.attr('x', (d, i) => xScale(i))
 			.attr('class', 'depth')
-			.attr('y', d => yScale(d?.volume))
+			.attr('price', d => d?.price)
+			.attr('volume', d => d.volume)
+			.attr('y', d => yScale(d.volume||0))
 			.attr('width', xBand.bandwidth()*zoomQuantity)
 			.attr('height', height*10)
 			.attr('fill', d => (d?.type == 'sell') ? 'red' : 'green')
@@ -280,12 +273,10 @@
 	}
 
 	function prefixSum (arr: MarketDepth[]) {
-		if(arr.length == 0) return
 		const acc = [arr[0]]
-		if (arr.length == 1) return acc
 		for(let i = 1 ; i < arr.length; i++){
 			acc.push({
-				volume: arr[i]?.volume + acc[i-1]?.volume,
+				volume: arr[i]?.volume + acc[i-1].volume,
 				type: arr[i]?.type,
 				price: arr[i]?.price,
 				currencies: arr[i]?.currencies
@@ -295,9 +286,10 @@
 	}
 
 	function orderData (array: MarketDepth[]){
-		array = array.sort((a, b) => {
-			return (a.price > b.price) ? 1 : ((b.price > a.price) ? -1 : 0);
-		})
+		// array = array.sort((a, b) => {
+		// 	return (a.price > b.price) ? 1 : ((b.price > a.price) ? -1 : 0);
+		// })
+
 		const typeSeparationIndex = array.findIndex(v=> v?.type == 'sell')
 		const bids = prefixSum(array.slice(0, typeSeparationIndex).reverse()).reverse()
 		

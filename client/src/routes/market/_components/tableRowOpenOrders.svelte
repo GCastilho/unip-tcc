@@ -17,8 +17,8 @@
 	$: owningCurrency = $currencies.find(value => owning.currency === value.name)
 	$: requestingCurrency = $currencies.find(value => requesting.currency === value.name)
 
-	$: time = timestamp ? format(new Date(timestamp), '{HH}:{mm} ') : ''
-	$: date = timestamp ? format(new Date(timestamp), ' {dd}/{MM}/{yyyy}') : ''
+	$: time = timestamp ? format(new Date(timestamp), '{HH}:{mm} ') : null
+	$: date = timestamp ? format(new Date(timestamp), ' {dd}/{MM}/{yyyy}') : null
 
 	function cancelOrder() {
 		// O erro é ignorado pq não vamos mostrar msg de erro pro usuário AINDA

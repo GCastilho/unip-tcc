@@ -17,8 +17,8 @@
 	$: baseCurrencies = $_currencies.find(value => currencies[0] === value.name)
 	$: targetCurrencies = $_currencies.find(value => currencies[1] === value.name)
 
-	$: time = timestamp ? format(new Date(timestamp), '{HH}:{mm} ') : ''
-	$: date = timestamp ? format(new Date(timestamp), ' {dd}/{MM}/{yyyy}') : ''
+	$: time = timestamp ? format(new Date(timestamp), '{HH}:{mm} ') : null
+	$: date = timestamp ? format(new Date(timestamp), ' {dd}/{MM}/{yyyy}') : null
 </script>
 <style>
 	tr {

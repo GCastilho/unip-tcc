@@ -8,10 +8,6 @@ const { subscribe, update, set } = writable<MarketDepth[]>([])
 /** Exporta o subscribe para essa variável se ruma store */
 export { subscribe }
 
-subscribe(prices => {
-	console.log('depth store updated', prices)
-})
-
 /** Pega os dados do grafico e popula a store */
 export async function fetch(currencies:string[]) {
 	try {
@@ -29,5 +25,10 @@ export async function fetch(currencies:string[]) {
 
 /** Atualiza o array da store ao receber o evento depth_update */
 addSocketListener('depth_update', (depth:MarketDepth) => {
-	update(columns => [...columns, depth])
+	update(columns => {
+		const index = columns.findIndex(v => v.type === depth.type && v.price > depth.price)
+		columns.splice(index, 0, depth)
+		return columns
+	})
 })
+

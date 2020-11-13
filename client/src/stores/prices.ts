@@ -3,13 +3,20 @@ import axios from '../utils/axios'
 import { addSocketListener } from '../utils/websocket'
 import type { PriceHistory } from '../../../interfaces/market'
 
-const { subscribe, update, set } = writable<PriceHistory[]>([])
+const { subscribe, update, set } = writable<PriceHistory[]>([{
+	'startTime': 0,
+	'open': 0,
+	'high': 0,
+	'low': 0,
+	'close': 0,
+	'volume': 0
+}] as PriceHistory[]) // as está aq pq o joão disse q dá erro sem esse obj inicial
 
 /** Exporta o subscribe para essa variável se ruma store */
 export { subscribe }
 
 /** Pega os dados do grafico e popula a store */
-export async function fetch(currencies: string[]) {
+export async function fetch(currencies:string[]) {
 	try {
 		if (!currencies[0] || !currencies[1] || currencies[0] == currencies[1]) return
 		currencies.sort()
