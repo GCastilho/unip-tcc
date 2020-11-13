@@ -89,10 +89,10 @@ export async function add(orderRequest: OrderRequest) {
 export async function remove(opid: string): Promise<void> {
 	console.log(`Trying to cancell order '${opid}' from the orderbook`)
 	try {
-		await axios.post(`/v1/market/orderbook/${opid}`)
+		await axios.delete(`/v1/market/orderbook/${opid}`)
 		update(orders => {
 			const idx = orders.findIndex(v => v.opid == opid)
-			if (idx) {
+			if (idx > -1) {
 				orders.slice(idx, 1)
 			} else {
 				console.error(`Order with opid ${opid} was not found in the LOCAL orderbook AFTER the request was made`)
