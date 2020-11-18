@@ -5,8 +5,9 @@ import compression from 'compression'
 import cookieParser from 'cookie-parser'
 import * as sapper from '@sapper/server'
 
-const { PORT, NODE_ENV } = process.env
+const { PORT, NODE_ENV, MAIN_SERVER_IP } = process.env
 const dev = NODE_ENV === 'development'
+const mainServerIp = MAIN_SERVER_IP || 'http://127.0.0.1:3001'
 
 express()
 	.use(
@@ -19,7 +20,7 @@ express()
 			if (typeof sessionId != 'string') return next()
 			try {
 				const { data } = await axios.get('/v1/user/authentication', {
-					baseURL: '__INTERNAL_API_URL__',
+					baseURL: mainServerIp,
 					headers: {
 						Cookie: `sessionId=${sessionId}`
 					}
@@ -27,8 +28,8 @@ express()
 				req.token = data.token
 				next()
 			} catch (err) {
-				if (err && err.response && err.response.status == 401) next()
-				else next(err)
+				if (err.response && err.response.status == 401) next()
+				else next(err) // Main server is offline or unreachable
 			}
 		},
 		sapper.middleware({
