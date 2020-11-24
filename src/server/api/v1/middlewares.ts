@@ -8,9 +8,12 @@ export async function authentication(
 	next: NextFunction
 ) {
 	try {
-		if (!req.cookies.sessionId) throw 'Cookie Not Found'
+		if (
+			!req.cookies.sessionId ||
+			!req.headers.authorization
+		) throw 'Cookie Not Found'
 		const session = await Session.findOne({
-			sessionId: req.cookies.sessionId
+			sessionId: req.headers.authorization || req.cookies.sessionId
 		}, {
 			userId: true
 		})

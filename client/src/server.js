@@ -22,7 +22,7 @@ express()
 				const { data } = await axios.get('/v1/user/authentication', {
 					baseURL: mainServerIp,
 					headers: {
-						Cookie: `sessionId=${sessionId}`
+						Authorization: sessionId
 					}
 				})
 				req.token = data.token
