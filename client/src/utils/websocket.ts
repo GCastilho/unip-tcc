@@ -1,7 +1,9 @@
 import socketIOClient from 'socket.io-client'
 import { apiServerUrl } from './axios'
 
-const socket = socketIOClient(apiServerUrl)
+const socket = socketIOClient(apiServerUrl, {
+	autoConnect: false
+})
 
 socket.on('connect', () => {
 	console.log('Connected to the socket')
@@ -10,6 +12,16 @@ socket.on('connect', () => {
 socket.on('disconnect', reason => {
 	console.log('Disconnected from the socket:', reason)
 })
+
+/** Abre a conexão com o socket */
+export function connect() {
+	socket.open()
+}
+
+/** Fecha a conexão com o socket */
+export function disconnect() {
+	socket.close()
+}
 
 /**
  * Checa a conexão; A promessa retornada por essa função só será resolvida caso
