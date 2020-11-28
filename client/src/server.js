@@ -3,11 +3,11 @@ import axios from 'axios'
 import compression from 'compression'
 import express, { json } from 'express'
 import cookieParser from 'cookie-parser'
+import { mainServerIp } from './utils/middlewares'
 import * as sapper from '@sapper/server'
 
-const { PORT, NODE_ENV, MAIN_SERVER_IP } = process.env
+const { PORT, NODE_ENV } = process.env
 const dev = NODE_ENV === 'development'
-const mainServerIp = MAIN_SERVER_IP || 'http://127.0.0.1:3001'
 
 express()
 	.use(
