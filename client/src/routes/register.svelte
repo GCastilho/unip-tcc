@@ -1,36 +1,34 @@
-<script>
-	import axios from '../utils/axios'
-	import { onMount } from 'svelte'
-	import { goto } from '@sapper/app'
-	import * as auth from '../stores/auth.js'
+<script context="module">
+	export function preload(_page, session) {
+		if (session.loggedIn) this.redirect(303, '/')
+	}
+</script>
+
+<script lang="ts">
+	import axios from 'axios'
 	import FancyInput from '../components/FancyInput.svelte'
 	import FancyButton from '../components/FancyButton.svelte'
 	import FormErrorMessage from '../components/FormErrorMessage.svelte'
 
 	/** true se o usuário completou o cadastro */
 	let registered = false
-	let email = undefined
-	let errorMessage = undefined
-
-	onMount(() => {
-		// Redireciona para home caso esteja autenticado
-		if ($auth) goto('/')
-	})
+	let email: string
+	let errorMessage = ''
 
 	async function handleSubmit(event) {
 		email = event.target.email.value
 		const password = event.target.password.value
-		if (password !== event.target.conf_password.value)
-			return alert('Confirmation pasword mismatch password')
+		if (password != event.target.conf_password.value)
+			return errorMessage = 'Password and confirmation pasword do not match'
 
 		try {
-			await axios.post('/v1/user/', { email, password })
+			await axios.post(window.location.href, { email, password })
 			registered = true
 		} catch(err) {
-			if (err.response.status === 409) {
+			if (err.response?.status === 409) {
 				errorMessage = 'Já existe um usuário cadastrado com o e-mail informado'
 			} else {
-				errorMessage = err.response.statusText
+				errorMessage = err.response?.statusText || err.message
 			}
 		}
 	}
@@ -69,7 +67,8 @@
 		<p>
 			Enviamos um email de confirmação de cadastro para <b>{email}</b>, para ativar sua conta por favor siga as instruções informadas no email
 		</p>
-		<FancyButton>Confirmar e-mail</FancyButton> <!-- {/*função ainda precisa ser implementada*/} -->
+		<!-- função ainda precisa ser implementada -->
+		<FancyButton>Confirmar e-mail</FancyButton>
 	</div>
 {:else}
 	<h1>Register</h1>

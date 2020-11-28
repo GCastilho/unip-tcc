@@ -40,7 +40,10 @@ router.post('/authentication', async (req, res): Promise<any> => {
 		 * @todo cookie ter tempo de expiração
 		 */
 		res.cookie('sessionId', session.sessionId, { httpOnly: true, sameSite: 'none' })
-		res.send({ token: session.token })
+		res.send({
+			token: session.token,
+			authorization: session.sessionId,
+		})
 	} catch (err) {
 		if (err === 'UserNotFound' || err === 'InvalidPassword') {
 			/**

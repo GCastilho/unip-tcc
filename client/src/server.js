@@ -1,7 +1,7 @@
 import sirv from 'sirv'
 import axios from 'axios'
-import express from 'express'
 import compression from 'compression'
+import express, { json } from 'express'
 import cookieParser from 'cookie-parser'
 import * as sapper from '@sapper/server'
 
@@ -14,6 +14,7 @@ express()
 		compression({ threshold: 0 }),
 		sirv('static', { dev }),
 		cookieParser(),
+		json(),
 		async (req, _res, next) => {
 			// Checa se o usuário está autenticado com a API
 			const { sessionId } = req.cookies

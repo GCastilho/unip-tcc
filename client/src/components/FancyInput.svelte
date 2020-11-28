@@ -1,5 +1,5 @@
 <script>
-	export let id
+	export let id = ''
 	export let type = 'text'
 	export let placeholder = ' '
 	export let required = true
