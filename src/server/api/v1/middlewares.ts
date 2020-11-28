@@ -9,7 +9,7 @@ export async function authentication(
 ) {
 	try {
 		if (
-			!req.cookies.sessionId ||
+			!req.cookies.sessionId &&
 			!req.headers.authorization
 		) throw 'Cookie Not Found'
 		const session = await Session.findOne({
