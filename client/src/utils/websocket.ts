@@ -27,10 +27,10 @@ function checkConnection() {
  * O retorno dessa função callback é retornado na forma de uma promessa,
  * rejeitada ou resolvida de acordo com a chamada desse callback
  *
- * @param {stirng} event O evento que será enviado ao socket
- * @param  {...any} args Os argumentos desse evento
+ * @param event O evento que será enviado ao socket
+ * @param args Os argumentos desse evento
  */
-export function emit(event, ...args) {
+export function emit(event: string, ...args: any[]) {
 	return new Promise((resolve, reject) => {
 		checkConnection().then(() => {
 			socket.emit(event, ...args, ((error, response) => {
@@ -43,19 +43,19 @@ export function emit(event, ...args) {
 
 /**
  * Remove uma função específica do array de listeners de um evento
- * @param {string} event O nome do evento que estava sendo ouvido
- * @param {function} fn A função que deverá ser removida do listener
+ * @param event O nome do evento que estava sendo ouvido
+ * @param fn A função que deverá ser removida do listener
  */
-export function removeSocketListner(event, fn) {
+export function removeSocketListner(event: string, fn: (...args: any[]) => any) {
 	socket.removeListener(event, fn)
 }
 
 /**
  * Adiciona um event listener no socket para um evento específico
- * @param {string} event O nome do evento que será ouvido
- * @param {function} fn A função que deverá ser chamada quando o evento ocorrer
+ * @param event O nome do evento que será ouvido
+ * @param fn A função que deverá ser chamada quando o evento ocorrer
  */
-export function addSocketListener(event, fn) {
+export function addSocketListener(event: string, fn: (...args: any[]) => any) {
 	socket.on(event, fn)
 	return () => removeSocketListner(event, fn)
 }
