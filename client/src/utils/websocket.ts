@@ -80,7 +80,7 @@ export async function authenticate(token?: string) {
 		console.log('Authentication successful')
 	} catch (err) {
 		console.error('Authentication error', err)
-		if (err == 'TokenNotFound') localStorage.removeItem('token')
+		if (err.name == 'AuthenticationError') localStorage.removeItem('token')
 		throw err
 	}
 }
@@ -118,3 +118,8 @@ export function addSocketListener(event: string, fn: (...args: any[]) => any) {
 	socket.on(event, fn)
 	return () => removeSocketListner(event, fn)
 }
+
+// Tenta se autenticar com o socket assim que conectado
+addSocketListener('connect', async () => {
+	await authenticate().catch(() => null)
+})

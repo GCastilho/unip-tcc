@@ -6,12 +6,13 @@
 
 <script lang="ts">
 	import axios from 'axios'
-	import { goto } from '@sapper/app'
+	import { goto, stores } from '@sapper/app'
 	import { authenticate } from '../utils/websocket'
 	import FancyInput from '../components/FancyInput.svelte'
 	import FancyButton from '../components/FancyButton.svelte'
 	import FormErrorMessage from '../components/FormErrorMessage.svelte'
 
+	const { session } = stores()
 	let errorMessage = ''
 
 	async function handleSubmit(event) {
@@ -21,11 +22,12 @@
 		try {
 			const { data } = await axios.post(window.location.href, { email, password })
 
-			/** Redireciona o usuário para a home */
-			goto('/')
-
 			/** Autentica o websocket */
 			await authenticate(data.token)
+			$session.loggedIn = true
+
+			/** Redireciona o usuário para a home */
+			goto('/')
 		} catch(err) {
 			if (err.response?.status === 401) {
 				errorMessage = 'Invalid email or password'
