@@ -1,12 +1,11 @@
-<script>
-	import { goto } from "@sapper/app"
-	import axios from "../../utils/axios.js"
-	import * as auth from "../../stores/auth.js"
-	import FancyInput from "../../components/FancyInput.svelte"
-	import FancyButton from "../../components/FancyButton.svelte"
-	import FormErrorMessage from "../../components/FormErrorMessage.svelte"
+<script lang="ts">
+	import { goto } from '@sapper/app'
+	import axios from 'axios'
+	import FancyInput from '../../components/FancyInput.svelte'
+	import FancyButton from '../../components/FancyButton.svelte'
+	import FormErrorMessage from '../../components/FormErrorMessage.svelte'
 
-	let errorMessage = undefined
+	let errorMessage = ''
 
 	async function handleSubmit(event) {
 		const oldPassword = event.target.password_old.value
@@ -15,21 +14,13 @@
 
 		if (newPassword === passwordconfirm) {
 			try {
-				const { token } = await axios.patch(
-					'/v1/user/password',
-					{
-						old: oldPassword,
-						new: newPassword
-					}
-				)
-				/**
-				 * @todo Adicionar handlers para os erros vindos do sistema
-				 * de autenticação do websocket
-				 */
-				//await auth.authenticate(token)
+				await axios.patch(window.location.href, {
+					old: oldPassword,
+					new: newPassword
+				})
 
 				/** Redireciona o usuário para a home */
-				goto("/")
+				goto('/')
 			} catch (err) {
 				if (err.response.status === 401) {
 					switch(err.response.data.error) {
