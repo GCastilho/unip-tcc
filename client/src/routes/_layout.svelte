@@ -1,3 +1,12 @@
+<script lang="ts" context="module">
+	import { init as initCurrencies } from '../utils/currencies'
+
+	export async function preload() {
+		const res = await this.fetch('/currencies')
+		initCurrencies(await res.json())
+	}
+</script>
+
 <script>
 	import { stores } from '@sapper/app'
 	import { init } from '../stores/auth'
