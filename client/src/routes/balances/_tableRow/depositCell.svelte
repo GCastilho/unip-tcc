@@ -1,11 +1,12 @@
-<script>
+<script lang="ts">
 	import QRious from 'qrious'
 	import { onMount } from 'svelte'
 	import * as accountsStore from '../../../stores/accounts'
+	import type { Currencies } from '../../currencies'
 
-	export let currency
+	export let currency: keyof Currencies
 
-	const accounts = $accountsStore[currency]
+	const accounts = $accountsStore[currency] as string[]
 	let selectedAccount = ''
 
 	// Qr Code stuff

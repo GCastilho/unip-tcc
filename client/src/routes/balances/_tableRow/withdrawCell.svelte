@@ -1,15 +1,20 @@
-<script>
+<script lang="ts">
 	import * as balances from '../../../stores/balances'
 	import { withdraw } from '../../../stores/transactions'
+	import type { Currencies } from '../../currencies'
 
-	export let currency
-	export let fee
-	export let decimals = 0
-	let withdrawAmount
-	let err = null
+	export let currency: keyof Currencies
+	export let fee: Currencies[keyof Currencies]['fee']
+	export let decimals: Currencies[keyof Currencies]['decimals']
+	let withdrawAmount: number
+	let invalidAmount = false
 
 	/** Impede que o valor digitado do amount seja maior que o saldo disponível */
-	const filterAmount = () => withdrawAmount = withdrawAmount > $balances[currency].available ? $balances[currency].available : withdrawAmount
+	const filterAmount = () => (
+		withdrawAmount = withdrawAmount > $balances[currency].available
+			? $balances[currency].available
+			: withdrawAmount
+	)
 
 	$: amountToReceive = withdrawAmount - fee > 0 ? withdrawAmount - fee : 0
 
@@ -18,7 +23,7 @@
 		const amount = +event.target.amount.value
 
 		if (amount < (fee*2)) {
-			err = 'err'
+			invalidAmount = true
 			return
 		}
 
@@ -27,7 +32,7 @@
 
 		try {
 			await withdraw(currency, destination, amount)
-			err = null
+			invalidAmount = false
 
 			amountToReceive = 0
 		} catch(err) {
@@ -85,11 +90,11 @@
 		border-color: #26A0DA
 	}
 
-	.err {
+	.invalidAmount {
 		border-color: red;
 	}
 
-	.err:hover {
+	.invalidAmount:hover {
 		border-color: rgb(197, 3, 3)
 	}
 
@@ -119,7 +124,7 @@
 <form on:submit|preventDefault={handleWithdraw}>
 	<h4>Withdraw {currency.toUpperCase()}</h4>
 	<div>
-		{#if err}
+		{#if invalidAmount}
 			<small>The withdrawal must be at least <b>{(fee*2).toFixed(8)}</b></small>
 		{/if}
 		<div class="withdraw-info">
@@ -129,7 +134,7 @@
 		<div class="withdraw-info">
 			<label for="amount">Amount:</label>
 			<input
-				class={err}
+				class:invalidAmount
 				type="number" id="amount" step="0.00000001" required
 				bind:value={withdrawAmount}
 				on:input="{filterAmount}"

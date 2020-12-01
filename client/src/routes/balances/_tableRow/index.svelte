@@ -1,18 +1,19 @@
-<script context="module">
+<script lang="ts" context="module">
 	/** Set com referência a todas as rows da tabela dessa currency */
-	const rows = new Set()
+	const rows = new Set<() => void>()
 </script>
 
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte'
 	import * as balances from '../../../stores/balances.js'
 	import DepositCell from './depositCell.svelte'
 	import WithdrawCell from './withdrawCell.svelte'
+	import type { Currencies } from '../../currencies'
 
-	export let code
-	export let currency
-	export let decimals
-	export let fee
+	export let currency: keyof Currencies
+	export let code: Currencies[keyof Currencies]['code']
+	export let decimals: Currencies[keyof Currencies]['decimals']
+	export let fee: Currencies[keyof Currencies]['fee']
 
 	let hidden = true
 	let selectedAction = ''
@@ -97,8 +98,18 @@
 <tr>
 	<td class="coin-cell">{code}</td>
 	<td class="name-cell">{currency}</td>
-	<td class="balance-cell">{typeof available === 'number' ? available.toFixed(decimals || 0) : 'Loading...'}</td>
-	<td class="balance-cell">{typeof locked === 'number' ? locked.toFixed(decimals || 0) : 'Loading...'}</td>
+	<td class="balance-cell">{
+		typeof available === 'number'
+			? available.toFixed(decimals || 0)
+			: 'Loading...'
+		}
+	</td>
+	<td class="balance-cell">{
+		typeof locked === 'number'
+			? locked.toFixed(decimals || 0)
+			: 'Loading...'
+		}
+	</td>
 	<td>
 		<button on:click="{() => openActionCell('deposit')}">Deposit</button>
 		<button on:click="{() => openActionCell('withdraw')}">Withdraw</button>

@@ -4,9 +4,15 @@
 	}
 </script>
 
-<script>
-	import * as currencies from '../../stores/currencies'
+<script lang="ts">
+	import currencies from '../../utils/currencies'
 	import TableRow from './_tableRow/index.svelte'
+	import type { Currencies } from '../currencies'
+
+	const currencyEntries = Object.entries(currencies) as [
+		keyof Currencies,
+		Currencies[keyof Currencies]
+	][]
 </script>
 
 <style>
@@ -61,7 +67,7 @@
 	<th>Available Balance</th>
 	<th>Locked Balance</th>
 	<th>Actions</th>
-	{#each $currencies as {code, name, decimals, fee}}
-		<TableRow {code} currency={name} {decimals} {fee} />
+	{#each currencyEntries as [currency, {code, decimals, fee}]}
+		<TableRow {currency} {code} {decimals} {fee} />
 	{/each}
 </table>
