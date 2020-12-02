@@ -5,7 +5,7 @@
 
 <script lang="ts">
 	import { onMount } from 'svelte'
-	import * as balances from '../../../stores/balances.js'
+	import * as balances from '../../../stores/balances'
 	import DepositCell from './depositCell.svelte'
 	import WithdrawCell from './withdrawCell.svelte'
 	import type { Currencies } from '../../currencies'

@@ -6,7 +6,7 @@
 
 	export let currency: keyof Currencies
 
-	const accounts = $accountsStore[currency] as string[]
+	const accounts = $accountsStore[currency]
 	let selectedAccount = ''
 
 	// Qr Code stuff
