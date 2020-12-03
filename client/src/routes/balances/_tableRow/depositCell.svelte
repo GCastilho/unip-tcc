@@ -1,7 +1,7 @@
 <script lang="ts">
 	import QRious from 'qrious'
 	import { onMount } from 'svelte'
-	import * as accountsStore from '../../../stores/accounts'
+	import * as accountsStore from '../_stores/accounts'
 	import type { Currencies } from '../../currencies'
 
 	export let currency: keyof Currencies
@@ -10,8 +10,8 @@
 	let selectedAccount = ''
 
 	// Qr Code stuff
-	let qrious
-	let canvas
+	let qrious: QRious
+	let canvas: HTMLCanvasElement
 
 	onMount(() => {
 		// Seleciona a primeira account do usuário

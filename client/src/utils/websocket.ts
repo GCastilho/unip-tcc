@@ -77,7 +77,7 @@ export async function authenticate(token?: string) {
 	try {
 		await emit('authenticate', token)
 		localStorage.setItem('token', token)
-		console.log('Authentication successful')
+		console.log('Socket authentication successful')
 	} catch (err) {
 		console.error('Authentication error', err)
 		if (err.name == 'AuthenticationError') localStorage.removeItem('token')
@@ -93,7 +93,7 @@ export async function deauthenticate() {
 	localStorage.removeItem('token')
 	try {
 		await emit('deauthenticate')
-		console.log('Deauthentication successful')
+		console.log('Socket deauthentication successful')
 	} catch (err) {
 		console.error('Deauthentication error:', err)
 		throw err

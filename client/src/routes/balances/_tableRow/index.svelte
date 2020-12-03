@@ -19,11 +19,14 @@
 	let selectedAction = ''
 
 	/** Variáveis do destruct do saldo da store de balances */
-	let available, locked
+	let available: number, locked: number
 
 	/**
 	 * Checa se existe uma prop na store com o nome dessa currency e, se sim,
 	 * seta available e locked para os valores da store
+	 * 
+	 * No servidor a store não é inicializada corretamente pois o código da store
+	 * é executado antes da função init do módulo de currencies ter sido executado
 	 */
 	$: if ($balances[currency]) {
 		({ available, locked } = $balances[currency])

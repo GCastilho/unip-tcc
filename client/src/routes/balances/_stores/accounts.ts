@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { writable } from 'svelte/store'
-import * as auth from './auth'
-import currencies from '../utils/currencies'
-import type { Accounts } from '../routes/user/accounts'
+import * as auth from '../../../stores/auth'
+import currencies from '../../../utils/currencies'
+import type { Accounts } from '../../user/accounts'
 
 /** Retorna um objeto com o type da store mas com as accounts vazias */
 function emptyStore(): Accounts {
@@ -26,7 +26,7 @@ auth.subscribe(async authenticated => {
 			const { data } = await axios.get<Accounts>('/user/accounts')
 			set(data)
 		} catch (err) {
-			if (!err.response || err.response.status == 401) set(emptyStore())
+			if (!err.response || err.response?.status == 401) set(emptyStore())
 			else throw err
 		}
 	} else {
