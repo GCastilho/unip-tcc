@@ -1,5 +1,5 @@
+import axios from 'axios'
 import { writable } from 'svelte/store'
-import axios from '../utils/axios'
 import { updateBalances } from './balances'
 import { get as getCurrency } from './currencies'
 import { addSocketListener } from '../utils/websocket'
@@ -40,7 +40,7 @@ export async function fetch() {
 
 	try {
 		/** @type {{data: any[]}} */
-		const { data } = await axios.get('/v1/user/transactions', {
+		const { data } = await axios.get('/user/transactions', {
 			params: { skip: storeLength }
 		})
 
