@@ -4,8 +4,16 @@ import { updateBalances } from './balances'
 import { get as getCurrency } from './currencies'
 import { addSocketListener } from '../utils/websocket'
 import * as auth from './auth'
+import type { Currencies } from '../routes/currencies'
+import type { TxJSON } from '../routes/user/transactions/index'
+import type { UpdtReceived, UpdtSent } from '../../../interfaces/transaction'
 
-const { subscribe, update, set } = writable([])
+// See https://github.com/Microsoft/TypeScript/issues/25760
+type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+export type Transaction = Optional<TxJSON, 'txid'|'timestamp'>
+
+const { subscribe, update, set } = writable<Transaction[]>([])
 
 /** Exporta o subscribe para esse módulo ser uma store */
 export { subscribe }
@@ -23,7 +31,7 @@ let fullySync = false
  * Exporta uma store em synchronized q indica se essa store está sincronizada
  * ou não; Essa store também mantém a variável fullySync atualizada
  */
-const { subscribe: subFullySync, set: setFullySync } = writable(false)
+const { subscribe: subFullySync, set: setFullySync } = writable<boolean>(false)
 export const synchronized = { subscribe: subFullySync }
 subFullySync(v => fullySync = v)
 
@@ -39,13 +47,12 @@ export async function fetch() {
 	inSync = true
 
 	try {
-		/** @type {{data: any[]}} */
-		const { data } = await axios.get('/user/transactions', {
+		const { data } = await axios.get<TxJSON[]>('/user/transactions', {
 			params: { skip: storeLength }
 		})
 
 		update(transactions => {
-			for (let tx of data) {
+			for (const tx of data) {
 				const index = transactions.findIndex(v => v.opid === tx.opid)
 				if (index == -1)
 					transactions.push(tx)
@@ -67,13 +74,16 @@ export async function fetch() {
 
 /**
  * Realiza um request de saque
- * @param {string} currency A currency que será sacada
- * @param {string} destination O endereço de destino que as moedas devem ser enviadas
- * @param {number} amount A quantidade dessa currency que será sacada
+ * @param currency A currency que será sacada
+ * @param destination O endereço de destino que as moedas devem ser enviadas
+ * @param amount A quantidade dessa currency que será sacada
  */
-export async function withdraw(currency, destination, amount) {
-	/** @type {{data: string}} O opid do request de saque */
-	const { data } = await axios.post('/v1/user/transactions', {
+export async function withdraw(
+	currency: keyof Currencies,
+	destination: string,
+	amount: number
+) {
+	const { data } = await axios.post<{ opid: string }>('/user/transactions', {
 		currency,
 		destination,
 		amount
@@ -98,12 +108,11 @@ export async function withdraw(currency, destination, amount) {
 
 /**
  * Cancela uma operação de saque caso ela ainda não tenha sido executada
- * @param {string} opid O opid da transação que será cancelada
+ * @param opid O opid da transação que será cancelada
  */
-export async function cancell(opid) {
+export async function cancell(opid: string) {
 	try {
-		/** @type {{data: {message: string}}} */
-		const { data } = await axios.delete(`/v1/user/transactions/${opid}`)
+		const { data } = await axios.delete<{ message: string }>(`/user/transactions/${opid}`)
 		if (data.message == 'cancelled') {
 			update(txs => {
 				const index = txs.findIndex(v => v.opid == opid)
@@ -119,7 +128,10 @@ export async function cancell(opid) {
 }
 
 /** Atualiza a store ao receber uma nova transação */
-addSocketListener('new_transaction', (currency, transaction) => {
+addSocketListener('new_transaction', (
+	currency: keyof Currencies,
+	transaction: TxJSON
+) => {
 	console.log('new_transaction', transaction)
 	update(txs => [transaction, ...txs])
 	if (transaction.status == 'confirmed') {
@@ -134,19 +146,19 @@ addSocketListener('new_transaction', (currency, transaction) => {
  * na store de transações
  * @param {string} opid O opid da transação que não está na store
  */
-async function insertMissingTx(opid) {
+async function insertMissingTx(opid: string) {
 	if (typeof opid != 'string')
 		throw new TypeError(`opid must be a string, got ${typeof opid}`)
 
 	try {
-		const { data } = await axios.get(`/v1/user/transactions/${opid}`)
+		const { data } = await axios.get<Transaction>(`/v1/user/transactions/${opid}`)
 		if (typeof data != 'object')
 			throw new TypeError(`Invalid response type: expected 'object', got ${typeof data}`)
 		update(txs => {
 			// Adiciona a transação na posição correta do array
 			const index = txs.findIndex(tx => tx.timestamp < data.timestamp)
 			if (index > 0) {
-				txs.splice(index, 0, res.data)
+				txs.splice(index, 0, data)
 			} else {
 				txs.unshift(data)
 			}
@@ -158,7 +170,10 @@ async function insertMissingTx(opid) {
 }
 
 /** Atualiza uma transação 'receive' existente na store */
-addSocketListener('update_received_tx', async (currency, txUpdate) => {
+addSocketListener('update_received_tx', async (
+	currency: keyof Currencies,
+	txUpdate: UpdtReceived
+) => {
 	console.log('update_received_tx', txUpdate)
 	update(txs => {
 		const index = txs.findIndex(tx => tx.opid === txUpdate.opid)
@@ -174,21 +189,25 @@ addSocketListener('update_received_tx', async (currency, txUpdate) => {
 })
 
 /** Atualiza uma transação 'send' existente na store */
-addSocketListener('update_sent_tx', async (currency, txUpdate) => {
-	console.log('update_sent_tx', txUpdate)
+addSocketListener('update_sent_tx', async (
+	currency: keyof Currencies,
+	updtSent: UpdtSent
+) => {
+	console.log('update_sent_tx', updtSent)
 	update(txs => {
-		const index = txs.findIndex(tx => tx.opid === txUpdate.opid)
+		const index = txs.findIndex(tx => tx.opid === updtSent.opid)
 		if (index >= 0) {
-			if (txUpdate.status == 'cancelled') {
+			if (updtSent.status == 'cancelled') {
 				txs.splice(index, 1)
 				updateBalances(currency, txs[index].amount, -txs[index].amount)
 			} else {
-				txs[index] = { ...txs[index], ...txUpdate }
-				if (txUpdate.status == 'confirmed')
+				// @ts-expect-error TS não está entendendo que cancelled n é possível aq
+				txs[index] = { ...txs[index], ...updtSent }
+				if (updtSent.status == 'confirmed')
 					updateBalances(currency, 0, -txs[index].amount)
 			}
 		} else {
-			insertMissingTx(txUpdate.opid)
+			insertMissingTx(updtSent.opid)
 		}
 		return txs
 	})

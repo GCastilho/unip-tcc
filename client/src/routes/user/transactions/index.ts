@@ -3,8 +3,8 @@ import { errorHandler, mainServerIp } from '../../../utils/middlewares'
 import type { NextFunction, Request, Response } from 'express'
 import type { TxInfo } from '../../../../../interfaces/transaction'
 
-/** O type do objeto retornado pelo GET dessa rota */
-export type Transactions = TxInfo[]
+/** O type do objeto de dentro do array retornado pelo GET dessa rota */
+export type TxJSON = TxInfo
 
 export async function get(req: Request, res: Response, next: NextFunction) {
 	/**
