@@ -11,6 +11,8 @@
 	 * um objeto vazio, portanto inválido, caso ele seja carregado antes do
 	 * preload ter terminado, o que acontece qdo vc abre diretamente em uma página
 	 * que o carrega
+	 *
+	 * See sveltejs/sapper#1657
 	 * 
 	 * Ex: Abrir a pg ade balances faz a store de balances/accounts ser executada
 	 * antes do preload terminar

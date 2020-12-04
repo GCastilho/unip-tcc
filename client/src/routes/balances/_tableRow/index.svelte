@@ -18,20 +18,6 @@
 	let hidden = true
 	let selectedAction = ''
 
-	/** Variáveis do destruct do saldo da store de balances */
-	let available: number, locked: number
-
-	/**
-	 * Checa se existe uma prop na store com o nome dessa currency e, se sim,
-	 * seta available e locked para os valores da store
-	 * 
-	 * No servidor a store não é inicializada corretamente pois o código da store
-	 * é executado antes da função init do módulo de currencies ter sido executado
-	 */
-	$: if ($balances[currency]) {
-		({ available, locked } = $balances[currency])
-	}
-
 	onMount(() => {
 		rows.add(closeActionCell)
 		return () => rows.delete(closeActionCell)
@@ -102,14 +88,14 @@
 	<td class="coin-cell">{code}</td>
 	<td class="name-cell">{currency}</td>
 	<td class="balance-cell">{
-		typeof available === 'number'
-			? available.toFixed(decimals || 0)
+		$balances[currency] // pode ser undefined pcausa de um bug no preload/store
+			? $balances[currency].available.toFixed(decimals)
 			: 'Loading...'
 		}
 	</td>
 	<td class="balance-cell">{
-		typeof locked === 'number'
-			? locked.toFixed(decimals || 0)
+		$balances[currency]
+			? $balances[currency].locked.toFixed(decimals)
 			: 'Loading...'
 		}
 	</td>
