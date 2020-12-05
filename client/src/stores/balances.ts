@@ -34,7 +34,7 @@ auth.subscribe(async authenticated => {
 			const { data } = await axios.get<Balances>('/user/balances')
 			set(data)
 		} catch (err) {
-			console.error('Error while fetching balances:', err.response.statusText)
+			console.error('Error while fetching balances:', err.response?.statusText || err.code)
 		}
 	} else {
 		set(emptyStore())

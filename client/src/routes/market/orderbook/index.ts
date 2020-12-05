@@ -11,7 +11,7 @@ export async function get(req: Request, res: Response) {
 			baseURL: mainServerIp,
 			params: req.params,
 			headers: {
-				Authorization: req.cookies.sessionId
+				Authorization: `${req.cookies.sessionId}`
 			}
 		})
 
@@ -27,7 +27,7 @@ export async function post(req: Request, res: Response) {
 			baseURL: mainServerIp,
 			params: req.params,
 			headers: {
-				Authorization: req.cookies.sessionId
+				Authorization: `${req.cookies.sessionId}`
 			}
 		})
 

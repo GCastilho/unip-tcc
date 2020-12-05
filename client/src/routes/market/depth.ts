@@ -9,9 +9,9 @@ export async function get(req: Request, res: Response) {
 	try {
 		const response = await axios.get('/v1/market/orderbook/depth', {
 			baseURL: mainServerIp,
-			params: req.params,
+			params: req.query,
 			headers: {
-				Authorization: req.cookies.sessionId
+				Authorization: `${req.cookies.sessionId}`
 			}
 		})
 

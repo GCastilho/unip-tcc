@@ -8,7 +8,7 @@ export async function get(req: Request, res: Response) {
 		const response = await axios.get(`/v1/market/orderbook/${req.params.opid}`, {
 			baseURL: mainServerIp,
 			headers: {
-				Authorization: req.cookies.sessionId
+				Authorization: `${req.cookies.sessionId}`
 			}
 		})
 
@@ -23,7 +23,7 @@ export async function del(req: Request, res: Response) {
 		const response = await axios.delete(`/v1/market/orderbook/${req.params.opid}`, {
 			baseURL: mainServerIp,
 			headers: {
-				Authorization: req.cookies.sessionId
+				Authorization: `${req.cookies.sessionId}`
 			}
 		})
 

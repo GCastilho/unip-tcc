@@ -16,7 +16,7 @@ export async function get(req: Request, res: Response) {
 		const response = await axios.get('/v1/user/balances', {
 			baseURL: mainServerIp,
 			headers: {
-				Authorization: req.cookies.sessionId
+				Authorization: `${req.cookies.sessionId}`
 			}
 		})
 
