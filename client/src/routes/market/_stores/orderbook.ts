@@ -1,8 +1,9 @@
+import axios from 'axios'
 import { writable } from 'svelte/store'
-import axios from '../../../utils/axios'
 import { updateBalances } from '../../../stores/balances'
 import { addSocketListener } from '../../../utils/websocket'
-import type { OrderRequest, MarketOrder, OrderUpdate } from '../../../../../interfaces/market'
+import type { MarketOrder } from '../orderbook'
+import type { OrderRequest, OrderUpdate } from '../../../../../interfaces/market'
 
 /** Store de TODAS as ordens do orderbook */
 const { subscribe, update } = writable<MarketOrder[]>([])
@@ -35,8 +36,7 @@ export async function fetch() {
 	inSync = true
 
 	try {
-		/** @type {{data: any[]}} */
-		const { data } = await axios.get('/v1/market/orderbook', {
+		const { data } = await axios.get<MarketOrder[]>('/market/orderbook', {
 			params: { skip: storeLength }
 		})
 
@@ -61,12 +61,13 @@ export async function fetch() {
 	inSync = false
 }
 
-export async function add(orderRequest: OrderRequest) {
+export async function add(orderRequest: Pick<OrderRequest, 'owning'|'requesting'>) {
 	console.log('Sending new order to orderbook', orderRequest)
 	try {
-		const { data } = await axios.post('/v1/market/orderbook', orderRequest)
+		const { data } = await axios.post<{ opid: string }>('/market/orderbook', orderRequest)
 		const order: MarketOrder = {
 			opid: data.opid,
+			timestamp: Date.now(),
 			...orderRequest
 		}
 
@@ -89,7 +90,7 @@ export async function add(orderRequest: OrderRequest) {
 export async function remove(opid: string): Promise<void> {
 	console.log(`Trying to cancell order '${opid}' from the orderbook`)
 	try {
-		await axios.delete(`/v1/market/orderbook/${opid}`)
+		await axios.delete(`/market/orderbook/${opid}`)
 		update(orders => {
 			const idx = orders.findIndex(v => v.opid == opid)
 			if (idx > -1) {
@@ -113,7 +114,7 @@ export async function remove(opid: string): Promise<void> {
  */
 async function fetchMissingOrder(opid: string) {
 	try {
-		const { data } = await axios.get(`/v1/orderbook/${opid}`)
+		const { data } = await axios.get<MarketOrder>(`/market/orderbook/${opid}`)
 		if (typeof data != 'object')
 			throw new TypeError(`Invalid response type: expected 'object', got ${typeof data}`)
 
