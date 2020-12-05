@@ -81,9 +81,6 @@ export interface PriceHistory {
 	duration: number
 	/** As currencies que fazem parte desse par */
 	currencies: [SuportedCurrencies, SuportedCurrencies]
-
-	'adj close'?: number
-	volume?: number
 }
 
 /** Interface de uma ordem de trade já executada */

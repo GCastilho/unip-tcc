@@ -1,7 +1,7 @@
+import axios from 'axios'
 import { writable } from 'svelte/store'
-import axios from '../../../utils/axios'
 import { addSocketListener } from '../../../utils/websocket'
-import type { PriceHistory } from '../../../../../interfaces/market'
+import type { PriceHistory } from '../price/history'
 
 const { subscribe, update, set } = writable<PriceHistory[]>([{
 	'startTime': 0,
@@ -9,21 +9,20 @@ const { subscribe, update, set } = writable<PriceHistory[]>([{
 	'high': 0,
 	'low': 0,
 	'close': 0,
-	'volume': 0
 }] as PriceHistory[]) // as está aq pq o joão disse q dá erro sem esse obj inicial
 
 /** Exporta o subscribe para essa variável se ruma store */
 export { subscribe }
 
 /** Pega os dados do grafico e popula a store */
-export async function fetch(currencies:string[]) {
+export async function fetch(currencies: PriceHistory['currencies']) {
 	try {
 		if (!currencies[0] || !currencies[1] || currencies[0] == currencies[1]) return
 		currencies.sort()
-		const { data } = await axios.get('/v1/market/candle', {
+		const { data } = await axios.get<PriceHistory[]>('/market/price/history', {
 			params: { base: currencies[0], target: currencies[1] }
 		})
-		console.log(data)
+		console.log('price history fetch:', data)
 		set(data)
 	} catch (err) {
 		console.error('Error fetching prices', err)
