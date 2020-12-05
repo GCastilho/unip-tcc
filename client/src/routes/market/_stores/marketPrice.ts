@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store'
-import axios from '../utils/axios'
-import { addSocketListener } from '../utils/websocket'
-import type { PriceRequest, PriceUpdate } from '../../../interfaces/market'
+import axios from '../../../utils/axios'
+import { addSocketListener } from '../../../utils/websocket'
+import type { PriceRequest, PriceUpdate } from '../../../../../interfaces/market'
 
 const { subscribe, update, set } = writable<PriceRequest>({})
 

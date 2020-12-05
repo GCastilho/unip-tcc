@@ -1,7 +1,7 @@
 <script lang='ts'>
-	import * as prices from '../../stores/prices'
+	import * as prices from './_stores/prices'
 	//import * as depth from '../../stores/depth'
-	import * as marketPrice from '../../stores/marketPrice'
+	import * as marketPrice from './_stores/marketPrice'
 	import BuySell from './_buySell.svelte'
 	import OpenOrders from './_openOrders.svelte'
 	import CloseOrders from './_closeOrders.svelte'

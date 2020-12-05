@@ -1,9 +1,8 @@
 <script lang='ts'>
 	import * as balances from './../../stores/balances'
-	import * as orderbook from '../../stores/orderbook'
-	import * as marketPrice from '../../stores/marketPrice'
+	import * as orderbook from './_stores/orderbook'
+	import * as marketPrice from './_stores/marketPrice'
 	import type { SuportedCurrencies } from '../../../../src/libs/currencies'
-	import type { PriceRequest } from '../../../../interfaces/market'
 
 	// base
 	export let baseCurrency: { name: string, code: string, decimals: number }

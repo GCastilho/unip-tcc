@@ -1,8 +1,8 @@
 import { writable } from 'svelte/store'
-import axios from '../utils/axios'
-import { updateBalances } from './balances'
-import { addSocketListener } from '../utils/websocket'
-import type { OrderRequest, MarketOrder, OrderUpdate } from '../../../interfaces/market'
+import axios from '../../../utils/axios'
+import { updateBalances } from '../../../stores/balances'
+import { addSocketListener } from '../../../utils/websocket'
+import type { OrderRequest, MarketOrder, OrderUpdate } from '../../../../../interfaces/market'
 
 /** Store de TODAS as ordens do orderbook */
 const { subscribe, update } = writable<MarketOrder[]>([])

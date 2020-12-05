@@ -1,7 +1,7 @@
 <script lang='ts'>
 	import { format } from 'light-date'
 	import * as currencies from './../../../stores/currencies'
-	import * as orderbook from './../../../stores/orderbook'
+	import * as orderbook from '../_stores/orderbook'
 	import type { MarketOrder } from '../../../../../interfaces/market.d'
 
 	export let order: MarketOrder
