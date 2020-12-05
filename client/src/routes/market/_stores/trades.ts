@@ -1,7 +1,7 @@
+import axios from 'axios'
 import { writable } from 'svelte/store'
-import axios from '../../../utils/axios'
 import { addSocketListener } from '../../../utils/websocket'
-import type { MarketTrade } from '../../../../../interfaces/market'
+import type { MarketTrade } from '../trades'
 
 /** Store de TODAS as ordens do orderbook */
 const { subscribe, update } = writable<MarketTrade[]>([])
@@ -34,8 +34,7 @@ export async function fetch() {
 	inSync = true
 
 	try {
-		/** @type {{data: any[]}} */
-		const { data } = await axios.get('/v1/market/trades', {
+		const { data } = await axios.get<MarketTrade[]>('/market/trades', {
 			params: { skip: storeLength }
 		})
 
