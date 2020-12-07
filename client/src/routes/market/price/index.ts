@@ -1,22 +1,6 @@
-import axios from 'axios'
-import { errorHandler, mainServerIp } from '../../../utils/middlewares'
-import type { Request, Response } from 'express'
+import { apiRequest } from '../../../utils/middlewares'
 
 /** O type do objeto de dentro do array retornado pelo GET dessa rota */
 export type { PriceRequest } from '../../../../../interfaces/market'
 
-export async function get(req: Request, res: Response) {
-	try {
-		const response = await axios.get('/v1/market/price', {
-			baseURL: mainServerIp,
-			params: req.query,
-			headers: {
-				Authorization: `${req.cookies.sessionId}`
-			}
-		})
-
-		res.status(response.status).send(response.data)
-	} catch (err) {
-		errorHandler(res, err)
-	}
-}
+export const get = apiRequest('get', '/v1/market/price')
