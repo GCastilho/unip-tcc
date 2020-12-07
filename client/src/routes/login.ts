@@ -2,9 +2,9 @@ import axios from 'axios'
 import { errorHandler, mainServerIp } from '../utils/middlewares'
 import type { Request, Response } from 'express'
 
-const dev = process.env.NODE_ENV === 'development'
-const sameSite = dev ? 'none' : 'strict'
-const secure = !dev
+// const dev = process.env.NODE_ENV === 'development'
+const sameSite = 'strict'
+const secure = false // !dev
 
 export async function post(req: Request, res: Response) {
 	try {
@@ -25,7 +25,7 @@ export async function del(req: Request, res: Response) {
 		await axios.delete('/v1/user/authentication', {
 			baseURL: mainServerIp,
 			headers: {
-				Authorization: req.cookies.sessionId
+				Authorization: `${req.cookies.sessionId}`
 			}
 		})
 

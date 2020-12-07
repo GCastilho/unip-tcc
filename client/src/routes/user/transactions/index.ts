@@ -17,7 +17,7 @@ export async function get(req: Request, res: Response, next: NextFunction) {
 			baseURL: mainServerIp,
 			params: { skip: req.params.storeLength },
 			headers: {
-				Authorization: req.cookies.sessionId
+				Authorization: `${req.cookies.sessionId}`
 			}
 		})
 
