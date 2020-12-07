@@ -1,6 +1,6 @@
 <script lang='ts'>
 	import { format } from 'light-date'
-	import * as currencies from './../../../stores/currencies'
+	import currencies from './../../../utils/currencies'
 	import * as orderbook from '../_stores/orderbook'
 	import type { MarketOrder } from '../../../../../interfaces/market.d'
 
@@ -13,9 +13,9 @@
 		timestamp
 	} = order
 
-	// Busca os dados da cunrrency usadas
-	$: owningCurrency = $currencies.find(value => owning.currency === value.name)
-	$: requestingCurrency = $currencies.find(value => requesting.currency === value.name)
+	// Busca os dados da currency usadas
+	$: owningCurrency = currencies[currencies[0]]
+	$: requestingCurrency = currencies[currencies[1]]
 
 	$: time = timestamp ? format(new Date(timestamp), '{HH}:{mm} ') : null
 	$: date = timestamp ? format(new Date(timestamp), ' {dd}/{MM}/{yyyy}') : null

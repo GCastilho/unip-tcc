@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { writable } from 'svelte/store'
+import currencies from '../utils/currencies'
 import { updateBalances } from './balances'
-import { get as getCurrency } from './currencies'
 import { addSocketListener } from '../utils/websocket'
 import * as auth from './auth'
 import type { Currencies } from '../routes/currencies'
@@ -98,7 +98,7 @@ export async function withdraw(
 			currency,
 			account: destination,
 			amount,
-			fee: getCurrency(currency).fee
+			fee: currencies[currency].fee
 		},
 		...txs
 	]))

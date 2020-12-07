@@ -1,4 +1,5 @@
 <script lang='ts'>
+	import currenciesUtils from '../../utils/currencies'
 	import * as prices from './_stores/prices'
 	//import * as depth from '../../stores/depth'
 	import * as marketPrice from './_stores/marketPrice'
@@ -8,11 +9,13 @@
 	import ExchangeIcon from './exchange.svg'
 	import Candle from './_components/candle.svelte'
 	// import Depth from './_components/depth.svelte'
-	import * as currencies from '../../stores/currencies'
 	import Tabs from 'svelte-tabs/src/Tabs.svelte';
 	import Tab from 'svelte-tabs/src/Tab.svelte';
 	import TabList from 'svelte-tabs/src/TabList.svelte';
 	import TabPanel from 'svelte-tabs/src/TabPanel.svelte';
+
+	const currencies = Object.entries(currenciesUtils)
+		.map(v => ({ name: v[0], ...v[1] }))
 
 	let baseCurrency
 	let targetCurrency
@@ -135,7 +138,7 @@
 		<div class="currency-select">
 			<select bind:value={baseCurrency}>
 				<option value={null}>...</option>
-				{#each $currencies as currency }
+				{#each currencies as currency }
 					<option value={currency}>
 						{currency.name}
 					</option>
@@ -144,7 +147,7 @@
 			<button on:click={switchCoins}><ExchangeIcon/></button>
 			<select bind:value={targetCurrency}>
 				<option value={null}>...</option>
-				{#each $currencies as currency }
+				{#each currencies as currency }
 					<option value={currency}>
 						{currency.name}
 					</option>
