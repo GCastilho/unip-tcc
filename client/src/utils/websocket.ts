@@ -1,7 +1,6 @@
 import socketIOClient from 'socket.io-client'
-import { apiServerUrl } from './axios'
 
-const socket = socketIOClient(apiServerUrl, {
+const socket = socketIOClient({
 	autoConnect: false
 })
 

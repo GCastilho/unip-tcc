@@ -4,6 +4,7 @@ import compression from 'compression'
 import express, { json } from 'express'
 import cookieParser from 'cookie-parser'
 import { mainServerIp } from './utils/middlewares'
+import { createProxyMiddleware } from 'http-proxy-middleware'
 import * as sapper from '@sapper/server'
 
 const { PORT, NODE_ENV } = process.env
@@ -11,6 +12,11 @@ const dev = NODE_ENV === 'development'
 
 express()
 	.use(
+		createProxyMiddleware('/socket.io', {
+			logLevel: dev ? 'info' : 'warn',
+			target: mainServerIp,
+			ws: true,
+		}),
 		compression({ threshold: 0 }),
 		sirv('static', { dev }),
 		cookieParser(),
