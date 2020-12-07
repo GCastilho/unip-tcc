@@ -1,7 +1,7 @@
 <script lang='ts'>
 	import { onMount } from 'svelte'
-	import * as openOrders from './_stores/orderbook'
-	import TableRow from './_components/tableRowOpenOrders.svelte'
+	import * as openOrders from '../_stores/orderbook'
+	import TableRow from './tableRowOpenOrders.svelte'
 
 	const { synchronized } = openOrders
 

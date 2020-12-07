@@ -1,7 +1,7 @@
 <script lang='ts'>
 	import { onMount } from 'svelte'
-	import * as trades from './_stores/trades'
-	import TableRow from './_components/tableRowCloseOrders.svelte'
+	import * as trades from '../_stores/trades'
+	import TableRow from './tableRowCloseOrders.svelte'
 
 	const { synchronized } = trades
 
