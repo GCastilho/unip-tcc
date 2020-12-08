@@ -35,15 +35,11 @@ router.post('/authentication', async (req, res): Promise<any> => {
 
 		/**
 		 * Se a autenticação, a criação e o salvamento da sessão forem bem
-		 * sucedidas, seta o cookie no header e retorna o token
+		 * sucedidas, retorna o token de autenticação com o websocket e o header
+		 * 'authentication', necessário para autenticação com a API
 		 *
-		 * Token: Authenticação com o websocket
-		 * Authorization: Token de autenticação com a API. Deve ser enviado em um
-		 * header 'authorization' em todos os requests
-		 *
-		 * @todo cookie ter tempo de expiração
+		 * @todo token e header terem tempo de expiração
 		 */
-		res.cookie('sessionId', session.sessionId, { httpOnly: true, sameSite: 'none' })
 		res.send({
 			token: session.token,
 			authorization: session.sessionId,

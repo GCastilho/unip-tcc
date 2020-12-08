@@ -21,11 +21,11 @@ const app = express()
 app.use(api)
 
 describe('Testing orderbook endpoint for HTTP API version 1', () => {
-	let sessionId: string
+	let authorization: string
 
 	const notAuthorizedModel = {
 		error: 'NotAuthorized',
-		message: 'A valid cookie \'sessionId\' is required to perform this operation'
+		message: 'A valid header \'Authorization\' is required to perform this operation'
 	}
 
 	before(async () => {
@@ -35,7 +35,7 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 			token: randomstring.generate({ length: 128 }),
 			date: new Date()
 		})
-		sessionId = session.sessionId
+		authorization = session.sessionId
 	})
 
 	describe('When sending a new order', () => {
@@ -52,7 +52,7 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 		it('Should call the MarketApi to insert a new order', async () => {
 			const { body } = await request(app)
 				.post('/v1/market/orderbook')
-				.set('Cookie', [`sessionId=${sessionId}`])
+				.set({ authorization })
 				.send({
 					owning: {
 						currency: 'bitcoin',
@@ -111,7 +111,7 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 
 			const { body } = await request(app)
 				.delete(`/v1/market/orderbook/${requestOpid}`)
-				.set('Cookie', [`sessionId=${sessionId}`])
+				.set({ authorization })
 				.send()
 				.expect('Content-Type', /json/)
 				.expect(200)
@@ -139,7 +139,7 @@ describe('Testing orderbook endpoint for HTTP API version 1', () => {
 		it('Should return \'Bad Request\' if the informed opid is not 24 characters long', async () => {
 			const { body } = await request(app)
 				.delete('/v1/market/orderbook/veryShortOpid')
-				.set('Cookie', [`sessionId=${sessionId}`])
+				.set({ authorization })
 				.send()
 				.expect(400)
 			expect(body).to.be.an('object').that.deep.equal({
