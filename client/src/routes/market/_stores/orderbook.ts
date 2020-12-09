@@ -61,7 +61,7 @@ export async function fetch() {
 	inSync = false
 }
 
-export async function add(orderRequest: Pick<OrderRequest, 'owning'|'requesting'>) {
+export async function add(orderRequest: OrderRequest) {
 	console.log('Sending new order to orderbook', orderRequest)
 	try {
 		const { data } = await axios.post<{ opid: string }>('/market/orderbook', orderRequest)

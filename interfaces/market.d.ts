@@ -10,12 +10,12 @@ export interface OrderRequest {
 		currency: SuportedCurrencies
 		amount: number
 	}
-	timestamp: number
 }
 
 /** Type do request de uma ordem já informada à MarketApi */
 export interface MarketOrder extends OrderRequest {
 	opid: string
+	timestamp: number
 }
 
 /** Interface de um request das margens de preço de um mercado */
