@@ -2,5 +2,5 @@
 	"exit": true,
 	"extension": ["ts"],
 	"recursive": true,
-	"require": ["./tests/setup.js", "ts-node/register/transpile-only"]
+	"require": ["ts-node/register/transpile-only", "./tests/setup.ts"]
 }
