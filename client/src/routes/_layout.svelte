@@ -1,38 +1,28 @@
 <script lang="ts" context="module">
-	import { init as initCurrencies } from '../utils/currencies'
+	import { init, resourceUrl } from '../utils/currencies'
 
-	/*
-	 * Código javascript está sendo executado antes dessa função retornar, o que
-	 * é um problema e eu acho que é um bug no sapper, pq embora ele falem que
-	 * nada é _renderizado_ antes dela funcionar (não é o caso), é
-	 * contra-intiuítivo códigos como MÓDULOS serem executados antes dela retornar
-	 * 
-	 * No caso as funções de emptyStore que dependem desse módulo podem retornar
-	 * um objeto vazio, portanto inválido, caso ele seja carregado antes do
-	 * preload ter terminado, o que acontece qdo vc abre diretamente em uma página
-	 * que o carrega
-	 *
-	 * See sveltejs/sapper#1657
-	 * 
-	 * Ex: Abrir a pg ade balances faz a store de balances/accounts ser executada
-	 * antes do preload terminar
-	 */
 	export async function preload() {
-		const res = await this.fetch('/currencies')
-		initCurrencies(await res.json())
+		return {
+			currencies: await this.fetch(resourceUrl).then(res => res.json())
+		}
 	}
 </script>
 
-<script>
+<script lang="ts">
 	import { stores } from '@sapper/app'
-	import { init } from '../stores/auth'
+	import { init as initAuth } from '../stores/auth'
 	import Nav from '../components/Nav.svelte'
+	import type { Currencies } from './currencies'
+
+	export let segment
+	export let currencies: Currencies
+
+	// Inicializa o módulo de currencies
+	init(currencies)
 
 	// Inicializa a store de autenticação
 	const { session } = stores()
-	init(session)
-
-	export let segment
+	initAuth(session)
 </script>
 
 <style>
