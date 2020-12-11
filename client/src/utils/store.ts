@@ -1,15 +1,18 @@
+import axios from 'axios'
 import { writable } from 'svelte/store'
+import { subscribe as subscribeToAuth } from '../stores/auth'
 import type { Writable } from 'svelte/store'
 
 type Options<T> = {
 	/** URL do entrypoint da API que retorna os valores dessa store */
 	apiUrl: string
 	/** Função que retorna um valor do type da store para iniciaização e reset */
-	resetStore: () => T
+	resetter: () => T
 	/** Parâmetros necessário para o request à API retornar os valores da store */
 	fetchParameters?: Record<string, string|number|boolean>
 }
 
+/** Store genérica */
 export default abstract class Store<T> {
 	/** URL formatada (e com os parâmetros) do entrypoint da API dessa store */
 	public readonly apiUrl: string
@@ -24,12 +27,12 @@ export default abstract class Store<T> {
 	protected update: Writable<T>['update']
 
 	/** Retorna um valor da "store vazia" mas sendo um valor do tipo T */
-	protected resetStore: () => T
+	protected getEmptyStore: () => T
 
 	constructor(options: Options<T>) {
-		this.resetStore = options.resetStore
+		this.getEmptyStore = options.resetter
 
-		const { subscribe, set, update } = writable<T>(this.resetStore())
+		const { subscribe, set, update } = writable<T>(this.getEmptyStore())
 		this.subscribe = subscribe
 		this.update = update
 		this.set = set
@@ -51,5 +54,33 @@ export default abstract class Store<T> {
 	 */
 	public init(value: T) {
 		this.set(value)
+	}
+}
+
+/**
+ * Store para dados de usuário, para dados que devem existir apenas enquando o
+ * usuário está logado e serem "restados" uma vez que o usuário se desautenticar
+ */
+export abstract class UserDataStore<T> extends Store<T> {
+	/** Lida com atualização de valores para autenticação de desautenticação */
+	private async handleAuthentication(auth: boolean) {
+		if (auth) {
+			try {
+				const { data } = await axios.get<T>(this.apiUrl)
+				console.log(`UserDataStore fetch for '${this.apiUrl}':`, data)
+				this.set(data)
+			} catch (err) {
+				console.error(`UserDataStore fetch ERROR for '${this.apiUrl}':`, err.response?.statusText || err.code)
+				// Store data may not reflect server data
+				this.set(this.getEmptyStore())
+			}
+		} else {
+			this.set(this.getEmptyStore())
+		}
+	}
+
+	constructor(options: Options<T>) {
+		super(options)
+		subscribeToAuth(this.handleAuthentication)
 	}
 }
