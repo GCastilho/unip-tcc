@@ -5,7 +5,7 @@
 
 <script lang="ts">
 	import { onMount } from 'svelte'
-	import * as balances from '../../../stores/balances'
+	import balances from '../../../stores/balances'
 	import DepositCell from './depositCell.svelte'
 	import WithdrawCell from './withdrawCell.svelte'
 	import type { Currencies } from '../../currencies'
@@ -88,13 +88,13 @@
 	<td class="coin-cell">{code}</td>
 	<td class="name-cell">{currency}</td>
 	<td class="balance-cell">{
-		$balances[currency] // pode ser undefined pcausa de um bug no preload/store
+		typeof $balances[currency].available == 'number'
 			? $balances[currency].available.toFixed(decimals)
 			: 'Loading...'
 		}
 	</td>
 	<td class="balance-cell">{
-		$balances[currency]
+		typeof $balances[currency].available == 'number'
 			? $balances[currency].locked.toFixed(decimals)
 			: 'Loading...'
 		}

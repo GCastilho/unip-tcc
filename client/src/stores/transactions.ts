@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { writable } from 'svelte/store'
 import currencies from '../utils/currencies'
-import { updateBalances } from './balances'
+import balances from './balances'
 import { addSocketListener } from '../utils/websocket'
 import * as auth from './auth'
 import type { Currencies } from '../routes/currencies'
@@ -103,7 +103,7 @@ export async function withdraw(
 		...txs
 	]))
 
-	updateBalances(currency, -amount, amount)
+	balances.updateBalances(currency, -amount, amount)
 }
 
 /**
@@ -135,9 +135,9 @@ addSocketListener('new_transaction', (
 	console.log('new_transaction', transaction)
 	update(txs => [transaction, ...txs])
 	if (transaction.status == 'confirmed') {
-		updateBalances(currency, transaction.amount, 0)
+		balances.updateBalances(currency, transaction.amount, 0)
 	} else {
-		updateBalances(currency, 0, transaction.amount)
+		balances.updateBalances(currency, 0, transaction.amount)
 	}
 })
 
@@ -180,7 +180,7 @@ addSocketListener('update_received_tx', async (
 		if (index >= 0) {
 			txs[index] = { ...txs[index], ...txUpdate }
 			if (txUpdate.status == 'confirmed')
-				updateBalances(currency, txs[index].amount, -txs[index].amount)
+				balances.updateBalances(currency, txs[index].amount, -txs[index].amount)
 		} else {
 			insertMissingTx(txUpdate.opid)
 		}
@@ -199,12 +199,12 @@ addSocketListener('update_sent_tx', async (
 		if (index >= 0) {
 			if (updtSent.status == 'cancelled') {
 				txs.splice(index, 1)
-				updateBalances(currency, txs[index].amount, -txs[index].amount)
+				balances.updateBalances(currency, txs[index].amount, -txs[index].amount)
 			} else {
 				// @ts-expect-error TS não está entendendo que cancelled n é possível aq
 				txs[index] = { ...txs[index], ...updtSent }
 				if (updtSent.status == 'confirmed')
-					updateBalances(currency, 0, -txs[index].amount)
+					balances.updateBalances(currency, 0, -txs[index].amount)
 			}
 		} else {
 			insertMissingTx(updtSent.opid)

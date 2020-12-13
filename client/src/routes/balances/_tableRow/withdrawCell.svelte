@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as balances from '../../../stores/balances'
+	import balances from '../../../stores/balances'
 	import { withdraw } from '../../../stores/transactions'
 	import type { Currencies } from '../../currencies'
 

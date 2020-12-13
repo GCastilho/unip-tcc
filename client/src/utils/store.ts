@@ -37,14 +37,11 @@ export default abstract class Store<T> {
 		this.update = update
 		this.set = set
 
-		const fetchParameters: Record<string, string> = {}
+		const fetchParams: Record<string, string> = {}
 		for (const key in options.fetchParameters) {
-			fetchParameters[key] = options.fetchParameters[key].toString()
+			fetchParams[key] = options.fetchParameters[key].toString()
 		}
-		this.apiUrl = new URL(
-			new URLSearchParams(fetchParameters).toString(),
-			options.apiUrl
-		).toString()
+		this.apiUrl = options.apiUrl + new URLSearchParams(fetchParams).toString()
 	}
 
 	/**
@@ -59,7 +56,7 @@ export default abstract class Store<T> {
 
 /**
  * Store para dados de usuário, para dados que devem existir apenas enquando o
- * usuário está logado e serem "restados" uma vez que o usuário se desautenticar
+ * usuário está logado e serem "restados" uma vez que o usuário se deslogar
  */
 export abstract class UserDataStore<T> extends Store<T> {
 	/** Lida com atualização de valores para autenticação de desautenticação */
@@ -81,6 +78,8 @@ export abstract class UserDataStore<T> extends Store<T> {
 
 	constructor(options: Options<T>) {
 		super(options)
-		subscribeToAuth(this.handleAuthentication)
+		if (typeof window != 'undefined') { // Checa se está no browser
+			subscribeToAuth(auth => this.handleAuthentication(auth))
+		}
 	}
 }

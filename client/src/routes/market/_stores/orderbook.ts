@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { writable } from 'svelte/store'
-import { updateBalances } from '../../../stores/balances'
+import balances from '../../../stores/balances'
 import { addSocketListener } from '../../../utils/websocket'
 import type { MarketOrder } from '../orderbook'
 import type { OrderRequest, OrderUpdate } from '../../../../../interfaces/market'
@@ -74,7 +74,7 @@ export async function add(orderRequest: OrderRequest) {
 		console.log('Received orderbook response', data)
 		update(orders => [...orders, order])
 
-		updateBalances(order.owning.currency, -order.owning.amount, order.owning.amount)
+		balances.updateBalances(order.owning.currency, -order.owning.amount, order.owning.amount)
 	} catch (err) {
 		console.error('Error while sending the new order', err)
 		throw err
@@ -139,19 +139,19 @@ addSocketListener('order_update', (orderUpdt: OrderUpdate) => {
 				order.requesting.amount -= orderUpdt.completed.requesting
 
 				// Reduz o locked da owning e aumenta o available do requesting
-				updateBalances(order.owning.currency, 0, orderUpdt.completed.owning)
-				updateBalances(order.requesting.currency, orderUpdt.completed.requesting, 0)
+				balances.updateBalances(order.owning.currency, 0, orderUpdt.completed.owning)
+				balances.updateBalances(order.requesting.currency, orderUpdt.completed.requesting, 0)
 			} else {
 				// Remove a ordem do array
 				orders.splice(index, 1)
 
 				if (orderUpdt.status == 'close') {
 					// Reduz o locked da owning e aumenta o available do requesting no restante da ordem
-					updateBalances(order.owning.currency, 0, order.owning.amount)
-					updateBalances(order.requesting.currency, order.requesting.amount, 0)
+					balances.updateBalances(order.owning.currency, 0, order.owning.amount)
+					balances.updateBalances(order.requesting.currency, order.requesting.amount, 0)
 				} else {
 					// Restaura o locked e o available da owning
-					updateBalances(order.owning.currency, order.owning.amount, -order.owning.amount)
+					balances.updateBalances(order.owning.currency, order.owning.amount, -order.owning.amount)
 				}
 			}
 			console.log('Order and balance updated successfully')
