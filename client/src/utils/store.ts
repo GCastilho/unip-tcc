@@ -78,7 +78,13 @@ export abstract class UserDataStore<T> extends Store<T> {
 
 	constructor(options: Options<T>) {
 		super(options)
-		if (typeof window != 'undefined') { // Checa se está no browser
+		/**
+		 * Checa se está no browser
+		 *
+		 * Impede que a store seja iniciada no servidor com dados do cliente, que
+		 * poderiam "vazar" no request do próximo usuário
+		 */
+		if (typeof window != 'undefined') {
 			subscribeToAuth(auth => this.handleAuthentication(auth))
 		}
 	}
