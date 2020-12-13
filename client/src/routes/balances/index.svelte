@@ -1,6 +1,12 @@
 <script context="module">
-	export function preload(page, session) {
-		if (!session.loggedIn) this.redirect(303, '/login')
+	import balances from '../../stores/balances'
+
+	export async function preload(page, session) {
+		if (!session.loggedIn) return this.redirect(303, '/login')
+
+		return {
+			userBalances: await this.fetch(balances.apiUrl).then(res => res.json())
+		}
 	}
 </script>
 
@@ -8,6 +14,9 @@
 	import currencies from '../../utils/currencies'
 	import TableRow from './_tableRow/index.svelte'
 	import type { Currencies } from '../currencies'
+
+	export let userBalances: Parameters<typeof balances['init']>[0]
+	balances.init(userBalances)
 
 	const currencyEntries = Object.entries(currencies) as [
 		keyof Currencies,

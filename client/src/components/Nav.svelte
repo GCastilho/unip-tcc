@@ -99,13 +99,13 @@
 
 <nav>
 	<ul>
-		<li><a class:selected={segment === undefined} href="/">home</a></li>
-		<li><a class:selected={segment === 'market'} href="market">market</a></li>
-		<li><a class:selected={segment === 'about'} href="about">about</a></li>
+		<li><a rel=prefetch class:selected={segment === undefined} href="/">home</a></li>
+		<li><a rel=prefetch class:selected={segment === 'market'} href="market">market</a></li>
+		<li><a rel=prefetch class:selected={segment === 'about'} href="about">about</a></li>
 
 		<div style="float:right">
 			{#if $session.loggedIn}
-				<li><a class:selected={segment === 'balances'} href="balances">balances</a></li>
+				<li><a rel=prefetch class:selected={segment === 'balances'} href="balances">balances</a></li>
 				<li on:mouseover={() => userdropdown = 'show'} on:mouseleave={() => userdropdown = 'hide'}>
 					<div class='dropdown-button' class:selected = {userdropdown === 'show' || segment === 'user'}>
 						<img alt="Config" title="Config" src="/assets/settings-icon.svg" />
@@ -134,7 +134,7 @@
 					</div>
 				</li>
 				<li>
-					<a on:click={logout} href="/">
+					<a rel=prefetch on:click={logout} href="/">
 						<img alt="Logout" title="Logout" src="/assets/logout-icon.svg" />
 					</a>
 				</li>
