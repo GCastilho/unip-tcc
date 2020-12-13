@@ -8,6 +8,12 @@ type Options<T> = {
 	apiUrl: string
 	/** Função que retorna um valor do type da store para iniciaização e reset */
 	resetter: () => T
+	/**
+	 * Flag que indica se a store é uma store de dados de usuário, ou seja,
+	 * contém dados que devem existir apenas enquando o usuário está logado e
+	 * serem "restados" uma vez que o usuário se deslogar
+	 */
+	userDataStore?: boolean
 	/** Parâmetros necessário para o request à API retornar os valores da store */
 	fetchParameters?: Record<string, string|number|boolean>
 }
@@ -29,8 +35,12 @@ export default abstract class Store<T> {
 	/** Retorna um valor da "store vazia" mas sendo um valor do tipo T */
 	protected getEmptyStore: () => T
 
+	/** Flag que indica se a store é uma store de dados do usurio */
+	protected readonly userDataStore: boolean
+
 	constructor(options: Options<T>) {
 		this.getEmptyStore = options.resetter
+		this.userDataStore = options.userDataStore
 
 		const { subscribe, set, update } = writable<T>(this.getEmptyStore())
 		this.subscribe = subscribe
@@ -42,23 +52,19 @@ export default abstract class Store<T> {
 			fetchParams[key] = options.fetchParameters[key].toString()
 		}
 		this.apiUrl = options.apiUrl + new URLSearchParams(fetchParams).toString()
+
+		/**
+		 * Checa se está no browser e se é uma store de dados do usuário
+		 *
+		 * Checar se está no browser impede que a store seja iniciada no servidor
+		 * com dados do cliente, que poderiam "vazar" no request do próximo usuário,
+		 * pois elas ficariam armazenadas na instancia da classe DO SERVIDOR
+		 */
+		if (typeof window != 'undefined' && this.userDataStore) {
+			subscribeToAuth(auth => this.handleAuthentication(auth))
+		}
 	}
 
-	/**
-	 * "Inicializa" a store, substituíndo o valor atual pelo informado; Utilizado
-	 * para possibilitar a inicialização da store no cliente ANTES da renderização
-	 * começar
-	 */
-	public init(value: T) {
-		this.set(value)
-	}
-}
-
-/**
- * Store para dados de usuário, para dados que devem existir apenas enquando o
- * usuário está logado e serem "restados" uma vez que o usuário se deslogar
- */
-export abstract class UserDataStore<T> extends Store<T> {
 	/** Lida com atualização de valores para autenticação de desautenticação */
 	private async handleAuthentication(auth: boolean) {
 		if (auth) {
@@ -76,16 +82,14 @@ export abstract class UserDataStore<T> extends Store<T> {
 		}
 	}
 
-	constructor(options: Options<T>) {
-		super(options)
-		/**
-		 * Checa se está no browser
-		 *
-		 * Impede que a store seja iniciada no servidor com dados do cliente, que
-		 * poderiam "vazar" no request do próximo usuário
-		 */
-		if (typeof window != 'undefined') {
-			subscribeToAuth(auth => this.handleAuthentication(auth))
-		}
+	/**
+	 * "Inicializa" a store, substituíndo o valor atual pelo informado; Utilizado
+	 * para possibilitar a inicialização da store no cliente ANTES da renderização
+	 * começar
+	 */
+	public init(value: T) {
+		// Impede que stores de usuário sejam inicializadas no modo SSR
+		if (typeof window == 'undefined' && this.userDataStore) return
+		this.set(value)
 	}
 }

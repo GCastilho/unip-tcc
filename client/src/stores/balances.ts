@@ -1,7 +1,7 @@
+import Store from '../utils/store'
 import currencies from '../utils/currencies'
-import { UserDataStore } from '../utils/store'
-import type { Balances as ApiBalances } from '../routes/user/balances'
 import type { Writable } from 'svelte/store'
+import type { Balances as ApiBalances } from '../routes/user/balances'
 
 type Balances = {
 	[P in keyof ApiBalances]: Partial<ApiBalances[P]>
@@ -20,11 +20,12 @@ function storeResetter() {
 	return store
 }
 
-export default new class BalancesStore extends UserDataStore<Balances> {
+export default new class BalancesStore extends Store<Balances> {
 	constructor() {
 		super({
 			apiUrl: '/user/balances',
-			resetter: storeResetter
+			resetter: storeResetter,
+			userDataStore: true,
 		})
 	}
 
