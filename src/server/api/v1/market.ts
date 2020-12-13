@@ -2,9 +2,9 @@ import { Router } from 'express'
 import { ObjectId } from 'mongodb'
 import Order from '../../../db/models/order'
 import Price from '../../../db/models/price'
+import Trade from '../../../db/models/trade'
 import { authentication } from './middlewares'
 import * as MarketApi from '../../../marketApi'
-import Trade from '../../../db/models/trade'
 import type { SuportedCurrencies as SC } from '../../../libs/currencies'
 
 const router = Router()
