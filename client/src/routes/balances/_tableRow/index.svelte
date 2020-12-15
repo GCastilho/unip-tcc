@@ -88,13 +88,13 @@
 	<td class="coin-cell">{code}</td>
 	<td class="name-cell">{currency}</td>
 	<td class="balance-cell">{
-		$balances[currency] && typeof $balances[currency].available == 'number'
+		typeof $balances[currency].available == 'number'
 			? $balances[currency].available.toFixed(decimals)
 			: 'Loading...'
 		}
 	</td>
 	<td class="balance-cell">{
-		$balances[currency] && typeof $balances[currency].available == 'number'
+		typeof $balances[currency].available == 'number'
 			? $balances[currency].locked.toFixed(decimals)
 			: 'Loading...'
 		}

@@ -1,24 +1,9 @@
-<script lang="ts" context="module">
-	import { init, resourceUrl } from '../utils/currencies'
-
-	export async function preload() {
-		return {
-			currencies: await this.fetch(resourceUrl).then(res => res.json())
-		}
-	}
-</script>
-
 <script lang="ts">
 	import { stores } from '@sapper/app'
 	import { init as initAuth } from '../stores/auth'
 	import Nav from '../components/Nav.svelte'
-	import type { Currencies } from './currencies'
 
 	export let segment
-	export let currencies: Currencies
-
-	// Inicializa o módulo de currencies
-	init(currencies)
 
 	// Inicializa a store de autenticação
 	const { session } = stores()
