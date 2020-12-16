@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { writable } from 'svelte/store'
+import { Readable, writable } from 'svelte/store'
 import { subscribe as subscribeToAuth } from '../stores/auth'
 import type { Writable } from 'svelte/store'
 
@@ -16,6 +16,14 @@ type Options<T> = {
 	userDataStore?: boolean
 	/** Parâmetros necessário para o request à API retornar os valores da store */
 	fetchParameters?: Record<string, string|number|boolean>
+}
+
+type ListOptions<T> = Omit<Options<T>, 'resetter'> & {
+	/**
+	 * Propriedade única do item no array da store para comparação, caso seja uma
+	 * store de objetos
+	 */
+	key?: string
 }
 
 /** Store genérica */
@@ -91,5 +99,88 @@ export default abstract class Store<T> {
 		// Impede que stores de usuário sejam inicializadas no modo SSR
 		if (typeof window == 'undefined' && this.userDataStore) return
 		this.set(value)
+	}
+}
+
+export abstract class ListStore<T> extends Store<T[]> {
+	/** Valor privado (setável) do lenght da store */
+	private _length: number
+
+	/**
+	 * Caso essa store seja de objetos, key é a propriedade que será usada para
+	 * identificar/comparar um item no array
+	 */
+	private key?: string
+
+	/** Flag que indica se a função de fetch está sendo executada */
+	private inSync: boolean
+
+	/** Flag que indica se essa store está syncronizada com a API */
+	private fullySync: boolean
+
+	/** Set que atualiza o fullySync e a store syncronized */
+	private setFullySync: Writable<boolean>['set']
+
+	/** Store que indica se essa store está totalmente syncronizada */
+	public readonly synchronized: Readable<boolean>
+
+	/** Quantidade de itens nessa store */
+	public get length() {
+		return this._length
+	}
+
+	constructor(options: ListOptions<T>) {
+		super({
+			...options,
+			resetter: () => [],
+		})
+		this.key = options.key
+
+		const { subscribe, set } = writable(false)
+		this.setFullySync = set
+		this.synchronized = { subscribe }
+
+		// Mantém o length atualizado
+		this.subscribe(v => this._length = v.length)
+
+		// Mantém o fullySync atualizado
+		this.synchronized.subscribe(v => this.fullySync = v)
+	}
+
+	/**
+	 * Busca por mais 10 transações caso a não esteja sincronizada com o servidor
+	 */
+	public async fetch() {
+		if (this.fullySync || this.inSync) return
+		this.inSync = true
+
+		try {
+			const { data } = await axios.get<T[]>(this.apiUrl, {
+				params: { skip: this.length }
+			})
+
+			this.update(arr => {
+				for (const d of data) {
+					let index: number
+					if (this.key) {
+						index = arr.findIndex(t => t[this.key] === d[this.key])
+					} else {
+						index = arr.findIndex(t => t === d)
+					}
+					if (index == -1) arr.push(d)
+				}
+
+				/**
+				 * O length da store só é atualizada quando essa função retorna, então
+				 * aqui ela ainda está com o length antigo
+				 */
+				if (this.length == arr.length) this.setFullySync(true)
+				return arr
+			})
+		} catch (err) {
+			console.error(`ListStore fetch ERROR for '${this.apiUrl}':`, err.response?.statusText || err.code)
+		}
+
+		this.inSync = false
 	}
 }
