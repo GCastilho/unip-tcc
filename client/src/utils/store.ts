@@ -110,7 +110,7 @@ export abstract class ListStore<T> extends Store<T[]> {
 	 * Caso essa store seja de objetos, key é a propriedade que será usada para
 	 * identificar/comparar um item no array
 	 */
-	private key?: string
+	protected key?: string
 
 	/** Flag que indica se a função de fetch está sendo executada */
 	private inSync: boolean
@@ -119,7 +119,7 @@ export abstract class ListStore<T> extends Store<T[]> {
 	private fullySync: boolean
 
 	/** Set que atualiza o fullySync e a store syncronized */
-	private setFullySync: Writable<boolean>['set']
+	private setSynchronized: Writable<boolean>['set']
 
 	/** Store que indica se essa store está totalmente syncronizada */
 	public readonly synchronized: Readable<boolean>
@@ -137,11 +137,15 @@ export abstract class ListStore<T> extends Store<T[]> {
 		this.key = options.key
 
 		const { subscribe, set } = writable(false)
-		this.setFullySync = set
+		this.setSynchronized = set
 		this.synchronized = { subscribe }
 
-		// Mantém o length atualizado
-		this.subscribe(v => this._length = v.length)
+		// Mantém o length e a store de synchronized atualizados
+		this.subscribe(v => {
+			// this.length ainda está com o valor antigo. v é o novo valor da store
+			if (this.length == v.length) this.setSynchronized(true)
+			this._length = v.length
+		})
 
 		// Mantém o fullySync atualizado
 		this.synchronized.subscribe(v => this.fullySync = v)
@@ -170,11 +174,6 @@ export abstract class ListStore<T> extends Store<T[]> {
 					if (index == -1) arr.push(d)
 				}
 
-				/**
-				 * O length da store só é atualizada quando essa função retorna, então
-				 * aqui ela ainda está com o length antigo
-				 */
-				if (this.length == arr.length) this.setFullySync(true)
 				return arr
 			})
 		} catch (err) {
