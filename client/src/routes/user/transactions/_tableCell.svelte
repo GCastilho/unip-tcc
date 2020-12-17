@@ -5,7 +5,7 @@
 	import { slide } from 'svelte/transition'
 	import Close from './cross-icon.svg'
 	import currencies from '../../../utils/currencies'
-	import * as transactions from '../../../stores/transactions'
+	import transactions from '../../../stores/transactions'
 	import type { Transaction } from '../../../stores/transactions'
 
 	export let transaction: Transaction

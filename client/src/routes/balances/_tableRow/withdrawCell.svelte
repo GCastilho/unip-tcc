@@ -1,6 +1,6 @@
 <script lang="ts">
 	import balances from '../../../stores/balances'
-	import { withdraw } from '../../../stores/transactions'
+	import transactions from '../../../stores/transactions'
 	import type { Currencies } from '../../currencies'
 
 	export let currency: keyof Currencies
@@ -31,7 +31,7 @@
 		event.target.amount.value = ''
 
 		try {
-			await withdraw(currency, destination, amount)
+			await transactions.withdraw(currency, destination, amount)
 			invalidAmount = false
 
 			amountToReceive = 0
