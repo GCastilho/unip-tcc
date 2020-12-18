@@ -2,6 +2,7 @@ import axios from 'axios'
 import { Readable, writable } from 'svelte/store'
 import { subscribe as subscribeToAuth } from '../stores/auth'
 import type { Writable } from 'svelte/store'
+import type { SuportedCurrencies as SC } from '../../../src/libs/currencies'
 
 type Options<T> = {
 	/** URL do entrypoint da API que retorna os valores dessa store */
@@ -193,5 +194,35 @@ export abstract class ListStore<T> extends Store<T[]> {
 		}
 
 		this.inSync = false
+	}
+}
+
+/**
+ * First-class Function que mantém instancias de uma store de um mesmo propósito
+ * mas diferentes dependendo do par de currencies envolvidas na operação
+ * @param StoreClass Uma classe que extende a Store e recebe base a target como
+ * parâmetro
+ */
+export function createStoreMap<T>(
+	StoreClass: (new(base: SC, target: SC) => Store<T>)
+) {
+	const map = new Map<string, Store<T>>()
+
+	/**
+	 * Retorna uma Store das currencies requisitadas
+	 * @param base A currency Base desse par
+	 * @param target A currency Target desse par
+	 * @todo Quando for implementar a limpeza da memória de stores instanciadas
+	 * não esquecer de remover os liteners do websocket
+	 */
+	return function getStore(base: SC, target: SC) {
+		if (base == target) throw new Error('Currency base must be different from Currency target')
+		const mapKey = [base, target].join(',')
+		let store = map.get(mapKey)
+		if (!store) {
+			store = new StoreClass(base, target)
+			map.set(mapKey, store)
+		}
+		return store
 	}
 }
