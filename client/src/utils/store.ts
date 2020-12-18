@@ -55,11 +55,12 @@ export default abstract class Store<T> {
 		this.update = update
 		this.set = set
 
-		const fetchParams: Record<string, string> = {}
+		const urlSearchParams = new URLSearchParams()
 		for (const key in options.fetchParameters) {
-			fetchParams[key] = options.fetchParameters[key].toString()
+			urlSearchParams.append(key, options.fetchParameters[key].toString())
 		}
-		this.apiUrl = options.apiUrl + new URLSearchParams(fetchParams).toString()
+		const searchParams = `${urlSearchParams.toString()}`
+		this.apiUrl = options.apiUrl + (searchParams ? `?${searchParams}` : '')
 
 		/**
 		 * Checa se está no browser e se é uma store de dados do usuário
@@ -143,7 +144,7 @@ export abstract class ListStore<T> extends Store<T[]> {
 		// Mantém o length e a store de synchronized atualizados
 		this.subscribe(v => {
 			// this.length ainda está com o valor antigo. v é o novo valor da store
-			if (this.length == v.length) this.setSynchronized(true)
+			if (this.length === v.length) this.setSynchronized(true)
 			this._length = v.length
 		})
 
