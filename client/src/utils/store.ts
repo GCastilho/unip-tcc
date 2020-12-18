@@ -63,32 +63,43 @@ export default abstract class Store<T> {
 		this.apiUrl = options.apiUrl + (searchParams ? `?${searchParams}` : '')
 
 		/**
-		 * Checa se está no browser e se é uma store de dados do usuário
+		 * Checa se está no browser
 		 *
-		 * Checar se está no browser impede que a store seja iniciada no servidor
-		 * com dados do cliente, que poderiam "vazar" no request do próximo usuário,
-		 * pois elas ficariam armazenadas na instancia da classe DO SERVIDOR
+		 * Checar se está no browser impede que a store seja iniciada no servidor,
+		 * pois, do modo que está implementado agora, as stores são globais, então
+		 * múltiplos requests podem manipular a store antes da renderização, causado
+		 * dados "vazarem" entre os requests e gerar uma renderização inconsistente.
+		 * Se a store for da dados do usuário, isso pode causar dados de usuário
+		 * serem exibidos para outro usuário
 		 */
-		if (typeof window != 'undefined' && this.userDataStore) {
-			subscribeToAuth(auth => this.handleAuthentication(auth))
+		if (typeof window != 'undefined') {
+			// UserDataStores só podem ser populadas se autenticado
+			if (this.userDataStore) {
+				subscribeToAuth(auth => this.handleAuthentication(auth))
+			} else {
+				this.populate()
+			}
+		}
+	}
+
+	/** Popula a store com dados da API, substituído o conteúdo preente */
+	private async populate() {
+		try {
+			const { data } = await axios.get<T>(this.apiUrl)
+			console.log(`Populate for '${this.apiUrl}':`, data)
+			this.set(data)
+		} catch (err) {
+			// Store data may not reflect server data
+			this.set(this.getEmptyStore())
+			setTimeout(this.populate.bind(this), 10000)
+			console.error(`Populate ERROR for '${this.apiUrl}':`, err.response?.statusText || err.code || err, '\b,trying again in 10 seconds...')
 		}
 	}
 
 	/** Lida com atualização de valores para autenticação de desautenticação */
 	private async handleAuthentication(auth: boolean) {
-		if (auth) {
-			try {
-				const { data } = await axios.get<T>(this.apiUrl)
-				console.log(`UserDataStore fetch for '${this.apiUrl}':`, data)
-				this.set(data)
-			} catch (err) {
-				console.error(`UserDataStore fetch ERROR for '${this.apiUrl}':`, err.response?.statusText || err.code)
-				// Store data may not reflect server data
-				this.set(this.getEmptyStore())
-			}
-		} else {
-			this.set(this.getEmptyStore())
-		}
+		if (auth) await this.populate()
+		else this.set(this.getEmptyStore())
 	}
 
 	/**

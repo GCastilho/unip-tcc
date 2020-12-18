@@ -1,4 +1,3 @@
-import axios from 'axios'
 import Store from '../../../utils/store'
 import { addSocketListener } from '../../../utils/websocket'
 import type { MarketDepth } from '../depth'
@@ -12,9 +11,6 @@ class DepthStore extends Store<MarketDepth[]> {
 			fetchParameters: { base, target },
 		})
 
-		/** Popula a store se no cliente */
-		if (typeof window != 'undefined') this.fetch()
-
 		/** Atualiza o array da store ao receber o evento depth_update */
 		addSocketListener('depth_update', (depth: MarketDepth) => {
 			this.update(columns => {
@@ -23,18 +19,6 @@ class DepthStore extends Store<MarketDepth[]> {
 				return columns
 			})
 		})
-	}
-
-	/** Pega os dados da API e popula a store */
-	private async fetch() {
-		try {
-			const { data } = await axios.get<MarketDepth[]>(this.apiUrl)
-			console.log('Depth fetch:', data)
-			this.set(data)
-		} catch (err) {
-			console.error('Error fetching depth', err, 'trying again in 10 seconds...')
-			setTimeout(this.fetch.bind(this), 10000)
-		}
 	}
 }
 
