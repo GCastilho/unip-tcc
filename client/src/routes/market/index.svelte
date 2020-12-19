@@ -2,15 +2,14 @@
 	import currenciesUtils from '../../utils/currencies'
 	import * as prices from './_stores/prices'
 	//import * as depth from '../../stores/depth'
-	import * as marketPrice from './_stores/marketPrice'
 	import BuySell from './_components/buySell.svelte'
 	import OpenOrders from './_components/openOrders.svelte'
 	import CloseOrders from './_components/closeOrders.svelte'
 	import ExchangeIcon from './exchange.svg'
 	import Candle from './_components/candle.svelte'
 	// import Depth from './_components/depth.svelte'
-	import Tabs from 'svelte-tabs/src/Tabs.svelte';
 	import Tab from 'svelte-tabs/src/Tab.svelte';
+	import Tabs from 'svelte-tabs/src/Tabs.svelte';
 	import TabList from 'svelte-tabs/src/TabList.svelte';
 	import TabPanel from 'svelte-tabs/src/TabPanel.svelte';
 
@@ -27,7 +26,6 @@
 	$: {
 		prices.fetch([baseCurrency?.name, targetCurrency?.name])
 		//depth.fetch([baseCurrency?.name, targetCurrency?.name])
-		marketPrice.fetch([baseCurrency?.name, targetCurrency?.name])
 	} 
 
 	function switchCoins() {

@@ -1,11 +1,9 @@
 import Store, { createEventDispatcher, createStoreMap } from '../../../utils/store'
-import type { MarketDepth } from '../depth'
+import type { MarketDepth as MarketDepthApi } from '../depth'
 import type { SuportedCurrencies } from '../../../../../src/libs/currencies'
 
-/**
- * Chama o callback para esse evento apenas se ele for do par de currencies
- * informado
- */
+type MarketDepth = Omit<MarketDepthApi, 'currencies'>
+
 const addSocketListener = createEventDispatcher('depth_update')
 
 class DepthStore extends Store<MarketDepth[]> {
@@ -20,7 +18,7 @@ class DepthStore extends Store<MarketDepth[]> {
 		 * Atualiza o array da store ao receber o evento depth_update desse par de
 		 * currencies
 		 */
-		addSocketListener([base, target], (depth: MarketDepth) => {
+		addSocketListener([base, target], (depth: MarketDepthApi) => {
 			this.update(columns => {
 				const index = columns.findIndex(v => v.type === depth.type && v.price > depth.price)
 				columns.splice(index, 0, depth)

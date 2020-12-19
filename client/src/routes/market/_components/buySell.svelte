@@ -1,14 +1,15 @@
 <script lang='ts'>
 	import balances from '../../../stores/balances'
 	import * as orderbook from '../_stores/orderbook'
-	import * as marketPrice from '../_stores/marketPrice'
+	import { getMarketPriceStore } from '../_stores/marketPrice'
 	import type { SuportedCurrencies } from '../../../../../src/libs/currencies'
 
 	// base
-	export let baseCurrency: { name: string, code: string, decimals: number }
+	export let baseCurrency: { name: SuportedCurrencies, code: string, decimals: number }
 	// target
-	export let targetCurrency: { name: string, code: string, decimals: number }
+	export let targetCurrency: { name: SuportedCurrencies, code: string, decimals: number }
 
+	$: marketPrice = getMarketPriceStore(baseCurrency?.name, targetCurrency?.name)
 
 	/** Eleva o preço atual a -1 */
 	export function switchPrice() {

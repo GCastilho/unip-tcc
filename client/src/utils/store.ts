@@ -143,7 +143,7 @@ export abstract class ListStore<T> extends Store<T[]> {
 		return this._length
 	}
 
-	constructor(options: ListOptions<T>) {
+	constructor(options: ListOptions<T[]>) {
 		super({
 			...options,
 			resetter: () => [],
