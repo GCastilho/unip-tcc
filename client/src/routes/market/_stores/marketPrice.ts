@@ -1,4 +1,4 @@
-import Store, { createStoreMap, createEventDispatcher } from '../../../utils/store'
+import Store, { createEventDispatcher, MapStore } from '../../../utils/store'
 import type { PriceRequest } from '../price'
 import type { PriceUpdate } from '../../../../../interfaces/market'
 import type { SuportedCurrencies } from '../../../../../src/libs/currencies'
@@ -33,4 +33,10 @@ class PriceRequestStore extends Store<MarketPrice> {
 	}
 }
 
-export const getMarketPriceStore = createStoreMap(PriceRequestStore)
+export default new MapStore({
+	resetter: () => ({
+		buyPrice: 0,
+		sellPrice: Infinity,
+	}),
+	StoreClass: PriceRequestStore
+})

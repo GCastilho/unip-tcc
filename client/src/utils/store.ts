@@ -260,3 +260,47 @@ export function createEventDispatcher(event: string) {
 		map.set(currencies.join('-'), callback)
 	}
 }
+
+type MapStoreOptions<T> = {
+	/** Função que retorna um valor do type da store para iniciaização e reset */
+	resetter: () => T
+	StoreClass: { new(base: SC, target: SC): Store<T> }
+}
+
+export class MapStore<T> {
+	/** Subscribe on value changes */
+	public subscribe: Writable<T>['subscribe']
+
+	/** Set value and inform subscribers */
+	private set: Writable<T>['set']
+
+	/** Retorna um valor da "store vazia" mas sendo um valor do tipo T */
+	private getEmptyStore: () => T
+
+	private map: Map<string, Store<T>>
+	private storeClass: { new(base: SC, target: SC): Store<T> }
+	private unsubStoreClass: ReturnType<Writable<T>['subscribe']>
+
+	constructor(options: MapStoreOptions<T>) {
+		this.getEmptyStore = options.resetter
+		this.storeClass = options.StoreClass
+		this.map = new Map()
+
+		const { subscribe, set } = writable<T>(this.getEmptyStore())
+		this.subscribe = subscribe
+		this.set = set
+	}
+
+	public setPair(base?: SC, target?: SC): void {
+		if (!base || !target) return
+		if (base == target) throw new Error('Currency base must be different from Currency target')
+		const mapKey = `${base}-${target}`
+		let store = this.map.get(mapKey)
+		if (!store) {
+			store = new this.storeClass(base, target)
+			this.map.set(mapKey, store)
+		}
+		if (typeof this.unsubStoreClass == 'function') this.unsubStoreClass()
+		this.unsubStoreClass = store.subscribe(v => this.set(v))
+	}
+}

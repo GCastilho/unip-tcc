@@ -1,7 +1,7 @@
 <script lang='ts'>
 	import balances from '../../../stores/balances'
 	import * as orderbook from '../_stores/orderbook'
-	import { getMarketPriceStore } from '../_stores/marketPrice'
+	import marketPrice from '../_stores/marketPrice'
 	import type { SuportedCurrencies } from '../../../../../src/libs/currencies'
 
 	// base
@@ -9,7 +9,7 @@
 	// target
 	export let targetCurrency: { name: SuportedCurrencies, code: string, decimals: number }
 
-	$: marketPrice = getMarketPriceStore(baseCurrency?.name, targetCurrency?.name)
+	$: marketPrice.setPair(baseCurrency?.name, targetCurrency?.name)
 
 	/** Eleva o preço atual a -1 */
 	export function switchPrice() {
@@ -20,10 +20,10 @@
 	let operation: 'buy'|'sell' = 'buy'
 
 	/** saldo da currency base */
-	$: baseBalance = $balances[baseCurrency?.name]?.available.toFixed(baseCurrency?.decimals)
+	$: baseBalance = $balances[baseCurrency?.name]?.available?.toFixed(baseCurrency?.decimals)
 
 	/** saldo da currency base */
-	$: targetBalance = $balances[targetCurrency?.name]?.available.toFixed(targetCurrency?.decimals)
+	$: targetBalance = $balances[targetCurrency?.name]?.available?.toFixed(targetCurrency?.decimals)
 
 	/**
 	 * a quantidade que esta na marketOrder
@@ -312,9 +312,9 @@
 	<div class="balance">
 		<p>market price:</p>
 		{#if operation == 'buy'}
-			<p>{$marketPrice.buyPrice ? $marketPrice.buyPrice : '0'}{priceCurrency || '...'}</p>
+			<p>{$marketPrice.buyPrice}{priceCurrency || '...'}</p>
 		{:else}
-			<p>{$marketPrice.sellPrice ? $marketPrice.sellPrice : '0'}{priceCurrency || '...'}</p>
+			<p>{$marketPrice.sellPrice}{priceCurrency || '...'}</p>
 		{/if}
 	</div>
 	<div class="balance">
