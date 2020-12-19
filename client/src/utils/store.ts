@@ -5,34 +5,13 @@ import { subscribe as subscribeToAuth } from '../stores/auth'
 import type { Writable } from 'svelte/store'
 import type { SuportedCurrencies as SC } from '../../../src/libs/currencies'
 
-type Options<T> = {
-	/** URL do entrypoint da API que retorna os valores dessa store */
-	apiUrl: string
+type SvelteStoreOptions<T> = {
 	/** Função que retorna um valor do type da store para iniciaização e reset */
 	resetter: () => T
-	/**
-	 * Flag que indica se a store é uma store de dados de usuário, ou seja,
-	 * contém dados que devem existir apenas enquando o usuário está logado e
-	 * serem "restados" uma vez que o usuário se deslogar
-	 */
-	userDataStore?: boolean
-	/** Parâmetros necessário para o request à API retornar os valores da store */
-	fetchParameters?: Record<string, string|number|boolean>
-}
-
-type ListOptions<T> = Omit<Options<T>, 'resetter'> & {
-	/**
-	 * Propriedade única do item no array da store para comparação, caso seja uma
-	 * store de objetos
-	 */
-	key?: string
 }
 
 /** Store genérica */
-export default abstract class Store<T> {
-	/** URL formatada (e com os parâmetros) do entrypoint da API dessa store */
-	public readonly apiUrl: string
-
+class SvelteStore<T> {
 	/** Subscribe on value changes */
 	public subscribe: Writable<T>['subscribe']
 
@@ -45,17 +24,45 @@ export default abstract class Store<T> {
 	/** Retorna um valor da "store vazia" mas sendo um valor do tipo T */
 	protected getEmptyStore: () => T
 
-	/** Flag que indica se a store é uma store de dados do usurio */
-	protected readonly userDataStore: boolean
-
-	constructor(options: Options<T>) {
+	constructor(options: SvelteStoreOptions<T>) {
 		this.getEmptyStore = options.resetter
-		this.userDataStore = options.userDataStore
 
 		const { subscribe, set, update } = writable<T>(this.getEmptyStore())
 		this.subscribe = subscribe
 		this.update = update
 		this.set = set
+	}
+}
+
+type Options<T> = SvelteStoreOptions<T> & {
+	/** URL do entrypoint da API que retorna os valores dessa store */
+	apiUrl: string
+	/**
+	 * Flag que indica se a store é uma store de dados de usuário, ou seja,
+	 * contém dados que devem existir apenas enquando o usuário está logado e
+	 * serem "restados" uma vez que o usuário se deslogar
+	 */
+	userDataStore?: boolean
+	/** Parâmetros necessário para o request à API retornar os valores da store */
+	fetchParameters?: Record<string, string|number|boolean>
+}
+
+/**
+ * Store genérica capacidade de se auto popular automáticamente usando a API e
+ * lidar com autenticação de usuário
+ */
+export default abstract class Store<T> extends SvelteStore<T> {
+	/** URL formatada (e com os parâmetros) do entrypoint da API dessa store */
+	public readonly apiUrl: string
+
+	/** Flag que indica se a store é uma store de dados do usurio */
+	protected readonly userDataStore: boolean
+
+	constructor(options: Options<T>) {
+		super({
+			resetter: options.resetter,
+		})
+		this.userDataStore = options.userDataStore
 
 		const urlSearchParams = new URLSearchParams()
 		for (const key in options.fetchParameters) {
@@ -114,6 +121,14 @@ export default abstract class Store<T> {
 		if (typeof window == 'undefined' && this.userDataStore) return
 		this.set(value)
 	}
+}
+
+type ListOptions<T> = Omit<Options<T>, 'resetter'> & {
+	/**
+	 * Propriedade única do item no array da store para comparação, caso seja uma
+	 * store de objetos
+	 */
+	key?: string
 }
 
 export abstract class ListStore<T> extends Store<T[]> {
@@ -261,37 +276,40 @@ export function createEventDispatcher(event: string) {
 	}
 }
 
-type MapStoreOptions<T> = {
-	/** Função que retorna um valor do type da store para iniciaização e reset */
-	resetter: () => T
-	StoreClass: { new(base: SC, target: SC): Store<T> }
+type MapStoreOptions<T> = SvelteStoreOptions<T> & {
+	/**
+	 * Referência instanciável da Store de type T que recebe base a target como
+	 * parâmetro
+	 */
+	store: { new (base: SC, target: SC): SvelteStore<T> }
 }
 
-export class MapStore<T> {
-	/** Subscribe on value changes */
-	public subscribe: Writable<T>['subscribe']
+/**
+ * Mantém instâncias de uma store de um mesmo propósito que são diferentes
+ * dependendo do par de currencies envolvidas na operação. Ao utilizar o
+ * setCurrencies esta store irá se increver na store referente a esse par e
+ * quaisquer mudanças nela irão refletir no estado desta store
+ */
+export class MapStore<T> extends SvelteStore<T> {
+	/** Um Map com as instâncias de T filhas desta store */
+	private map: Map<string, SvelteStore<T>>
 
-	/** Set value and inform subscribers */
-	private set: Writable<T>['set']
+	/** Referência instanciável da Store de type T */
+	private storeClass: { new(base: SC, target: SC): SvelteStore<T>}
 
-	/** Retorna um valor da "store vazia" mas sendo um valor do tipo T */
-	private getEmptyStore: () => T
-
-	private map: Map<string, Store<T>>
-	private storeClass: { new(base: SC, target: SC): Store<T> }
-	private unsubStoreClass: ReturnType<Writable<T>['subscribe']>
+	/** desincreve do listener da filha, caso inscrito */
+	private unsubStoreClass?: ReturnType<Writable<T>['subscribe']>
 
 	constructor(options: MapStoreOptions<T>) {
-		this.getEmptyStore = options.resetter
-		this.storeClass = options.StoreClass
+		super({
+			resetter: options.resetter,
+		})
 		this.map = new Map()
-
-		const { subscribe, set } = writable<T>(this.getEmptyStore())
-		this.subscribe = subscribe
-		this.set = set
+		this.storeClass = options.store
 	}
 
-	public setPair(base?: SC, target?: SC): void {
+	/** Seleciona o par de currencies que esta store deverá refletir */
+	public setCurrencies(base?: SC, target?: SC): void {
 		if (!base || !target) return
 		if (base == target) throw new Error('Currency base must be different from Currency target')
 		const mapKey = `${base}-${target}`

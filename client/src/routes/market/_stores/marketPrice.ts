@@ -7,15 +7,19 @@ type MarketPrice = Omit<PriceRequest, 'currencies'>
 
 const addSocketListener = createEventDispatcher('price_update')
 
+function storeResetter() {
+	return {
+		buyPrice: 0,
+		sellPrice: Infinity,
+	}
+}
+
 class PriceRequestStore extends Store<MarketPrice> {
 	constructor(base: SuportedCurrencies, target: SuportedCurrencies) {
 		super({
 			apiUrl: '/market/price',
 			fetchParameters: { base, target },
-			resetter: () => ({
-				buyPrice: 0,
-				sellPrice: Infinity,
-			}),
+			resetter: storeResetter,
 		})
 
 		/** Atualiza o preço da store ao receber o evento price_update */
@@ -34,9 +38,6 @@ class PriceRequestStore extends Store<MarketPrice> {
 }
 
 export default new MapStore({
-	resetter: () => ({
-		buyPrice: 0,
-		sellPrice: Infinity,
-	}),
-	StoreClass: PriceRequestStore
+	store: PriceRequestStore,
+	resetter: storeResetter,
 })
