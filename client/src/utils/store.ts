@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { addSocketListener } from './websocket'
 import { Readable, writable } from 'svelte/store'
 import { subscribe as subscribeToAuth } from '../stores/auth'
 import type { Writable } from 'svelte/store'
@@ -217,12 +218,45 @@ export function createStoreMap<T>(
 	 */
 	return function getStore(base: SC, target: SC) {
 		if (base == target) throw new Error('Currency base must be different from Currency target')
-		const mapKey = [base, target].join(',')
+		const mapKey = `${base}-${target}`
 		let store = map.get(mapKey)
 		if (!store) {
 			store = new StoreClass(base, target)
 			map.set(mapKey, store)
 		}
 		return store
+	}
+}
+
+/**
+ * First-class Function que retorna uma função que adiciona listeners ao
+ * websocket. Essa função adiciona um listener com um filtro, que irá chamar
+ * apenas o callback referente as currencies informadas como chave
+ * @param event O nome do evento do websocket que será monitorado
+ */
+export function createEventDispatcher(event: string) {
+	type EventListenerCallback = (
+		arg1: { currencies: [SC, SC] },
+		...args: unknown[]
+	) => void
+
+	const map = new Map<string, EventListenerCallback>()
+
+	addSocketListener(event, (...args: Parameters<EventListenerCallback>) => {
+		const callback = map.get(args[0].currencies?.join('-'))
+		if (typeof callback == 'function') callback(...args)
+	})
+
+	/**
+	 * Adiciona um listener ao websocket com um callback. Esse callback só será
+	 * chamado se o objeto do primeiro argumento do evento tiver uma propriedade
+	 * 'currencies' com as mesmas currencies (e na mesma ordem) que as informadas
+	 * como parâmetro desta função
+	 */
+	return function addListener(
+		currencies: [SC, SC],
+		callback: EventListenerCallback,
+	) {
+		map.set(currencies.join('-'), callback)
 	}
 }
