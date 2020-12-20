@@ -41,9 +41,9 @@ export default new class TransactionsStore extends ListStore<Transaction> {
 		) => {
 			console.log('update_received_tx', txUpdate)
 			this.update(txs => {
-				const index = txs.findIndex(tx => tx[this.key] === txUpdate[this.key])
+				const index = txs.findIndex(tx => tx.opid === txUpdate.opid)
 				if (index == -1) {
-					this.insertMissingTx(txUpdate[this.key])
+					this.insertMissingTx(txUpdate.opid)
 				} else {
 					txs[index] = { ...txs[index], ...txUpdate }
 					if (txUpdate.status == 'confirmed')
@@ -60,9 +60,9 @@ export default new class TransactionsStore extends ListStore<Transaction> {
 		) => {
 			console.log('update_sent_tx', updtSent)
 			this.update(txs => {
-				const index = txs.findIndex(tx => tx[this.key] === updtSent[this.key])
+				const index = txs.findIndex(tx => tx.opid === updtSent.opid)
 				if (index == -1) {
-					this.insertMissingTx(updtSent[this.key])
+					this.insertMissingTx(updtSent.opid)
 				} else {
 					if (updtSent.status == 'cancelled') {
 						txs.splice(index, 1)

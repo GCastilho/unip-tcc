@@ -1,6 +1,6 @@
 <script lang='ts'>
+	import orderbook from '../_stores/orderbook'
 	import balances from '../../../stores/balances'
-	import * as orderbook from '../_stores/orderbook'
 	import marketPrice from '../_stores/marketPrice'
 	import type { SuportedCurrencies } from '../../../../../src/libs/currencies'
 
