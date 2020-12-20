@@ -1,13 +1,8 @@
 <script lang='ts'>
-	import { onMount } from 'svelte'
-	import * as trades from '../_stores/trades'
+	import trades from '../_stores/trades'
 	import TableRow from './tableRowCloseOrders.svelte'
 
 	const { synchronized } = trades
-
-	onMount(() => {
-		if ($trades.length == 0) trades.fetch()
-	})
 
 	/**
 	 * Função para carregar mais transações ao chegar perto do final da página
