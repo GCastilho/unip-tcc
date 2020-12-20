@@ -1,6 +1,6 @@
 <script lang='ts'>
 	import currenciesUtils from '../../utils/currencies'
-	import * as prices from './_stores/prices'
+	import prices from './_stores/prices'
 	//import * as depth from '../../stores/depth'
 	import BuySell from './_components/buySell.svelte'
 	import OpenOrders from './_components/openOrders.svelte'
@@ -21,12 +21,6 @@
 
 	/** Bind na função switchPrice exportada na BuySell */
 	let switchPrice
-
-	// popula o grafico de depth
-	$: {
-		prices.fetch([baseCurrency?.name, targetCurrency?.name])
-		//depth.fetch([baseCurrency?.name, targetCurrency?.name])
-	} 
 
 	function switchCoins() {
 		let aux = baseCurrency

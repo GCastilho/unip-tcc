@@ -2,7 +2,7 @@
 	import { format } from 'light-date'
 	import orderbook from '../_stores/orderbook'
 	import currencies from './../../../utils/currencies'
-	import type { MarketOrder } from '../../../../../interfaces/market.d'
+	import type { MarketOrder } from '../../../../../interfaces/market'
 
 	export let order: MarketOrder
 

@@ -14,7 +14,7 @@ function storeResetter() {
 	}
 }
 
-class PriceRequestStore extends Store<MarketPrice> {
+class MarketPriceStore extends Store<MarketPrice> {
 	constructor(base: SuportedCurrencies, target: SuportedCurrencies) {
 		super({
 			apiUrl: '/market/price',
@@ -38,6 +38,6 @@ class PriceRequestStore extends Store<MarketPrice> {
 }
 
 export default new MapStore<MarketPrice>({
-	store: PriceRequestStore,
+	store: MarketPriceStore,
 	resetter: storeResetter,
 })
