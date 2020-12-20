@@ -213,39 +213,6 @@ export abstract class ListStore<T> extends Store<T[]> {
 	}
 }
 
-/**
- * First-class Function que retorna uma função que adiciona listeners ao
- * websocket. Essa função adiciona um listener com um filtro, que irá chamar
- * apenas o callback referente as currencies informadas como chave
- * @param event O nome do evento do websocket que será monitorado
- */
-export function createEventDispatcher(event: string) {
-	type EventListenerCallback = (
-		arg1: { currencies: [SC, SC] },
-		...args: unknown[]
-	) => void
-
-	const map = new Map<string, EventListenerCallback>()
-
-	addSocketListener(event, (...args: Parameters<EventListenerCallback>) => {
-		const callback = map.get(args[0].currencies?.join('-'))
-		if (typeof callback == 'function') callback(...args)
-	})
-
-	/**
-	 * Adiciona um listener ao websocket com um callback. Esse callback só será
-	 * chamado se o objeto do primeiro argumento do evento tiver uma propriedade
-	 * 'currencies' com as mesmas currencies (e na mesma ordem) que as informadas
-	 * como parâmetro desta função
-	 */
-	return function addListener(
-		currencies: [SC, SC],
-		callback: EventListenerCallback,
-	) {
-		map.set(currencies.join('-'), callback)
-	}
-}
-
 type MapStoreOptions<T> = SvelteStoreOptions<T> & {
 	/**
 	 * Referência instanciável da Store de type T que recebe base a target como
@@ -290,5 +257,38 @@ export class MapStore<T> extends SvelteStore<T> {
 		}
 		if (typeof this.unsubStoreClass == 'function') this.unsubStoreClass()
 		this.unsubStoreClass = store.subscribe(v => this.set(v))
+	}
+
+	/**
+	 * First-class Function que retorna uma função que adiciona listeners ao
+	 * websocket. Essa função adiciona um listener com um filtro, que irá chamar
+	 * apenas o callback referente as currencies informadas como chave
+	 * @param event O nome do evento do websocket que será monitorado
+	 */
+	static createEventDispatcher(event: string) {
+		type EventListenerCallback = (
+			arg1: { currencies: [SC, SC] },
+			...args: unknown[]
+		) => void
+
+		const map = new Map<string, EventListenerCallback>()
+
+		addSocketListener(event, (...args: Parameters<EventListenerCallback>) => {
+			const callback = map.get(args[0].currencies?.join('-'))
+			if (typeof callback == 'function') callback(...args)
+		})
+
+		/**
+		 * Adiciona um listener ao websocket com um callback. Esse callback só será
+		 * chamado se o objeto do primeiro argumento do evento tiver uma propriedade
+		 * 'currencies' com as mesmas currencies (e na mesma ordem) que as informadas
+		 * como parâmetro desta função
+		 */
+		return function addListener(
+			currencies: [SC, SC],
+			callback: EventListenerCallback,
+		) {
+			map.set(currencies.join('-'), callback)
+		}
 	}
 }

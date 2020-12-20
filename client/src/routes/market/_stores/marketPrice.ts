@@ -1,11 +1,11 @@
-import Store, { createEventDispatcher, MapStore } from '../../../utils/store'
+import Store, { MapStore } from '../../../utils/store'
 import type { PriceRequest } from '../price'
 import type { PriceUpdate } from '../../../../../interfaces/market'
 import type { SuportedCurrencies } from '../../../../../src/libs/currencies'
 
 type MarketPrice = Omit<PriceRequest, 'currencies'>
 
-const addSocketListener = createEventDispatcher('price_update')
+const addSocketListener = MapStore.createEventDispatcher('price_update')
 
 function storeResetter() {
 	return {

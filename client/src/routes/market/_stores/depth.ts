@@ -1,10 +1,10 @@
-import Store, { createEventDispatcher, MapStore } from '../../../utils/store'
+import Store, { MapStore } from '../../../utils/store'
 import type { MarketDepth as MarketDepthApi } from '../depth'
 import type { SuportedCurrencies } from '../../../../../src/libs/currencies'
 
 type MarketDepth = Omit<MarketDepthApi, 'currencies'>
 
-const addSocketListener = createEventDispatcher('depth_update')
+const addSocketListener = MapStore.createEventDispatcher('depth_update')
 
 class DepthStore extends Store<MarketDepth[]> {
 	constructor(base: SuportedCurrencies, target: SuportedCurrencies) {
