@@ -214,36 +214,6 @@ export abstract class ListStore<T> extends Store<T[]> {
 }
 
 /**
- * First-class Function que mantém instancias de uma store de um mesmo propósito
- * mas diferentes dependendo do par de currencies envolvidas na operação
- * @param StoreClass Uma classe que extende a Store e recebe base a target como
- * parâmetro
- */
-export function createStoreMap<T>(
-	StoreClass: (new(base: SC, target: SC) => Store<T>)
-) {
-	const map = new Map<string, Store<T>>()
-
-	/**
-	 * Retorna uma Store das currencies requisitadas
-	 * @param base A currency Base desse par
-	 * @param target A currency Target desse par
-	 * @todo Quando for implementar a limpeza da memória de stores instanciadas
-	 * não esquecer de remover os liteners do websocket
-	 */
-	return function getStore(base: SC, target: SC) {
-		if (base == target) throw new Error('Currency base must be different from Currency target')
-		const mapKey = `${base}-${target}`
-		let store = map.get(mapKey)
-		if (!store) {
-			store = new StoreClass(base, target)
-			map.set(mapKey, store)
-		}
-		return store
-	}
-}
-
-/**
  * First-class Function que retorna uma função que adiciona listeners ao
  * websocket. Essa função adiciona um listener com um filtro, que irá chamar
  * apenas o callback referente as currencies informadas como chave
@@ -295,7 +265,7 @@ export class MapStore<T> extends SvelteStore<T> {
 	private map: Map<string, SvelteStore<T>>
 
 	/** Referência instanciável da Store de type T */
-	private storeClass: { new(base: SC, target: SC): SvelteStore<T>}
+	private storeClass: { new (base: SC, target: SC): SvelteStore<T>}
 
 	/** desincreve do listener da filha, caso inscrito */
 	private unsubStoreClass?: ReturnType<Writable<T>['subscribe']>

@@ -37,7 +37,7 @@ class PriceRequestStore extends Store<MarketPrice> {
 	}
 }
 
-export default new MapStore({
+export default new MapStore<MarketPrice>({
 	store: PriceRequestStore,
 	resetter: storeResetter,
 })

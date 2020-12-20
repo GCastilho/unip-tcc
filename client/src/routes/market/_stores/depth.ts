@@ -1,4 +1,4 @@
-import Store, { createEventDispatcher, createStoreMap } from '../../../utils/store'
+import Store, { createEventDispatcher, MapStore } from '../../../utils/store'
 import type { MarketDepth as MarketDepthApi } from '../depth'
 import type { SuportedCurrencies } from '../../../../../src/libs/currencies'
 
@@ -28,4 +28,8 @@ class DepthStore extends Store<MarketDepth[]> {
 	}
 }
 
-export const getDepthStore = createStoreMap(DepthStore)
+export default new MapStore<MarketDepth[]>({
+	store: DepthStore,
+	resetter: () => []
+})
+
