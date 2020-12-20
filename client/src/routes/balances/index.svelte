@@ -1,5 +1,5 @@
 <script context="module">
-	export async function preload(page, session) {
+	export function preload(page, session) {
 		if (!session.loggedIn) return this.redirect(303, '/login')
 	}
 </script>

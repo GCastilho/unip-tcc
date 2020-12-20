@@ -312,9 +312,9 @@
 	<div class="balance">
 		<p>market price:</p>
 		{#if operation == 'buy'}
-			<p>{$marketPrice.buyPrice}{priceCurrency || '...'}</p>
+			<p>{$marketPrice.buyPrice || 0} {priceCurrency || '...'}</p>
 		{:else}
-			<p>{$marketPrice.sellPrice}{priceCurrency || '...'}</p>
+			<p>{$marketPrice.sellPrice || Infinity} {priceCurrency || '...'}</p>
 		{/if}
 	</div>
 	<div class="balance">
