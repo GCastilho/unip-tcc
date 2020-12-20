@@ -246,7 +246,8 @@ export class MapStore<T> extends SvelteStore<T> {
 	}
 
 	/** Seleciona o par de currencies que esta store deverá refletir */
-	public setCurrencies(base?: SC, target?: SC): void {
+	public setCurrencies(currencies: [SC, SC]): void {
+		const [base, target] = currencies.sort()
 		if (!base || !target) return
 		if (base == target) throw new Error('Currency base must be different from Currency target')
 		const mapKey = `${base}-${target}`

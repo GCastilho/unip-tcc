@@ -9,7 +9,7 @@
 	// target
 	export let targetCurrency: { name: SuportedCurrencies, code: string, decimals: number }
 
-	$: marketPrice.setCurrencies(baseCurrency?.name, targetCurrency?.name)
+	$: marketPrice.setCurrencies([baseCurrency?.name, targetCurrency?.name])
 
 	/** Eleva o preço atual a -1 */
 	export function switchPrice() {
