@@ -1,13 +1,8 @@
 <script lang='ts'>
-	import { onMount } from 'svelte'
-	import * as openOrders from '../../stores/orderbook'
-	import TableRow from './_components/tableRowOpenOrders.svelte'
+	import openOrders from '../_stores/orderbook'
+	import TableRow from './tableRowOpenOrders.svelte'
 
 	const { synchronized } = openOrders
-
-	onMount(() => {
-		if ($openOrders.length == 0) openOrders.fetch()
-	})
 
 	/**
 	 * Função para carregar mais transações ao chegar perto do final da página
@@ -44,6 +39,7 @@
 	{#each $openOrders as order (order.opid)}
 		<TableRow {order}/>
 	{:else}
+		<!-- Está mostrando Loading caso o usuário não esteja logado -->
 		<tr>
 			<td colspan="6" style="text-align: center">
 				{#if $synchronized}

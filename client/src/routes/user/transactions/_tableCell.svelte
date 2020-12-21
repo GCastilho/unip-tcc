@@ -1,13 +1,14 @@
-<script lang='ts'>
-	import { afterUpdate } from 'svelte'
-	import Close from './cross-icon.svg'
+<script lang="ts">
 	import { format } from 'light-date'
-	import * as currencies from '../../../stores/currencies'
-	import * as transactions from '../../../stores/transactions'
-	import { slide } from 'svelte/transition'
+	import { afterUpdate } from 'svelte'
 	import { quintOut } from 'svelte/easing'
+	import { slide } from 'svelte/transition'
+	import Close from './cross-icon.svg'
+	import currencies from '../../../utils/currencies'
+	import transactions from '../../../stores/transactions'
+	import type { Transaction } from '../../../stores/transactions'
 
-	export let transaction
+	export let transaction: Transaction
 
 	let {
 		status,
@@ -20,10 +21,12 @@
 		timestamp,
 	} = transaction
 
-	let coin, code, amount, fee
+	$: code = currencies[currency]?.code.toUpperCase()
+	$: amount = transaction.amount?.toFixed(currencies[currency]?.decimals)
+	$: fee = transaction.fee?.toFixed(currencies[currency]?.decimals)
 
 	/** Largura da tabela em pixels*/
-	let tableWidth: Number
+	let tableWidth: number
 
 	/** Define se o menu de detalhes da transações esta aberto */
 	let disable = false
@@ -35,16 +38,9 @@
 
 	/** Define qual sera a cor de status da transação */
 	$: txColor = status == 'confirmed' ? 'green'
-		: status == 'canceled' ? '#e64d51'
+		// : status == 'canceled' ? '#e64d51'
 		: status == 'pending' ? '#c2c21c'
 		: '#89a1c1'
-
-	$: {
-		coin = $currencies.find(value => currency === value.name)
-		code = coin.code?.toUpperCase()
-		amount = transaction.amount?.toFixed(coin.decimals)
-		fee = transaction.fee?.toFixed(coin.decimals)
-	}
 
 	/** Handler da função de cancelamento das transações */
 	function cancelTx() {
@@ -254,8 +250,8 @@
 		
 		<div class="amount-tx" title="Amount" style="text-align: end">
 			<span title="Amount">{amount}</span>
-			<span title={coin.name}>{code}</span>
-			{#if fee > 0}
+			<span title={currency}>{code}</span>
+			{#if +fee > 0}
 				<span title="Fee">{fee}</span>
 				<span title="Fee">Fee</span>
 			{/if}

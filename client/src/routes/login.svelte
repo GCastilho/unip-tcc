@@ -1,32 +1,38 @@
-<script>
-	import { onMount } from 'svelte'
-	import { goto } from '@sapper/app'
-	import * as auth from '../stores/auth.js'
+<script context="module">
+	export function preload(_page, session) {
+		if (session.loggedIn) this.redirect(303, '/')
+	}
+</script>
+
+<script lang="ts">
+	import axios from 'axios'
+	import { goto, stores } from '@sapper/app'
+	import { authenticate } from '../utils/websocket'
 	import FancyInput from '../components/FancyInput.svelte'
 	import FancyButton from '../components/FancyButton.svelte'
 	import FormErrorMessage from '../components/FormErrorMessage.svelte'
 
-	let errorMessage = undefined
-
-	onMount(() => {
-		// Redireciona para home caso esteja autenticado
-		if ($auth) goto('/')
-	})
+	const { session } = stores()
+	let errorMessage = ''
 
 	async function handleSubmit(event) {
 		const email = event.target.email.value
 		const password = event.target.password.value
 
 		try {
-			await auth.login(email, password)
+			const { data } = await axios.post(window.location.href, { email, password })
+
+			/** Autentica o websocket */
+			await authenticate(data.token)
+			$session.loggedIn = true
 
 			/** Redireciona o usuário para a home */
 			goto('/')
 		} catch(err) {
-			if (err.response && err.response.status === 401) {
+			if (err.response?.status === 401) {
 				errorMessage = 'Invalid email or password'
 			} else {
-				errorMessage = err.response ? err.response.statusText : err
+				errorMessage = err.response?.statusText || err.message
 			}
 		}
 	}

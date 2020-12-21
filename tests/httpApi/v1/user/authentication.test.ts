@@ -13,7 +13,7 @@ const app = express()
 app.use(api)
 
 describe('Testing authentication on the HHTP API version 1', () => {
-	let sessionId: string
+	let authorization: string
 
 	const user = {
 		email: 'v1-test@example.com',
@@ -31,11 +31,7 @@ describe('Testing authentication on the HHTP API version 1', () => {
 			.send(user)
 			.expect(200)
 
-		expect(res.header['set-cookie']).to.be.an('array')
-		sessionId = res.header['set-cookie'].map((cookies: string) => {
-			const match = cookies.match(new RegExp('(^| )sessionId=([^;]+)'))
-			return match ? match[2] : ''
-		})[0]
+		authorization = res.body.authorization
 	})
 
 	it('Should authenticate an existing users', async () => {
@@ -43,23 +39,19 @@ describe('Testing authentication on the HHTP API version 1', () => {
 			.post('/v1/user/authentication')
 			.send(user)
 			.expect(200)
-
-		expect(res.header['set-cookie']).not.to.be.undefined
-
-		const cookie = res.header['set-cookie'].map((cookies: string) => {
-			const match = cookies.match(new RegExp('(^| )sessionId=([^;]+)'))
-			return match ? match[2] : ''
-		})[0]
+		expect(res.body).to.have.property('token').that.is.a('string')
+		expect(res.body).to.have.property('authorization').that.is.a('string')
 
 		const { _id } = await Person.findOne({ email: user.email })
 		const session = await Session.findOne({ userId: _id })
-		expect(cookie).to.be.equal(session.sessionId)
+		expect(res.body.authorization).to.be.equal(session.sessionId)
+		expect(res.body.token).to.be.equal(session.token)
 	})
 
 	it('Should deauthenticate an existing user', async () => {
 		const res = await request(app)
 			.delete('/v1/user/authentication')
-			.set('Cookie', [`sessionId=${sessionId}`])
+			.set({ authorization })
 			.send()
 			.expect(200)
 

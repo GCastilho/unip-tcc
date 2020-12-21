@@ -23,7 +23,7 @@ export default function socketHandler(io: Server) {
 		 */
 		socket.on('authenticate', async function(this: Socket,
 			token: string,
-			callback: (err: null | string, response?: string) => void
+			callback: (err: null | Error, response?: string) => void
 		) {
 			if (typeof token === 'string') {
 				try {
@@ -35,16 +35,20 @@ export default function socketHandler(io: Server) {
 				} catch (err) {
 					this.userId = undefined
 					if (err === 'TokenNotFound' || err === 'UserNotFound') {
-						callback('TokenNotFound')
+						const err = new Error('Socket authentication error: Invalid Token')
+						err.name = 'AuthenticationError'
+						callback(err)
 					} else {
 						console.error('Error while authenticating user:', err)
-						callback('InternalServerError')
+						callback(new Error('Internal Server Error'))
 					}
 				}
 			} else {
 				connectedUsers.remove(this)
 				this.userId = undefined
-				callback('InvalidToken')
+				const err = new Error('Socket authentication error: Invalid Token')
+				err.name = 'AuthenticationError'
+				callback(err)
 			}
 		})
 

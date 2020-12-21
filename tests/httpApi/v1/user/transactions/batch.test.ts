@@ -21,7 +21,7 @@ type TxType = InstanceType<typeof Transaction>['type'];
 
 describe('Testing fetch of multiple transactions on the HTTP API version 1', () => {
 	let userId: ObjectId
-	let sessionId: string
+	let authorization: string
 
 	const user = {
 		email: 'v1-test@example.com',
@@ -30,7 +30,7 @@ describe('Testing fetch of multiple transactions on the HTTP API version 1', () 
 
 	const notAuthorizedModel = {
 		error: 'NotAuthorized',
-		message: 'A valid cookie \'sessionId\' is required to perform this operation'
+		message: 'A valid header \'Authorization\' is required to perform this operation'
 	}
 
 	before(async () => {
@@ -71,11 +71,7 @@ describe('Testing fetch of multiple transactions on the HTTP API version 1', () 
 			.send(user)
 			.expect(200)
 
-		expect(res.header['set-cookie']).to.be.an('array')
-		sessionId = res.header['set-cookie'].map((cookies: string) => {
-			const match = cookies.match(new RegExp('(^| )sessionId=([^;]+)'))
-			return match ? match[2] : ''
-		})[0]
+		authorization = res.body.authorization
 	})
 
 	it('Should return Not Authorized if invalid or missing sessionId', async () => {
@@ -93,15 +89,11 @@ describe('Testing fetch of multiple transactions on the HTTP API version 1', () 
 				password: 'emptyP@ss'
 			}).expect(200)
 
-		expect(res.header['set-cookie']).to.be.an('array')
-		const _sessionId = res.header['set-cookie'].map((cookies: string) => {
-			const match = cookies.match(new RegExp('(^| )sessionId=([^;]+)'))
-			return match ? match[2] : ''
-		})[0]
+		const _authorization = res.body.authorization
 
 		const { body } = await request(app)
 			.get('/v1/user/transactions')
-			.set('Cookie', [`sessionId=${_sessionId}`])
+			.set({ Authorization: _authorization })
 			.send()
 			.expect(200)
 
@@ -114,7 +106,7 @@ describe('Testing fetch of multiple transactions on the HTTP API version 1', () 
 			.limit(10)
 		const { body } = await request(app)
 			.get('/v1/user/transactions')
-			.set('Cookie', [`sessionId=${sessionId}`])
+			.set({ authorization })
 			.send()
 			.expect(200)
 
@@ -134,7 +126,7 @@ describe('Testing fetch of multiple transactions on the HTTP API version 1', () 
 			.limit(10)
 		const { body } = await request(app)
 			.get('/v1/user/transactions')
-			.set('Cookie', [`sessionId=${sessionId}`])
+			.set({ authorization })
 			.query({ skip: 10 })
 			.send()
 			.expect(200)

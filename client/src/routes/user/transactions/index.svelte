@@ -1,13 +1,8 @@
 <script>
-	import { onMount } from 'svelte'
-	import * as transactions from '../../../stores/transactions'
+	import transactions from '../../../stores/transactions'
 	import TableCell from './_tableCell.svelte'
 
 	const { synchronized } = transactions
-
-	onMount(() => {
-		if ($transactions.length == 0) transactions.fetch()
-	})
 
 	/**
 	 * Função para carregar mais transações ao chegar perto do final da página

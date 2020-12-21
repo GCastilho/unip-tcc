@@ -52,7 +52,7 @@ export interface WithdrawRequest extends Request {
 
 /** Interface do objeto de atualização de uma transação */
 interface TxUpdate extends Request {
-	status: ExternalModuleTransaction['status']
+	status: 'pending'|'confirmed'|'cancelled'
 	confirmations?: ExternalModuleTransaction['confirmations']
 }
 
@@ -60,7 +60,9 @@ interface TxUpdate extends Request {
  * Interface para atualização de transações recebidas utilizando
  * o evento update_received_tx
  */
-export type UpdtReceived = TxUpdate
+export interface UpdtReceived extends TxUpdate {
+	status: 'pending'|'confirmed'
+}
 
 /**
  * Interface para atualização de transações enviadas utilizando

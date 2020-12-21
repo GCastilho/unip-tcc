@@ -1,19 +1,12 @@
-import cors from 'cors'
 import express from 'express'
-import bodyParser from 'body-parser'
-import cookieParser from 'cookie-parser'
 import user from './user'
 import market from './market'
 import { currencies } from '../../../libs/currencies'
 
 const router = express.Router()
 
-/** Habilita o CORS para requests autenticados vindos de qualquer endereço */
-router.use(cors({ credentials: true, origin: true }))
-
 // Parsers
-router.use(cookieParser())
-router.use(bodyParser.json())
+router.use(express.json())
 
 /**
  * Redireciona todas as chamadas para módulo externos

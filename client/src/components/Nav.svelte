@@ -1,11 +1,17 @@
 <script>
+	import axios from 'axios'
 	import { stores } from '@sapper/app'
-	import { logout } from '../stores/auth'
+	import { deauthenticate } from '../utils/websocket'
 
 	export let segment
 
-	// Store com dados de sessão para permitir SSR
 	const { session } = stores()
+
+	async function logout() {
+		await axios.delete('/login', { withCredentials: true })
+		await deauthenticate()
+		$session.loggedIn = false
+	}
 
 	let userdropdown = 'hide'
 </script>
@@ -93,26 +99,25 @@
 
 <nav>
 	<ul>
-		<li><a class:selected={segment === undefined} href=".">home</a></li>
-		<li><a class:selected={segment === 'about'} href="about">about</a></li>
-		<li><a class:selected={segment === 'market'} href="market">market</a></li>
+		<li><a rel=prefetch class:selected={segment === undefined} href="/">home</a></li>
+		<li><a rel=prefetch class:selected={segment === 'market'} href="market">market</a></li>
+		<li><a rel=prefetch class:selected={segment === 'about'} href="about">about</a></li>
 
 		<div style="float:right">
-
 			{#if $session.loggedIn}
-				<li><a class:selected={segment === 'balances'} href="balances">balances</a></li>
+				<li><a rel=prefetch class:selected={segment === 'balances'} href="balances">balances</a></li>
 				<li on:mouseover={() => userdropdown = 'show'} on:mouseleave={() => userdropdown = 'hide'}>
 					<div class='dropdown-button' class:selected = {userdropdown === 'show' || segment === 'user'}>
-						<img alt="Config" title="Config" src="./assets/settings-icon.svg" />
+						<img alt="Config" title="Config" src="/assets/settings-icon.svg" />
 					</div>
-					<div class="{userdropdown === 'show' ? 'dropdown show' : 'dropdown'}" id="dropdown_usermenu">
+					<div id="dropdown_usermenu" class="{userdropdown === 'show' ? 'dropdown show' : 'dropdown'}">
 						<table>
 							<tr><td>
 								<a
-									class:selected="{segment === 'user/changepass'}"
+									class:selected="{segment === '/user/changepass'}"
 									on:click={() => userdropdown = 'hide'}
-									href="user/changepass"
-								><img alt="Senha" title="Alterar Senha" src="./assets/key-icon.svg" />
+									href="/user/changepass"
+								><img alt="Senha" title="Alterar Senha" src="/assets/key-icon.svg" />
 									Change Password
 								</a>
 							</td></tr>
@@ -120,8 +125,8 @@
 								<a
 									class:selected={segment === 'user/transactions'}
 									on:click={() => userdropdown = 'hide'}
-									href="user/transactions"
-								><img alt="Transactions" title="Transactions" src="./assets/transaction.svg" />
+									href="/user/transactions"
+								><img alt="Transactions" title="Transactions" src="/assets/transaction.svg" />
 									Transactions
 								</a>
 							</td></tr>
@@ -129,8 +134,8 @@
 					</div>
 				</li>
 				<li>
-					<a on:click={logout} href="/">
-						<img alt="Logout" title="Logout" src="./assets/logout-icon.svg" />
+					<a rel=prefetch on:click={logout} href="/">
+						<img alt="Logout" title="Logout" src="/assets/logout-icon.svg" />
 					</a>
 				</li>
 			{:else}

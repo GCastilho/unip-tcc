@@ -1,15 +1,16 @@
 <script lang='ts'>
-	import * as balances from './../../stores/balances'
-	import * as orderbook from '../../stores/orderbook'
-	import * as marketPrice from '../../stores/marketPrice'
-	import type { SuportedCurrencies } from '../../../../src/libs/currencies'
-	import type { PriceRequest } from '../../../../interfaces/market'
+	import orderbook from '../_stores/orderbook'
+	import balances from '../../../stores/balances'
+	import marketPrice from '../_stores/marketPrice'
+	import { MapStore } from '../../../utils/store'
+	import type { SuportedCurrencies } from '../../../../../src/libs/currencies'
 
 	// base
-	export let baseCurrency: { name: string, code: string, decimals: number }
+	export let baseCurrency: { name: SuportedCurrencies, code: string, decimals: number }
 	// target
-	export let targetCurrency: { name: string, code: string, decimals: number }
+	export let targetCurrency: { name: SuportedCurrencies, code: string, decimals: number }
 
+	$: MapStore.setCurrencies([baseCurrency?.name, targetCurrency?.name])
 
 	/** Eleva o preço atual a -1 */
 	export function switchPrice() {
@@ -20,10 +21,10 @@
 	let operation: 'buy'|'sell' = 'buy'
 
 	/** saldo da currency base */
-	$: baseBalance = $balances[baseCurrency?.name]?.available.toFixed(baseCurrency?.decimals)
+	$: baseBalance = $balances[baseCurrency?.name]?.available?.toFixed(baseCurrency?.decimals)
 
 	/** saldo da currency base */
-	$: targetBalance = $balances[targetCurrency?.name]?.available.toFixed(targetCurrency?.decimals)
+	$: targetBalance = $balances[targetCurrency?.name]?.available?.toFixed(targetCurrency?.decimals)
 
 	/**
 	 * a quantidade que esta na marketOrder
@@ -312,9 +313,9 @@
 	<div class="balance">
 		<p>market price:</p>
 		{#if operation == 'buy'}
-			<p>{$marketPrice.buyPrice ? $marketPrice.buyPrice : '0'}{priceCurrency || '...'}</p>
+			<p>{$marketPrice.buyPrice || 0} {priceCurrency || '...'}</p>
 		{:else}
-			<p>{$marketPrice.sellPrice ? $marketPrice.sellPrice : '0'}{priceCurrency || '...'}</p>
+			<p>{$marketPrice.sellPrice || Infinity} {priceCurrency || '...'}</p>
 		{/if}
 	</div>
 	<div class="balance">

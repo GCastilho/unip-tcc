@@ -16,7 +16,7 @@ app.use(api)
 
 describe('Testing user accounts endpoint on the HTTP API version 1', () => {
 	let userId: ObjectId
-	let sessionId: string
+	let authorization: string
 
 	const user = {
 		email: 'v1-test@example.com',
@@ -25,7 +25,7 @@ describe('Testing user accounts endpoint on the HTTP API version 1', () => {
 
 	const notAuthorizedModel = {
 		error: 'NotAuthorized',
-		message: 'A valid cookie \'sessionId\' is required to perform this operation'
+		message: 'A valid header \'Authorization\' is required to perform this operation'
 	}
 
 	beforeEach(async () => {
@@ -48,11 +48,7 @@ describe('Testing user accounts endpoint on the HTTP API version 1', () => {
 			.send(user)
 			.expect(200)
 
-		expect(res.header['set-cookie']).to.be.an('array')
-		sessionId = res.header['set-cookie'].map((cookies: string) => {
-			const match = cookies.match(new RegExp('(^| )sessionId=([^;]+)'))
-			return match ? match[2] : ''
-		})[0]
+		authorization = res.body.authorization
 	})
 
 	it('Should return Not Authorized if invalid or missing sessionId', async () => {
@@ -64,7 +60,7 @@ describe('Testing user accounts endpoint on the HTTP API version 1', () => {
 	it('should return a accounts object from the user', async () => {
 		const { body } = await request(app)
 			.get('/v1/user/accounts')
-			.set('Cookie', [`sessionId=${sessionId}`])
+			.set({ authorization })
 			.send()
 			.expect(200)
 

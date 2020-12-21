@@ -8,19 +8,19 @@ export async function authentication(
 	next: NextFunction
 ) {
 	try {
-		if (!req.cookies.sessionId) throw 'Cookie Not Found'
+		if (!req.headers.authorization) throw 'AuthorizationNotFound'
 		const session = await Session.findOne({
-			sessionId: req.cookies.sessionId
+			sessionId: req.headers.authorization
 		}, {
 			userId: true
 		})
-		if (!session) throw 'CookieNotFound'
+		if (!session) throw 'AuthorizationNotFound'
 		req.userId = session.userId
 		next()
 	} catch (err) {
 		res.status(401).send({
 			error: 'NotAuthorized',
-			message: 'A valid cookie \'sessionId\' is required to perform this operation'
+			message: 'A valid header \'Authorization\' is required to perform this operation'
 		})
 	}
 }

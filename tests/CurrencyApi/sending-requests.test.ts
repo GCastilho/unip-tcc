@@ -46,7 +46,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 			})
 
 			it('Should receive a create_new_account request', done => {
-				CurrencyApi.createAccount(person.id, currency).catch(err => {
+				CurrencyApi.createAccount(person._id, currency).catch(err => {
 					if (err != 'SocketDisconnected') throw err
 				}).then(() => {
 					client.open()
@@ -60,7 +60,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 
 			it('Should receive a withdraw request', done => {
 				const amount = 3.456
-				CurrencyApi.withdraw(person.id, currency, `${currency}_account`, amount).then(opid => {
+				CurrencyApi.withdraw(person._id, currency, `${currency}_account`, amount).then(opid => {
 					client.open()
 
 					// Responde o create_new_account para evitar timeout
@@ -114,7 +114,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					done()
 				})
 
-				CurrencyApi.createAccount(person.id, currency).catch(done)
+				CurrencyApi.createAccount(person._id, currency).catch(done)
 			})
 
 			it('Should receive a withdraw request immediate after requested', done => {
@@ -142,7 +142,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					callback(null, 'request received for' + currency)
 				})
 
-				CurrencyApi.withdraw(person.id, currency, `${currency}_account`, amount)
+				CurrencyApi.withdraw(person._id, currency, `${currency}_account`, amount)
 					.catch(done)
 			})
 
@@ -173,9 +173,9 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					callback(null, `request received for ${currency}`)
 				})
 
-				CurrencyApi.withdraw(person.id, currency, `${currency}_account`, amount).then(opid => {
+				CurrencyApi.withdraw(person._id, currency, `${currency}_account`, amount).then(opid => {
 					_opid = opid
-					return CurrencyApi.cancellWithdraw(person.id, currency, opid)
+					return CurrencyApi.cancellWithdraw(person._id, currency, opid)
 				}).catch(done)
 			})
 		})

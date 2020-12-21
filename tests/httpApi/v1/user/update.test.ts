@@ -15,7 +15,7 @@ app.use(api)
 
 describe('When making a request to update user data on the HTTP API version 1', () => {
 	let userId: ObjectId
-	let sessionId: string
+	let authorization: string
 
 	const user = {
 		email: 'v1-test@example.com',
@@ -24,7 +24,7 @@ describe('When making a request to update user data on the HTTP API version 1', 
 
 	const notAuthorizedModel = {
 		error: 'NotAuthorized',
-		message: 'A valid cookie \'sessionId\' is required to perform this operation'
+		message: 'A valid header \'Authorization\' is required to perform this operation'
 	}
 
 	beforeEach(async () => {
@@ -39,18 +39,14 @@ describe('When making a request to update user data on the HTTP API version 1', 
 			.send(user)
 			.expect(200)
 
-		expect(res.header['set-cookie']).to.be.an('array')
-		sessionId = res.header['set-cookie'].map((cookies: string) => {
-			const match = cookies.match(new RegExp('(^| )sessionId=([^;]+)'))
-			return match ? match[2] : ''
-		})[0]
+		authorization = res.body.authorization
 	})
 
 	describe('When updating user password', () => {
 		it('Should fail if sending an empty object', async () => {
 			const { body } = await request(app)
 				.patch('/v1/user/password')
-				.set('Cookie', [`sessionId=${sessionId}`])
+				.set({ authorization })
 				.send({})
 				.expect(400)
 
@@ -63,7 +59,7 @@ describe('When making a request to update user data on the HTTP API version 1', 
 		it('Should fail if not sending old_password', async () => {
 			const { body } = await request(app)
 				.patch('/v1/user/password')
-				.set('Cookie', [`sessionId=${sessionId}`])
+				.set({ authorization })
 				.send({ new: 'aNewPassword' })
 				.expect(400)
 
@@ -76,7 +72,7 @@ describe('When making a request to update user data on the HTTP API version 1', 
 		it('Should fail if not sending new_password', async () => {
 			const { body } = await request(app)
 				.patch('/v1/user/password')
-				.set('Cookie', [`sessionId=${sessionId}`])
+				.set({ authorization })
 				.send({ old: user.password })
 				.expect(400)
 
@@ -101,7 +97,7 @@ describe('When making a request to update user data on the HTTP API version 1', 
 		it('Should update the password from a user', async () => {
 			const { body } = await request(app)
 				.patch('/v1/user/password')
-				.set('Cookie', [`sessionId=${sessionId}`])
+				.set({ authorization })
 				.send({
 					old: user.password,
 					new: 'aNewPassword'

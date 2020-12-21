@@ -1,6 +1,6 @@
 <script lang='ts'>
 	import { format } from 'light-date'
-	import * as _currencies from './../../../stores/currencies'
+	import _currencies from '../../../utils/currencies'
 	import type { MarketTrade } from '../../../../../interfaces/market.d'
 
 	export let trade: MarketTrade
@@ -14,8 +14,8 @@
 		timestamp
 	} = trade
 
-	$: baseCurrencies = $_currencies.find(value => currencies[0] === value.name)
-	$: targetCurrencies = $_currencies.find(value => currencies[1] === value.name)
+	$: baseCurrencies = _currencies[currencies[0]]
+	$: targetCurrencies = _currencies[currencies[1]]
 
 	$: time = timestamp ? format(new Date(timestamp), '{HH}:{mm} ') : null
 	$: date = timestamp ? format(new Date(timestamp), ' {dd}/{MM}/{yyyy}') : null

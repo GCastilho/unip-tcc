@@ -1,8 +1,8 @@
 import express from 'express'
 import authentication from './authentication'
-import { currencyNames } from '../../../libs/currencies'
 import Person from '../../../db/models/person'
 import Transaction from '../../../db/models/transaction'
+import { currencyNames } from '../../../libs/currencies'
 import * as CurrencyApi from '../../../currencyApi'
 
 const router = express.Router()
