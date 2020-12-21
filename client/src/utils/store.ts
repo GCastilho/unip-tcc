@@ -11,7 +11,7 @@ type SvelteStoreOptions<T> = {
 }
 
 /** Store genérica */
-class SvelteStore<T> {
+export class SvelteStore<T> {
 	/** Subscribe on value changes */
 	public subscribe: Writable<T>['subscribe']
 
@@ -213,6 +213,9 @@ export abstract class ListStore<T> extends Store<T[]> {
 	}
 }
 
+/** Set com os métodos setCurrencies das INSTÂNCIAS da MapStore */
+const setCurrencies = new Set<(currencies: [SC, SC]) => void>()
+
 type MapStoreOptions<T> = SvelteStoreOptions<T> & {
 	/**
 	 * Referência instanciável da Store de type T que recebe base a target como
@@ -243,10 +246,21 @@ export class MapStore<T> extends SvelteStore<T> {
 		})
 		this.map = new Map()
 		this.storeClass = options.store
+		setCurrencies.add(this.setCurrencies.bind(this))
+	}
+
+	/**
+	 * Seta o par de currencies que deve ser selecionado por todas as intâncias
+	 * desta classe
+	 * @param currencies O par de currencies que as stores devem refletir
+	 */
+	static setCurrencies(currencies: [SC, SC]) {
+		// Chama todos os setCurrencies das instâncias desta store
+		setCurrencies.forEach(setCurrency => setCurrency(currencies))
 	}
 
 	/** Seleciona o par de currencies que esta store deverá refletir */
-	public setCurrencies(currencies: [SC, SC]): void {
+	private setCurrencies(currencies: [SC, SC]): void {
 		const [base, target] = currencies.sort()
 		if (!base || !target) return
 		if (base == target) throw new Error('Currency base must be different from Currency target')

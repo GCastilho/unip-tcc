@@ -2,6 +2,7 @@
 	import orderbook from '../_stores/orderbook'
 	import balances from '../../../stores/balances'
 	import marketPrice from '../_stores/marketPrice'
+	import { MapStore } from '../../../utils/store'
 	import type { SuportedCurrencies } from '../../../../../src/libs/currencies'
 
 	// base
@@ -9,7 +10,7 @@
 	// target
 	export let targetCurrency: { name: SuportedCurrencies, code: string, decimals: number }
 
-	$: marketPrice.setCurrencies([baseCurrency?.name, targetCurrency?.name])
+	$: MapStore.setCurrencies([baseCurrency?.name, targetCurrency?.name])
 
 	/** Eleva o preço atual a -1 */
 	export function switchPrice() {
