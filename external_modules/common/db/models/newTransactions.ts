@@ -35,7 +35,7 @@ const TransactionSchema = new Schema({
 	},
 	txid: {
 		type: String,
-		required: true,
+		required: false,
 	},
 	account: {
 		type: String,

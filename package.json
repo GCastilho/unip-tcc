@@ -8,7 +8,7 @@
     "start:sapper": "npm start --prefix ./build/sapper",
     "start:nano": "npm start --prefix ./build/external_modules/nano",
     "start:bitcoin": "npm start --prefix ./build/external_modules/bitcoin",
-    "test": "env-cmd -f ./cfg/custom.env --silent env-cmd -f ./cfg/test.env mocha tests/",
+    "test": "env-cmd -f ./cfg/custom.env --silent env-cmd -f ./cfg/test.env mocha tests/ && npm run test --prefix ./external_modules/common",
     "dev": "npm run eslint && concurrently --kill-others-on-fail \"npm run dev-server\" \"npm run dev-client\"",
     "dev-server": "env-cmd -f ./cfg/custom.env --silent nodemon src/index.ts --inspect",
     "dev-client": "npm run dev --prefix ./client",
