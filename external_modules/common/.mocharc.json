@@ -1,0 +1,6 @@
+{
+	"exit": true,
+	"extension": ["ts"],
+	"recursive": true,
+	"require": ["ts-node/register/transpile-only", "./tests/setup.ts"]
+}
