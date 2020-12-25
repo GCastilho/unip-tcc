@@ -1,22 +1,17 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { ObjectId } from 'mongodb'
 
-type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
-	Pick<T, Exclude<keyof T, Keys>>
-	& {
-		[K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
-	}[Keys]
-
-interface RawTX {
+/** Interface base do documento de uma transação */
+interface BaseTx extends Document {
 	/** Identificador da transação no servidor principal */
-	opid?: string
+	opid?: ObjectId
 	/** Identificador da transação na rede da moeda */
 	txid?: string
-	/** Account do usuário que recebeu a transação */
+	/** Account de destino da transação (para receive é a account do usuário) */
 	account: string
 	/** Se a transação é de saque ou recebimento */
 	type: 'send'|'receive'
-	/** Amount recebido pelo usuário na transação */
+	/** Amount transacionado */
 	amount: string
 	/** Status da transação, de acordo com a rede da moeda */
 	status: 'pending'|'confirmed'
@@ -26,16 +21,35 @@ interface RawTX {
 	timestamp: number
 }
 
-export type Transaction = RequireAtLeastOne<RawTX, 'opid'|'txid'> & Document
+/** Interface de uma transação de recebimento */
+interface Receive extends BaseTx {
+	txid: string
+	type: 'receive'
+}
+
+/** Interface de uma transação de saque */
+interface Send extends BaseTx {
+	opid: ObjectId
+	type: 'send'
+}
+
+/** Interface do documento de uma transação no DB */
+export type Transaction = Send | Receive
 
 const TransactionSchema = new Schema({
 	opid: {
 		type: ObjectId,
-		required: false,
+		required: function(this: Transaction) {
+			// Faz opid ser required caso type seja send
+			return this.type == 'send'
+		},
 	},
 	txid: {
 		type: String,
-		required: false,
+		required: function(this: Transaction) {
+			// Faz txid ser required caso type seja receive
+			return this.type == 'receive'
+		},
 	},
 	account: {
 		type: String,

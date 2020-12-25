@@ -79,7 +79,8 @@ describe('Testing collection of transactions', () => {
 	})
 
 	it('Should NOT save a receive transaction without a txid', async () => {
-		const transaction = {
+		// @ts-expect-error Testando erro ao salvar sem txid
+		await expect(Transaction.create({
 			opid: new ObjectId(),
 			account: 'random-account',
 			type: 'receive',
@@ -87,11 +88,8 @@ describe('Testing collection of transactions', () => {
 			amount: '0.1',
 			confirmations: 1,
 			timestamp: Date.now(),
-		}
-		await Transaction.create(transaction)
-		transaction.opid = new ObjectId()
-		await expect(Transaction.create(transaction)).to.eventually
-			.be.rejected // Checar a REJECT message
+		})).to.eventually.be
+			.rejectedWith('validation failed: txid: Path `txid` is required')
 	})
 
 	it('Should fail to save a receive transaction with an existing txid', async () => {
