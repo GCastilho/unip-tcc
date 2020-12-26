@@ -23,5 +23,8 @@ jobs:
       - run: npm test
         env:
           MONGODB_URL: mongodb://127.0.0.1:27017?replicaSet=gh-actions/exchange
+      - run: npm run test --prefix ./external_modules/common
+        env:
+          MONGODB_URL: mongodb://127.0.0.1:27017?replicaSet=gh-actions/common
       - run: npm run dep-install
       - run: npm run build
