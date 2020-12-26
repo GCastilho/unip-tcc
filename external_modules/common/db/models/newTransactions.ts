@@ -95,11 +95,14 @@ TransactionSchema.index({
 })
 
 /**
- * Faz transações de recebimento terem txid unique
+ * Faz transações de recebimento terem txid unique e permite que transações
+ * para mais de uma account do sistema (um batch) sejam reconhecidas como
+ * transações diferentes
  */
 TransactionSchema.index({
 	txid: 1,
-	type: 1
+	type: 1,
+	account: 1,
 }, {
 	unique: true,
 	partialFilterExpression: {
@@ -114,7 +117,7 @@ TransactionSchema.index({
  */
 TransactionSchema.index({
 	txid: 1,
-	type: 1
+	type: 1,
 }, {
 	partialFilterExpression: {
 		txid: { $exists: true },

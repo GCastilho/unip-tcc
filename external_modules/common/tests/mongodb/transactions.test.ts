@@ -92,7 +92,7 @@ describe('Testing collection of transactions', () => {
 			.rejectedWith('validation failed: txid: Path `txid` is required')
 	})
 
-	it('Should fail to save a receive transaction with an existing txid', async () => {
+	it('Should fail to save a receive transaction with an existing txid to the same account', async () => {
 		const transaction = {
 			opid: new ObjectId(),
 			txid: 'random-txid',
@@ -108,6 +108,24 @@ describe('Testing collection of transactions', () => {
 		transaction.opid = new ObjectId()
 		await expect(Transaction.create(transaction)).to.eventually
 			.be.rejectedWith(/^E11000.+index: txid_1/)
+	})
+
+	it('Should save a receive transaction with an existing txid to a different account', async () => {
+		const transaction = {
+			opid: new ObjectId(),
+			txid: 'random-txid',
+			account: 'random-account',
+			type: 'receive',
+			status: 'pending',
+			amount: '0.1',
+			confirmations: 1,
+			timestamp: Date.now(),
+		}
+
+		await Transaction.create(transaction)
+		transaction.opid = new ObjectId()
+		transaction.account = 'a-different-account'
+		await expect(Transaction.create(transaction)).to.eventually.be.fulfilled
 	})
 
 	it('Should save multiple send transactions with the same txid', async () => {
