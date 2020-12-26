@@ -84,7 +84,7 @@ const TransactionSchema = new Schema({
 	}
 })
 
-/* Faz o index existir apenas se tiver um opid */
+/** Faz o index existir apenas se tiver um opid */
 TransactionSchema.index({
 	opid: 1
 }, {
@@ -94,8 +94,8 @@ TransactionSchema.index({
 	}
 })
 
-/*
- * Faz o index composto do txid e type existir apenas caso o txid não seja nulo
+/**
+ * Faz transações de recebimento terem txid unique
  */
 TransactionSchema.index({
 	txid: 1,
@@ -103,7 +103,22 @@ TransactionSchema.index({
 }, {
 	unique: true,
 	partialFilterExpression: {
-		txid: { $exists: true }
+		txid: { $exists: true },
+		type: 'receive',
+	}
+})
+
+/**
+ * Cria um index para transações de saque que permita várias transações com o
+ * mesmo txid (necessário para fazer batch)
+ */
+TransactionSchema.index({
+	txid: 1,
+	type: 1
+}, {
+	partialFilterExpression: {
+		txid: { $exists: true },
+		type: 'send',
 	}
 })
 
