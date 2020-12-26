@@ -21,7 +21,7 @@ export class Bitcoin extends Common {
 
 	withdraw = this.rpc.send
 
-	processTransaction = methods.processTransaction.bind(this)
+	protected processTransaction = methods.processTransaction.bind(this)
 
 	async initBlockchainListener() {
 		const app = express()

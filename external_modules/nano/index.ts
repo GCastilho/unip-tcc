@@ -12,7 +12,7 @@ export class Nano extends Common {
 
 	protected rpc = methods.nanoRpc.bind(this)()
 
-	processTransaction = methods.processTransaction
+	protected processTransaction = methods.processTransaction
 
 	findMissingTx = methods.findMissingTx
 

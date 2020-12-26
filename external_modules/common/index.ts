@@ -17,6 +17,11 @@ export default abstract class Common {
 	abstract getNewAccount(): Promise<string>
 
 	/**
+	 * Inicia o listener de requests da blockchain
+	 */
+	abstract initBlockchainListener(): void
+
+	/**
 	 * Executa o request de saque de uma currency em sua blockchain
 	 *
 	 * @param pSended O documento dessa operação pendente na collection
@@ -29,23 +34,16 @@ export default abstract class Common {
 	 */
 	abstract withdraw(pSended: PSent, callback?: (transactions: UpdtSent[]) => void): Promise<UpdtSent|true>
 
-	/**
-	 * Inicia o listener de requests da blockchain
-	 */
-	abstract initBlockchainListener(): void|Promise<void>
-
-	/**
-	 * Processa novas transações recebidas e as envia ao servidor principal
-	 *
-	 * @param txid O txid da transação recém recebida
-	 */
-	abstract processTransaction(txid: TxReceived['txid']): Promise<void>
-
 	/** URL do servidor principal */
 	private mainServerIp: string
 
 	/** Porta da CurrencyAPI no servidor principal */
 	private mainServerPort: number
+
+	/**
+	 * Handler da conexão com o servidor principal
+	 */
+	private connectionHandler: (socket: SocketIOClient.Socket) => void
 
 	/**
 	 * EventEmitter para eventos internos
@@ -80,11 +78,6 @@ export default abstract class Common {
 		this.connectToMainServer()
 		this.initBlockchainListener()
 	}
-
-	/**
-	 * Handler da conexão com o servidor principal
-	 */
-	private connectionHandler: (socket: SocketIOClient.Socket) => void
 
 	/**
 	 * Conecta com o servidor principal
