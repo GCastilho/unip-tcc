@@ -3,14 +3,7 @@ import bodyParser from 'body-parser'
 import Common from '../common'
 import * as methods from './methods'
 
-const MAIN_SERVER_IP = process.env.MAIN_SERVER_IP || 'localhost'
-const MAIN_SERVER_PORT = parseInt(process.env.MAIN_SERVER_PORT || '8085')
-
 export class Bitcoin extends Common {
-	name = 'bitcoin'
-	mainServerIp = MAIN_SERVER_IP
-	mainServerPort = MAIN_SERVER_PORT
-
 	/** Número do bloco mais recente sincronizado */
 	blockHeight = 0
 
@@ -74,7 +67,9 @@ export class Bitcoin extends Common {
 	}
 
 	constructor(bitcoinListenerPort: number) {
-		super()
+		super({
+			name: 'bitcoin',
+		})
 		this.port = bitcoinListenerPort
 
 		// Monitora os eventos do rpc para manter o nodeOnline atualizado

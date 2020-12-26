@@ -5,16 +5,12 @@ import * as mongoose from './db/mongoose'
 import { PSent } from './db/models/pendingTx'
 import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
 
-/**
- * EventEmmiter genérico
- */
-class Events extends EventEmitter {}
+type Options = {
+	/** Nome da Currency que se está trabalhando (igual ao da CurrencyAPI) */
+	name: string
+}
 
 export default abstract class Common {
-	abstract name: string
-	abstract mainServerIp: string
-	abstract mainServerPort: number
-
 	/**
 	 * Pede uma nova account para o node dessa currency e a retorna
 	 */
@@ -45,12 +41,24 @@ export default abstract class Common {
 	 */
 	abstract processTransaction(txid: TxReceived['txid']): Promise<void>
 
+	/** URL do servidor principal */
+	private mainServerIp: string
+
+	/** Porta da CurrencyAPI no servidor principal */
+	private mainServerPort: number
+
 	/**
 	 * EventEmitter para eventos internos
 	 */
-	protected _events = new Events()
+	protected _events = new EventEmitter()
 
-	constructor() {
+	/** Nome da currency que está sendo trabalhada */
+	public readonly name: string
+
+	constructor(options: Options) {
+		this.name = options.name
+		this.mainServerIp = process.env.MAIN_SERVER_IP || 'localhost'
+		this.mainServerPort = parseInt(process.env.MAIN_SERVER_PORT || '8085')
 		this.connectionHandler = methods.connection
 		this.informMain = methods.informMain.bind(this)()
 
