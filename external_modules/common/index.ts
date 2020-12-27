@@ -1,8 +1,12 @@
 import io from 'socket.io-client'
+import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
+import Account from './db/models/account'
+import Transaction from './db/models/newTransactions'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
 import { PSent } from './db/models/pendingTx'
+import type { Receive } from './db/models/newTransactions'
 import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
 
 type Options = {
@@ -131,6 +135,27 @@ export default abstract class Common {
 		 * @param transaction A atualização da transação enviada
 		 */
 		updateWithdraw (transaction: UpdtSent): Promise<void>
+	}
+
+	public async newTransaction(transaction: Receive) {
+		const doc = await Transaction.create(transaction)
+		try {
+			const opid: string = await this.module('new_transaction', transaction)
+			doc.opid = new ObjectId(opid)
+			await doc.save()
+		} catch (err) {
+			if (err === 'SocketDisconnected') {
+				console.error('Não foi possível informar o main server da nova transação pois ele estava offline')
+			} else if (err.code === 'UserNotFound') {
+				await Account.deleteOne({ account: transaction.account })
+				await Transaction.deleteMany({ account: transaction.account })
+			} else if (err.code === 'TransactionExists' && err.transaction.opid) {
+				doc.opid = new ObjectId(err.transaction.opid)
+				await doc.save()
+			} else {
+				throw err
+			}
+		}
 	}
 
 	/**

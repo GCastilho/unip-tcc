@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { ObjectId } from 'mongodb'
+import type { DocumentDefinition } from 'mongoose'
 
 /** Interface base do documento de uma transação */
 interface BaseTx extends Document {
@@ -22,19 +23,25 @@ interface BaseTx extends Document {
 }
 
 /** Interface de uma transação de recebimento */
-interface Receive extends BaseTx {
+export interface ReceiveTx extends BaseTx {
 	txid: string
 	type: 'receive'
 }
 
 /** Interface de uma transação de saque */
-interface Send extends BaseTx {
+interface SendTx extends BaseTx {
 	opid: ObjectId
 	type: 'send'
 }
 
 /** Interface do documento de uma transação no DB */
-export type Transaction = Send | Receive
+export type Transaction = SendTx | ReceiveTx
+
+/** Objeto para criação de um documento de transação de recebimento */
+export type Receive = DocumentDefinition<ReceiveTx>
+
+/** Objeto para criação de um documento de transação de saque */
+export type Send = DocumentDefinition<SendTx>
 
 const TransactionSchema = new Schema({
 	opid: {
