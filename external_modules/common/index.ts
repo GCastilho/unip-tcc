@@ -14,6 +14,16 @@ type Options = {
 	name: string
 }
 
+/** Type para atualização de uma transação recebida */
+type UpdateReceivedTx = {
+	/** O id dessa transação na rede da moeda */
+	txid: string
+	/** O status dessa transação */
+	status: 'pending'|'confirmed'
+	/** A quantidade de confirmações dessa transação, caso tenha */
+	confirmations?: number
+}
+
 export default abstract class Common {
 	/**
 	 * Pede uma nova account para o node dessa currency e a retorna
@@ -137,7 +147,7 @@ export default abstract class Common {
 		updateWithdraw (transaction: UpdtSent): Promise<void>
 	}
 
-	public async newTransaction(transaction: Receive) {
+	public async newTransaction(transaction: Receive): Promise<void> {
 		const doc = await Transaction.create(transaction)
 		try {
 			const opid: string = await this.module('new_transaction', transaction)
@@ -155,6 +165,27 @@ export default abstract class Common {
 			} else {
 				throw err
 			}
+		}
+	}
+
+	public async updateReceived(updtReceived: UpdateReceivedTx): Promise<void> {
+		await Transaction.updateOne({
+			txid: updtReceived.txid,
+			type: 'receive',
+		}, {
+			confirmations: updtReceived.status === 'confirmed' ? undefined : updtReceived.confirmations,
+			status: updtReceived.status,
+		}).orFail()
+		try {
+			await this.module('update_received_tx', updtReceived)
+		} catch (err) {
+			if (err === 'SocketDisconnected') return
+			/**
+			 * OperationNotFound significa ou que a transação não existe
+			 * no main server ou que ela foi concluída (e está inacessível
+			 * a um update)
+			 */
+			if (err.code != 'OperationNotFound') throw err
 		}
 	}
 
