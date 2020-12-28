@@ -16,8 +16,18 @@ type Options = {
 
 /** Type para atualização de uma transação recebida */
 type UpdateReceivedTx = {
+	/** O status dessa transação */
+	status: 'pending'|'confirmed'
+	/** A quantidade de confirmações dessa transação, caso tenha */
+	confirmations?: number
+}
+
+/** Type para atualização de uma transação enviada */
+type UpdateSentTx = {
 	/** O id dessa transação na rede da moeda */
 	txid: string
+	/** O timestamp da transação na rede da moeda */
+	timestamp: number
 	/** O status dessa transação */
 	status: 'pending'|'confirmed'
 	/** A quantidade de confirmações dessa transação, caso tenha */
@@ -168,15 +178,16 @@ export default abstract class Common {
 		}
 	}
 
-	public async updateReceived(updtReceived: UpdateReceivedTx): Promise<void> {
+	public async updateReceived(txid: string, updtReceived: UpdateReceivedTx): Promise<void> {
 		await Transaction.updateOne({
-			txid: updtReceived.txid,
+			txid,
 			type: 'receive',
 		}, {
 			confirmations: updtReceived.status === 'confirmed' ? undefined : updtReceived.confirmations,
 			status: updtReceived.status,
 		}).orFail()
 		try {
+			// O evento está faltando o txid
 			await this.module('update_received_tx', updtReceived)
 		} catch (err) {
 			if (err === 'SocketDisconnected') return
@@ -186,6 +197,21 @@ export default abstract class Common {
 			 * a um update)
 			 */
 			if (err.code != 'OperationNotFound') throw err
+		}
+	}
+
+	public async updateSent(opid: ObjectId, updtSent: UpdateSentTx): Promise<void> {
+		await Transaction.updateOne({ opid }, updtSent).orFail()
+		try {
+			// O evento está faltando o opid
+			await this.module('update_sent_tx', updtSent)
+		} catch (err) {
+			if (err === 'SocketDisconnected') return
+			if (err.code === 'OperationNotFound') {
+				console.error(`Deleting non-existent withdraw transaction with opid: '${opid}'`)
+				await Transaction.deleteOne({ opid })
+			} else
+				throw err
 		}
 	}
 
