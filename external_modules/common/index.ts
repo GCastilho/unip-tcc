@@ -162,6 +162,7 @@ export default abstract class Common {
 		try {
 			const opid: string = await this.module('new_transaction', transaction)
 			doc.opid = new ObjectId(opid)
+			if (transaction.status == 'confirmed') doc.completed = true
 			await doc.save()
 		} catch (err) {
 			if (err === 'SocketDisconnected') {
@@ -189,6 +190,14 @@ export default abstract class Common {
 		try {
 			// O evento está faltando o txid
 			await this.module('update_received_tx', updtReceived)
+			if (updtReceived.status == 'confirmed') {
+				await Transaction.updateOne({
+					txid,
+					type: 'receive',
+				}, {
+					completed: true,
+				})
+			}
 		} catch (err) {
 			if (err === 'SocketDisconnected') return
 			/**
@@ -205,6 +214,9 @@ export default abstract class Common {
 		try {
 			// O evento está faltando o opid
 			await this.module('update_sent_tx', updtSent)
+			if (updtSent.status == 'confirmed') {
+				await Transaction.updateOne({ opid }, { completed: true, })
+			}
 		} catch (err) {
 			if (err === 'SocketDisconnected') return
 			if (err.code === 'OperationNotFound') {
@@ -212,6 +224,28 @@ export default abstract class Common {
 				await Transaction.deleteOne({ opid })
 			} else
 				throw err
+		}
+	}
+
+	private async syncMain() {
+		for await (const tx of Transaction.find({ completed: false })) {
+			if (tx.type == 'receive') {
+				if (tx.opid) {
+					// ESSE NÃO É O ARGUMENTO DO EVENTO
+					await this.module('update_received_tx', tx)
+				} else {
+					// ESSE NÃO É O ARGUMENTO DO EVENTO
+					const opid = await this.module('new_transaction', tx)
+					tx.opid = new ObjectId(opid)
+				}
+			} else {
+				// ESSE NÃO É O ARGUMENTO DO EVENTO
+				await this.module('update_sent_tx', tx)
+			}
+			if (tx.status == 'confirmed') tx.completed = true
+			// @ts-expect-error TS não reconhece que é callable pq Transaction é um union type
+			// See https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-3.html#caveats
+			await tx.save()
 		}
 	}
 

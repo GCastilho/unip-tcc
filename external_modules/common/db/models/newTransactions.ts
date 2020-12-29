@@ -16,6 +16,8 @@ interface BaseTx extends Document {
 	amount: string
 	/** Status da transação, de acordo com a rede da moeda */
 	status: 'pending'|'confirmed'
+	/** Se a transação foi confirmada e sincronizada com o main server */
+	completed?: boolean
 	/** Quantidade de confirmações que essa transação tem, caso tenha */
 	confirmations?: number
 	/** Timestamp de execução da transação, de acordo com a rede da moeda */
@@ -79,6 +81,11 @@ const TransactionSchema = new Schema({
 		type: String,
 		enum: ['pending', 'confirmed'],
 		required: true
+	},
+	completed: {
+		type: Boolean,
+		required: false,
+		default: false,
 	},
 	confirmations: {
 		type: Number,
