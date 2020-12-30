@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb'
 import { expect } from 'chai'
 import Transaction from '../../db/models/newTransactions'
 
-describe('Testing collection of transactions', () => {
+describe('Testing transactions collection', () => {
 	beforeEach(async () => {
 		await Transaction.deleteMany({})
 	})

@@ -56,7 +56,9 @@ PersonSchema.static('createOne', function(this: PersonModel,
 	email: string,
 	password: string
 ): ReturnType<PersonModel['createOne']> {
+	// @ts-expect-error O credentials n estar sendo interpretado direito está causando esse problema
 	return this.create({
+		// @ts-expect-error credentials está sendo interpretado como doc, não document definition
 		email, credentials: { password }
 	})
 })

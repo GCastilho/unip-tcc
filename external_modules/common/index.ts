@@ -227,7 +227,7 @@ export default abstract class Common {
 		}
 	}
 
-	private async syncMain() {
+	public async syncMain() {
 		for await (const tx of Transaction.find({ completed: false })) {
 			if (tx.type == 'receive') {
 				if (tx.opid) {
