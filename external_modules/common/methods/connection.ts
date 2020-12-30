@@ -11,10 +11,10 @@ import type { WithdrawRequest } from '../../../interfaces/transaction'
  */
 export function connection(this: Common, socket: SocketIOClient.Socket) {
 	/**
-	 * Ouve por eventos vindos do método 'module' e os retransmite ao socket
+	 * Ouve por eventos vindos do método 'emit' e os retransmite ao socket
 	 * para serem enviados ao main server
 	 */
-	this._events.on('module', (event: string, ...args: any) => {
+	this._events.on('to_main_server', (event: string, ...args: any) => {
 		if (socket.connected) {
 			socket.emit(event, ...args)
 		} else {
@@ -27,7 +27,7 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 	socket.on('connect', async () => {
 		console.log('Connected to the main server')
 
-		process.stdout.write(`Requesting ${this.name} accounts...`)
+		process.stdout.write(`Requesting ${this.name} accounts... `)
 		const stream: NodeJS.ReadableStream = ss.createStream()
 		ss(socket).emit('get_account_list', stream)
 
@@ -35,19 +35,17 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 			console.log('Success\nReceiving and importing accounts into the database')
 		})
 
-		stream.on('data', (chunk) => {
+		for await (const chunk of stream) {
 			/** Cada chunk é uma account */
-			Account.updateOne({
+			await Account.updateOne({
 				account: chunk.toString()
 			}, {}, {
 				upsert: true
-			}).exec()
-		})
+			})
+		}
 
-		stream.on('end', () => {
-			console.log('All accounts received and imported successfuly!')
-			this._events.emit('connected')
-		})
+		console.log('All accounts received and imported successfuly!')
+		this._events.emit('connected')
 	})
 
 	socket.on('disconnect', () => {

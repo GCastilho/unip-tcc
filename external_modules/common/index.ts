@@ -160,7 +160,7 @@ export default abstract class Common {
 	public async newTransaction(transaction: Receive): Promise<void> {
 		const doc = await Transaction.create(transaction)
 		try {
-			const opid: string = await this.module('new_transaction', transaction)
+			const opid: string = await this.emit('new_transaction', transaction)
 			doc.opid = new ObjectId(opid)
 			if (transaction.status == 'confirmed') doc.completed = true
 			await doc.save()
@@ -189,7 +189,7 @@ export default abstract class Common {
 		}).orFail()
 		try {
 			// O evento está faltando o txid
-			await this.module('update_received_tx', updtReceived)
+			await this.emit('update_received_tx', updtReceived)
 			if (updtReceived.status == 'confirmed') {
 				await Transaction.updateOne({
 					txid,
@@ -213,7 +213,7 @@ export default abstract class Common {
 		await Transaction.updateOne({ opid }, updtSent).orFail()
 		try {
 			// O evento está faltando o opid
-			await this.module('update_sent_tx', updtSent)
+			await this.emit('update_sent_tx', updtSent)
 			if (updtSent.status == 'confirmed') {
 				await Transaction.updateOne({ opid }, { completed: true, })
 			}
@@ -232,15 +232,15 @@ export default abstract class Common {
 			if (tx.type == 'receive') {
 				if (tx.opid) {
 					// ESSE NÃO É O ARGUMENTO DO EVENTO
-					await this.module('update_received_tx', tx)
+					await this.emit('update_received_tx', tx)
 				} else {
 					// ESSE NÃO É O ARGUMENTO DO EVENTO
-					const opid = await this.module('new_transaction', tx)
+					const opid = await this.emit('new_transaction', tx)
 					tx.opid = new ObjectId(opid)
 				}
 			} else {
 				// ESSE NÃO É O ARGUMENTO DO EVENTO
-				await this.module('update_sent_tx', tx)
+				await this.emit('update_sent_tx', tx)
 			}
 			if (tx.status == 'confirmed') tx.completed = true
 			// @ts-expect-error TS não reconhece que é callable pq Transaction é um union type
@@ -257,10 +257,10 @@ export default abstract class Common {
 	 * @param event O evento que será enviado ao socket
 	 * @param args Os argumentos desse evento
 	 */
-	protected module(event: string, ...args: any): Promise<any> {
+	protected emit(event: string, ...args: any): Promise<any> {
 		return new Promise((resolve, reject) => {
 			console.log(`transmitting socket event '${event}':`, ...args)
-			this._events.emit('module', event, ...args, ((error, response) => {
+			this._events.emit('to_main_server', event, ...args, ((error, response) => {
 				if (error) {
 					console.error('Received socket error:', error)
 					reject(error)

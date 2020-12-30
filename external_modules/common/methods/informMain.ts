@@ -20,7 +20,7 @@ export function informMain(this: Common) {
 	 */
 	const newTransaction = async (transaction: TxReceived): Promise<string|void> => {
 		try {
-			const opid: string = await this.module('new_transaction', transaction)
+			const opid: string = await this.emit('new_transaction', transaction)
 
 			/** Adiciona o opid à transação no db local */
 			await Transaction.findOneAndUpdate({
@@ -71,7 +71,7 @@ export function informMain(this: Common) {
 	 */
 	const updateReceivedTx = async (txUpdate: UpdtReceived): Promise<void> => {
 		try {
-			await this.module('update_received_tx', txUpdate)
+			await this.emit('update_received_tx', txUpdate)
 		} catch (err) {
 			if (err === 'SocketDisconnected') return
 			/**
@@ -99,7 +99,7 @@ export function informMain(this: Common) {
 	 */
 	const updateWithdraw = async (txUpdate: UpdtSent): Promise<void> => {
 		try {
-			await this.module('update_sent_tx', txUpdate)
+			await this.emit('update_sent_tx', txUpdate)
 			/**
 			 * Deleta a transação se conseguir informá-la ao main server e se
 			 * ela estiver confirmed
