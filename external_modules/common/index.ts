@@ -34,6 +34,12 @@ type UpdateSentTx = {
 	confirmations?: number
 }
 
+/** URL do servidor principal */
+const mainServerIp = process.env.MAIN_SERVER_IP || 'localhost'
+
+/** Porta da CurrencyAPI no servidor principal */
+const mainServerPort = parseInt(process.env.MAIN_SERVER_PORT || '8085')
+
 export default abstract class Common {
 	/**
 	 * Pede uma nova account para o node dessa currency e a retorna
@@ -58,12 +64,6 @@ export default abstract class Common {
 	 */
 	abstract withdraw(pSended: PSent, callback?: (transactions: UpdtSent[]) => void): Promise<UpdtSent|true>
 
-	/** URL do servidor principal */
-	private mainServerIp: string
-
-	/** Porta da CurrencyAPI no servidor principal */
-	private mainServerPort: number
-
 	/**
 	 * Handler da conexão com o servidor principal
 	 */
@@ -79,8 +79,6 @@ export default abstract class Common {
 
 	constructor(options: Options) {
 		this.name = options.name
-		this.mainServerIp = process.env.MAIN_SERVER_IP || 'localhost'
-		this.mainServerPort = parseInt(process.env.MAIN_SERVER_PORT || '8085')
 		this.connectionHandler = methods.connection
 		this.informMain = methods.informMain.bind(this)()
 
@@ -110,7 +108,7 @@ export default abstract class Common {
 		/**
 		 * Socket de conexão com o servidor principal
 		 */
-		const socket = io(`http://${this.mainServerIp}:${this.mainServerPort}/${this.name}`)
+		const socket = io(`http://${mainServerIp}:${mainServerPort}/${this.name}`)
 		this.connectionHandler(socket)
 	}
 
