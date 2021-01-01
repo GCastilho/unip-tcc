@@ -25,8 +25,8 @@ describe('Testing transactions collection', () => {
 			opid: new ObjectId(),
 			txid: 'random-txid',
 			account: 'random-account',
-			type: 'receive',
-			status: 'pending',
+			type: 'receive' as const,
+			status: 'pending' as const,
 			amount: '0.1',
 			confirmations: 1,
 			timestamp: Date.now(),
@@ -43,7 +43,7 @@ describe('Testing transactions collection', () => {
 		const transaction = {
 			account: 'random-account',
 			type: 'send',
-			status: 'pending',
+			status: 'pending' as const,
 			amount: '0.1',
 			confirmations: 1,
 			timestamp: Date.now(),
@@ -67,8 +67,8 @@ describe('Testing transactions collection', () => {
 		const transaction = {
 			opid: new ObjectId(),
 			account: 'random-account',
-			type: 'send',
-			status: 'pending',
+			type: 'send' as const,
+			status: 'pending' as const,
 			amount: '0.1',
 			confirmations: 1,
 			timestamp: Date.now(),
@@ -97,8 +97,8 @@ describe('Testing transactions collection', () => {
 			opid: new ObjectId(),
 			txid: 'random-txid',
 			account: 'random-account',
-			type: 'receive',
-			status: 'pending',
+			type: 'receive' as const,
+			status: 'pending' as const,
 			amount: '0.1',
 			confirmations: 1,
 			timestamp: Date.now(),
@@ -115,8 +115,8 @@ describe('Testing transactions collection', () => {
 			opid: new ObjectId(),
 			txid: 'random-txid',
 			account: 'random-account',
-			type: 'receive',
-			status: 'pending',
+			type: 'receive' as const,
+			status: 'pending' as const,
 			amount: '0.1',
 			confirmations: 1,
 			timestamp: Date.now(),
@@ -133,8 +133,8 @@ describe('Testing transactions collection', () => {
 			opid: new ObjectId(),
 			txid: 'random-txid',
 			account: 'random-account',
-			type: 'send',
-			status: 'pending',
+			type: 'send' as const,
+			status: 'pending' as const,
 			amount: '0.1',
 			confirmations: 1,
 			timestamp: Date.now(),
@@ -143,5 +143,14 @@ describe('Testing transactions collection', () => {
 		await Transaction.create(transaction)
 		transaction.opid = new ObjectId()
 		await expect(Transaction.create(transaction)).to.eventually.be.fulfilled
+	})
+
+	it('Should save a withdraw request', async () => {
+		await Transaction.create({
+			opid: new ObjectId(),
+			account: 'random-account',
+			type: 'send',
+			amount: '0.1',
+		})
 	})
 })

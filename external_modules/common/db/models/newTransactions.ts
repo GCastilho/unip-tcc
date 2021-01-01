@@ -2,6 +2,15 @@ import mongoose, { Document, Schema } from 'mongoose'
 import { ObjectId } from 'mongodb'
 import type { DocumentDefinition } from 'mongoose'
 
+type NotOptional<T, K extends keyof T> = T & {
+	[P in K]-?: T[P]
+}
+
+// O Omit estava dando incompatibilidade no mongoose.model
+type Remove<T, K extends keyof T> = T & {
+	[P in K]: never
+}
+
 /** Interface base do documento de uma transação */
 interface BaseTx extends Document {
 	/** Identificador da transação no servidor principal */
@@ -25,25 +34,32 @@ interface BaseTx extends Document {
 }
 
 /** Interface de uma transação de recebimento */
-export interface ReceiveTx extends BaseTx {
-	txid: string
+export interface ReceiveDoc extends NotOptional<BaseTx, 'txid'> {
 	type: 'receive'
 }
 
 /** Interface de uma transação de saque */
-interface SendTx extends BaseTx {
+interface SendDoc extends NotOptional<BaseTx, 'opid'> {
+	type: 'send'
+}
+
+/** Interface de um request de saque */
+interface SendRequestDoc extends Remove<BaseTx, 'txid'|'status'|'completed'|'confirmations'|'timestamp'> {
 	opid: ObjectId
 	type: 'send'
 }
 
 /** Interface do documento de uma transação no DB */
-export type Transaction = SendTx | ReceiveTx
+export type Transaction = SendDoc | ReceiveDoc | SendRequestDoc
 
-/** Objeto para criação de um documento de transação de recebimento */
-export type Receive = DocumentDefinition<ReceiveTx>
+/** Type de um objeto para criação de um documento de transação de recebimento */
+export type Receive = DocumentDefinition<ReceiveDoc>
 
-/** Objeto para criação de um documento de transação de saque */
-export type Send = DocumentDefinition<SendTx>
+/** Type de um objeto para criação de um documento de transação de saque */
+export type Send = DocumentDefinition<SendDoc>
+
+/** Type de um objeto para criação de um documento de request de saque */
+export type SendRequest = DocumentDefinition<SendRequestDoc>
 
 const TransactionSchema = new Schema({
 	opid: {
@@ -80,7 +96,10 @@ const TransactionSchema = new Schema({
 	status: {
 		type: String,
 		enum: ['pending', 'confirmed'],
-		required: true
+		required: function(this: Transaction) {
+			// Required para tx de recebimento e de send já enviada
+			return this.type == 'receive' || this.type == 'send' && typeof this.txid == 'string'
+		}
 	},
 	completed: {
 		type: Boolean,
@@ -94,7 +113,10 @@ const TransactionSchema = new Schema({
 	},
 	timestamp: {
 		type: Number,
-		required: true
+		required: function(this: Transaction) {
+			// Faz timestamp ser required caso status esteja definido (tx executada)
+			return typeof this.status == 'string'
+		}
 	}
 })
 
