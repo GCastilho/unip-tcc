@@ -1,6 +1,6 @@
-import { ObjectId } from 'mongodb'
 import { expect } from 'chai'
-import Transaction from '../../db/models/newTransactions'
+import { ObjectId } from 'mongodb'
+import Transaction, { Receive, Send } from '../../db/models/newTransactions'
 
 describe('Testing transactions collection', () => {
 	beforeEach(async () => {
@@ -63,15 +63,13 @@ describe('Testing transactions collection', () => {
 		})
 	})
 
-	it('Should save more than one send transaction without a txid', async () => {
+	it('Should save more than one send request without a txid', async () => {
 		const transaction = {
 			opid: new ObjectId(),
 			account: 'random-account',
 			type: 'send' as const,
-			status: 'pending' as const,
+			status: 'requested' as const,
 			amount: '0.1',
-			confirmations: 1,
-			timestamp: Date.now(),
 		}
 		await Transaction.create(transaction)
 		transaction.opid = new ObjectId()
@@ -150,7 +148,68 @@ describe('Testing transactions collection', () => {
 			opid: new ObjectId(),
 			account: 'random-account',
 			type: 'send',
+			status: 'requested',
 			amount: '0.1',
+		})
+	})
+
+	it('Should fail to save a send request with extra properties', async () => {
+		await expect(Transaction.create({
+			opid: new ObjectId(),
+			// @ts-expect-error Testando propriedades extra no create
+			txid: 'random-txid',
+			account: 'random-account',
+			type: 'send',
+			status: 'requested',
+			amount: '0.1',
+			completed: true,
+			confirmations: 1,
+			timestamp: Date.now(),
+		})).to.eventually.be.rejectedWith(/can not have a txid.+can not be completed/)
+	})
+
+	describe('Testing discriminators', () => {
+		it('Should save a new receive transaction', async () => {
+			await Receive.create({
+				txid: 'random-txid',
+				account: 'random-account',
+				type: 'receive',
+				status: 'pending',
+				amount: '0.1',
+				confirmations: 1,
+				timestamp: Date.now(),
+			})
+		})
+
+		it('Should create a send transaction', async () => {
+			await Send.create({
+				opid: new ObjectId(),
+				txid: 'random-txid',
+				account: 'random-account',
+				type: 'send',
+				status: 'pending',
+				amount: '0.1',
+				confirmations: 1,
+				timestamp: Date.now(),
+			})
+		})
+
+		it('Should create a send request', async () => {
+			await Send.create({
+				opid: new ObjectId(),
+				account: 'random-account',
+				type: 'send',
+				status: 'requested',
+				amount: '0.1',
+			})
+		})
+
+		it('Should create a send request using createOne', async () => {
+			await Send.createRequest({
+				opid: new ObjectId(),
+				account: 'random-account',
+				amount: '0.1',
+			})
 		})
 	})
 })
