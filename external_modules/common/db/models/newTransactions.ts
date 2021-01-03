@@ -29,7 +29,7 @@ interface BaseTxDoc extends BaseDoc {
 	/** Quantidade de confirmações que essa transação tem, caso tenha */
 	confirmations?: number
 	/** Timestamp de execução da transação, de acordo com a rede da moeda */
-	timestamp: number
+	timestamp: Date
 	status: Exclude<BaseDoc['status'], 'requested'>
 }
 
@@ -53,18 +53,18 @@ interface SendRequestDoc extends NotOptional<BaseDoc, 'opid'> {
 export type TransactionDoc = SendDoc | ReceiveDoc | SendRequestDoc
 
 /** Type de um objeto para criação de um documento de transação de recebimento */
-export type Receive = DocumentDefinition<ReceiveDoc>
+export type CreateReceive = DocumentDefinition<ReceiveDoc>
 
 /** Type de um objeto para criação de um documento de transação de saque */
-export type Send = DocumentDefinition<SendDoc>
+export type CreateSend = DocumentDefinition<SendDoc>
 
 /** Type de um objeto para criação de um documento de request de saque */
-export type SendRequest = DocumentDefinition<SendRequestDoc>
+export type CreateSendRequest = DocumentDefinition<SendRequestDoc>
 
 /** Interface do model de um Send (discriminator), com os métodos estáticos */
 interface SendModel extends Model<SendDoc|SendRequestDoc> {
 	/** Cria um documento de um request de saque */
-	createRequest(request: Pick<CreateDocumentDefinition<SendRequest>, 'opid'|'account'|'amount'>): Promise<SendRequestDoc>
+	createRequest(request: Pick<CreateDocumentDefinition<CreateSendRequest>, 'opid'|'account'|'amount'>): Promise<SendRequestDoc>
 }
 
 const TransactionSchema = new Schema({
@@ -137,7 +137,7 @@ const TransactionSchema = new Schema({
 		required: false,
 	},
 	timestamp: {
-		type: Number,
+		type: Date,
 		required: function(this: TransactionDoc) {
 			// Faz timestamp ser required caso não seja um request de saque
 			return this.status != 'requested'

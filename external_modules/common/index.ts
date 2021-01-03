@@ -6,7 +6,7 @@ import Transaction from './db/models/newTransactions'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
 import { PSent } from './db/models/pendingTx'
-import type { Receive } from './db/models/newTransactions'
+import type { CreateReceive } from './db/models/newTransactions'
 import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
 
 type Options = {
@@ -155,7 +155,7 @@ export default abstract class Common {
 		updateWithdraw (transaction: UpdtSent): Promise<void>
 	}
 
-	public async newTransaction(transaction: Receive): Promise<void> {
+	public async newTransaction(transaction: CreateReceive): Promise<void> {
 		const doc = await Transaction.create(transaction)
 		try {
 			const opid: string = await this.emit('new_transaction', transaction)

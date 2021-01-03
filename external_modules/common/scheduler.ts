@@ -1,5 +1,5 @@
 import assert from 'assert'
-import type { Send } from './db/models/newTransactions'
+import type { CreateSend } from './db/models/newTransactions'
 
 type Options = {
 	/**
@@ -77,7 +77,7 @@ export default class WithrawScheduler {
 	 *
 	 * @param tx O request da transação de envio
 	 */
-	public add(tx: Send) {
+	public add(tx: CreateSend) {
 		assert(!this.opids.has(tx.opid.toHexString()), `opid already informed: ${tx.opid}`)
 
 		const storedAmount = this.txs.get(tx.account) || 0
