@@ -39,12 +39,12 @@ export interface ReceiveDoc extends BaseTxDoc {
 }
 
 /** Interface de uma transação de saque */
-interface SendDoc extends NotOptional<BaseTxDoc, 'opid'> {
+export interface SendDoc extends NotOptional<BaseTxDoc, 'opid'> {
 	type: 'send'
 }
 
 /** Interface de um request de saque */
-interface SendRequestDoc extends NotOptional<BaseDoc, 'opid'> {
+export interface SendRequestDoc extends NotOptional<BaseDoc, 'opid'> {
 	type: 'send'
 	status: 'requested'
 }

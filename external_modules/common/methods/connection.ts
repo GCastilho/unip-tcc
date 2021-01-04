@@ -3,6 +3,7 @@ const ss = require('socket.io-stream')
 import Common from '../index'
 import Account from '../db/models/account'
 import Transaction from '../db/models/transaction'
+import { Send } from '../db/models/newTransactions'
 import { SendPending } from '../db/models/pendingTx'
 import type { WithdrawRequest } from '../../../interfaces/transaction'
 
@@ -70,18 +71,10 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		 * ou da falha
 		 */
 		try {
-			await new Transaction({
-				opid: request.opid,
-				account: request.account,
-				type: 'send'
-			}).save()
-
-			await new SendPending({
-				opid: request.opid,
-				transaction: request
-			}).save()
+			const doc = await Send.createRequest(request)
 
 			callback(null, `received withdraw request for '${request.opid}'`)
+			this.withdrawQueue.push(doc)
 		} catch (err) {
 			if (err.code === 11000) {
 				callback({
@@ -94,9 +87,6 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 				callback(err)
 			}
 		}
-
-		/** Faz o withdraw de todas as transações ainda não enviadas */
-		this.withdraw_pending()
 	})
 
 	socket.on('cancell_withdraw', async (opid: WithdrawRequest['opid'], callback: (...args: any[]) => any) => {

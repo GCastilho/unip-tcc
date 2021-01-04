@@ -1,12 +1,12 @@
 import io from 'socket.io-client'
 import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
+import Queue from './queue'
 import Account from './db/models/account'
-import Transaction from './db/models/newTransactions'
+import Transaction, { Send } from './db/models/newTransactions'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import { PSent } from './db/models/pendingTx'
-import type { CreateReceive } from './db/models/newTransactions'
+import type { CreateReceive, SendRequestDoc } from './db/models/newTransactions'
 import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
 
 type Options = {
@@ -23,7 +23,7 @@ type UpdateReceivedTx = {
 }
 
 /** Type para atualização de uma transação enviada */
-type UpdateSentTx = {
+export type UpdateSentTx = {
 	/** O id dessa transação na rede da moeda */
 	txid: string
 	/** O timestamp da transação na rede da moeda */
@@ -32,6 +32,14 @@ type UpdateSentTx = {
 	status: 'pending'|'confirmed'
 	/** A quantidade de confirmações dessa transação, caso tenha */
 	confirmations?: number
+}
+
+/** Type de um request do método de withdraw */
+export type WithdrawRequest = {
+	/** account de destino da transação */
+	account: string
+	/** amount que deve ser enviado ao destino */
+	amount: number
 }
 
 /** URL do servidor principal */
@@ -54,20 +62,18 @@ export default abstract class Common {
 	/**
 	 * Executa o request de saque de uma currency em sua blockchain
 	 *
-	 * @param pSended O documento dessa operação pendente na collection
-	 * @param callback Caso transações foram agendadas para ser executadas em
-	 * batch, o callback deve ser chamado com elas para informar que elas foram
-	 * executadas
-	 *
-	 * @returns UpdtSended object se a transação foi executada imediatamente
-	 * @returns true se a transação foi agendada para ser executada em batch
+	 * @param request O objeto com os dados do request de saque
+	 * @returns WithdrawResponse Com os dados da transação enviada
 	 */
-	abstract withdraw(pSended: PSent, callback?: (transactions: UpdtSent[]) => void): Promise<UpdtSent|true>
+	abstract withdraw(request: WithdrawRequest): Promise<UpdateSentTx>
 
 	/**
 	 * Handler da conexão com o servidor principal
 	 */
 	private connectionHandler: (socket: SocketIOClient.Socket) => void
+
+	/** Iterable da queue de requests de withdraw */
+	protected withdrawQueue: Queue<SendRequestDoc>
 
 	/**
 	 * EventEmitter para eventos internos
@@ -79,6 +85,7 @@ export default abstract class Common {
 
 	constructor(options: Options) {
 		this.name = options.name
+		this.withdrawQueue = new Queue()
 		this.connectionHandler = methods.connection
 		this.informMain = methods.informMain.bind(this)()
 
@@ -95,10 +102,27 @@ export default abstract class Common {
 		})
 	}
 
+	private async bootstrapQueue() {
+		for await (const request of Send.find({ status: 'requested' })) {
+			this.withdrawQueue.push(request as SendRequestDoc)
+		}
+
+		// Esse loop é infinito
+		// Falta o journaling (mongo transaction) para garantir que uma tx n é enviada 2x
+		// Pq o request de withdraw não é indepotente
+		// Tbm falta handler de erros
+		for await (const request of this.withdrawQueue) {
+			const response = await this.withdraw(request)
+			await Send.updateOne(request._id, response)
+			await this.updateSent(request._id, response)
+		}
+	}
+
 	async init() {
 		await mongoose.init(`exchange-${this.name}`)
 		this.connectToMainServer()
 		this.initBlockchainListener()
+		this.bootstrapQueue()
 	}
 
 	/**

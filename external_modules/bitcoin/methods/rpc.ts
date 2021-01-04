@@ -1,7 +1,6 @@
 import Client from 'bitcoin-core'
 import { EventEmitter } from 'events'
-import { PSent } from '../../common/db/models/pendingTx'
-import type { UpdtSent } from '../../../interfaces/transaction'
+import type { WithdrawRequest, UpdateSentTx } from '../../common'
 
 /** EventEmmiter genérico */
 class Events extends EventEmitter {}
@@ -70,15 +69,13 @@ export const getBlockCount = async (): Promise<any> =>
 
 /**
  * Executa uma transação na rede da bitcoin
- * @param pSend O documento da transação pendente da collection pendingTx
- * @returns Um objeto UpdtSended para ser enviado ao main server
+ * @param req As informações do request de saque
+ * @returns Um objeto com as informações da transação enviada
  */
-export async function send(pSend: PSent): Promise<UpdtSent> {
-	const { transaction: { opid, account, amount }} = pSend
-
+export async function send(req: WithdrawRequest): Promise<UpdateSentTx> {
 	// TODO: Melhorar o handler desses error codes
 	// TODO: Garantir que o cast to number do amount não dá problema com rounding
-	const txid = await sendToAddress(account, +amount).catch(err => {
+	const txid = await sendToAddress(req.account, req.amount).catch(err => {
 		if (err.code === 'ECONNREFUSED') {
 			err.code = 'NotSent'
 			err.message = 'Connection refused on bitcoin node'
@@ -94,16 +91,12 @@ export async function send(pSend: PSent): Promise<UpdtSent> {
 	})
 
 	const tInfo = await transactionInfo(txid)
-	const transaction: UpdtSent = {
-		opid,
+	return {
 		txid,
 		status: 'pending',
 		confirmations: 0,
 		timestamp: tInfo.time * 1000 // O timestamp do bitcoin é em segundos
 	}
-	console.log('sent new transaction', transaction)
-
-	return transaction
 }
 
 /**

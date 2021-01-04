@@ -1,8 +1,7 @@
 import axios from 'axios'
 import { Nano } from '../index'
-import { PSent } from '../../common/db/models/pendingTx'
 import { fromNanoToRaw } from '../utils/unitConverter'
-import type { UpdtSent } from '../../../interfaces/transaction'
+import type { WithdrawRequest, UpdateSentTx } from '../../common'
 
 const nanoUrl = process.env.NANO_URL || 'http://[::1]:55000'
 
@@ -51,18 +50,16 @@ export function nanoRpc(this: Nano) {
 
 	/**
 	 * Executa uma transação na rede da nano
-	 * @param doc O documento da transação pendente da collection pendingTx
-	 * @returns Um objeto UpdtSended para ser enviado ao servidor
+	 * @param req As informações do request de saque
+	 * @returns Um objeto com as informações da transação enviada
 	 */
-	const send = async (doc: PSent): Promise<UpdtSent> => {
-		const { transaction: { opid, account, amount }} = doc
-
+	const send = async (req: WithdrawRequest): Promise<UpdateSentTx> => {
 		const res = await request({
 			action: 'send',
 			wallet: this.wallet,
 			source: this.stdAccount,
-			destination: account,
-			amount: fromNanoToRaw(amount)
+			destination: req.account,
+			amount: fromNanoToRaw(String(req.amount))
 		}).catch(err => {
 			if (err.code === 'ECONNREFUSED') {
 				err.code = 'NotSent'
@@ -71,14 +68,11 @@ export function nanoRpc(this: Nano) {
 			throw err
 		})
 
-		const transaction: UpdtSent = {
-			opid,
+		return {
 			txid: res.block,
 			status: 'confirmed',
 			timestamp: Date.now(), /**@todo Utilizar o timestamp do bloco */
 		}
-
-		return transaction
 	}
 
 	return {
