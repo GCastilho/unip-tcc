@@ -3,7 +3,7 @@ type PromiseExecutor<T> = {
 	reject: (reason?: unknown) => void
 }
 
-export default class Queue<T> implements AsyncGenerator<T, T|null, never> {
+export default class Queue<T> implements AsyncGenerator<T, void, never> {
 	private unconsumedValues: T[]
 	private unresolvedPromises: PromiseExecutor<IteratorResult<T>>[]
 	private finished: boolean
@@ -14,8 +14,8 @@ export default class Queue<T> implements AsyncGenerator<T, T|null, never> {
 		this.finished = false
 	}
 
-	private createIterResult(value: T, done = false): IteratorResult<T> {
-		return { value, done }
+	private createIterResult(value?: T): IteratorResult<T, void> {
+		return value ? { value, done: false } : { value: undefined, done: true }
 	}
 
 	// Symbol para que esta classe seja reconhecida como um AsyncIterator
@@ -29,15 +29,20 @@ export default class Queue<T> implements AsyncGenerator<T, T|null, never> {
 	 */
 	public return() {
 		this.finished = true
+
+		// retorna done, que tbm faz o for..of loop ser encerrado sem ser executado
 		for (const promise of this.unresolvedPromises) {
-			promise.resolve(this.createIterResult(null))
+			promise.resolve(this.createIterResult(undefined))
 		}
-		return Promise.resolve(this.createIterResult(null))
+		// Reseta (descarta) o array de valores não consumidos
+		this.unconsumedValues = []
+
+		return Promise.resolve(this.createIterResult(undefined))
 	}
 
 	/** Throws an error to the generator and finishes execution */
-	public throw(err: Error): Promise<IteratorResult<T, T>> {
-		this.finished = true
+	public throw(err: Error): Promise<IteratorResult<T, void>> {
+		this.return()
 		throw err
 	}
 
@@ -46,7 +51,7 @@ export default class Queue<T> implements AsyncGenerator<T, T|null, never> {
 	 * houver um valor na fila a promessa será resolvida imediatamente
 	 */
 	public next() {
-		if (this.finished) return Promise.resolve(this.createIterResult(null, true))
+		if (this.finished) return Promise.resolve(this.createIterResult(undefined))
 		const value = this.unconsumedValues.shift()
 		if (value) {
 			return Promise.resolve(this.createIterResult(value))
@@ -62,7 +67,7 @@ export default class Queue<T> implements AsyncGenerator<T, T|null, never> {
 	 * retornados pelo generator quando requisitados
 	 */
 	public push(value: T) {
-		if (this.finished) return this.throw(new Error('Iterator finished'))
+		if (this.finished) return
 		const promise = this.unresolvedPromises.shift()
 		if (promise) {
 			promise.resolve(this.createIterResult(value))
