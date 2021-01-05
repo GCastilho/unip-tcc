@@ -6,7 +6,7 @@ import Account from './db/models/account'
 import Transaction, { Send } from './db/models/newTransactions'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import type { CreateReceive, SendRequestDoc } from './db/models/newTransactions'
+import type { CreateReceive } from './db/models/newTransactions'
 import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
 
 type Options = {
@@ -73,7 +73,7 @@ export default abstract class Common {
 	private connectionHandler: (socket: SocketIOClient.Socket) => void
 
 	/** Iterable da queue de requests de withdraw */
-	protected withdrawQueue: Queue<SendRequestDoc>
+	protected withdrawQueue: Queue
 
 	/**
 	 * EventEmitter para eventos internos
@@ -100,13 +100,13 @@ export default abstract class Common {
 			this.nodeOnline = false
 			this._events.emit('node_disconnected')
 		})
+
+		// Inicializa e finaliza o withdrawQueue
+		this._events.on('node_connected', () => this.processQueue())
+		this._events.on('node_disconnected', () => this.withdrawQueue.stop())
 	}
 
-	private async bootstrapQueue() {
-		for await (const request of Send.find({ status: 'requested' })) {
-			this.withdrawQueue.push(request as SendRequestDoc)
-		}
-
+	private async processQueue() {
 		// Esse loop é infinito
 		// Falta o journaling (mongo transaction) para garantir que uma tx n é enviada 2x
 		// Pq o request de withdraw não é indepotente
@@ -122,7 +122,6 @@ export default abstract class Common {
 		await mongoose.init(`exchange-${this.name}`)
 		this.connectToMainServer()
 		this.initBlockchainListener()
-		this.bootstrapQueue()
 	}
 
 	/**
