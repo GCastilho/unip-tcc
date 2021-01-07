@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
 import Queue from './queue'
 import Account from './db/models/account'
-import Transaction, { Send } from './db/models/newTransactions'
+import Transaction from './db/models/newTransactions'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
 import type { CreateReceive } from './db/models/newTransactions'
@@ -60,7 +60,8 @@ export default abstract class Common {
 	abstract initBlockchainListener(): void
 
 	/**
-	 * Executa o request de saque de uma currency em sua blockchain
+	 * Executa o request de saque de uma currency em sua blockchain. Esse método
+	 * é presumido não ser indepotente
 	 *
 	 * @param request O objeto com os dados do request de saque
 	 * @returns WithdrawResponse Com os dados da transação enviada
@@ -106,15 +107,36 @@ export default abstract class Common {
 		this._events.on('node_disconnected', () => this.withdrawQueue.stop())
 	}
 
+	/**
+	 * Processa a withdrawQueue, infinitamente e de forma assíncrona, até o
+	 * método stop ser invocado (clean exit) ou um erro não reconhecido ser
+	 * recebido de um dos métodos utilizados
+	 *
+	 * Um Error com code 'NotSent' é esperado para situações onde há certeza
+	 * que a transação não foi enviada
+	 */
 	private async processQueue() {
-		// Esse loop é infinito
-		// Falta o journaling (mongo transaction) para garantir que uma tx n é enviada 2x
-		// Pq o request de withdraw não é indepotente
-		// Tbm falta handler de erros
 		for await (const request of this.withdrawQueue) {
-			const response = await this.withdraw(request)
-			await Send.updateOne(request._id, response)
-			await this.updateSent(request._id, response)
+			try {
+				const response = await this.withdraw(request)
+				await this.updateSent(request._id, response)
+			} catch (err) {
+				if (err.code === 'NotSent') {
+					const message = err.message ? err.message : err
+					console.error('Withdraw: Transaction was not sent:', message)
+					break
+				}
+				/**
+				 * Não há garantia que a tx não foi enviada, interrompe o processo
+				 * para impedir que esse erro se propague de alguma forma
+				 */
+				console.error('Unknown error while processing withdraw queue:', err)
+				/**
+				 * @todo Um error code específico para erro de withdraw. Pode agilizar
+				 * a análise do log
+				 */
+				process.exit(1)
+			}
 		}
 	}
 
@@ -145,12 +167,6 @@ export default abstract class Common {
 	 * NÃO MODIFICAR MANUALMENTE
 	 */
 	protected nodeOnline = false
-
-	/**
-	 * Vasculha a collection 'pendingTx' em busca de transações não enviadas
-	 * e chama a função de withdraw para cara um delas
-	 */
-	protected withdraw_pending = methods.withdraw_pending.bind(this)()
 
 	/**
 	 * Contém métodos para atualizar o main server a respeito de transações

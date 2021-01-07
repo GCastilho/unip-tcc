@@ -7,8 +7,16 @@ type PromiseExecutor<T> = {
 }
 
 class Queue<T> implements AsyncIterator<T, void> {
+	/** Fila de valores da queue */
 	private unconsumedValues: T[]
+
+	/** Fila de promessas já retornadas pelo next esperando serem resolvidas */
 	private unresolvedPromises: PromiseExecutor<IteratorResult<T>>[]
+
+	/**
+	 * Flag que indica se a queue foi finalizada. Uma queue fionalizada não
+	 * irá mais retornar valores
+	*/
 	private finished: boolean
 
 	constructor() {
@@ -17,13 +25,9 @@ class Queue<T> implements AsyncIterator<T, void> {
 		this.finished = false
 	}
 
+	/** Retorna um objeto de um IteratorResult com o done setado corretamente */
 	private createIterResult(value?: T): IteratorResult<T, void> {
 		return value ? { value, done: false } : { value: undefined, done: true }
-	}
-
-	// Symbol para que esta classe seja reconhecida como um AsyncIterator
-	[Symbol.asyncIterator]() {
-		return this
 	}
 
 	/**
