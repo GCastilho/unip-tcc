@@ -1,9 +1,9 @@
 import io from 'socket.io-client'
 import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
+import Sync from './sync'
 import Queue from './queue'
-import Account from './db/models/account'
-import Transaction, { Receive, ReceiveDoc, Send, SendDoc } from './db/models/newTransactions'
+import Transaction, { ReceiveDoc, Send, SendDoc } from './db/models/newTransactions'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
 import type { CreateReceive } from './db/models/newTransactions'
@@ -24,16 +24,6 @@ type UpdateTx = {
 	confirmations?: number
 	/** O timestamp da transação na rede da moeda */
 	timestamp?: number
-}
-
-/** Type para atualização de uma transação recebida */
-type UpdateReceivedTx = {
-	/** O id dessa transação na rede da moeda */
-	txid: string
-	/** O status dessa transação */
-	status: 'pending'|'confirmed'
-	/** A quantidade de confirmações dessa transação, caso tenha */
-	confirmations?: number
 }
 
 /** Type para atualização de uma transação enviada */
@@ -87,6 +77,9 @@ export default abstract class Common {
 	 */
 	private connectionHandler: (socket: SocketIOClient.Socket) => void
 
+	/** Classe com métodos para sincronia de eventos com o main server */
+	private sync: Sync
+
 	/** Iterable da queue de requests de withdraw */
 	protected withdrawQueue: Queue
 
@@ -100,6 +93,7 @@ export default abstract class Common {
 
 	constructor(options: Options) {
 		this.name = options.name
+		this.sync = new Sync(this.emit)
 		this.withdrawQueue = new Queue()
 		this.connectionHandler = methods.connection
 		this.informMain = methods.informMain.bind(this)()
@@ -134,7 +128,7 @@ export default abstract class Common {
 			try {
 				const response = await this.withdraw(request)
 				await Send.updateOne(request._id, response)
-				await this.syncUpdateSent(response)
+				await this.sync.updateSent(response)
 			} catch (err) {
 				if (err.code === 'NotSent') {
 					const message = err.message ? err.message : err
@@ -185,6 +179,7 @@ export default abstract class Common {
 
 	/**
 	 * Contém métodos para atualizar o main server a respeito de transações
+	 * @deprecated Substituído pelo método 'sync'
 	 */
 	informMain: {
 		/**
@@ -211,64 +206,7 @@ export default abstract class Common {
 
 	public async newTransaction(transaction: CreateReceive): Promise<void> {
 		const doc = await Transaction.create(transaction)
-		await this.syncNewTransaction(doc)
-	}
-
-	private async syncNewTransaction(transaction: ReceiveDoc) {
-		try {
-			const opid: string = await this.emit('new_transaction', transaction)
-			transaction.opid = new ObjectId(opid)
-			if (transaction.status == 'confirmed') transaction.completed = true
-			await transaction.save()
-		} catch (err) {
-			if (err === 'SocketDisconnected') {
-				console.error('Não foi possível informar o main server da nova transação pois ele estava offline')
-			} else if (err.code === 'UserNotFound') {
-				await Account.deleteOne({ account: transaction.account })
-				await Transaction.deleteMany({ account: transaction.account })
-			} else if (err.code === 'TransactionExists' && err.transaction.opid) {
-				transaction.opid = new ObjectId(err.transaction.opid)
-				await transaction.save()
-			} else {
-				throw err
-			}
-		}
-	}
-
-	private async syncUpdateReceived(updtReceived: UpdateReceivedTx) {
-		const { txid } = updtReceived
-		try {
-			await this.emit('update_received_tx', updtReceived)
-			if (updtReceived.status == 'confirmed') {
-				await Receive.updateOne({ txid }, { completed: true })
-			}
-		} catch (err) {
-			if (err === 'SocketDisconnected') return
-			/**
-			 * OperationNotFound significa ou que a transação não existe
-			 * no main server ou que ela foi concluída (e está inacessível
-			 * a um update)
-			 */
-			if (err.code != 'OperationNotFound') throw err
-		}
-	}
-
-	private async syncUpdateSent(updtSent: UpdateSentTx) {
-		const { txid } = updtSent
-		const { opid } = await Send.findOne({ txid }, { opid: true }).orFail()
-		try {
-			await this.emit('update_sent_tx', { opid, ...updtSent })
-			if (updtSent.status == 'confirmed') {
-				await Transaction.updateOne({ opid }, { completed: true, })
-			}
-		} catch (err) {
-			if (err === 'SocketDisconnected') return
-			if (err.code === 'OperationNotFound') {
-				console.error(`Deleting non-existent withdraw transaction with opid: '${opid}'`)
-				await Transaction.deleteOne({ opid })
-			} else
-				throw err
-		}
+		await this.sync.newTransaction(doc)
 	}
 
 	public async updateTx(txUpdate: UpdateTx) {
@@ -280,10 +218,10 @@ export default abstract class Common {
 		}).orFail() as ReceiveDoc|SendDoc
 
 		if (tx.type == 'receive') {
-			if (tx.opid) await this.syncUpdateReceived(tx)
-			else await this.syncNewTransaction(tx)
+			if (tx.opid) await this.sync.updateReceived(tx)
+			else await this.sync.newTransaction(tx)
 		} else {
-			await this.syncUpdateSent(tx)
+			await this.sync.updateSent(tx)
 		}
 	}
 
