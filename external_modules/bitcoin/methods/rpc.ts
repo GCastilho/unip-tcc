@@ -1,6 +1,6 @@
 import Client from 'bitcoin-core'
 import { EventEmitter } from 'events'
-import type { WithdrawRequest, UpdateSentTx } from '../../common'
+import type { WithdrawRequest, WithdrawResponse } from '../../common'
 
 /** EventEmmiter genérico */
 class Events extends EventEmitter {}
@@ -72,7 +72,7 @@ export const getBlockCount = async (): Promise<any> =>
  * @param req As informações do request de saque
  * @returns Um objeto com as informações da transação enviada
  */
-export async function send(req: WithdrawRequest): Promise<UpdateSentTx> {
+export async function send(req: WithdrawRequest): Promise<WithdrawResponse> {
 	// TODO: Melhorar o handler desses error codes
 	// TODO: Garantir que o cast to number do amount não dá problema com rounding
 	const txid = await sendToAddress(req.account, req.amount).catch(err => {

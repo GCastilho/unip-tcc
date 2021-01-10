@@ -21,20 +21,6 @@ type UpdateTx = {
 	status: 'pending'|'confirmed'
 	/** A quantidade de confirmações dessa transação, caso tenha */
 	confirmations?: number
-	/** O timestamp da transação na rede da moeda */
-	timestamp?: number
-}
-
-/** Type para atualização de uma transação enviada */
-export type UpdateSentTx = {
-	/** O id dessa transação na rede da moeda */
-	txid: string
-	/** O status dessa transação */
-	status: 'pending'|'confirmed'
-	/** A quantidade de confirmações dessa transação, caso tenha */
-	confirmations?: number
-	/** O timestamp da transação na rede da moeda */
-	timestamp: number|Date
 }
 
 /** Type de um request do método de withdraw */
@@ -43,6 +29,18 @@ export type WithdrawRequest = {
 	account: string
 	/** amount que deve ser enviado ao destino */
 	amount: number
+}
+
+/** Type da resposta do método de withdraw */
+export type WithdrawResponse = {
+	/** O id dessa transação na rede da moeda */
+	txid: string
+	/** O status dessa transação */
+	status: 'pending'|'confirmed'
+	/** A quantidade de confirmações dessa transação, caso tenha */
+	confirmations?: number
+	/** O timestamp da transação na rede da moeda */
+	timestamp: number
 }
 
 /** URL do servidor principal */
@@ -69,7 +67,7 @@ export default abstract class Common {
 	 * @param request O objeto com os dados do request de saque
 	 * @returns WithdrawResponse Com os dados da transação enviada
 	 */
-	abstract withdraw(request: WithdrawRequest): Promise<UpdateSentTx>
+	abstract withdraw(request: WithdrawRequest): Promise<WithdrawResponse>
 
 	/**
 	 * Handler da conexão com o servidor principal

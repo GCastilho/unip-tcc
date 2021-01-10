@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { Nano } from '../index'
 import { fromNanoToRaw } from '../utils/unitConverter'
-import type { WithdrawRequest, UpdateSentTx } from '../../common'
+import type { WithdrawRequest, WithdrawResponse } from '../../common'
 
 const nanoUrl = process.env.NANO_URL || 'http://[::1]:55000'
 
@@ -53,7 +53,7 @@ export function nanoRpc(this: Nano) {
 	 * @param req As informações do request de saque
 	 * @returns Um objeto com as informações da transação enviada
 	 */
-	const send = async (req: WithdrawRequest): Promise<UpdateSentTx> => {
+	const send = async (req: WithdrawRequest): Promise<WithdrawResponse> => {
 		const res = await request({
 			action: 'send',
 			wallet: this.wallet,
