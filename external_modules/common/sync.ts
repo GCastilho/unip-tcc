@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb'
 import Account from './db/models/account'
 import Transaction, { Receive, Send } from './db/models/newTransactions'
-import type { ReceiveDoc } from './db/models/newTransactions'
+import type { ReceiveDoc, SendDoc } from './db/models/newTransactions'
 
 /** Type para atualização de uma transação recebida */
 type UpdateReceivedTx = {
@@ -27,6 +27,22 @@ export type UpdateSentTx = {
 
 export default class Sync {
 	constructor(private emit: (event: string, ...args: any) => Promise<any>) {}
+
+	public async uncompleted() {
+		const query = Transaction.find({
+			status: { $ne: 'requested' },
+			completed: false
+		}) as AsyncIterable<ReceiveDoc|SendDoc>
+
+		for await (const tx of query) {
+			if (tx.type == 'receive') {
+				if (tx.opid) await this.updateReceived(tx)
+				else await this.newTransaction(tx)
+			} else {
+				await this.updateSent(tx)
+			}
+		}
+	}
 
 	/**
 	 * Envia o evento de uma transação ao servidor principal e atualiza seu opid

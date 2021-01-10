@@ -1,5 +1,4 @@
 import io from 'socket.io-client'
-import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
 import Sync from './sync'
 import Queue from './queue'
@@ -113,6 +112,9 @@ export default abstract class Common {
 		// Inicializa e finaliza o withdrawQueue
 		this._events.on('node_connected', () => this.processQueue())
 		this._events.on('node_disconnected', () => this.withdrawQueue.stop())
+
+		// Sincroniza transações com o main server
+		this._events.on('connected', () => this.sync.uncompleted())
 	}
 
 	/**
@@ -222,28 +224,6 @@ export default abstract class Common {
 			else await this.sync.newTransaction(tx)
 		} else {
 			await this.sync.updateSent(tx)
-		}
-	}
-
-	public async syncMain() {
-		for await (const tx of Transaction.find({ completed: false })) {
-			if (tx.type == 'receive') {
-				if (tx.opid) {
-					// ESSE NÃO É O ARGUMENTO DO EVENTO
-					await this.emit('update_received_tx', tx)
-				} else {
-					// ESSE NÃO É O ARGUMENTO DO EVENTO
-					const opid = await this.emit('new_transaction', tx)
-					tx.opid = new ObjectId(opid)
-				}
-			} else {
-				// ESSE NÃO É O ARGUMENTO DO EVENTO
-				await this.emit('update_sent_tx', tx)
-			}
-			if (tx.status == 'confirmed') tx.completed = true
-			// @ts-expect-error TS não reconhece que é callable pq Transaction é um union type
-			// See https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-3.html#caveats
-			await tx.save()
 		}
 	}
 
