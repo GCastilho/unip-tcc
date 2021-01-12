@@ -28,7 +28,7 @@ export type WithdrawRequest = {
 	/** account de destino da transação */
 	account: string
 	/** amount que deve ser enviado ao destino */
-	amount: number
+	amount: string|number
 }
 
 /** Type da resposta do método de withdraw */
@@ -124,10 +124,10 @@ export default abstract class Common {
 	 * que a transação não foi enviada
 	 */
 	private async processQueue() {
-		for await (const request of this.withdrawQueue) {
+		for await (const { opid, account, amount } of this.withdrawQueue) {
 			try {
-				const response = await this.withdraw(request)
-				await Send.updateOne(request._id, response)
+				const response = await this.withdraw({ account, amount })
+				await Send.updateOne({ opid }, response)
 				await this.sync.updateSent(response)
 			} catch (err) {
 				if (err.code === 'NotSent') {

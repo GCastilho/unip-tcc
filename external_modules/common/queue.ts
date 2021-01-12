@@ -1,4 +1,6 @@
 import { Send } from './db/models/newTransactions'
+import type { DocumentQuery } from 'mongoose'
+import type { WithdrawRequest } from '../../interfaces/transaction'
 import type { SendRequestDoc } from './db/models/newTransactions'
 
 type PromiseExecutor<T> = {
@@ -79,8 +81,8 @@ class Queue<T> implements AsyncIterator<T, void> {
 	}
 }
 
-export default class WithdrawQueue implements AsyncIterable<SendRequestDoc> {
-	private queue?: Queue<SendRequestDoc>
+export default class WithdrawQueue implements AsyncIterable<WithdrawRequest> {
+	private queue?: Queue<WithdrawRequest>
 
 	/** Retorna um novo iterator e faz o bootstrap com os requests do banco */
 	[Symbol.asyncIterator]() {
@@ -91,8 +93,16 @@ export default class WithdrawQueue implements AsyncIterable<SendRequestDoc> {
 
 	/** Faz o bootstrap do iterator com os valores do banco */
 	private async boostrap() {
-		for await (const request of Send.find({ status: 'requested' })) {
-			this.push(request as SendRequestDoc)
+		const requests = Send.find({
+			status: 'requested'
+		}, {
+			opid: 1,
+			account: 1,
+			amount: 1
+		}) as DocumentQuery<SendRequestDoc[], SendRequestDoc>
+
+		for await (const { opid, account, amount } of requests) {
+			this.push({ opid: opid.toHexString(), account, amount })
 		}
 	}
 
@@ -100,7 +110,7 @@ export default class WithdrawQueue implements AsyncIterable<SendRequestDoc> {
 	 * Adiciona um novo valor à queue. Se a queue não estiver ativa o valor é
 	 * ignorado
 	 */
-	public push(value: SendRequestDoc) {
+	public push(value: WithdrawRequest) {
 		if (!this.queue) return
 		this.queue.push(value)
 	}

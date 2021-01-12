@@ -71,10 +71,10 @@ export function connection(this: Common, socket: SocketIOClient.Socket) {
 		 * ou da falha
 		 */
 		try {
-			const doc = await Send.createRequest(request)
+			await Send.createRequest(request)
 
 			callback(null, `received withdraw request for '${request.opid}'`)
-			this.withdrawQueue.push(doc)
+			this.withdrawQueue.push(request)
 		} catch (err) {
 			if (err.code === 11000) {
 				callback({

@@ -75,7 +75,7 @@ export const getBlockCount = async (): Promise<any> =>
 export async function send(req: WithdrawRequest): Promise<WithdrawResponse> {
 	// TODO: Melhorar o handler desses error codes
 	// TODO: Garantir que o cast to number do amount não dá problema com rounding
-	const txid = await sendToAddress(req.account, req.amount).catch(err => {
+	const txid = await sendToAddress(req.account, +req.amount).catch(err => {
 		if (err.code === 'ECONNREFUSED') {
 			err.code = 'NotSent'
 			err.message = 'Connection refused on bitcoin node'
