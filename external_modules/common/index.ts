@@ -7,6 +7,7 @@ import * as methods from './methods'
 import * as mongoose from './db/mongoose'
 import type { CreateReceive } from './db/models/newTransactions'
 import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
+import { startSession } from 'mongoose'
 
 type Options = {
 	/** Nome da Currency que se está trabalhando (igual ao da CurrencyAPI) */
@@ -125,26 +126,39 @@ export default abstract class Common {
 	 */
 	private async processQueue() {
 		for await (const { opid, account, amount } of this.withdrawQueue) {
+			const session = await startSession()
+			session.startTransaction()
+
 			try {
+				// Find para checar se a tx n foi cancelada
+				await Send.findOne({ opid }, { _id: 1 }, { session })
+
 				const response = await this.withdraw({ account, amount })
-				await Send.updateOne({ opid }, response)
-				await this.sync.updateSent(response)
+				await Send.updateOne({ opid }, response, { session })
+				await this.sync.updateSent(response, session)
+
+				await session.commitTransaction()
 			} catch (err) {
+				await session.abortTransaction()
 				if (err.code === 'NotSent') {
 					const message = err.message ? err.message : err
 					console.error('Withdraw: Transaction was not sent:', message)
 					break
+				} else if (err.name != 'DocumentNotFoundError') {
+					// Como usa transaction, DocumentNotFoundError só pode ocorrer no find
+					/**
+					 * Não há garantia que a tx não foi enviada, interrompe o processo
+					 * para impedir que esse erro se propague de alguma forma
+					 */
+					console.error('Unknown error while processing withdraw queue:', err)
+					/**
+					 * @todo Um error code específico para erro de withdraw. Pode agilizar
+					 * a análise do log
+					 */
+					process.exit(1)
 				}
-				/**
-				 * Não há garantia que a tx não foi enviada, interrompe o processo
-				 * para impedir que esse erro se propague de alguma forma
-				 */
-				console.error('Unknown error while processing withdraw queue:', err)
-				/**
-				 * @todo Um error code específico para erro de withdraw. Pode agilizar
-				 * a análise do log
-				 */
-				process.exit(1)
+			} finally {
+				await session.endSession()
 			}
 		}
 	}

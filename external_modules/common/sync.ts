@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import Account from './db/models/account'
 import Transaction, { Receive, Send } from './db/models/newTransactions'
+import type { ClientSession } from 'mongoose'
 import type { ReceiveDoc, SendDoc } from './db/models/newTransactions'
 
 /** Type para atualização de uma transação recebida */
@@ -98,19 +99,19 @@ export default class Sync {
 	 * Atualiza um request de withdraw recebido do main server
 	 * @param updtSent A atualização da atualização enviada
 	 */
-	public async updateSent(updtSent: UpdateSentTx) {
+	public async updateSent(updtSent: UpdateSentTx, session?: ClientSession) {
 		const { txid } = updtSent
-		const { opid } = await Send.findOne({ txid }, { opid: true }).orFail()
+		const { opid } = await Send.findOne({ txid }, { opid: true }, { session }).orFail()
 		try {
 			await this.emit('update_sent_tx', { opid, ...updtSent })
 			if (updtSent.status == 'confirmed') {
-				await Transaction.updateOne({ opid }, { completed: true, })
+				await Transaction.updateOne({ opid }, { completed: true }, { session })
 			}
 		} catch (err) {
 			if (err === 'SocketDisconnected') return
 			if (err.code === 'OperationNotFound') {
 				console.error(`Deleting non-existent withdraw transaction with opid: '${opid}'`)
-				await Transaction.deleteOne({ opid })
+				await Transaction.deleteOne({ opid }, { session })
 			} else
 				throw err
 		}
