@@ -1,13 +1,14 @@
 import io from 'socket.io-client'
 import { EventEmitter } from 'events'
+import { startSession } from 'mongoose'
 import Sync from './sync'
 import Queue from './queue'
+import initListeners from './listeners'
 import Transaction, { ReceiveDoc, Send, SendDoc } from './db/models/newTransactions'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
 import type { CreateReceive } from './db/models/newTransactions'
 import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
-import { startSession } from 'mongoose'
 
 type Options = {
 	/** Nome da Currency que se está trabalhando (igual ao da CurrencyAPI) */
@@ -70,11 +71,6 @@ export default abstract class Common {
 	 */
 	abstract withdraw(request: WithdrawRequest): Promise<WithdrawResponse>
 
-	/**
-	 * Handler da conexão com o servidor principal
-	 */
-	private connectionHandler: (socket: SocketIOClient.Socket) => void
-
 	/** Classe com métodos para sincronia de eventos com o main server */
 	private sync: Sync
 
@@ -93,7 +89,6 @@ export default abstract class Common {
 		this.name = options.name
 		this.sync = new Sync(this.emit)
 		this.withdrawQueue = new Queue()
-		this.connectionHandler = methods.connection
 		this.informMain = methods.informMain.bind(this)()
 
 		// Monitora os eventos do rpc para manter o nodeOnline atualizado
@@ -169,15 +164,11 @@ export default abstract class Common {
 		this.initBlockchainListener()
 	}
 
-	/**
-	 * Conecta com o servidor principal
-	 */
-	private connectToMainServer = () => {
-		/**
-		 * Socket de conexão com o servidor principal
-		 */
+	/** Conecta com o servidor principal */
+	private connectToMainServer() {
+		/** Socket de conexão com o servidor principal */
 		const socket = io(`http://${mainServerIp}:${mainServerPort}/${this.name}`)
-		this.connectionHandler(socket)
+		initListeners.call(this, socket)
 	}
 
 	/**

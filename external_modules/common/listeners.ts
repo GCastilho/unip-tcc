@@ -1,14 +1,14 @@
 // eslint-disable-next-line
 const ss = require('socket.io-stream')
-import Common from '../index'
-import Account from '../db/models/account'
-import { Send } from '../db/models/newTransactions'
-import type { WithdrawRequest } from '../../../interfaces/transaction'
+import Account from './db/models/account'
+import { Send } from './db/models/newTransactions'
+import type Common from '.'
+import type { WithdrawRequest } from './../../interfaces/transaction'
 
 /**
- * Essa função é o handler de requests vindos do servidor principal
+ * Inicializa os listeners do socket com o main server
  */
-export function connection(this: Common, socket: SocketIOClient.Socket) {
+export default function initListeners(this: Common, socket: SocketIOClient.Socket) {
 	/**
 	 * Ouve por eventos vindos do método 'emit' e os retransmite ao socket
 	 * para serem enviados ao main server
