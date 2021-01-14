@@ -2,6 +2,45 @@ import Client from 'bitcoin-core'
 import { EventEmitter } from 'events'
 import type { WithdrawRequest, WithdrawResponse } from '../../common'
 
+type TransactionInfo = {
+	txid : string
+	amount: number
+	confirmations: number
+	time : number
+	blockhash : string
+	blockindex : number
+	blocktime : number
+	timereceived: number
+	/** Whether this transaction could be replaced due to BIP125 (replace-by-fee); may be unknown for unconfirmed transactions not in the mempool */
+	'bip125-replaceable': 'yes'|'no'|'unknown',
+	details: {
+		address : string,
+		category: 'send'|'receive'|'generate'|'immature'|'orphan'
+		amount : number
+		label : string,
+		vout : number,
+	}[]
+}
+
+type BlockInfo = {
+	hash: string
+	confirmations: number
+	size: number
+	strippedsize: number
+	height: number
+	version: number
+	versionHex: string
+	merkleroot: string
+	time: number
+	nonce: number
+	bits: string
+	difficulty: number
+	chainwork: string
+	nTx: number
+	previousblockhash: string
+	nextblockhash: string
+}
+
 /** EventEmmiter genérico */
 class Events extends EventEmitter {}
 
@@ -46,14 +85,14 @@ async function request(command: string, ...args: any[]): Promise<any> {
 const sendToAddress = async (account: string, amount: number): Promise<string> =>
 	await request('sendToAddress', account, amount)
 
-export const transactionInfo = async (txid: string): Promise<any> =>
+export const getTransactionInfo = async (txid: string): Promise<TransactionInfo> =>
 	await request('getTransaction', txid)
 
 export const listSinceBlock = async (block: string): Promise<any> =>
 	await request('listSinceBlock', block)
 
-export const blockInfo = async (block): Promise<any> =>
-	await request('getBlock', block, 1)
+export const getBlockInfo = async (blockhash: string): Promise<BlockInfo> =>
+	await request('getBlock', blockhash, 1)
 
 export const getNewAddress = async (): Promise<string> =>
 	await request('getNewAddress')
@@ -90,7 +129,7 @@ export async function send(req: WithdrawRequest): Promise<WithdrawResponse> {
 		throw err
 	})
 
-	const tInfo = await transactionInfo(txid)
+	const tInfo = await getTransactionInfo(txid)
 	return {
 		txid,
 		status: 'pending',

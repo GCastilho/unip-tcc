@@ -1,102 +1,60 @@
-import { ObjectId } from 'mongodb'
 import Account from '../../common/db/models/account'
-import Transaction from '../../common/db/models/transaction'
-import { ReceivedPending } from '../../common/db/models/pendingTx'
-import { Bitcoin } from '../index'
-import type { TxReceived } from '../../../interfaces/transaction'
+import { getTransactionInfo } from './rpc'
+import type { Bitcoin } from '../index'
+import type { NewTransaction } from '../../common'
 
 /**
- * Recebe um txid e uma função para pegar informações brutas dessa transação
- * recebida da blockchain, retorna uma transação formatada usando
- * a interface Tx ou void
+ * Recebe um txid e retorna uma transação formatada como uma NewTransaction
  *
  * @param txid A txid da transação
- * @param getInfo Uma função que recebe um txid e retorna informações brutas da
- * transação da blockchain
  */
-async function formatTransaction(txid: string, getInfo: (...args: any[]) => any): Promise<TxReceived|void> {
+async function formatTransaction(txid: string): Promise<NewTransaction[]> {
 	/**
 	 * Informações da transação pegas da blockchain
 	 */
-	const txInfo = await getInfo(txid)
+	const txInfo = await getTransactionInfo(txid)
 
-	/**
-	 * Verifica se o txid é de uma transação de mineração
-	 */
-	if (txInfo.generated) return
-
-	/**
-	 * Verifica se é uma transação recebida
-	 */
-	const received = txInfo.details.find(details =>
-		details.category === 'receive'
-	)
-	if (!received) return
-
-	const address: TxReceived['account'] = received.address
-
-	/** Verifica se a transação é nossa */
-	const account = await Account.findOne({ account: address })
-	if (!account) return
-
-	const formattedTransaction: TxReceived = {
-		txid:          txInfo.txid,
-		status:        'pending',
-		confirmations: txInfo.confirmations,
-		account:       address,
-		amount:        received.amount,
-		timestamp:     txInfo.time * 1000 // O timestamp do bitcoin é em segundos
-	}
-
-	return formattedTransaction
+	return txInfo.details.filter(tx => tx.category == 'receive').map(details => {
+		const { address, amount } = details
+		return {
+			amount,
+			txid:          txInfo.txid,
+			account:       address,
+			status:        txInfo.confirmations < 3 ? 'pending' : 'confirmed',
+			confirmations: txInfo.confirmations,
+			timestamp:     txInfo.time * 1000 // O timestamp do bitcoin é em segundos
+		}
+	})
 }
 
 /**
  * @todo Uma maneira de pegar transacções de quado o servidor estava off
  * @todo Adicionar um handler de tx cancelada (o txid muda se aumentar o fee)
  */
-export async function processTransaction(this: Bitcoin, txid: TxReceived['txid']) {
+export async function processTransaction(this: Bitcoin, txid: NewTransaction['txid']) {
 	if (typeof txid != 'string') return
 
 	try {
-		const transaction = await formatTransaction(txid, this.rpc.transactionInfo)
-		if (!transaction) return
-		console.log('received transaction', transaction) //remove
+		let transactions = await formatTransaction(txid)
 
-		/** Salva a nova transação no database */
-		await new Transaction({
-			txid,
-			type: 'receive',
-			account: transaction.account
-		}).save()
+		const accounts = await Account.find({
+			account: { $in: transactions.map(d => d.account) }
+		}).map(docs => docs.map(doc => doc.account)).orFail()
 
-		/** Salva a nova transação na collection de Tx pendente */
-		await new ReceivedPending({
-			txid,
-			transaction
-		}).save()
+		transactions = transactions.filter(tx => accounts.includes(tx.account))
 
-		/**
-		 * opid vai ser undefined caso a transação não tenha sido enviada ao
-		 * main, nesse caso não há mais nada o que fazer aqui
-		 */
-		const opid = await this.informMain.newTransaction(transaction)
-		if (!opid) return
-
-		await ReceivedPending.updateOne({
-			txid
-		}, {
-			$set: {
-				'transaction.opid': new ObjectId(opid)
-			}
-		})
+		if (!transactions) return
+		for (const tx of transactions) {
+			/**
+			 * O evento de transação recebida acontece quando a transação é
+			 * recebida e quando ela recebe a primeira confimação, o que causa um
+			 * erro 11000
+			 */
+			await this.newTransaction(tx).catch(err => {
+				if (err.code != 11000) throw err
+			})
+		}
 	} catch (err) {
-		/**
-		 * O evento de transação recebida acontece quando a transação é
-		 * recebida e quando ela recebe a primeira confimação, o que causa um
-		 * erro 11000
-		 */
-		if (err.code != 11000)
-			console.error('Transaction processing error:', err)
+		console.error('Transaction processing error:', err)
 	}
 }

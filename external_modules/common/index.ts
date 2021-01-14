@@ -4,10 +4,9 @@ import { startSession } from 'mongoose'
 import Sync from './sync'
 import Queue from './queue'
 import initListeners from './listeners'
-import Transaction, { ReceiveDoc, Send, SendDoc } from './db/models/newTransactions'
+import Transaction, { Receive, ReceiveDoc, Send, SendDoc } from './db/models/newTransactions'
 import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import type { CreateReceive } from './db/models/newTransactions'
 import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
 
 type Options = {
@@ -37,6 +36,21 @@ export type WithdrawRequest = {
 export type WithdrawResponse = {
 	/** O id dessa transação na rede da moeda */
 	txid: string
+	/** O status dessa transação */
+	status: 'pending'|'confirmed'
+	/** A quantidade de confirmações dessa transação, caso tenha */
+	confirmations?: number
+	/** O timestamp da transação na rede da moeda */
+	timestamp: number
+}
+
+export type NewTransaction = {
+	/** O id dessa transação na rede da moeda */
+	txid: string
+	/** account de destino da transação */
+	account: string
+	/** amount que deve ser enviado ao destino */
+	amount: number
 	/** O status dessa transação */
 	status: 'pending'|'confirmed'
 	/** A quantidade de confirmações dessa transação, caso tenha */
@@ -126,9 +140,16 @@ export default abstract class Common {
 
 			try {
 				// Find para checar se a tx n foi cancelada
-				await Send.findOne({ opid }, { _id: 1 }, { session })
+				await Send.findOne({ opid, status: 'requested' }, { _id: 1 }, { session })
 
 				const response = await this.withdraw({ account, amount })
+				console.log('Sent new transaction:', {
+					opid,
+					account,
+					amount,
+					...response
+				})
+
 				await Send.updateOne({ opid }, response, { session })
 				await this.sync.updateSent(response, session)
 
@@ -209,8 +230,12 @@ export default abstract class Common {
 		updateWithdraw (transaction: UpdtSent): Promise<void>
 	}
 
-	public async newTransaction(transaction: CreateReceive): Promise<void> {
-		const doc = await Transaction.create(transaction)
+	public async newTransaction(transaction: NewTransaction): Promise<void> {
+		const doc = await Receive.create<ReceiveDoc>({
+			type: 'receive',
+			...transaction
+		})
+		console.log('Received new transaction', transaction)
 		await this.sync.newTransaction(doc)
 	}
 
