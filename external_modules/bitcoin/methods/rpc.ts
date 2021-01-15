@@ -41,6 +41,29 @@ type BlockInfo = {
 	nextblockhash: string
 }
 
+type ListSinceBlock = {
+	transactions: {
+		address: string
+		category: 'send'|'receive'|'generate'|'immature'|'orphan'
+		amount: number
+		vout : number
+		fee: number
+		confirmations:number
+		blockhash: string
+		blockindex: number
+		blocktime: number
+		txid: string
+		time: number
+		timereceived: number
+		'bip125-replaceable': 'yes'|'no'|'unknown'
+		abandoned: boolean
+		comment: string
+		label : string
+		to: string
+	}[],
+	lastblock: string
+}
+
 /** EventEmmiter genérico */
 class Events extends EventEmitter {}
 
@@ -88,7 +111,7 @@ const sendToAddress = async (account: string, amount: number): Promise<string> =
 export const getTransactionInfo = async (txid: string): Promise<TransactionInfo> =>
 	await request('getTransaction', txid)
 
-export const listSinceBlock = async (block: string): Promise<any> =>
+export const listSinceBlock = async (block: string): Promise<ListSinceBlock> =>
 	await request('listSinceBlock', block)
 
 export const getBlockInfo = async (blockhash: string): Promise<BlockInfo> =>

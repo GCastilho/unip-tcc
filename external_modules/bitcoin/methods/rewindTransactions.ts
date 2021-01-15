@@ -1,96 +1,51 @@
-import { Bitcoin } from '../index'
-import meta from '../../common/db/models/meta'
-import { ObjectId } from 'mongodb'
-import Account from '../../common/db/models/account'
-import Transaction from '../../common/db/models/transaction'
-import { ReceivedPending } from '../../common/db/models/pendingTx'
-import type { TxReceived } from '../../../interfaces/transaction'
+import Meta from '../../common/db/models/meta'
+import { Receive } from '../../common/db/models/newTransactions'
+import { listSinceBlock, getBlockInfo } from './rpc'
+import type { Bitcoin } from '../index'
 
-async function formatTransaction(txInfo: any): Promise<TxReceived|void> {
-	if (txInfo.category != 'receive') return
-
-	const address: TxReceived['account'] = txInfo.address
-
-	/** Verifica se a transação é nossa */
-	const account = await Account.findOne({ account: address })
-	if (!account) return
-	return {
-		txid:          txInfo.txid,
-		status:        'pending',
-		confirmations: txInfo.confirmations,
-		account:       address,
-		amount:        txInfo.amount,
-		timestamp:     txInfo.time * 1000 // O timestamp do bitcoin é em segundos
-	}
-}
-
-export async function rewindTransactions(this: Bitcoin, newBlockhash: string) {
+export async function rewindTransactions(this: Bitcoin, newestBlockhash: string) {
 	this.rewinding = true
 
-	let blockhash = (await meta.findOne({ info: 'lastKnowHash' }))?.details
-	if (!blockhash) {
-		//the first VALID bitcoin BlockHash
-		blockhash = '000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943'
-		await meta.updateOne({
-			info: 'lastKnowHash'
-		}, {
-			details: blockhash
-		}, {
-			upsert: true
+	/** Se não encontrar no banco, default para primeiro blockhash válido */
+	const lastKnowHash = await Meta.findOne({ info: 'lastKnowHash' })
+		.map(doc => doc?.details || '000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943')
+
+	const { transactions } = await listSinceBlock(lastKnowHash)
+
+	const storedTxs = await Receive.find({
+		txid: {
+			$in: transactions.map(tx => tx.txid)
+		}
+	})
+
+	/**
+	 * Filtra transações cuja combinação txid & account exista no DB; A account
+	 * é checada não descartar transações em batch recebidas em que uma tá no
+	 * banco e a outra misteriosamente não está
+	 */
+	const txs = transactions.filter(tx =>
+		storedTxs.findIndex(s => s.txid == tx.txid && s.account == tx.address) == -1
+	)
+
+	for (const tx of txs) {
+		await this.newTransaction({
+			txid:          tx.txid,
+			status:        tx.confirmations < 3 ? 'pending' : 'confirmed',
+			confirmations: tx.confirmations,
+			account:       tx.address,
+			amount:        tx.amount,
+			timestamp:     tx.time * 1000 // O timestamp do bitcoin é em segundos
 		})
 	}
-	const { transactions } = await this.rpc.listSinceBlock(blockhash) as { transactions: any[] }
-	for (const tx of transactions) {
-		try {
-			const transaction = await formatTransaction(tx)
-			if (!transaction) continue
 
-			/** Salva a nova transação no database */
-			await new Transaction({
-				txid: transaction.txid,
-				type: 'receive',
-				account: transaction.account
-			}).save()
-
-			/** Salva a nova transação na collection de Tx pendente */
-			await new ReceivedPending({
-				txid: transaction.txid,
-				transaction: transaction
-			}).save()
-
-			/**
-			 * opid vai ser undefined caso a transação não tenha sido enviada ao
-			 * main, nesse caso não há mais nada o que fazer aqui
-			 */
-			const opid = await this.informMain.newTransaction(transaction)
-			if (!opid) continue
-
-			await ReceivedPending.updateOne({
-				txid : transaction.txid
-			}, {
-				$set: {
-					'transaction.opid': new ObjectId(opid)
-				}
-			})
-		} catch (err) {
-			/**
-			 * O evento de transação recebida acontece quando a transação é
-			 * recebida e quando ela recebe a primeira confimação, o que causa um
-			 * erro 11000
-			 */
-			if (err.code != 11000)
-				console.error('Transaction processing error:', err)
-		}
-	}
-
-	await meta.updateOne({
+	await Meta.updateOne({
 		info: 'lastKnowHash'
 	}, {
-		details: newBlockhash
+		details: newestBlockhash
 	}, {
 		upsert: true
 	})
 
-	this.blockHeight = (await this.rpc.getBlockChainInfo())?.height
+	this.blockHeight = (await getBlockInfo(newestBlockhash)).height
 	this.rewinding = false
 }
