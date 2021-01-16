@@ -5,9 +5,7 @@ import Sync from './sync'
 import Queue from './queue'
 import initListeners from './listeners'
 import Transaction, { Receive, ReceiveDoc, Send, SendDoc } from './db/models/newTransactions'
-import * as methods from './methods'
 import * as mongoose from './db/mongoose'
-import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
 
 type Options = {
 	/** Nome da Currency que se está trabalhando (igual ao da CurrencyAPI) */
@@ -103,7 +101,6 @@ export default abstract class Common {
 		this.name = options.name
 		this.sync = new Sync(this.emit)
 		this.withdrawQueue = new Queue()
-		this.informMain = methods.informMain.bind(this)()
 
 		// Monitora os eventos do rpc para manter o nodeOnline atualizado
 		this._events.on('rpc_connected', () => {
@@ -204,32 +201,9 @@ export default abstract class Common {
 	protected nodeOnline = false
 
 	/**
-	 * Contém métodos para atualizar o main server a respeito de transações
-	 * @deprecated Substituído pelo método 'sync'
+	 * Processa uma transação recebida, salvando-a no DB e informando o main
+	 * @param transaction Os dados da transação recebida
 	 */
-	informMain: {
-		/**
-		 * Envia uma transação ao servidor principal e atualiza o opid dela no
-		 * database
-		 *
-		 * @param transaction A transação que será enviada ao servidor
-		 *
-		 * @returns opid se o envio foi bem-sucedido e a transação está pendente
-		 * @returns void se a transação não foi enviada ou se estava confirmada
-		 */
-		newTransaction (transaction: TxReceived): Promise<string|void>
-		/**
-		 * Atualiza uma transação recebida previamente informada ao main server
-		 * @param txUpdate A atualização da atualização recebida
-		 */
-		updateReceivedTx (txUpdate: UpdtReceived): Promise<void>
-		/**
-		 * Atualiza um request de withdraw recebido do main server
-		 * @param transaction A atualização da transação enviada
-		 */
-		updateWithdraw (transaction: UpdtSent): Promise<void>
-	}
-
 	public async newTransaction(transaction: NewTransaction): Promise<void> {
 		const doc = await Receive.create<ReceiveDoc>({
 			type: 'receive',
@@ -239,6 +213,11 @@ export default abstract class Common {
 		await this.sync.newTransaction(doc)
 	}
 
+	/**
+	 * Atualiza uma transação já existente. Não é necessário que a transação
+	 * tenha sido informada ao main para esse método ser chamado
+	 * @param txUpdate Os dados de atualização da transação
+	 */
 	public async updateTx(txUpdate: UpdateTx) {
 		const { txid, ...updtTx } = txUpdate
 		const tx = await Transaction.findOneAndUpdate({
