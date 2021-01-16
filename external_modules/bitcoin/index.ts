@@ -1,17 +1,17 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import Common from '../common'
+import Transaction from '../common/db/models/newTransactions'
 import * as rpc from './methods/rpc'
 import * as methods from './methods'
 import type { WithdrawRequest, WithdrawResponse } from '../common'
+import type { ReceiveDoc, SendDoc } from '../common/db/models/newTransactions'
 
 export class Bitcoin extends Common {
 	private port: number
 
 	/** Número do bloco mais recente sincronizado */
 	private blockHeight: number
-
-	private processBlock = methods.processBlock.bind(this)
 
 	/**
 	 * Indica se a função de rewinding de blocos está sendo executada ou não,
@@ -52,6 +52,28 @@ export class Bitcoin extends Common {
 			confirmations,
 			status: confirmations >= 3 ? 'confirmed' : 'pending',
 			timestamp: time * 1000 // O timestamp do bitcoin é em segundos
+		}
+	}
+
+	async processBlock(blockhash: string) {
+		if (typeof blockhash != 'string') return
+
+		try {
+			const blockInfo = await rpc.getBlockInfo(blockhash)
+			if (blockInfo.height < this.blockHeight || this.rewinding) return
+
+			await this.rewindTransactions(blockhash)
+
+			for await (const tx of Transaction.find({ status: 'pending' }) as AsyncIterable<ReceiveDoc|SendDoc>) {
+				const { confirmations } = await rpc.getTransactionInfo(tx.txid)
+				await this.updateTx({
+					txid: tx.txid,
+					status: confirmations >= 3 ? 'confirmed' : 'pending',
+					confirmations
+				})
+			}
+		} catch (err) {
+			console.error('Error fetching unconfirmed transactions', err)
 		}
 	}
 
