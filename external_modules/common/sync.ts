@@ -2,29 +2,13 @@ import { ObjectId } from 'mongodb'
 import Account from './db/models/account'
 import Transaction, { Receive, Send } from './db/models/transaction'
 import type { ClientSession } from 'mongoose'
-import type { ReceiveDoc, SendDoc } from './db/models/transaction'
+import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
 
 /** Type para atualização de uma transação recebida */
-type UpdateReceivedTx = {
-	/** O id dessa transação na rede da moeda */
-	txid: string
-	/** O status dessa transação */
-	status: 'pending'|'confirmed'
-	/** A quantidade de confirmações dessa transação, caso tenha */
-	confirmations?: number
-}
+type UpdateReceivedTx = Pick<CreateReceive, 'txid'|'status'|'confirmations'>
 
 /** Type para atualização de uma transação enviada */
-export type UpdateSentTx = {
-	/** O id dessa transação na rede da moeda */
-	txid: string
-	/** O status dessa transação */
-	status: 'pending'|'confirmed'
-	/** A quantidade de confirmações dessa transação, caso tenha */
-	confirmations?: number
-	/** O timestamp da transação na rede da moeda */
-	timestamp: number|Date
-}
+export type UpdateSentTx = Pick<CreateSend, 'txid'|'status'|'confirmations'|'timestamp'>
 
 export default class Sync {
 	constructor(private emit: (event: string, ...args: any) => Promise<any>) {}

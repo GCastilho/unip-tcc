@@ -1,51 +1,51 @@
 import mongoose, { Schema } from 'mongoose'
 import { ObjectId } from 'mongodb'
-import type { Document, Model, DocumentDefinition, CreateDocumentDefinition } from 'mongoose'
+import type { Document, Model, CreateDocumentDefinition } from 'mongoose'
 
 type NotOptional<T, K extends keyof T> = T & {
 	[P in K]-?: T[P]
 }
 
 /** Interface dos valores comuns entre send, receive e send request */
-interface BaseDoc extends Document {
+interface Base extends Document {
 	/** Identificador da transação no servidor principal */
 	opid?: ObjectId
 	/** Account de destino da transação (para receive é a account do usuário) */
 	account: string
 	/** Se a transação é de recebimento ou saque */
 	type: 'send'|'receive'
-	/** Status da transação, de acordo com a rede da moeda */
-	status: 'requested'|'pending'|'confirmed'
 	/** Amount transacionado */
 	amount: number
 }
 
 /** Interface base do documento de uma transação já executada */
-interface BaseTxDoc extends BaseDoc {
+interface BaseTx extends Base {
 	/** Identificador da transação na rede da moeda */
 	txid: string
-	/** Se a transação foi confirmada e sincronizada com o main server */
-	completed?: boolean
+	/** Status da transação, de acordo com a rede da moeda */
+	status: 'pending'|'confirmed'
 	/** Quantidade de confirmações que essa transação tem, caso tenha */
 	confirmations?: number
 	/** Timestamp de execução da transação, de acordo com a rede da moeda */
 	timestamp: Date
-	status: Exclude<BaseDoc['status'], 'requested'>
+	/** Se a transação foi confirmada e sincronizada com o main server */
+	completed?: boolean
 }
 
 /** Interface de uma transação de recebimento */
-export interface ReceiveDoc extends BaseTxDoc {
+export interface ReceiveDoc extends BaseTx {
 	type: 'receive'
 }
 
 /** Interface de uma transação de saque */
-export interface SendDoc extends NotOptional<BaseTxDoc, 'opid'> {
+export interface SendDoc extends NotOptional<BaseTx, 'opid'> {
 	type: 'send'
 }
 
 /** Interface de um request de saque */
-export interface SendRequestDoc extends NotOptional<BaseDoc, 'opid'> {
+export interface SendRequestDoc extends NotOptional<Base, 'opid'> {
 	type: 'send'
+	/** Requests de saque SEMPRE tem status 'requested' */
 	status: 'requested'
 }
 
@@ -53,18 +53,18 @@ export interface SendRequestDoc extends NotOptional<BaseDoc, 'opid'> {
 export type TransactionDoc = SendDoc | ReceiveDoc | SendRequestDoc
 
 /** Type de um objeto para criação de um documento de transação de recebimento */
-export type CreateReceive = DocumentDefinition<ReceiveDoc>
+export type CreateReceive = Omit<CreateDocumentDefinition<ReceiveDoc>, '_id'|'opid'|'completed'>
 
 /** Type de um objeto para criação de um documento de transação de saque */
-export type CreateSend = DocumentDefinition<SendDoc>
+export type CreateSend = Omit<CreateDocumentDefinition<SendDoc>, '_id'|'completed'>
 
 /** Type de um objeto para criação de um documento de request de saque */
-export type CreateSendRequest = DocumentDefinition<SendRequestDoc>
+export type CreateSendRequest = Omit<CreateDocumentDefinition<SendRequestDoc>, '_id'>
 
 /** Interface do model de um Send (discriminator), com os métodos estáticos */
 interface SendModel extends Model<SendDoc|SendRequestDoc> {
 	/** Cria um documento de um request de saque */
-	createRequest(request: Pick<CreateDocumentDefinition<CreateSendRequest>, 'opid'|'account'|'amount'>): Promise<SendRequestDoc>
+	createRequest(request: Pick<CreateSendRequest, 'opid'|'account'|'amount'>): Promise<SendRequestDoc>
 }
 
 const TransactionSchema = new Schema({

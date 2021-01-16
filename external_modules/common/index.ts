@@ -4,9 +4,9 @@ import { startSession } from 'mongoose'
 import Sync from './sync'
 import Queue from './queue'
 import initListeners from './listeners'
-import Transaction, { Receive, Send } from './db/models/transaction'
+import Transaction, { CreateSendRequest, Receive, Send } from './db/models/transaction'
 import * as mongoose from './db/mongoose'
-import type { ReceiveDoc, SendDoc } from './db/models/transaction'
+import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
 
 type Options = {
 	/** Nome da Currency que se está trabalhando (igual ao da CurrencyAPI) */
@@ -14,49 +14,16 @@ type Options = {
 }
 
 /** Type do objeto de atualização de uma transação pendente */
-type UpdateTx = {
-	/** O id dessa transação na rede da moeda */
-	txid: string
-	/** O status dessa transação */
-	status: 'pending'|'confirmed'
-	/** A quantidade de confirmações dessa transação, caso tenha */
-	confirmations?: number
-}
+type UpdateTx = Pick<ReceiveDoc|SendDoc, 'txid'|'status'|'confirmations'>
 
 /** Type de um request do método de withdraw */
-export type WithdrawRequest = {
-	/** account de destino da transação */
-	account: string
-	/** amount que deve ser enviado ao destino */
-	amount: string|number
-}
+export type WithdrawRequest = Pick<CreateSendRequest, 'account'|'amount'>
 
 /** Type da resposta do método de withdraw */
-export type WithdrawResponse = {
-	/** O id dessa transação na rede da moeda */
-	txid: string
-	/** O status dessa transação */
-	status: 'pending'|'confirmed'
-	/** A quantidade de confirmações dessa transação, caso tenha */
-	confirmations?: number
-	/** O timestamp da transação na rede da moeda */
-	timestamp: number
-}
+export type WithdrawResponse = Pick<CreateSend, 'txid'|'status'|'confirmations'|'timestamp'>
 
-export type NewTransaction = {
-	/** O id dessa transação na rede da moeda */
-	txid: string
-	/** account de destino da transação */
-	account: string
-	/** amount que deve ser enviado ao destino */
-	amount: number|string
-	/** O status dessa transação */
-	status: 'pending'|'confirmed'
-	/** A quantidade de confirmações dessa transação, caso tenha */
-	confirmations?: number
-	/** O timestamp da transação na rede da moeda */
-	timestamp: number
-}
+/** Type do argumento do método de newTransaction */
+export type NewTransaction = Omit<CreateReceive, 'type'>
 
 /** URL do servidor principal */
 const mainServerIp = process.env.MAIN_SERVER_IP || 'localhost'
