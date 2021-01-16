@@ -5,7 +5,7 @@ import Account from '../common/db/models/account'
 import * as rpc from './methods/rpc'
 import { fromRawToNano } from './utils/unitConverter'
 import type { AxiosError } from 'axios'
-import type { WebSocket } from './methods/Nano'
+import type { WebSocketMessage } from './methods/rpc'
 import type { WithdrawRequest, WithdrawResponse, NewTransaction } from '../common'
 
 export class Nano extends Common {
@@ -34,7 +34,7 @@ export class Nano extends Common {
 	 * Processa blocos de receive da nano
 	 * @param block O bloco que acabou de ser recebido
 	 */
-	async processTransaction(block: WebSocket) {
+	async processTransaction(block: WebSocketMessage) {
 		if (block.message.account == rpc.stdAccount) return
 
 		const txArray: NewTransaction[] = []
@@ -145,7 +145,7 @@ export class Nano extends Common {
 		 * The node sent us a message
 		 */
 		ws.addEventListener('message', msg => {
-			const data: Nano.WebSocket = JSON.parse(msg.data)
+			const data: WebSocketMessage = JSON.parse(msg.data)
 			if (data.message.block.subtype != 'receive') return
 
 			this.processTransaction(data).catch(err => {
