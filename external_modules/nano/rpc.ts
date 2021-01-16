@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { fromNanoToRaw } from '../utils/unitConverter'
+import { fromNanoToRaw } from './utils/unitConverter'
 
 export type WebSocketMessage = {
 	topic: string

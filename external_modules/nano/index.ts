@@ -2,10 +2,10 @@ import WS from 'ws'
 import ReconnectingWebSocket from 'reconnecting-websocket'
 import Common from '../common'
 import Account from '../common/db/models/account'
-import * as rpc from './methods/rpc'
 import { fromRawToNano } from './utils/unitConverter'
+import * as rpc from './rpc'
 import type { AxiosError } from 'axios'
-import type { WebSocketMessage } from './methods/rpc'
+import type { WebSocketMessage } from './rpc'
 import type { WithdrawRequest, WithdrawResponse, NewTransaction } from '../common'
 
 export class Nano extends Common {
