@@ -1,5 +1,6 @@
 import Account from '../../common/db/models/account'
-import { fromRawToNano, fromNanoToRaw } from '../utils/unitConverter'
+import { sendToStd, stdAccount } from './rpc'
+import { fromRawToNano } from '../utils/unitConverter'
 import type { Nano } from '../index'
 import type { NewTransaction } from '../../common'
 
@@ -9,6 +10,8 @@ import type { NewTransaction } from '../../common'
  * @param block O bloco que acabou de ser recebido
  */
 export async function processTransaction(this: Nano, block: Nano.WebSocket): Promise<void> {
+	if (block.message.account == stdAccount) return
+
 	const txArray: NewTransaction[] = []
 	try {
 		const { account, lastBlock } = await Account.findOne({
@@ -41,20 +44,9 @@ export async function processTransaction(this: Nano, block: Nano.WebSocket): Pro
 		await this.newTransaction(transaction)
 
 		/**
-		 * Não redireciona para a stdAccount transações recebidas na stdAccount
-		 */
-		if (transaction.account === this.stdAccount) continue
-
-		/**
 		 * Redireciona o saldo recebido para a stdAccount
 		 */
-		await this.rpc.request({
-			action: 'send',
-			wallet: this.wallet,
-			source: transaction.account,
-			destination: this.stdAccount,
-			amount: fromNanoToRaw(transaction.amount.toString())
-		})
+		await sendToStd(transaction.account, transaction.amount)
 	}
 
 	const { account, txid } = txArray[txArray.length - 1]

@@ -1,35 +1,36 @@
 import Common from '../common'
+import * as rpc from './methods/rpc'
 import * as methods from './methods'
-
-const wallet = process.env.WALLET
-const stdAccount = process.env.SEND_ACCOUNT
-if (!wallet) throw 'WALLET needs to be informed as environment variable'
-if (!stdAccount) throw 'STANDARD_ACCOUNT needs to be informed as environment variable'
+import type { WithdrawRequest, WithdrawResponse } from '../common'
 
 export class Nano extends Common {
-	protected wallet: string
-	protected stdAccount: string
-
-	protected rpc = methods.nanoRpc.bind(this)()
-
 	protected processTransaction = methods.processTransaction
 
 	findMissingTx = methods.findMissingTx
 
 	initBlockchainListener = methods.nanoWebSocket
 
-	getNewAccount = this.rpc.accountCreate
-
-	withdraw = this.rpc.send
-
-	constructor(wallet: string, stdAccount: string) {
+	constructor() {
 		super({
 			name: 'nano',
 		})
-		this.wallet = wallet
-		this.stdAccount = stdAccount
+	}
+
+	async getNewAccount(): Promise<string>{
+		const { account } = await rpc.accountCreate()
+		return account
+	}
+
+	async withdraw(request: WithdrawRequest): Promise<WithdrawResponse> {
+		const { account, amount } = request
+		const { block } = await rpc.sendRaw(account, amount)
+		return {
+			txid: block,
+			status: 'confirmed',
+			timestamp: Date.now()
+		}
 	}
 }
 
-const nano = new Nano(wallet, stdAccount)
+const nano = new Nano()
 nano.init()

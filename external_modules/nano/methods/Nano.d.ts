@@ -63,3 +63,11 @@ export type BlockInfo = {
 	}
 	subtype: 'send'|'receive'|'change'|'epoch'
 }
+
+export type SendRespone = {
+	block: string
+}
+
+export type AccountCreate = {
+	account: string
+}

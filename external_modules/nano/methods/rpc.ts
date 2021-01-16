@@ -1,85 +1,81 @@
 import axios from 'axios'
-import { Nano } from '../index'
 import { fromNanoToRaw } from '../utils/unitConverter'
-import type { WithdrawRequest, WithdrawResponse } from '../../common'
 
 const nanoUrl = process.env.NANO_URL || 'http://[::1]:55000'
+const wallet = process.env.WALLET as string
+export const stdAccount = process.env.SEND_ACCOUNT as string
 
-export function nanoRpc(this: Nano) {
-	const request = async (command: any): Promise<any> => {
-		try {
-			const res = await axios.post(nanoUrl, command)
-			if (res.data.error)
-				throw res.data.error
-			return res.data
-		} catch (err) {
-			if (err.isAxiosError) {
-				throw {
-					errno:        err.errno,
-					code:         err.code,
-					syscall:      err.syscall,
-					address:      err.address,
-					port:         err.port,
-					url:          err.config.url,
-					isAxiosError: err.isAxiosError
-				}
-			} else throw err
-		}
-	}
+if (!wallet) throw 'WALLET needs to be informed as environment variable'
+if (!stdAccount) throw 'STANDARD_ACCOUNT needs to be informed as environment variable'
 
-	const accountCreate = (): Promise<string> =>
-		request({
-			action: 'account_create',
-			wallet: this.wallet
-		}).then(res =>
-			res.account
-		)
-
-	const blockInfo = (block: string): Promise<Nano.BlockInfo> =>
-		request({
-			action: 'block_info',
-			json_block: 'true',
-			hash: block
-		})
-
-	const accountInfo = (account: string): Promise<Nano.AccountInfo> =>
-		request({
-			action: 'account_info',
-			account: account
-		})
-
-	/**
-	 * Executa uma transação na rede da nano
-	 * @param req As informações do request de saque
-	 * @returns Um objeto com as informações da transação enviada
-	 */
-	const send = async (req: WithdrawRequest): Promise<WithdrawResponse> => {
-		const res = await request({
-			action: 'send',
-			wallet: this.wallet,
-			source: this.stdAccount,
-			destination: req.account,
-			amount: fromNanoToRaw(String(req.amount))
-		}).catch(err => {
-			if (err.code === 'ECONNREFUSED') {
-				err.code = 'NotSent'
-				err.message = 'Connection refused on nano node'
+async function call<T = any>(command: any): Promise<T> {
+	try {
+		const res = await axios.post(nanoUrl, command)
+		if (res.data.error)
+			throw res.data.error
+		return res.data
+	} catch (err) {
+		if (err.isAxiosError) {
+			throw {
+				errno:        err.errno,
+				code:         err.code,
+				syscall:      err.syscall,
+				address:      err.address,
+				port:         err.port,
+				url:          err.config.url,
+				isAxiosError: err.isAxiosError
 			}
-			throw err
+		} else throw err
+	}
+}
+
+export async function accountCreate() {
+	return call<Nano.AccountCreate>({
+		action: 'account_create',
+		wallet
+	})
+}
+
+export async function blockInfo(block: string){
+	return call<Nano.BlockInfo>({
+		action: 'block_info',
+		json_block: 'true',
+		hash: block
+	})
+}
+
+export async function accountInfo(account: string) {
+	return call<Nano.AccountInfo>({
+		action: 'account_info',
+		account
+	})
+}
+
+async function send(source: string, destination: string, rawAmount: string) {
+	try {
+		return call<Nano.SendRespone>({
+			action: 'send',
+			wallet,
+			source,
+			destination,
+			amount: rawAmount,
 		})
-
-		return {
-			txid: res.block,
-			status: 'confirmed',
-			timestamp: Date.now(), /**@todo Utilizar o timestamp do bloco */
-		}
+	} catch (err) {
+		if (err.code === 'ECONNREFUSED') {
+			/** @todo Ser instância de um Error */
+			throw {
+				code: 'NotSent',
+				message: 'Connection refused on nano node',
+				details: err,
+			}
+		} else throw err
 	}
+}
 
-	return {
-		request,
-		accountCreate,
-		blockInfo,
-		accountInfo,
-		send
-	}
+export async function sendRaw(account: string, amount: number|string) {
+	return send(stdAccount, account, fromNanoToRaw(`${amount}`))
+}
+
+export async function sendToStd(source: string, amount: number|string){
+	return send(source, stdAccount, fromNanoToRaw(`${amount}`))
 }
