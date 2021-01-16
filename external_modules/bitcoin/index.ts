@@ -2,11 +2,11 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import Common from '../common'
 import Meta from '../common/db/models/meta'
+import Account from '../common/db/models/account'
 import Transaction, { Receive } from '../common/db/models/newTransactions'
 import * as rpc from './methods/rpc'
-import * as methods from './methods'
-import type { WithdrawRequest, WithdrawResponse } from '../common'
 import type { ReceiveDoc, SendDoc } from '../common/db/models/newTransactions'
+import type { WithdrawRequest, WithdrawResponse, NewTransaction } from '../common'
 
 export class Bitcoin extends Common {
 	private port: number
@@ -21,8 +21,6 @@ export class Bitcoin extends Common {
 	protected rewinding: boolean
 
 	getNewAccount = rpc.getNewAddress
-
-	private processTransaction = methods.processTransaction.bind(this)
 
 	constructor(bitcoinListenerPort: number) {
 		super({
@@ -54,6 +52,54 @@ export class Bitcoin extends Common {
 		}
 	}
 
+	/**
+	 * @todo Uma maneira de pegar transacções de quado o servidor estava off
+	 * @todo Adicionar um handler de tx cancelada (o txid muda se aumentar o fee)
+	 */
+	async processTransaction(txid: string) {
+		if (typeof txid != 'string') return
+
+		try {
+			const txInfo = await rpc.getTransactionInfo(txid)
+
+			const transactions: NewTransaction[] = txInfo.details
+				.filter(tx => tx.category == 'receive')
+				.map(details => {
+					const { address, amount } = details
+					return {
+						amount,
+						txid:          txInfo.txid,
+						account:       address,
+						status:        txInfo.confirmations < 3 ? 'pending' : 'confirmed',
+						confirmations: txInfo.confirmations,
+						timestamp:     txInfo.time * 1000 // O timestamp do bitcoin é em segundos
+					}
+				})
+
+			const accounts = await Account.find({
+				account: { $in: transactions.map(d => d.account) }
+			}).map(docs => docs.map(doc => doc.account)).orFail()
+
+			for (const tx of transactions.filter(tx => accounts.includes(tx.account))) {
+				/**
+				 * O evento de transação recebida acontece quando a transação é
+				 * recebida e quando ela recebe a primeira confimação, o que causa um
+				 * erro 11000
+				 */
+				await this.newTransaction(tx).catch(err => {
+					if (err.code != 11000) throw err
+				})
+			}
+		} catch (err) {
+			console.error('Transaction processing error:', err)
+		}
+	}
+
+	/**
+	 * Processa novos blocos recebidos da blockchain
+	 *
+	 * @param blockhash O hash do bloco enviado por curl pelo blockNotify
+	 */
 	async processBlock(blockhash: string) {
 		if (typeof blockhash != 'string') return
 
