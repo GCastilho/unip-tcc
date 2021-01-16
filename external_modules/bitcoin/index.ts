@@ -1,7 +1,9 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import Common from '../common'
+import * as rpc from './methods/rpc'
 import * as methods from './methods'
+import type { WithdrawRequest, WithdrawResponse } from '../common'
 
 export class Bitcoin extends Common {
 	/** Número do bloco mais recente sincronizado */
@@ -13,13 +15,22 @@ export class Bitcoin extends Common {
 	 */
 	rewinding = false
 
-	protected rpc = methods.rpc
-
 	rewindTransactions = methods.rewindTransactions
 
-	getNewAccount = this.rpc.getNewAddress
+	getNewAccount = rpc.getNewAddress
 
-	withdraw = this.rpc.send
+	async withdraw(request: WithdrawRequest): Promise<WithdrawResponse> {
+		const { account, amount } = request
+		// TODO: Garantir que o cast to number do amount não dá problema com rounding
+		const txid = await rpc.sendToAddress(account, Number(amount))
+		const { confirmations, time } = await rpc.getTransactionInfo(txid)
+		return {
+			txid,
+			confirmations,
+			status: confirmations >= 3 ? 'confirmed' : 'pending',
+			timestamp: time * 1000 // O timestamp do bitcoin é em segundos
+		}
+	}
 
 	protected processTransaction = methods.processTransaction.bind(this)
 
@@ -49,7 +60,8 @@ export class Bitcoin extends Common {
 		 */
 		do {
 			try {
-				this.blockHeight = (await this.rpc.getBlockChainInfo())?.headers
+				const { headers } = await rpc.getBlockChainInfo()
+				this.blockHeight = headers
 			} catch (err) {
 				process.stdout.write('Failed to recover block height. ')
 				if (err.name != 'RpcError' && err.code != 'ECONNREFUSED')
@@ -73,10 +85,10 @@ export class Bitcoin extends Common {
 		this.port = bitcoinListenerPort
 
 		// Monitora os eventos do rpc para manter o nodeOnline atualizado
-		this.rpc.events.on('rpc_success', () => {
+		rpc.events.on('rpc_connected', () => {
 			if (!this.nodeOnline) this._events.emit('rpc_connected')
 		})
-		this.rpc.events.on('rpc_refused', () => {
+		rpc.events.on('rpc_disconnected', () => {
 			if (this.nodeOnline) this._events.emit('rpc_disconnected')
 		})
 	}
