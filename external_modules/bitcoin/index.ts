@@ -40,9 +40,11 @@ export class Bitcoin extends Common {
 		return rpc.getNewAddress()
 	}
 
+	/**
+	 * @todo Garantir que o cast to number do amount não dá problema com rounding
+	 */
 	async withdraw(request: WithdrawRequest): Promise<WithdrawResponse> {
 		const { account, amount } = request
-		// TODO: Garantir que o cast to number do amount não dá problema com rounding
 		const txid = await rpc.sendToAddress(account, Number(amount))
 		const { confirmations, time } = await rpc.getTransactionInfo(txid)
 		return {
@@ -55,8 +57,7 @@ export class Bitcoin extends Common {
 
 	/**
 	 * Processa uma transação recebida da bitcoin
-	 * @todo Uma maneira de pegar transacções de quado o servidor estava off
-	 * @todo Adicionar um handler de tx cancelada (o txid muda se aumentar o fee)
+	 * @todo Adicionar um handler de tx cancelada (replace-by-fee)
 	 */
 	async processTransaction(txid: string) {
 		if (typeof txid != 'string') return
