@@ -72,7 +72,7 @@ async function send(source: string, destination: string, rawAmount: string) {
 	}
 }
 
-export async function sendRaw(account: string, amount: number|string) {
+export async function sendNano(account: string, amount: number|string) {
 	return send(stdAccount, account, fromNanoToRaw(`${amount}`))
 }
 

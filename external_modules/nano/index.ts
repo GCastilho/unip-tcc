@@ -23,7 +23,7 @@ export class Nano extends Common {
 
 	async withdraw(request: WithdrawRequest): Promise<WithdrawResponse> {
 		const { account, amount } = request
-		const { block } = await rpc.sendRaw(account, amount)
+		const { block } = await rpc.sendNano(account, amount)
 		return {
 			txid: block,
 			status: 'confirmed',
