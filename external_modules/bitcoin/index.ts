@@ -2,9 +2,9 @@ import express from 'express'
 import Common from '../common'
 import Meta from '../common/db/models/meta'
 import Account from '../common/db/models/account'
-import Transaction, { Receive } from '../common/db/models/newTransactions'
+import Transaction, { Receive } from '../common/db/models/transaction'
 import * as rpc from './rpc'
-import type { ReceiveDoc, SendDoc } from '../common/db/models/newTransactions'
+import type { ReceiveDoc, SendDoc } from '../common/db/models/transaction'
 import type { WithdrawRequest, WithdrawResponse, NewTransaction } from '../common'
 
 export class Bitcoin extends Common {

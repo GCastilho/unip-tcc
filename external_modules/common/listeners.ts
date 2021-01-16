@@ -1,7 +1,7 @@
 // eslint-disable-next-line
 const ss = require('socket.io-stream')
 import Account from './db/models/account'
-import { Send } from './db/models/newTransactions'
+import { Send } from './db/models/transaction'
 import type Common from '.'
 import type { WithdrawRequest } from './../../interfaces/transaction'
 

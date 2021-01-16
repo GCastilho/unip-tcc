@@ -1,5 +1,5 @@
 import assert from 'assert'
-import type { CreateSend } from './db/models/newTransactions'
+import type { CreateSend } from './db/models/transaction'
 
 type Options = {
 	/**

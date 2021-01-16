@@ -1,7 +1,7 @@
-import { Send } from './db/models/newTransactions'
+import { Send } from './db/models/transaction'
 import type { DocumentQuery } from 'mongoose'
 import type { WithdrawRequest } from '../../interfaces/transaction'
-import type { SendRequestDoc } from './db/models/newTransactions'
+import type { SendRequestDoc } from './db/models/transaction'
 
 type PromiseExecutor<T> = {
 	resolve: (value: T | PromiseLike<T>) => void,

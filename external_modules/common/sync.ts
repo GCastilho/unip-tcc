@@ -1,8 +1,8 @@
 import { ObjectId } from 'mongodb'
 import Account from './db/models/account'
-import Transaction, { Receive, Send } from './db/models/newTransactions'
+import Transaction, { Receive, Send } from './db/models/transaction'
 import type { ClientSession } from 'mongoose'
-import type { ReceiveDoc, SendDoc } from './db/models/newTransactions'
+import type { ReceiveDoc, SendDoc } from './db/models/transaction'
 
 /** Type para atualização de uma transação recebida */
 type UpdateReceivedTx = {

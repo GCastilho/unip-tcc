@@ -4,8 +4,9 @@ import { startSession } from 'mongoose'
 import Sync from './sync'
 import Queue from './queue'
 import initListeners from './listeners'
-import Transaction, { Receive, ReceiveDoc, Send, SendDoc } from './db/models/newTransactions'
+import Transaction, { Receive, Send } from './db/models/transaction'
 import * as mongoose from './db/mongoose'
+import type { ReceiveDoc, SendDoc } from './db/models/transaction'
 
 type Options = {
 	/** Nome da Currency que se está trabalhando (igual ao da CurrencyAPI) */
