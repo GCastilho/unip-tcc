@@ -3,7 +3,7 @@ import Common from '../common'
 import Meta from '../common/db/models/meta'
 import Account from '../common/db/models/account'
 import Transaction, { Receive } from '../common/db/models/newTransactions'
-import * as rpc from './methods/rpc'
+import * as rpc from './rpc'
 import type { ReceiveDoc, SendDoc } from '../common/db/models/newTransactions'
 import type { WithdrawRequest, WithdrawResponse, NewTransaction } from '../common'
 
