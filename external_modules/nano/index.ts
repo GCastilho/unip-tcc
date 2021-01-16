@@ -7,8 +7,6 @@ import type { WithdrawRequest, WithdrawResponse, NewTransaction } from '../commo
 import type { WebSocket } from './methods/Nano'
 
 export class Nano extends Common {
-	findMissingTx = methods.findMissingTx
-
 	initBlockchainListener = methods.nanoWebSocket
 
 	constructor() {
@@ -78,6 +76,40 @@ export class Nano extends Common {
 
 		const { account, txid } = txArray[txArray.length - 1]
 		await Account.updateOne({ account }, { lastBlock: txid })
+	}
+
+
+	/**
+	 * Procura por transações não computadas até a última transação salva no db
+	 * e as retorna em um array de Tx
+	 *
+	 * @param account A account para checar o histórico de transações
+	 * @param lastBlock o utimo bloco recebido na account, armazenado no database
+	 */
+	async findMissingTx(account: string, lastBlock?: string) {
+		const { open_block, frontier } = await rpc.accountInfo(account)
+		const lastKnownBlock = lastBlock || open_block
+
+		const receiveArray: NewTransaction[] = []
+		let blockHash = frontier
+
+		/** Segue a blockchain da nano até encontrar o lastKnownBlock */
+		while (blockHash != lastKnownBlock) {
+			const blockInfo = await rpc.blockInfo(blockHash)
+			// Pega apenas blocos de received que foram confirmados
+			if (blockInfo.subtype === 'receive' && blockInfo.confirmed === 'true') {
+				receiveArray.push({
+					txid: blockHash,
+					account: blockInfo.block_account,
+					status: 'confirmed',
+					amount: fromRawToNano(blockInfo.amount),
+					timestamp: parseInt(blockInfo.local_timestamp)
+				})
+			}
+			blockHash = blockInfo.contents.previous
+		}
+
+		return receiveArray.reverse()
 	}
 }
 
