@@ -50,7 +50,7 @@ export type NewTransaction = {
 	/** account de destino da transação */
 	account: string
 	/** amount que deve ser enviado ao destino */
-	amount: number
+	amount: number|string
 	/** O status dessa transação */
 	status: 'pending'|'confirmed'
 	/** A quantidade de confirmações dessa transação, caso tenha */

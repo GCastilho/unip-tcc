@@ -15,7 +15,7 @@ export function fromRawToNano(amount: string): string {
 	const inteiro = _amount.slice(0, -30)
 	const casas = _amount.slice(-30)
 
-	return inteiro.concat('.').concat(casas)
+	return `${inteiro}.${casas}`
 }
 
 /**
@@ -35,7 +35,7 @@ export function fromNanoToRaw(amount: string): string {
 	// Preenche as casas restantes com zeros e remove zeros além da casa 30
 	casas = casas.padEnd(30, '0').slice(0, 30)
 
-	let raw = inteiro.concat(casas)
+	let raw = `${inteiro}${casas}`
 
 	// Remove os zeros extras do começo da string
 	while (raw.charAt(0) === '0') {

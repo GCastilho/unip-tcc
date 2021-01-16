@@ -35,16 +35,13 @@ export async function processTransaction(this: Bitcoin, txid: NewTransaction['tx
 	if (typeof txid != 'string') return
 
 	try {
-		let transactions = await formatTransaction(txid)
+		const transactions = await formatTransaction(txid)
 
 		const accounts = await Account.find({
 			account: { $in: transactions.map(d => d.account) }
 		}).map(docs => docs.map(doc => doc.account)).orFail()
 
-		transactions = transactions.filter(tx => accounts.includes(tx.account))
-
-		if (!transactions) return
-		for (const tx of transactions) {
+		for (const tx of transactions.filter(tx => accounts.includes(tx.account))) {
 			/**
 			 * O evento de transação recebida acontece quando a transação é
 			 * recebida e quando ela recebe a primeira confimação, o que causa um

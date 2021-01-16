@@ -35,14 +35,14 @@ export function nanoRpc(this: Nano) {
 			res.account
 		)
 
-	const blockInfo = (block: string): Promise<any> =>
+	const blockInfo = (block: string): Promise<Nano.BlockInfo> =>
 		request({
 			action: 'block_info',
 			json_block: 'true',
 			hash: block
 		})
 
-	const accountInfo = (account: string): Promise<any> =>
+	const accountInfo = (account: string): Promise<Nano.AccountInfo> =>
 		request({
 			action: 'account_info',
 			account: account

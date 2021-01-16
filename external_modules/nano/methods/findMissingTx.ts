@@ -1,6 +1,6 @@
-import { Nano } from '../index'
 import { fromRawToNano } from '../utils/unitConverter'
-import type { TxReceived } from '../../../interfaces/transaction'
+import type { Nano } from '../index'
+import type { NewTransaction } from '../../common'
 
 /**
  * Procura por transações não computadas até a última transação salva no db
@@ -11,18 +11,18 @@ import type { TxReceived } from '../../../interfaces/transaction'
  */
 export async function findMissingTx(this: Nano,
 	account: string,
-	lastBlock: string
-): Promise<TxReceived[]|undefined> {
-	const accountInfo = await this.rpc.accountInfo(account)
-	const lastKnownBlock = lastBlock ? lastBlock : accountInfo.open_block
+	lastBlock?: string
+): Promise<NewTransaction[]> {
+	const { open_block, frontier } = await this.rpc.accountInfo(account)
+	const lastKnownBlock = lastBlock || open_block
 
-	const receiveArray: TxReceived[] = []
-	let blockHash = accountInfo.frontier
+	const receiveArray: NewTransaction[] = []
+	let blockHash = frontier
 
 	/** Segue a blockchain da nano até encontrar o lastKnownBlock */
 	while (blockHash != lastKnownBlock) {
 		const blockInfo = await this.rpc.blockInfo(blockHash)
-		// pega apenas blocos de received que foram confirmados
+		// Pega apenas blocos de received que foram confirmados
 		if (blockInfo.subtype === 'receive' && blockInfo.confirmed === 'true') {
 			receiveArray.push({
 				txid: blockHash,
