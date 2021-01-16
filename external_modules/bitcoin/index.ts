@@ -1,5 +1,4 @@
 import express from 'express'
-import bodyParser from 'body-parser'
 import Common from '../common'
 import Meta from '../common/db/models/meta'
 import Account from '../common/db/models/account'
@@ -18,9 +17,7 @@ export class Bitcoin extends Common {
 	 * Indica se a função de rewinding de blocos está sendo executada ou não,
 	 * bloqueando novas execuções do rewind
 	 */
-	protected rewinding: boolean
-
-	getNewAccount = rpc.getNewAddress
+	private rewinding: boolean
 
 	constructor(bitcoinListenerPort: number) {
 		super({
@@ -39,6 +36,10 @@ export class Bitcoin extends Common {
 		})
 	}
 
+	async getNewAccount() {
+		return rpc.getNewAddress()
+	}
+
 	async withdraw(request: WithdrawRequest): Promise<WithdrawResponse> {
 		const { account, amount } = request
 		// TODO: Garantir que o cast to number do amount não dá problema com rounding
@@ -53,6 +54,7 @@ export class Bitcoin extends Common {
 	}
 
 	/**
+	 * Processa uma transação recebida da bitcoin
 	 * @todo Uma maneira de pegar transacções de quado o servidor estava off
 	 * @todo Adicionar um handler de tx cancelada (o txid muda se aumentar o fee)
 	 */
@@ -97,7 +99,6 @@ export class Bitcoin extends Common {
 
 	/**
 	 * Processa novos blocos recebidos da blockchain
-	 *
 	 * @param blockhash O hash do bloco enviado por curl pelo blockNotify
 	 */
 	async processBlock(blockhash: string) {
@@ -122,6 +123,10 @@ export class Bitcoin extends Common {
 		}
 	}
 
+	/**
+	 * Procura por transações que podem não ter sido corretamente recebidas
+	 * @param newestBlockhash O hash do bloco recém recebido
+	 */
 	async rewindTransactions(newestBlockhash: string) {
 		this.rewinding = true
 
@@ -172,7 +177,7 @@ export class Bitcoin extends Common {
 
 	async initBlockchainListener() {
 		const app = express()
-		app.use(bodyParser.urlencoded({ extended: true }))
+		app.use(express.urlencoded())
 
 		/**
 		 * Novas transações são enviadas aqui
@@ -203,7 +208,7 @@ export class Bitcoin extends Common {
 				if (err.name != 'RpcError' && err.code != 'ECONNREFUSED')
 					console.error(err)
 				console.error('Retring...')
-				await (async () => new Promise(resolve => setTimeout(resolve, 30000)))()
+				await new Promise(resolve => setTimeout(resolve, 30000))
 			}
 		} while (!this.blockHeight)
 
