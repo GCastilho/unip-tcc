@@ -6,18 +6,41 @@ import * as methods from './methods'
 import type { WithdrawRequest, WithdrawResponse } from '../common'
 
 export class Bitcoin extends Common {
+	private port: number
+
 	/** Número do bloco mais recente sincronizado */
-	blockHeight = 0
+	private blockHeight: number
+
+	private processBlock = methods.processBlock.bind(this)
 
 	/**
 	 * Indica se a função de rewinding de blocos está sendo executada ou não,
 	 * bloqueando novas execuções do rewind
 	 */
-	rewinding = false
+	protected rewinding: boolean
 
 	rewindTransactions = methods.rewindTransactions
 
 	getNewAccount = rpc.getNewAddress
+
+	private processTransaction = methods.processTransaction.bind(this)
+
+	constructor(bitcoinListenerPort: number) {
+		super({
+			name: 'bitcoin',
+		})
+		this.port = bitcoinListenerPort
+		this.blockHeight = 0
+		this.rewinding = false
+
+		// Monitora os eventos do rpc para manter o nodeOnline atualizado
+		rpc.events.on('rpc_connected', () => {
+			if (!this.nodeOnline) this._events.emit('rpc_connected')
+		})
+		rpc.events.on('rpc_disconnected', () => {
+			if (this.nodeOnline) this._events.emit('rpc_disconnected')
+		})
+	}
 
 	async withdraw(request: WithdrawRequest): Promise<WithdrawResponse> {
 		const { account, amount } = request
@@ -31,8 +54,6 @@ export class Bitcoin extends Common {
 			timestamp: time * 1000 // O timestamp do bitcoin é em segundos
 		}
 	}
-
-	protected processTransaction = methods.processTransaction.bind(this)
 
 	async initBlockchainListener() {
 		const app = express()
@@ -77,25 +98,6 @@ export class Bitcoin extends Common {
 			console.log('Bitcoin blockchain listener is up on port', this.port)
 		})
 	}
-
-	constructor(bitcoinListenerPort: number) {
-		super({
-			name: 'bitcoin',
-		})
-		this.port = bitcoinListenerPort
-
-		// Monitora os eventos do rpc para manter o nodeOnline atualizado
-		rpc.events.on('rpc_connected', () => {
-			if (!this.nodeOnline) this._events.emit('rpc_connected')
-		})
-		rpc.events.on('rpc_disconnected', () => {
-			if (this.nodeOnline) this._events.emit('rpc_disconnected')
-		})
-	}
-
-	private port: number
-
-	private processBlock = methods.processBlock.bind(this)
 }
 
 const bitcoin = new Bitcoin(8091)
