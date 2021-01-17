@@ -73,13 +73,13 @@ export default class Sync {
 	 * @param updtReceived A atualização da atualização recebida
 	 */
 	public async updateReceived(updtReceived: UpdateReceivedTx, session?: ClientSession) {
-		const { txid } = updtReceived
+		const { txid, status, confirmations } = updtReceived
 		try {
 			const opid = await Receive.findOne({ txid }, { opid: true }, { session })
 				.orFail().map(doc => doc.opid?.toHexString())
 			assert(typeof opid == 'string')
 
-			await this.emit('update_received_tx', { opid, ...updtReceived })
+			await this.emit('update_received_tx', { opid, status, confirmations })
 			if (updtReceived.status == 'confirmed') {
 				await Receive.updateOne({ txid }, { completed: true })
 			}
@@ -99,13 +99,15 @@ export default class Sync {
 	 * @param updtSent A atualização da atualização enviada
 	 */
 	public async updateSent(updtSent: UpdateSentTx, session?: ClientSession) {
-		const { txid, timestamp } = updtSent
+		const { txid, status, timestamp, confirmations } = updtSent
 		const opid = await Send.findOne({ txid }, { opid: true }, { session })
 			.orFail().map(doc => doc.opid.toHexString())
 		try {
 			await this.emit('update_sent_tx', {
 				opid,
-				...updtSent,
+				txid,
+				status,
+				confirmations,
 				timestamp: new Date(timestamp).getTime(),
 			})
 			if (updtSent.status == 'confirmed') {

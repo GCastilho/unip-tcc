@@ -4,7 +4,6 @@ import Common from '../common'
 import Account from '../common/db/models/account'
 import { fromRawToNano } from './utils/unitConverter'
 import * as rpc from './rpc'
-import type { AxiosError } from 'axios'
 import type { WebSocketMessage } from './rpc'
 import type { WithdrawRequest, WithdrawResponse, NewTransaction } from '../common'
 
@@ -129,7 +128,7 @@ export class Nano extends Common {
 		ws.addEventListener('open', () => {
 			console.log('Websocket connection open')
 			firstConnection = false
-			this._events.emit('rpc_connected')
+			this.events.emit('rpc_connected')
 			ws.send(JSON.stringify({
 				action: 'subscribe',
 				topic: 'confirmation',
@@ -154,7 +153,7 @@ export class Nano extends Common {
 		})
 
 		ws.addEventListener('error', event => {
-			const error = event.error as AxiosError
+			const error = event.error as any
 			if (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') {
 				if (firstConnection) {
 					/**
@@ -165,7 +164,7 @@ export class Nano extends Common {
 					console.error('Error connecting to nano websocket')
 				} else if (this.nodeOnline) {
 					console.error('Disconnected from nano websocket')
-					this._events.emit('rpc_disconnected')
+					this.events.emit('rpc_disconnected')
 				}
 			} else {
 				console.error('WebSocket error observed:', event)

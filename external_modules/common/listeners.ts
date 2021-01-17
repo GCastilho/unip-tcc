@@ -13,7 +13,7 @@ export default function initListeners(this: Common, socket: SocketIOClient.Socke
 	 * Ouve por eventos vindos do método 'emit' e os retransmite ao socket
 	 * para serem enviados ao main server
 	 */
-	this._events.on('to_main_server', (event: string, ...args: any) => {
+	this.events.on('to_main_server', (event: string, ...args: any) => {
 		if (socket.connected) {
 			socket.emit(event, ...args)
 		} else {
@@ -44,12 +44,12 @@ export default function initListeners(this: Common, socket: SocketIOClient.Socke
 		}
 
 		console.log('All accounts received and imported successfuly!')
-		this._events.emit('connected')
+		this.events.emit('connected')
 	})
 
 	socket.on('disconnect', () => {
 		console.log('Disconnected from the main server')
-		this._events.emit('disconnected')
+		this.events.emit('disconnected')
 	})
 
 	socket.on('create_new_account', async (callback: (...args: any[]) => any) => {

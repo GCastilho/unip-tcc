@@ -108,7 +108,7 @@ const bitcoinHost = process.env.BITCOIN_HOST || '127.0.0.1'
  */
 export const events: TypedEmitter<{
 	rpc_connected: () => void
-	rpc_disconnected: (reason?: Error) => void
+	rpc_disconnected: (reason: Error) => void
 }> = new EventEmitter()
 
 /** Cliente para interação com o rpc da bitcoin */
@@ -141,7 +141,7 @@ async function call(command: string, ...args: any[]): Promise<any> {
 	} catch (err) {
 		if (isOnline) {
 			isOnline = false
-			events.emit('rpc_disconnected')
+			events.emit('rpc_disconnected', err)
 		}
 		throw err
 	}

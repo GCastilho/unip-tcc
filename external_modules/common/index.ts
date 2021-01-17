@@ -6,6 +6,7 @@ import Queue from './queue'
 import initListeners from './listeners'
 import Transaction, { CreateSendRequest, Receive, Send } from './db/models/transaction'
 import * as mongoose from './db/mongoose'
+import type TypedEmitter from 'typed-emitter'
 import type { ExternalEvents } from '../../interfaces/communication/external-socket'
 import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
 
@@ -61,7 +62,17 @@ export default abstract class Common {
 	/**
 	 * EventEmitter para eventos internos
 	 */
-	protected _events = new EventEmitter()
+	protected events: TypedEmitter<{
+		/** Conectado com o node da moeda */
+		rpc_connected: () => void
+		/** Desconectado do node da moeda */
+		rpc_disconnected: () => void
+		/** Conectado com o main server */
+		connected: () => void
+		/** Desconectado do main server */
+		disconnected: () => void
+		to_main_server: (...args: any[]) => void
+	}> = new EventEmitter()
 
 	/** Nome da currency que está sendo trabalhada */
 	public readonly name: string
@@ -72,23 +83,15 @@ export default abstract class Common {
 		this.withdrawQueue = new Queue()
 
 		// Monitora os eventos do rpc para manter o nodeOnline atualizado
-		this._events.on('rpc_connected', () => {
-			if (this.nodeOnline) return
-			this.nodeOnline = true
-			this._events.emit('node_connected')
-		})
-		this._events.on('rpc_disconnected', () => {
-			if (!this.nodeOnline) return
-			this.nodeOnline = false
-			this._events.emit('node_disconnected')
-		})
+		this.events.on('rpc_connected', () => this.nodeOnline = true)
+		this.events.on('rpc_disconnected', () => this.nodeOnline = false)
 
 		// Inicializa e finaliza o withdrawQueue
-		this._events.on('node_connected', () => this.processQueue())
-		this._events.on('node_disconnected', () => this.withdrawQueue.stop())
+		this.events.on('rpc_connected', () => this.processQueue())
+		this.events.on('rpc_disconnected', () => this.withdrawQueue.stop())
 
 		// Sincroniza transações com o main server
-		this._events.on('connected', () => this.sync.uncompleted())
+		this.events.on('connected', () => this.sync.uncompleted())
 	}
 
 	/**
@@ -217,7 +220,7 @@ export default abstract class Common {
 	): Promise<ReturnType<ExternalEvents[Event]>> {
 		return new Promise((resolve, reject) => {
 			console.log(`transmitting socket event '${event}':`, ...args)
-			this._events.emit('to_main_server', event, ...args, ((error, response) => {
+			this.events.emit('to_main_server', event, ...args, ((error, response) => {
 				if (error) {
 					console.error('Received socket error:', error)
 					reject(error)

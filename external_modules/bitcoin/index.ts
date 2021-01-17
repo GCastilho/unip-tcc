@@ -27,13 +27,9 @@ export class Bitcoin extends Common {
 		this.blockHeight = 0
 		this.rewinding = false
 
-		// Monitora os eventos do rpc para manter o nodeOnline atualizado
-		rpc.events.on('rpc_connected', () => {
-			if (!this.nodeOnline) this._events.emit('rpc_connected')
-		})
-		rpc.events.on('rpc_disconnected', () => {
-			if (this.nodeOnline) this._events.emit('rpc_disconnected')
-		})
+		// Retransmite os eventos de rpc conectado/desconectado para o emitter da classe
+		rpc.events.on('rpc_connected', () => this.events.emit('rpc_connected'))
+		rpc.events.on('rpc_disconnected', () => this.events.emit('rpc_disconnected'))
 	}
 
 	async getNewAccount() {
