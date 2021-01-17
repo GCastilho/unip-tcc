@@ -1,17 +1,19 @@
+import assert from 'assert'
 import { ObjectId } from 'mongodb'
 import Account from './db/models/account'
 import Transaction, { Receive, Send } from './db/models/transaction'
 import type { ClientSession } from 'mongoose'
+import type Common from '.'
 import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
 
 /** Type para atualização de uma transação recebida */
 type UpdateReceivedTx = Pick<CreateReceive, 'txid'|'status'|'confirmations'>
 
 /** Type para atualização de uma transação enviada */
-export type UpdateSentTx = Pick<CreateSend, 'txid'|'status'|'confirmations'|'timestamp'>
+type UpdateSentTx = Pick<CreateSend, 'txid'|'status'|'confirmations'|'timestamp'>
 
 export default class Sync {
-	constructor(private emit: (event: string, ...args: any) => Promise<any>) {}
+	constructor(private emit: Common['emit']) {}
 
 	public async uncompleted() {
 		const query = Transaction.find({
@@ -37,8 +39,17 @@ export default class Sync {
 	 * ao main server
 	 */
 	public async newTransaction(transaction: ReceiveDoc) {
+		const { txid, account, amount, status, confirmations, timestamp } = transaction
+
 		try {
-			const opid = await this.emit('new_transaction', transaction)
+			const opid = await this.emit('new_transaction', {
+				txid,
+				account,
+				amount,
+				status,
+				confirmations,
+				timestamp: timestamp.getTime()
+			})
 			transaction.opid = new ObjectId(opid)
 			if (transaction.status == 'confirmed') transaction.completed = true
 			await transaction.save()
@@ -61,10 +72,14 @@ export default class Sync {
 	 * Atualiza uma transação recebida previamente informada ao main server
 	 * @param updtReceived A atualização da atualização recebida
 	 */
-	public async updateReceived(updtReceived: UpdateReceivedTx) {
+	public async updateReceived(updtReceived: UpdateReceivedTx, session?: ClientSession) {
 		const { txid } = updtReceived
 		try {
-			await this.emit('update_received_tx', updtReceived)
+			const opid = await Receive.findOne({ txid }, { opid: true }, { session })
+				.orFail().map(doc => doc.opid?.toHexString())
+			assert(typeof opid == 'string')
+
+			await this.emit('update_received_tx', { opid, ...updtReceived })
 			if (updtReceived.status == 'confirmed') {
 				await Receive.updateOne({ txid }, { completed: true })
 			}
@@ -84,10 +99,15 @@ export default class Sync {
 	 * @param updtSent A atualização da atualização enviada
 	 */
 	public async updateSent(updtSent: UpdateSentTx, session?: ClientSession) {
-		const { txid } = updtSent
-		const { opid } = await Send.findOne({ txid }, { opid: true }, { session }).orFail()
+		const { txid, timestamp } = updtSent
+		const opid = await Send.findOne({ txid }, { opid: true }, { session })
+			.orFail().map(doc => doc.opid.toHexString())
 		try {
-			await this.emit('update_sent_tx', { opid, ...updtSent })
+			await this.emit('update_sent_tx', {
+				opid,
+				...updtSent,
+				timestamp: new Date(timestamp).getTime(),
+			})
 			if (updtSent.status == 'confirmed') {
 				await Transaction.updateOne({ opid }, { completed: true }, { session })
 			}

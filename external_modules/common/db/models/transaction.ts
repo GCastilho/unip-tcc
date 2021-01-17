@@ -49,14 +49,17 @@ export interface SendRequestDoc extends NotOptional<Base, 'opid'> {
 	status: 'requested'
 }
 
+// Impede que confirmations tbm seja uma string
+type TxDocDefinition<T> = CreateDocumentDefinition<T> & { confirmations?: number }
+
 /** Interface do documento de uma transação no DB */
 export type TransactionDoc = SendDoc | ReceiveDoc | SendRequestDoc
 
 /** Type de um objeto para criação de um documento de transação de recebimento */
-export type CreateReceive = Omit<CreateDocumentDefinition<ReceiveDoc>, '_id'|'opid'|'completed'>
+export type CreateReceive = Omit<TxDocDefinition<ReceiveDoc>, '_id'|'opid'|'completed'>
 
 /** Type de um objeto para criação de um documento de transação de saque */
-export type CreateSend = Omit<CreateDocumentDefinition<SendDoc>, '_id'|'completed'>
+export type CreateSend = Omit<TxDocDefinition<SendDoc>, '_id'|'completed'>
 
 /** Type de um objeto para criação de um documento de request de saque */
 export type CreateSendRequest = Omit<CreateDocumentDefinition<SendRequestDoc>, '_id'>

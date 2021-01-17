@@ -32,7 +32,6 @@ export interface TxReceived extends Omit<
 	TxJSON,
 	'opid'|'amount'|'currency'|'type'|'status'
 > {
-	opid?: TxJSON['opid']
 	status: TransactionDoc['status']
 	amount: ExternalModuleTransaction['amount']
 }

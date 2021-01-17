@@ -6,6 +6,7 @@ import Queue from './queue'
 import initListeners from './listeners'
 import Transaction, { CreateSendRequest, Receive, Send } from './db/models/transaction'
 import * as mongoose from './db/mongoose'
+import type { ExternalEvents } from '../../interfaces/communication/external-socket'
 import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
 
 type Options = {
@@ -210,7 +211,10 @@ export default abstract class Common {
 	 * @param event O evento que será enviado ao socket
 	 * @param args Os argumentos desse evento
 	 */
-	protected emit(event: string, ...args: any): Promise<any> {
+	protected emit<Event extends keyof ExternalEvents>(
+		event: Event,
+		...args: Parameters<ExternalEvents[Event]>
+	): Promise<ReturnType<ExternalEvents[Event]>> {
 		return new Promise((resolve, reject) => {
 			console.log(`transmitting socket event '${event}':`, ...args)
 			this._events.emit('to_main_server', event, ...args, ((error, response) => {

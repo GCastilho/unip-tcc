@@ -108,7 +108,7 @@ export default function initListeners(this: Currency) {
 					this._events.emit('new_transaction', transaction, callback)
 				} else {
 					// A transação já existe, retornar ela ao módulo externo
-					const transaction: TxReceived = {
+					const transaction: TxReceived & { opid: string } = {
 						opid:          tx.id,
 						txid:          tx.txid,
 						account:       tx.account,
