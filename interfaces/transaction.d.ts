@@ -1,85 +1,90 @@
-import type { TransactionDoc, TxJSON } from '../src/db/models/transaction'
-
-/**
- * Interface base para interfaces de comunicação entre o módulo externo
- * e o main server
- */
-interface ExternalModuleTransaction {
-	/** Identificador da operação da transação no servidor principal */
-	opid: string
-	/** Identificador único dessa transação */
-	txid: TransactionDoc['txid']
-	/** Account de destino da transação */
-	account: TransactionDoc['account']
-	/** Amount da transação */
-	amount: string|number
-	/** Status da transação */
-	status: TransactionDoc['status']
-	/**
-	 * A quantidade de confirmações que uma transação tem. Transações
-	 * confirmadas em um único bloco (como a NANO) não precisam utilizar isso
-	 */
-	confirmations?: TransactionDoc['confirmations']
-	/**
-	 * Timestamp da transação, o servidor principal usa Date, os módulos
-	 * externos transmitem o timestamp em milisegundos como um number
-	 */
-	timestamp: number
-}
+import type { SuportedCurrencies } from '../src/libs/currencies'
 
 /** Interface de uma transação recebida */
-export interface TxReceived extends Omit<
-	TxJSON,
-	'opid'|'amount'|'currency'|'type'|'status'
-> {
-	status: TransactionDoc['status']
-	amount: ExternalModuleTransaction['amount']
-}
-
-interface Request {
-	/** Identificador da operação da transação no servidor principal */
-	opid: ExternalModuleTransaction['opid']
-}
-
-/** Interface para ordens de envio de transações */
-export interface WithdrawRequest extends Request {
+export type TxReceived = {
+	/** Identificador único dessa transação */
+	txid: string
 	/** Account de destino da transação */
-	account: ExternalModuleTransaction['account']
-	/** Amount da transação na unidade base da moeda */
-	amount: ExternalModuleTransaction['amount']
-}
-
-/** Interface do objeto de atualização de uma transação */
-interface TxUpdate extends Request {
-	status: 'pending'|'confirmed'|'cancelled'
-	confirmations?: ExternalModuleTransaction['confirmations']
+	account: string
+	/** Quantidade transactionada */
+	amount: string|number
+	/** Status da transação, na rede da moeda */
+	status: 'pending'|'confirmed'
+	/** Quantidade de confirmações que essa transação tem, caso tenha */
+	confirmations?: number
+	/** Timestamp da na rede da moeda */
+	timestamp: number
 }
 
 /**
  * Interface para atualização de transações recebidas utilizando
  * o evento update_received_tx
  */
-export interface UpdtReceived extends TxUpdate {
+export type UpdtReceived = {
+	/** Identificador da operação da transação no servidor principal */
+	opid: string
+	/** Status da transação, na rede da moeda */
 	status: 'pending'|'confirmed'
+	/** Quantidade de confirmações que essa transação tem, caso tenha */
+	confirmations?: number
 }
 
 /**
  * Interface para atualização de transações enviadas utilizando
  * o evento update_sent_tx
  */
-export interface UpdtSent extends TxUpdate {
+export type UpdtSent = {
+	/** Identificador da operação da transação no servidor principal */
+	opid: string
 	/** Identificador da transação na rede da moeda */
-	txid: ExternalModuleTransaction['txid']
+	txid: string
+	/** Status da transação, na rede da moeda */
+	status: 'pending'|'confirmed'
+	/** Quantidade de confirmações que essa transação tem, caso tenha */
+	confirmations?: number
 	/** O timestamp da transação na rede da moeda */
-	timestamp: ExternalModuleTransaction['timestamp']
+	timestamp: number
+}
+
+/** Interface para ordens de envio de transações */
+export type WithdrawRequest = {
+	/** Identificador da operação da transação no servidor principal */
+	opid: string
+	/** Account de destino da transação */
+	account: string
+	/** Amount da transação na unidade base da moeda */
+	amount: number|string
 }
 
 /** Interface de atualização de quando uma transação é cancelada */
-export interface CancellSent extends Request {
+export type CancellSent = {
+	/** Identificador da operação da transação no servidor principal */
+	opid: string
 	status: 'cancelled'
 }
 
 /**
  * Objeto retornado pelo servidor quando é requisitado uma transação
  */
-export type TxInfo = TxJSON
+export type TxInfo = {
+	/** Identificador da operação da transação no servidor principal */
+	opid: string
+	/** Identificador da transação na rede da moeda */
+	txid: string
+	/** Account de destino da transação */
+	account: string
+	/** Amount da transação na unidade base da moeda */
+	amount: number
+	/** Se é uma transação de saque ou recebimento */
+	type: 'send'|'receive'
+	/** O status da operação no sistema */
+	status: 'processing'|'pending'|'confirmed'
+	/** A quantidade de confirmações dessa transação, caso tenha */
+	confirmations?: number
+	/** A currency que essa transação se refere */
+	currency: SuportedCurrencies
+	/** O timestamp da transação na rede da moeda */
+	timestamp: number
+	/** O fee dessa transação, caso seja de saque */
+	fee?: number
+}

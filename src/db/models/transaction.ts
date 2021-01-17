@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
 import { currencies, truncateAmount } from '../../libs/currencies'
 import type { PersonDoc } from './person'
+import type { TxInfo } from '../../../interfaces/transaction'
 import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** A interface dessa collection */
@@ -48,18 +49,7 @@ export interface TransactionDoc extends Document {
 	confirmations?: number
 	/** O timestamp da transação na rede da moeda */
 	timestamp: Date
-	toJSON(): TxJSON
-}
-
-/** Interface do objeto retornado pelo método toJSON */
-export interface TxJSON extends Omit<
-	TransactionDoc,
-	keyof Document|'userId'|'status'|'fee'|'timestamp'
-> {
-	opid: string
-	status: 'processing'|'pending'|'confirmed'
-	fee?: number
-	timestamp: number
+	toJSON(): TxInfo
 }
 
 /** Schema da collection de transações dos usuários */
@@ -115,8 +105,8 @@ const TransactionSchema = new Schema({
 	}
 }, {
 	toJSON: {
-		transform: function(doc: TransactionDoc): TxJSON {
-			let status: TxJSON['status']
+		transform: function(doc: TransactionDoc): TxInfo {
+			let status: TxInfo['status']
 			switch (doc.status) {
 				case('pending'):
 				case('confirmed'):

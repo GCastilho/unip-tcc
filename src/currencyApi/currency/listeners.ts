@@ -113,7 +113,7 @@ export default function initListeners(this: Currency) {
 						txid:          tx.txid,
 						account:       tx.account,
 						amount:        tx.amount,
-						status:        tx.status,
+						status:        tx.status as 'pending'|'confirmed', // Isso tá errado, corrigir!
 						confirmations: tx.confirmations,
 						timestamp:     tx.timestamp.getTime()
 					}
