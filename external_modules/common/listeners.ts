@@ -13,12 +13,10 @@ export default function initListeners(this: Common, socket: SocketIOClient.Socke
 	 * Ouve por eventos vindos do método 'emit' e os retransmite ao socket
 	 * para serem enviados ao main server
 	 */
-	this.events.on('to_main_server', (event: string, ...args: any) => {
+	this.events.on('to_main_server', (event: string, args: any[], callback: (...args: any[]) => void) => {
 		if (socket.connected) {
-			socket.emit(event, ...args)
+			socket.emit(event, ...args, callback)
 		} else {
-			/** O último argumento é o callback do evento */
-			const callback: (...args: any[]) => any = args[args.length - 1]
 			callback('SocketDisconnected')
 		}
 	})

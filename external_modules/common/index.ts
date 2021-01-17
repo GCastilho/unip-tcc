@@ -1,3 +1,4 @@
+import mongoose from 'mongoose'
 import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import { startSession } from 'mongoose'
@@ -5,7 +6,6 @@ import Sync from './sync'
 import Queue from './queue'
 import initListeners from './listeners'
 import Transaction, { CreateSendRequest, Receive, Send } from './db/models/transaction'
-import * as mongoose from './db/mongoose'
 import type TypedEmitter from 'typed-emitter'
 import type { ExternalEvents } from '../../interfaces/communication/external-socket'
 import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
@@ -74,6 +74,16 @@ export default abstract class Common {
 		to_main_server: (...args: any[]) => void
 	}> = new EventEmitter()
 
+	/**
+	 * Indica se o node da currency está online ou não
+	 *
+	 * Os listeners do 'rpc_connected' e 'rpc_disconnected' mantém essa variável
+	 * atualizada
+	 *
+	 * NÃO MODIFICAR MANUALMENTE
+	 */
+	protected nodeOnline = false
+
 	/** Nome da currency que está sendo trabalhada */
 	public readonly name: string
 
@@ -92,6 +102,13 @@ export default abstract class Common {
 
 		// Sincroniza transações com o main server
 		this.events.on('connected', () => this.sync.uncompleted())
+	}
+
+	/** Conecta com o servidor principal */
+	private connectToMainServer() {
+		/** Socket de conexão com o servidor principal */
+		const socket = io(`http://${mainServerIp}:${mainServerPort}/${this.name}`)
+		initListeners.call(this, socket)
 	}
 
 	/**
@@ -149,28 +166,29 @@ export default abstract class Common {
 	}
 
 	async init() {
-		await mongoose.init(`exchange-${this.name}`)
+		const ip = process.env.MONGODB_IP || '127.0.0.1'
+		const port = process.env.MONGODB_PORT || '27018'
+		const dbName = process.env.MONGODB_DB_NAME || `exchange-${this.name}`
+
+		const mongodb_url = process.env.MONGODB_URL || `mongodb://${ip}:${port}/${dbName}`
+
+		process.stdout.write('Connecting to mongodb... ')
+		await mongoose.connect(mongodb_url, {
+			user: process.env.MONGODB_USER,
+			pass: process.env.MONGODB_PASS,
+			useNewUrlParser: true,
+			useCreateIndex: true,
+			useFindAndModify: false,
+			useUnifiedTopology: true
+		}).catch(err => {
+			console.error('Database connection error:', err)
+			process.exit(1)
+		})
+		console.log('Connected')
+
 		this.connectToMainServer()
-		this.initBlockchainListener()
+		await this.initBlockchainListener()
 	}
-
-	/** Conecta com o servidor principal */
-	private connectToMainServer() {
-		/** Socket de conexão com o servidor principal */
-		const socket = io(`http://${mainServerIp}:${mainServerPort}/${this.name}`)
-		initListeners.call(this, socket)
-	}
-
-	/**
-	 * Indica se o node da currency está online ou não
-	 *
-	 * Os eventos 'node_connected' e 'node_disconnected' devem ser disparados
-	 * no event emitter interno para manter essa váriável atualizada e outras
-	 * partes do sistema que dependem desses eventos, funcionando
-	 *
-	 * NÃO MODIFICAR MANUALMENTE
-	 */
-	protected nodeOnline = false
 
 	/**
 	 * Processa uma transação recebida, salvando-a no DB e informando o main
@@ -219,8 +237,8 @@ export default abstract class Common {
 		...args: Parameters<ExternalEvents[Event]>
 	): Promise<ReturnType<ExternalEvents[Event]>> {
 		return new Promise((resolve, reject) => {
-			console.log(`transmitting socket event '${event}':`, ...args)
-			this.events.emit('to_main_server', event, ...args, ((error, response) => {
+			console.log(`Transmitting socket event '${event}':`, ...args)
+			this.events.emit('to_main_server', event, args, ((error, response) => {
 				if (error) {
 					console.error('Received socket error:', error)
 					reject(error)
