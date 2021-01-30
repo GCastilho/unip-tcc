@@ -95,31 +95,32 @@ export default class Sync {
 	}
 
 	/**
-	 * Atualiza um request de withdraw recebido do main server
+	 * Atualiza requests de withdraw recebidos do main server
 	 * @param updtSent A atualização da atualização enviada
 	 */
 	public async updateSent(updtSent: UpdateSentTx, session?: ClientSession) {
 		const { txid, status, timestamp, confirmations } = updtSent
-		const opid = await Send.findOne({ txid }, { opid: true }, { session })
-			.orFail().map(doc => doc.opid.toHexString())
-		try {
-			await this.emit('update_sent_tx', {
-				opid,
-				txid,
-				status,
-				confirmations,
-				timestamp: new Date(timestamp).getTime(),
-			})
-			if (updtSent.status == 'confirmed') {
-				await Transaction.updateOne({ opid }, { completed: true }, { session })
+		const txs = Send.find({ txid }, { opid: true }, { session }).orFail()
+		for await (const { opid } of txs) {
+			try {
+				await this.emit('update_sent_tx', {
+					opid: opid.toHexString(),
+					txid,
+					status,
+					confirmations,
+					timestamp: new Date(timestamp).getTime(),
+				})
+				if (updtSent.status == 'confirmed') {
+					await Transaction.updateOne({ opid }, { completed: true }, { session })
+				}
+			} catch (err) {
+				if (err === 'SocketDisconnected') return
+				if (err.code === 'OperationNotFound') {
+					console.error(`Deleting non-existent withdraw transaction with opid: '${opid}'`)
+					await Transaction.deleteOne({ opid }, { session })
+				} else
+					throw err
 			}
-		} catch (err) {
-			if (err === 'SocketDisconnected') return
-			if (err.code === 'OperationNotFound') {
-				console.error(`Deleting non-existent withdraw transaction with opid: '${opid}'`)
-				await Transaction.deleteOne({ opid }, { session })
-			} else
-				throw err
 		}
 	}
 }
