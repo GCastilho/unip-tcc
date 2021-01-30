@@ -5,7 +5,7 @@ import { startSession } from 'mongoose'
 import Sync from './sync'
 import Queue from './queue'
 import initListeners from './listeners'
-import Transaction, { CreateSendRequest, Receive, Send } from './db/models/transaction'
+import Transaction, { CreateSendRequest, Receive, Send, SendRequestDoc } from './db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
 import type { ExternalEvents } from '../../interfaces/communication/external-socket'
 import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
@@ -52,6 +52,15 @@ export default abstract class Common {
 	 * @returns WithdrawResponse Com os dados da transação enviada
 	 */
 	abstract withdraw(request: WithdrawRequest): Promise<WithdrawResponse>
+
+	/**
+	 * Executa um request de saque em batch, enviando uma única transação para
+	 * várias accounts
+	 *
+	 * @param batchRequest Um objeto em que as chaves são as accounts de destino
+	 * e os valores são os amounts que devem ser enviados para essas accounts
+	 */
+	withdrawMany?(batchRequest: Record<string, number>): Promise<WithdrawResponse>
 
 	/** Classe com métodos para sincronia de eventos com o main server */
 	private sync: Sync
@@ -120,30 +129,71 @@ export default abstract class Common {
 	 * que a transação não foi enviada
 	 */
 	private async processQueue() {
-		for await (const { opid, account, amount } of this.withdrawQueue) {
+		for await (const request of this.withdrawQueue) {
 			const session = await startSession()
 			session.startTransaction()
 
 			try {
-				// Find para checar se a tx n foi cancelada
-				await Send.findOne({ opid, status: 'requested' }, { _id: 1 }, { session })
+				/** Resposta de um dos métodos de withdraw */
+				let response: WithdrawResponse
 
-				const response = await this.withdraw({ account, amount })
-				console.log('Sent new transaction:', {
-					opid,
-					account,
-					amount,
-					...response
-				})
+				if (request instanceof Set) {
+					if (!this.withdrawMany) throw new Error('withdrawMany is not implemented, yet it was activated by Common. This is unacceptable')
 
-				await Send.updateOne({ opid }, response, { session })
+					/**
+					 * Requests de saque que ainda estão no banco, ou seja,
+					 * não foram cancelados. Inicia uma session no find para impedir que
+					 * eles sejam cancelados no meio dessa operação
+					 */
+					const requests = await Send.find({
+						opid: {
+							$in: Array.from(request)
+						},
+						status: 'requested',
+					}, {
+						opid: 1,
+						account: 1,
+						amount: 1
+					}, {
+						session
+					}).orFail() as Pick<SendRequestDoc, 'opid'|'account'|'amount'>[]
+
+					const batch = requests.reduce((acc, cur) => {
+						const storedAmount = acc.get(cur.account) || 0
+						acc.set(cur.account, storedAmount + Number(cur.amount))
+						return acc
+					}, new Map<string, number>())
+
+					response = await this.withdrawMany(Object.fromEntries(batch))
+					console.log('Sent many new transactions', response, batch)
+
+					await Send.updateMany({
+						opid: {
+							$in: requests.map(req => req.opid)
+						}
+					}, response, { session })
+				} else {
+					const { opid, account, amount } = request
+					// Find para checar se a tx n foi cancelada
+					await Send.findOne({ opid, status: 'requested' }, { _id: 1 }, { session }).orFail()
+
+					response = await this.withdraw({ account, amount })
+					console.log('Sent new transaction:', {
+						opid,
+						account,
+						amount,
+						...response
+					})
+					await Send.updateOne({ opid }, response, { session })
+				}
+
 				await this.sync.updateSent(response, session)
 
 				await session.commitTransaction()
 			} catch (err) {
 				await session.abortTransaction()
 				if (err.code === 'NotSent') {
-					const message = err.message ? err.message : err
+					const message = err?.message || err
 					console.error('Withdraw: Transaction was not sent:', message)
 					break
 				} else if (err.name != 'DocumentNotFoundError') {
@@ -179,7 +229,13 @@ export default abstract class Common {
 			useNewUrlParser: true,
 			useCreateIndex: true,
 			useFindAndModify: false,
-			useUnifiedTopology: true
+			useUnifiedTopology: true,
+			readConcern: {
+				// N sei se o melhor é 'snapshot' ou 'majority' aqui
+				level: 'snapshot'
+			},
+			w: 'majority',
+			j: true,
 		}).catch(err => {
 			console.error('Database connection error:', err)
 			process.exit(1)
