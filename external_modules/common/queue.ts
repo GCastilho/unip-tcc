@@ -1,3 +1,4 @@
+import assert from 'assert'
 import { Send } from './db/models/transaction'
 import type { DocumentQuery } from 'mongoose'
 import type { WithdrawRequest } from '../../interfaces/transaction'
@@ -6,6 +7,25 @@ import type { SendRequestDoc } from './db/models/transaction'
 type PromiseExecutor<T> = {
 	resolve: (value: T | PromiseLike<T>) => void,
 	reject: (reason?: unknown) => void
+}
+
+type BatchOptions = {
+	/**
+	 * Tempo máximo que uma transação pode esperar antes de ser enviada [ms]
+	 * @default 360000 [ms]
+	 */
+	timeLimit?: number,
+	/**
+	 * Quantidade mínima de transações que devem ser enviadas no batch
+	 * @default 10
+	 */
+	minTransactions?: number,
+	/**
+	 * Função que deve ser chamada com o Map<account, amount> para executar o
+	 * saque quando ou o tempo limite da transação mais antiga ou o número mínimo
+	 * de transações for atingido (o que vier primeiro)
+	 */
+	callback: (opids: Set<string>, txs: Map<string, number>) => void
 }
 
 class Iterator<T> implements AsyncIterator<T, void> {
@@ -81,7 +101,7 @@ class Iterator<T> implements AsyncIterator<T, void> {
 	}
 }
 
-abstract class Queue<T> implements AsyncIterable<T> {
+export abstract class Queue<T> implements AsyncIterable<T> {
 	protected queue?: Iterator<T>
 
 	/** Retorna um novo iterator e faz o bootstrap com os requests do banco */
@@ -128,5 +148,61 @@ export class Single extends Queue<WithdrawRequest> {
 	push(value: WithdrawRequest): void {
 		if (!this.queue) return
 		this.queue.push(value)
+	}
+}
+
+/**
+ * Classe para queue de withdraw de transações em batch. Se um batch tiver uma
+ * única transação, ela será enviado usando a interface para transações
+ * singulares
+ */
+export class Batch extends Queue<Set<string>> {
+	/** Tempo máximo que uma transação pode esperar antes de ser enviada [ms] */
+	private readonly limitTime: number
+
+	/**
+	 * Quantidade de transações que o scheduler deve esperar ter antes enviar o
+	 * batch para a queue
+	 */
+	private readonly minTxs: number
+
+	/** Instância do timeout desde a tx mais antiga ainda armazenada */
+	private timeout: null|NodeJS.Timeout
+
+	/** Set com os opids dos requests de saque que estão esperando */
+	private opids: Set<string>
+
+	constructor(options: BatchOptions) {
+		super()
+		this.limitTime = options.timeLimit || 360000
+		this.minTxs = options.minTransactions || 10
+		this.opids = new Set()
+		this.timeout = null
+	}
+
+	/** Envia as transações para a queue para serem executadas */
+	private execWithdraw() {
+		if (!this.queue) return
+		assert(this.opids.size > 0, 'Batch withraw requested for ZERO transactions')
+
+		this.queue.push(this.opids)
+
+		// Reseta os requests salvos
+		this.opids = new Set()
+		if (this.timeout) {
+			clearTimeout(this.timeout)
+			this.timeout = null
+		}
+	}
+
+	public push(request: WithdrawRequest) {
+		assert(!this.opids.has(request.opid), `opid already informed: ${request.opid}`)
+
+		this.opids.add(request.opid)
+
+		if (this.opids.size >= this.minTxs) this.execWithdraw()
+		else if (!this.timeout) {
+			this.timeout = setTimeout(() => this.execWithdraw(), this.limitTime)
+		}
 	}
 }
