@@ -7,12 +7,28 @@ import Queue from './queue'
 import initListeners from './listeners'
 import Transaction, { CreateSendRequest, Receive, Send, SendRequestDoc } from './db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
+import type { WithdrawRequest as WR } from '../../interfaces/transaction'
 import type { ExternalEvents } from '../../interfaces/communication/external-socket'
 import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
 
 type Options = {
 	/** Nome da Currency que se está trabalhando (igual ao da CurrencyAPI) */
 	name: string
+}
+
+/** Interface para o método de withdrawQueue */
+interface Scheduler<T> extends AsyncIterable<T> {
+	/**
+	 * Adiciona um novo valor à queue. Se a queue não estiver ativa o valor é
+	 * ignorado
+	 */
+	push(value: WithdrawRequest): void
+
+	/**
+	 * Interrompe a execução da queue, retornando um { done: true }. A queue
+	 * será reinicializada ao chamar o asyncIterator novamente
+	 */
+	stop(): void
 }
 
 /** Type do objeto de atualização de uma transação pendente */
@@ -66,7 +82,7 @@ export default abstract class Common {
 	private sync: Sync
 
 	/** Iterable da queue de requests de withdraw */
-	protected withdrawQueue: Queue
+	protected withdrawQueue: Scheduler<WR|Set<string>>
 
 	/**
 	 * EventEmitter para eventos internos
@@ -252,8 +268,8 @@ export default abstract class Common {
 	 */
 	public async newTransaction(transaction: NewTransaction): Promise<void> {
 		const doc = await Receive.create<ReceiveDoc>({
+			...transaction,
 			type: 'receive',
-			...transaction
 		})
 		console.log('Received new transaction', transaction)
 		await this.sync.newTransaction(doc)
