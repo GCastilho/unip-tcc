@@ -8,7 +8,7 @@ type PromiseExecutor<T> = {
 	reject: (reason?: unknown) => void
 }
 
-class Queue<T> implements AsyncIterator<T, void> {
+class Iterator<T> implements AsyncIterator<T, void> {
 	/** Fila de valores da queue */
 	private unconsumedValues: T[]
 
@@ -81,12 +81,12 @@ class Queue<T> implements AsyncIterator<T, void> {
 	}
 }
 
-export default class WithdrawQueue implements AsyncIterable<WithdrawRequest> {
-	private queue?: Queue<WithdrawRequest>
+abstract class Queue<T> implements AsyncIterable<T> {
+	protected queue?: Iterator<T>
 
 	/** Retorna um novo iterator e faz o bootstrap com os requests do banco */
 	[Symbol.asyncIterator]() {
-		this.queue = new Queue()
+		this.queue = new Iterator()
 		this.boostrap()
 		return this.queue
 	}
@@ -110,10 +110,7 @@ export default class WithdrawQueue implements AsyncIterable<WithdrawRequest> {
 	 * Adiciona um novo valor à queue. Se a queue não estiver ativa o valor é
 	 * ignorado
 	 */
-	public push(value: WithdrawRequest) {
-		if (!this.queue) return
-		this.queue.push(value)
-	}
+	abstract push(value: WithdrawRequest): void
 
 	/**
 	 * Interrompe a execução da queue, retornando um { done: true }. A queue
@@ -123,5 +120,13 @@ export default class WithdrawQueue implements AsyncIterable<WithdrawRequest> {
 		if (!this.queue) return
 		this.queue.return()
 		this.queue = undefined
+	}
+}
+
+/** Classe para queue de withdraw de uma transação por ves */
+export class Single extends Queue<WithdrawRequest> {
+	push(value: WithdrawRequest): void {
+		if (!this.queue) return
+		this.queue.push(value)
 	}
 }

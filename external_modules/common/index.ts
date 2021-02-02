@@ -3,7 +3,7 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import { startSession } from 'mongoose'
 import Sync from './sync'
-import Queue from './queue'
+import { Single } from './queue'
 import initListeners from './listeners'
 import Transaction, { CreateSendRequest, Receive, Send, SendRequestDoc } from './db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
@@ -115,7 +115,7 @@ export default abstract class Common {
 	constructor(options: Options) {
 		this.name = options.name
 		this.sync = new Sync(this.emit)
-		this.withdrawQueue = new Queue()
+		this.withdrawQueue = new Single()
 
 		// Monitora os eventos do rpc para manter o nodeOnline atualizado
 		this.events.on('rpc_connected', () => this.nodeOnline = true)
