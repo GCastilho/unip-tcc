@@ -1,7 +1,15 @@
 import assert from 'assert'
-import type { SendDoc } from './db/models/transaction'
+import { Send } from './db/models/transaction'
+import type { DocumentQuery } from 'mongoose'
+import type { WithdrawRequest } from '../../interfaces/transaction'
+import type { SendRequestDoc } from './db/models/transaction'
 
-type Options = {
+type PromiseExecutor<T> = {
+	resolve: (value: T | PromiseLike<T>) => void,
+	reject: (reason?: unknown) => void
+}
+
+type BatchOptions = {
 	/**
 	 * Tempo máximo que uma transação pode esperar antes de ser enviada [ms]
 	 * @default 360000 [ms]
@@ -20,69 +28,177 @@ type Options = {
 	callback: (opids: Set<string>, txs: Map<string, number>) => void
 }
 
-export default class WithrawScheduler {
-	/** Instância do timeout desde a tx mais antiga ainda armazenada */
-	private timeout: null|NodeJS.Timeout
+class Iterator<T> implements AsyncIterator<T, void> {
+	/** Fila de valores da queue */
+	private unconsumedValues: T[]
 
-	/** Tempo máximo que uma transação pode esperar antes de ser enviada [ms] */
-	private limitTime: number
+	/** Fila de promessas já retornadas pelo next esperando serem resolvidas */
+	private unresolvedPromises: PromiseExecutor<IteratorResult<T>>[]
 
 	/**
-	 * Quantidade de transações que o scheduler esperar ter antes de executar
-	 * o callback com as transações
-	 */
-	private minTxs: number
+	 * Flag que indica se a queue foi finalizada. Uma queue fionalizada não
+	 * irá mais retornar valores
+	*/
+	private finished: boolean
 
-	/** Função que deve ser chamada quando o timeout ou o minTx ser atingido */
-	private callback: (opids: Set<string>, txs: Map<string, number>) => void
+	constructor() {
+		this.unconsumedValues = []
+		this.unresolvedPromises = []
+		this.finished = false
+	}
+
+	/** Retorna um objeto de um IteratorResult com o done setado corretamente */
+	private createIterResult(value?: T): IteratorResult<T, void> {
+		return value ? { value, done: false } : { value: undefined, done: true }
+	}
+
+	/**
+	 * Retorna uma promessa que resolve quando há um novo valor disponível. Se
+	 * houver um valor na fila a promessa será resolvida imediatamente
+	 */
+	public next() {
+		if (this.finished) return Promise.resolve(this.createIterResult(undefined))
+		const value = this.unconsumedValues.shift()
+		if (value) {
+			return Promise.resolve(this.createIterResult(value))
+		} else {
+			return new Promise<IteratorResult<T>>((resolve, reject) => {
+				this.unresolvedPromises.push({ resolve, reject })
+			})
+		}
+	}
+
+	/**
+	 * Encerra a execução do generator, impedindo novos valores de serem
+	 * adicionados
+	 */
+	public return() {
+		this.finished = true
+
+		// retorna done, que tbm faz o for..of loop ser encerrado sem ser executado
+		for (const promise of this.unresolvedPromises) {
+			promise.resolve(this.createIterResult(undefined))
+		}
+		// Reseta (descarta) os arrays de valores não consumidos
+		this.unconsumedValues = []
+		this.unresolvedPromises = []
+
+		return Promise.resolve(this.createIterResult(undefined))
+	}
+
+	/**
+	 * Adiciona um novo valor à queue. Os valores são mantidos em ordem e
+	 * retornados pelo generator quando requisitados
+	 */
+	public push(value: T) {
+		if (this.finished) return
+		const promise = this.unresolvedPromises.shift()
+		if (promise) {
+			promise.resolve(this.createIterResult(value))
+		} else {
+			this.unconsumedValues.push(value)
+		}
+	}
+}
+
+export abstract class Queue<T> implements AsyncIterable<T> {
+	protected queue?: Iterator<T>
+
+	/** Retorna um novo iterator e faz o bootstrap com os requests do banco */
+	[Symbol.asyncIterator]() {
+		this.queue = new Iterator()
+		this.boostrap()
+		return this.queue
+	}
+
+	/** Faz o bootstrap do iterator com os valores do banco */
+	private async boostrap() {
+		const requests = Send.find({
+			status: 'requested'
+		}, {
+			opid: 1,
+			account: 1,
+			amount: 1
+		}) as DocumentQuery<SendRequestDoc[], SendRequestDoc>
+
+		for await (const { opid, account, amount } of requests) {
+			this.push({ opid: opid.toHexString(), account, amount })
+		}
+	}
+
+	/**
+	 * Adiciona um novo valor à queue. Se a queue não estiver ativa o valor é
+	 * ignorado
+	 */
+	abstract push(value: WithdrawRequest): void
+
+	/**
+	 * Interrompe a execução da queue, retornando um { done: true }. A queue
+	 * será reinicializada ao chamar o asyncIterator novamente
+	 */
+	public stop() {
+		if (!this.queue) return
+		this.queue.return()
+		this.queue = undefined
+	}
+}
+
+/** Classe para queue de withdraw de uma transação por ves */
+export class Single extends Queue<WithdrawRequest> {
+	push(value: WithdrawRequest): void {
+		if (!this.queue) return
+		this.queue.push(value)
+	}
+}
+
+/**
+ * Classe para queue de withdraw de transações em batch. Se um batch tiver uma
+ * única transação, ela será enviado usando a interface para transações
+ * singulares
+ */
+export class Batch extends Queue<Set<string>> {
+	/** Tempo máximo que uma transação pode esperar antes de ser enviada [ms] */
+	private readonly limitTime: number
+
+	/**
+	 * Quantidade de transações que o scheduler deve esperar ter antes enviar o
+	 * batch para a queue
+	 */
+	private readonly minTxs: number
+
+	/** Instância do timeout desde a tx mais antiga ainda armazenada */
+	private timeout: null|NodeJS.Timeout
 
 	/** Set com os opids dos requests de saque que estão esperando */
 	private opids: Set<string>
 
-	/**
-	 * Um Map<account, amount> das transações que devem ser enviadas. Dois
-	 * requests para a mesma account irão ser unidos em uma única transação com
-	 * o amount da soma dos dois
-	 */
-	private txs: Map<string, number>
-
-	constructor(options: Options) {
+	constructor(options: BatchOptions) {
+		super()
 		this.limitTime = options.timeLimit || 360000
 		this.minTxs = options.minTransactions || 10
-		this.callback = options.callback
 		this.opids = new Set()
-		this.txs = new Map()
 		this.timeout = null
 	}
 
-	/** Chama o callback com os opids e as txs e reseta os requests em memória */
+	/** Envia as transações para a queue para serem executadas */
 	private execWithdraw() {
-		this.callback(this.opids, this.txs)
+		if (!this.queue) return
+		assert(this.opids.size > 0, 'Batch withraw requested for ZERO transactions')
+
+		this.queue.push(this.opids)
+
 		// Reseta os requests salvos
 		this.opids = new Set()
-		this.txs = new Map()
 		if (this.timeout) {
 			clearTimeout(this.timeout)
 			this.timeout = null
 		}
 	}
 
-	/**
-	 * Adiciona uma transação à lista de transações a serem executadas
-	 *
-	 * A função callback informada no constructor será chamada com a lista de
-	 * transações e seus opids uma vez que o scheduler tenha o mínimo de
-	 * transações ou o tempo máximo desde a transação mais antiga ainda em memória
-	 * seja atingido
-	 *
-	 * @param tx O request da transação de envio
-	 */
-	public add(tx: SendDoc) {
-		assert(!this.opids.has(tx.opid.toHexString()), `opid already informed: ${tx.opid}`)
+	public push(request: WithdrawRequest) {
+		assert(!this.opids.has(request.opid), `opid already informed: ${request.opid}`)
 
-		const storedAmount = this.txs.get(tx.account) || 0
-		this.txs.set(tx.account, storedAmount + Number(tx.amount))
-		this.opids.add(tx.opid.toHexString())
+		this.opids.add(request.opid)
 
 		if (this.opids.size >= this.minTxs) this.execWithdraw()
 		else if (!this.timeout) {
