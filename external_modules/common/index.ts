@@ -4,12 +4,12 @@ import io from 'socket.io-client'
 import { EventEmitter } from 'events'
 import { startSession } from 'mongoose'
 import Sync from './sync'
-import { Single } from './scheduler'
+import { Batch, Single } from './scheduler'
 import initListeners from './listeners'
 import Transaction, { CreateSendRequest, Receive, Send, SendRequestDoc } from './db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
 import type { ClientSession } from 'mongoose'
-import type { Queue } from './scheduler'
+import type { Queue, BatchOptions } from './scheduler'
 import type { WithdrawRequest as WR } from '../../interfaces/transaction'
 import type { ExternalEvents } from '../../interfaces/communication/external-socket'
 import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
@@ -17,6 +17,8 @@ import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models
 type Options = {
 	/** Nome da Currency que se está trabalhando (igual ao da CurrencyAPI) */
 	name: string
+	/** Opções para configuração de transações em batch */
+	batchOptions?: BatchOptions
 }
 
 /** Type do objeto de atualização de uma transação pendente */
@@ -103,7 +105,14 @@ export default abstract class Common {
 	constructor(options: Options) {
 		this.name = options.name
 		this.sync = new Sync(this.emit)
-		this.withdrawQueue = new Single()
+
+		/**
+		 * Habilita o sistema de transações em batch caso a withdrawMany tenha
+		 * sido implementada pelo sistema da currency
+		 */
+		this.withdrawQueue = typeof this.withdrawMany == 'function'
+			? new Batch(options.batchOptions || {})
+			: new Single()
 
 		// Monitora os eventos do rpc para manter o nodeOnline atualizado
 		this.events.on('rpc_connected', () => this.nodeOnline = true)

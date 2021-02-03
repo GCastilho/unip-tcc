@@ -9,7 +9,7 @@ type PromiseExecutor<T> = {
 	reject: (reason?: unknown) => void
 }
 
-type BatchOptions = {
+export type BatchOptions = {
 	/**
 	 * Tempo máximo que uma transação pode esperar antes de ser enviada [ms]
 	 * @default 360000 [ms]
@@ -20,12 +20,6 @@ type BatchOptions = {
 	 * @default 10
 	 */
 	minTransactions?: number,
-	/**
-	 * Função que deve ser chamada com o Map<account, amount> para executar o
-	 * saque quando ou o tempo limite da transação mais antiga ou o número mínimo
-	 * de transações for atingido (o que vier primeiro)
-	 */
-	callback: (opids: Set<string>, txs: Map<string, number>) => void
 }
 
 class Iterator<T> implements AsyncIterator<T, void> {
