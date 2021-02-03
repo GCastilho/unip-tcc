@@ -66,7 +66,7 @@ export const currenciesObj = Object.fromEntries(
  * Se a currency for inválida irá truncar para 0 casas decimais
  */
 export function truncateAmount(amount: number|string, currency: string): number {
-	const [integer, decimals] = amount.toLocaleString('fullwide', {
+	const [integer, decimals] = amount.toLocaleString('en-US', {
 		useGrouping: false,
 		maximumFractionDigits: 20
 	}).split('.')

@@ -124,7 +124,7 @@ describe('Testing transactions collection', () => {
 	it('Should fail to save a transaction with invalid account')
 
 	it('Should return amount and time as number when calling toJSON', async () => {
-		const tx = await Transaction.create({
+		const tx = await new Transaction({
 			userId: new ObjectId(),
 			txid: 'random-txid',
 			type: 'receive',
@@ -133,7 +133,7 @@ describe('Testing transactions collection', () => {
 			account: 'random-account',
 			amount: 1.12345678910,
 			timestamp: new Date()
-		})
+		}).save()
 
 		const jsonRet = tx.toJSON()
 		expect(jsonRet.amount).to.be.a('number')

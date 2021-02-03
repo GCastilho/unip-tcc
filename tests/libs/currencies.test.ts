@@ -3,7 +3,7 @@ import { currencies, truncateAmount } from '../../src/libs/currencies'
 
 describe('Testing currency library', () => {
 	// Vai ser arredondado se for mais preciso q isso
-	const rawAmount = 1.1234567891011
+	const rawAmount = 1.123456789101112
 	const rawAmountString = '1.1234567891011121314151617181920'
 
 	it('Should NOT truncate if the currency was not found', () => {
