@@ -140,8 +140,7 @@ export abstract class Queue<T> implements AsyncIterable<T> {
 /** Classe para queue de withdraw de uma transação por ves */
 export class Single extends Queue<WithdrawRequest> {
 	push(value: WithdrawRequest): void {
-		if (!this.queue) return
-		this.queue.push(value)
+		if (this.queue) this.queue.push(value)
 	}
 }
 
@@ -176,10 +175,9 @@ export class Batch extends Queue<Set<string>> {
 
 	/** Envia as transações para a queue para serem executadas */
 	private execWithdraw() {
-		if (!this.queue) return
 		assert(this.opids.size > 0, 'Batch withraw requested for ZERO transactions')
 
-		this.queue.push(this.opids)
+		if (this.queue) this.queue.push(this.opids)
 
 		// Reseta os requests salvos
 		this.opids = new Set()
