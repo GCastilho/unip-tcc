@@ -1,9 +1,9 @@
-import type Currency from './index'
 import { ObjectId } from 'mongodb'
 import Transaction from '../../db/models/transaction'
 import Person from '../../db/models/person'
-import type { PersonDoc } from '../../db/models/person'
 import type { TxReceived } from '../../../interfaces/transaction'
+import type Currency from './index'
+import { startSession } from 'mongoose'
 
 export default function initListeners(this: Currency) {
 	/**
@@ -13,116 +13,73 @@ export default function initListeners(this: Currency) {
 	this._events.on('new_transaction', async (transaction, callback) => {
 		console.log('received new transaction', transaction)
 
-		const { txid, account, amount, status, confirmations } = transaction
-		const timestamp = new Date(transaction.timestamp)
+		const { txid, account, amount, status, confirmations, timestamp } = transaction
 
-		let userId: PersonDoc['_id']
+		const session = await startSession()
 		try {
-			const person = await Person.findOne({
-				[`currencies.${this.name}.accounts`]: account
-			}, {
-				_id: true
+			await session.withTransaction(async () => {
+				const { _id: userId } = await Person.findOne({
+					[`currencies.${this.name}.accounts`]: account
+				}, {
+					_id: true
+				}, {
+					session,
+				}).orFail()
+
+				/**
+				 * ObjectId dessa transação na collection de transactions e
+				 * identificador dessa operação para o resto do sistema
+				 */
+				const opid = new ObjectId()
+
+				const tx = await new Transaction({
+					_id: opid,
+					userId,
+					txid,
+					type: 'receive',
+					currency: this.name,
+					status,
+					confirmations,
+					account,
+					amount,
+					timestamp
+				}).save({ session })
+
+				await Person.balanceOps.add(userId, this.name, {
+					opid,
+					type: 'transaction',
+					amount
+				}, session)
+
+				if (status === 'confirmed')
+					await Person.balanceOps.complete(userId, this.name, opid, session)
+
+				this.events.emit('new_transaction', userId, tx.toJSON())
+				callback(null, opid.toHexString())
 			})
-			if (!person) throw 'UserNotFound'
-			userId = person._id
 		} catch (err) {
-			if (err === 'UserNotFound') {
-				return callback({
+			if (err.code === 11000) {
+				// A transação já existe, retornar ela ao módulo externo
+				const tx = await Transaction.findOne({ txid })
+				if (!tx) throw `Error finding transaction '${txid}' that SHOULD exist`
+
+				const transaction: TxReceived & { opid: string } = {
+					opid:          tx.id,
+					txid:          tx.txid,
+					account:       tx.account,
+					amount:        tx.amount,
+					status:        tx.status as 'pending'|'confirmed', // Isso tá errado, corrigir!
+					confirmations: tx.confirmations,
+					timestamp:     tx.timestamp.getTime()
+				}
+				console.log('Rejecting existing transaction:', transaction)
+				callback({ code: 'TransactionExists', transaction })
+			} else if (err.name == 'DocumentNotFoundError') {
+				// Não encontrou documento do usuário
+				callback({
 					code: 'UserNotFound',
 					message: 'No user found for this account'
 				})
-			} else {
-				return console.error('Error identifying user while processing new_transaction', err)
-			}
-		}
-
-		/**
-		 * ObjectId dessa transação na collection de transactions e
-		 * identificador dessa operação para o resto do sistema
-		 */
-		const opid = new ObjectId()
-
-		const tx = new Transaction({
-			_id: opid,
-			userId,
-			txid,
-			type: 'receive',
-			currency: this.name,
-			status: 'processing',
-			confirmations,
-			account,
-			amount,
-			timestamp
-		})
-
-		try {
-			await tx.save()
-
-			await Person.balanceOps.add(userId, this.name, {
-				opid,
-				type: 'transaction',
-				amount
-			})
-
-			tx.status = status
-			await tx.save()
-
-			if (status === 'confirmed')
-				await Person.balanceOps.complete(userId, this.name, opid)
-
-			this.events.emit('new_transaction', userId, tx.toJSON())
-			callback(null, opid.toHexString())
-		} catch (err) {
-			if (err.code === 11000) {
-				// A transação já existe
-				const tx = await Transaction.findOne({ txid })
-				if (!tx) {
-					throw `Error finding transaction '${txid}' that SHOULD exist`
-				} else if (tx.status === 'processing') {
-					/*
-					 * Houve um erro entre adicionar a tx e a update do status,
-					 * restaurar o database para status inicial e tentar de novo
-					 *
-					 * Esse tipo de erro não deve ocorrer a menos que ocorra
-					 * uma falha no database (no momento específico) ou falha de
-					 * energia, slá. O q importa é que PODE ocorrer, então o
-					 * melhor é ter uma maneira de resolver
-					 */
-					try {
-						/** Tenta cancelar a operação do usuário */
-						await Person.balanceOps.cancel(userId, this.name, tx._id)
-					} catch (err) {
-						if (err != 'OperationNotFound')
-							throw err
-					}
-					/** Remove a transação do database */
-					await tx.remove()
-					/**
-					 * Chama essa função novamente com os mesmos parâmetros
-					 *
-					 * Ao emitir o evento no socket ele também será
-					 * transmitido ao módulo externo, mas, como o módulo externo
-					 * não tem (não devería ter) um handler para um evento de
-					 * socket que ele mesmo emite, não deve dar problema
-					 */
-					this._events.emit('new_transaction', transaction, callback)
-				} else {
-					// A transação já existe, retornar ela ao módulo externo
-					const transaction: TxReceived & { opid: string } = {
-						opid:          tx.id,
-						txid:          tx.txid,
-						account:       tx.account,
-						amount:        tx.amount,
-						status:        tx.status as 'pending'|'confirmed', // Isso tá errado, corrigir!
-						confirmations: tx.confirmations,
-						timestamp:     tx.timestamp.getTime()
-					}
-					console.log('Rejecting existing transaction:', transaction)
-					callback({ code: 'TransactionExists', transaction })
-					await Person.balanceOps.cancel(userId, this.name, opid).catch(err => {
-						if (err != 'OperationNotFound') throw err
-					})
-				}
 			} else if (err.name === 'ValidationError') {
 				callback({
 					code: 'ValidationError',
@@ -131,24 +88,10 @@ export default function initListeners(this: Currency) {
 			} else {
 				console.error('Error processing new_transaction:', err)
 				callback({ code: 'InternalServerError' })
-				/**
-				 * Restaura o database ao estado original
-				 *
-				 * Não se sabe em que estágio ocorreu um erro para cair aqui,
-				 * então a operação pode ou não ter sido criada, por esse motivo
-				 * o erro de 'OperationNotFound' está sendo ignorando
-				 *
-				 * Entretando, um outro erro é um erro de fato e deve terminar
-				 * a execução do programa para evitar potencial dano
-				 */
-				try {
-					await Transaction.deleteOne({ opid })
-					await Person.balanceOps.cancel(userId, this.name, opid)
-				} catch (err) {
-					if (err != 'OperationNotFound')
-						throw err
-				}
+				throw err
 			}
+		} finally {
+			await session.endSession()
 		}
 	})
 
