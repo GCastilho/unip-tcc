@@ -10,6 +10,7 @@ import type { PersonDoc } from '../../db/models/person'
 import type { SuportedCurrencies } from '../../libs/currencies'
 import type { TxInfo, UpdtReceived, UpdtSent, CancellSent } from '../../../interfaces/transaction'
 import type { MainEvents, ListenerFunctions, ExternalEvents } from '../../../interfaces/communication/external-socket'
+import { startSession } from 'mongoose'
 
 /** Type para um callback genérico */
 type Callback = (err: any, response?: any) => void
@@ -87,35 +88,31 @@ export default class Currency {
 
 	/** Manda requests de saque para o módulo externos */
 	public async withdraw(transaction: TransactionDoc): Promise<void> {
+		const { id: opid, account, amount } = transaction
+		const withdrawRequest = { opid, account, amount }
+
+		const session = await startSession()
 		try {
-			const { nModified } = await Transaction.updateOne({
-				_id: transaction._id,
-				status: 'ready'
-			}, {
-				status: 'picked'
+			await session.withTransaction(async () => {
+				// Se o emit falhar o update será revertido
+				await Transaction.updateOne({
+					_id: transaction._id,
+					status: 'ready'
+				}, {
+					status: 'external'
+				}, { session }).orFail()
+
+				await this.emit('withdraw', withdrawRequest)
+				console.log('Sent withdraw request', withdrawRequest)
 			})
-			if (nModified) {
-				await this.emit('withdraw', {
-					opid: transaction._id.toHexString(),
-					account: transaction.account,
-					amount: transaction.amount
-				})
-				transaction.status = 'external'
-				await transaction.save()
-				console.log('Sent withdraw request', {
-					opid: transaction._id.toHexString(),
-					account: transaction.account,
-					amount: transaction.amount
-				})
-			} else {
-				console.log('Presuming the transaction', transaction._id, 'was cancelled. Withdraw skipped')
-			}
 		} catch (err) {
-			if (err == 'SocketDisconnected') {
-				await Transaction.updateOne({ _id: transaction._id }, { status: 'ready' })
-			} else if (err.code != 'OperationExists') {
+			if (err.name == 'DocumentNotFoundError') {
+				console.log('Presuming the transaction', transaction._id, 'was cancelled. Withdraw skipped')
+			} else if (err.code != 'OperationExists' && err != 'SocketDisconnected') {
 				throw err
 			}
+		} finally {
+			await session.endSession()
 		}
 	}
 
@@ -209,19 +206,22 @@ export default class Currency {
 		 * Retorna uma stream de strings de todas as accounts dos clientes, uma
 		 * account por chunk
 		 */
-		ss(socket).on('get_account_list', (stream: NodeJS.WritableStream) => {
-			const person = Person.find({}, {
+		ss(socket).on('get_account_list', async (stream: NodeJS.WritableStream) => {
+			const query = Person.find({
+				[`currencies.${this.name}`]: {
+					$ne: []
+				}
+			}, {
 				[`currencies.${this.name}`]: 1
-			}).lean().cursor()
-
-			person.on('data', ({ currencies }) => {
-				if (Object.keys(currencies).length === 0) return
-				currencies[this.name].accounts.forEach((account: string) => {
-					stream.write(account)
-				})
 			})
 
-			person.on('end', () => stream.end())
+			for await (const { currencies } of query) {
+				for (const account of currencies[this.name].accounts) {
+					stream.write(account)
+				}
+			}
+
+			stream.end()
 		})
 
 		/**
@@ -251,6 +251,8 @@ export default class Currency {
 		 */
 		await Person.find({
 			[`currencies.${this.name}.accounts`]: { $size: 0 }
+		}, {
+			_id: 1
 		}).cursor().eachAsync(async person => {
 			try {
 				await this.createAccount(person._id)
@@ -266,6 +268,8 @@ export default class Currency {
 		await Transaction.find({
 			currency: this.name,
 			status: 'cancelled'
+		}, {
+			userId: 1,
 		}).cursor().eachAsync(async tx => {
 			const response = await this.cancellWithdraw(tx.userId, tx._id)
 			if (response == 'cancelled') {

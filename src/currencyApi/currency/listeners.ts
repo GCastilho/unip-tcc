@@ -1,9 +1,9 @@
 import { ObjectId } from 'mongodb'
+import { startSession } from 'mongoose'
 import Transaction from '../../db/models/transaction'
 import Person from '../../db/models/person'
 import type { TxReceived } from '../../../interfaces/transaction'
 import type Currency from './index'
-import { startSession } from 'mongoose'
 
 export default function initListeners(this: Currency) {
 	/**
