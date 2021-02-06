@@ -172,39 +172,35 @@ export default function initListeners(this: Currency) {
 			message: '\'opid\' needs to be informed to update a transaction'
 		})
 
+		const session = await startSession()
 		try {
-			const tx = await Transaction.findById(updtSent.opid)
-			if (!tx) return callback({
-				code: 'OperationNotFound',
-				message: `No pending transaction with id: '${updtSent.opid}' found`
+			await session.withTransaction(async () => {
+				const tx = await Transaction.findById(updtSent.opid, {}, { session }).orFail()
+
+				// Atualiza a transação no database
+				tx.txid = updtSent.txid
+				tx.status = updtSent.status
+				tx.timestamp = new Date(updtSent.timestamp)
+				tx.confirmations = updtSent.status === 'confirmed' ? undefined : updtSent.confirmations
+				await tx.save()
+
+				if (updtSent.status === 'confirmed') {
+					await Person.balanceOps.complete(tx.userId, this.name, tx._id, session)
+				}
+
+				callback(null, `${updtSent.opid} updated`)
+				this.events.emit('update_sent_tx', tx.userId, updtSent)
 			})
-
-			// Atualiza a transação no database
-			tx.txid = updtSent.txid
-			tx.status = updtSent.status
-			tx.timestamp = new Date(updtSent.timestamp)
-			tx.confirmations = updtSent.status === 'confirmed' ? undefined : updtSent.confirmations
-
-			await tx.save()
-
-			if (updtSent.status === 'confirmed') {
-				const person = await Person.findById(tx.userId, { _id: true })
-				if (!person) throw 'UserNotFound'
-				await Person.balanceOps.complete(person._id, this.name, tx._id)
-			}
-
-			callback(null, `${updtSent.opid} updated`)
-			this.events.emit('update_sent_tx', tx.userId, updtSent)
 		} catch (err) {
-			if (err === 'OperationNotFound') {
+			if (err.name == 'DocumentNotFoundError') {
+				callback({
+					code: 'TransactionNotFound',
+					message: `No pending transaction with id: '${updtSent.opid}' found`
+				})
+			} else if (err === 'OperationNotFound') {
 				callback({
 					code: 'OperationNotFound',
 					message: `Could not find operation '${updtSent.opid}'`
-				})
-			} else if (err === 'UserNotFound') {
-				callback({
-					code: 'UserNotFound',
-					message: `Could not find the user for the operation '${updtSent.opid}'`
 				})
 			} else if (err.name === 'CastError') {
 				callback({

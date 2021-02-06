@@ -145,12 +145,12 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 	})
 
 	describe('If sending invalid data', () => {
-		it('Should return UserNotFound if a user for existing transaction was not found', done => {
+		it('Should return OperationNotFound if a user for existing transaction was not found', done => {
 			let userId: InstanceType<typeof Person>['_id']
 
 			// Recebe o request de saque
 			client.once('withdraw', async (request: WithdrawRequest, callback: (err: any, response?: string) => void) => {
-				callback(null, 'received withdraw request for userNotFound test')
+				callback(null, 'received withdraw request for OperationNotFound test')
 
 				try {
 					await Person.findByIdAndDelete(userId)
@@ -168,7 +168,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 
 					const err = await updateEvent.catch(err => err)
 					expect(err).to.be.an('object')
-					expect(err.code).to.equals('UserNotFound')
+					expect(err.code).to.equals('OperationNotFound')
 					expect(err.message).to.be.a('string')
 					done()
 				} catch (err) {
@@ -226,7 +226,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 			const err = await updateEvent.catch(err => err)
 			expect(err).to.be.a('object')
 			expect(err.code).to.be.a('string')
-				.that.equals('OperationNotFound')
+				.that.equals('TransactionNotFound')
 			expect(err.message).to.be.a('string')
 
 			const doc = await Transaction.findById(opid)
