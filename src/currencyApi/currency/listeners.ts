@@ -109,34 +109,34 @@ export default function initListeners(this: Currency) {
 
 		const { opid, status, confirmations } = updtReceived
 
+		const session = await startSession()
 		try {
-			const tx = await Transaction.findOne({
-				_id: opid,
-				status: 'pending'
+			await session.withTransaction(async () => {
+				const tx = await Transaction.findOne({
+					_id: opid,
+					status: 'pending'
+				}, {
+					userId: 1,
+					status: 1,
+					confirmations: 1,
+				}, { session }).orFail()
+
+				tx.status = status
+				tx.confirmations = updtReceived.status === 'confirmed' ? undefined : confirmations
+				await tx.save()
+
+				if (status === 'confirmed') {
+					await Person.balanceOps.complete(tx.userId, this.name, new ObjectId(opid), session)
+				}
+
+				callback(null, `${updtReceived.opid} updated`)
+				this.events.emit('update_received_tx', tx.userId, updtReceived)
 			})
-			if (!tx) return callback({
-				code: 'OperationNotFound',
-				message: `No pending transaction with id: '${opid}' found`
-			})
-
-			tx.status = status
-			tx.confirmations = updtReceived.status === 'confirmed' ? undefined : confirmations
-			await tx.validate()
-
-			if (status === 'confirmed') {
-				const person = await Person.findById(tx.userId, { _id: true })
-				if (!person) throw 'UserNotFound'
-				await Person.balanceOps.complete(person._id, this.name, new ObjectId(opid))
-			}
-
-			await tx.save()
-			callback(null, `${updtReceived.opid} updated`)
-			this.events.emit('update_received_tx', tx.userId, updtReceived)
 		} catch (err) {
-			if (err === 'UserNotFound') {
+			if (err.name == 'DocumentNotFoundError') {
 				callback({
-					code: 'UserNotFound',
-					message: `Could not find the user for the operation '${updtReceived.opid}'`
+					code: 'TransactionNotFound',
+					message: `No pending transaction with id '${opid}' found`
 				})
 			} else if (err === 'OperationNotFound') {
 				callback({
@@ -158,6 +158,8 @@ export default function initListeners(this: Currency) {
 				console.error('Error processing update_received_tx', err)
 				callback({ code: 'InternalServerError' })
 			}
+		} finally {
+			await session.endSession()
 		}
 	})
 
