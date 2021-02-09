@@ -127,12 +127,12 @@ export async function withdraw(
  * @returns {string} 'cancelled' Caso a transação tenha sido cancelada com sucesso
  * @returns {string} 'requested' Caso o a transação tenha sido agendada para cancelamento
  */
-export async function cancellWithdraw(
+export function cancellWithdraw(
 	userId: ObjectId,
 	currency: SuportedCurrencies,
 	opid: ObjectId
 ): Promise<string> {
-	return await _currencies[currency].cancellWithdraw(userId, opid)
+	return _currencies[currency].cancellWithdraw(userId, opid)
 }
 
 // Inicia o listener da currencyApi

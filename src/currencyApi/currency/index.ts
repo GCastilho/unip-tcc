@@ -2,6 +2,7 @@ import socketIO from 'socket.io'
 import ss from 'socket.io-stream'
 import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
+import { startSession } from 'mongoose'
 import initListeners from './listeners'
 import Person from '../../db/models/person'
 import Transaction, { TransactionDoc } from '../../db/models/transaction'
@@ -10,7 +11,6 @@ import type { PersonDoc } from '../../db/models/person'
 import type { SuportedCurrencies } from '../../libs/currencies'
 import type { TxInfo, UpdtReceived, UpdtSent, CancellSent } from '../../../interfaces/transaction'
 import type { MainEvents, ListenerFunctions, ExternalEvents } from '../../../interfaces/communication/external-socket'
-import { startSession } from 'mongoose'
 
 /** Type para um callback genérico */
 type Callback = (err: any, response?: any) => void
@@ -119,32 +119,33 @@ export default class Currency {
 	/** Processa requests de cancelamento de saque */
 	public async cancellWithdraw(userId: ObjectId, opid: ObjectId): Promise<'cancelled'|'requested'> {
 		try {
-			const { deletedCount } = await Transaction.deleteOne({ _id: opid, status: 'ready' })
-			if (!deletedCount) {
-				const { nModified } = await Transaction.updateOne({
+			const session = await startSession()
+			await session.withTransaction(async () => {
+				const tx = await Transaction.findOne({
+					_id: opid,
+					status: {
+						$in: ['ready', 'external']
+					}
+				}).orFail() // AlreadyExecuted
+
+				if (tx.status == 'external') {
+					await this.emit('cancell_withdraw', opid.toHexString())
+				}
+
+				await tx.remove()
+
+				// Pode dar throw em OperationNotFound (não tem handler)
+				await Person.balanceOps.cancel(userId, this.name, opid, session)
+			})
+			return 'cancelled'
+		} catch (err) {
+			if (err == 'SocketDisconnected' ) {
+				await Transaction.updateOne({
 					_id: opid,
 					status: 'external'
 				}, {
 					status: 'cancelled'
 				})
-				if (nModified) {
-					await this.emit('cancell_withdraw', opid.toHexString())
-				} else {
-					/**
-					 * Teoricamente também tem como ela ter estado no 'picked' qdo o
-					 * cancell foi feito
-					 */
-					throw 'AlreadyExecuted'
-				}
-			}
-
-			// Pode dar throw em OperationNotFound (não tem handler)
-			await Person.balanceOps.cancel(userId, this.name, opid)
-			await Transaction.deleteOne({ _id: opid })
-
-			return 'cancelled'
-		} catch (err) {
-			if (err == 'SocketDisconnected' ) {
 				return 'requested'
 			} else {
 				throw err

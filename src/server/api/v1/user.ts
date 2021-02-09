@@ -112,7 +112,7 @@ router.delete('/transactions/:opid', async (req, res) => {
 		const tx = await Transaction.findById(req.params.opid)
 			.where('userId').equals(req.userId)
 			.select('currency')
-			.orFail() as InstanceType<typeof Transaction>
+			.orFail()
 
 		res.send({
 			message: await CurrencyApi.cancellWithdraw(req.userId, tx.currency, tx._id)
@@ -126,6 +126,7 @@ router.delete('/transactions/:opid', async (req, res) => {
 		} else if (err.code == 'OperationNotFound') {
 			res.status(404).send(err)
 		} else {
+			console.error('Error cancelling transaction for user', req.userId, err)
 			res.status(500).send({ code: 'InternalServerError' })
 		}
 	}
