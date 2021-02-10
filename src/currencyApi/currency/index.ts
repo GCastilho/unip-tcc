@@ -104,15 +104,13 @@ export default class Currency {
 
 				await this.emit('withdraw', withdrawRequest)
 				console.log('Sent withdraw request', withdrawRequest)
-			})
+			}).finally(() => session.endSession())
 		} catch (err) {
 			if (err.name == 'DocumentNotFoundError') {
 				console.log('Presuming the transaction', opid, 'was cancelled. Withdraw skipped')
 			} else if (err.code != 'OperationExists' && err != 'SocketDisconnected') {
 				throw err
 			}
-		} finally {
-			await session.endSession()
 		}
 	}
 
@@ -126,7 +124,9 @@ export default class Currency {
 					status: {
 						$in: ['ready', 'external']
 					}
-				}).orFail() // AlreadyExecuted
+				}, {
+					status: 1
+				}, { session }).orFail() // AlreadyExecuted
 
 				if (tx.status == 'external') {
 					await this.emit('cancell_withdraw', opid.toHexString())
@@ -136,7 +136,7 @@ export default class Currency {
 
 				// Pode dar throw em OperationNotFound (não tem handler)
 				await Person.balanceOps.cancel(userId, this.name, opid, session)
-			})
+			}).finally(() => session.endSession())
 			return 'cancelled'
 		} catch (err) {
 			if (err == 'SocketDisconnected' ) {
@@ -150,8 +150,6 @@ export default class Currency {
 			} else {
 				throw err
 			}
-		} finally {
-			await session.endSession()
 		}
 	}
 

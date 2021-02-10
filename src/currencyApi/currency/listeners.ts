@@ -56,7 +56,7 @@ export default function initListeners(this: Currency) {
 
 				this.events.emit('new_transaction', userId, tx.toJSON())
 				callback(null, opid.toHexString())
-			})
+			}).finally(() => session.endSession())
 		} catch (err) {
 			if (err.code === 11000) {
 				// A transação já existe, retornar ela ao módulo externo
@@ -90,8 +90,6 @@ export default function initListeners(this: Currency) {
 				callback({ code: 'InternalServerError' })
 				throw err
 			}
-		} finally {
-			await session.endSession()
 		}
 	})
 
@@ -131,7 +129,7 @@ export default function initListeners(this: Currency) {
 
 				callback(null, `${updtReceived.opid} updated`)
 				this.events.emit('update_received_tx', tx.userId, updtReceived)
-			})
+			}).finally(() => session.endSession())
 		} catch (err) {
 			if (err.name == 'DocumentNotFoundError') {
 				callback({
@@ -158,8 +156,6 @@ export default function initListeners(this: Currency) {
 				console.error('Error processing update_received_tx', err)
 				callback({ code: 'InternalServerError' })
 			}
-		} finally {
-			await session.endSession()
 		}
 	})
 
@@ -190,7 +186,7 @@ export default function initListeners(this: Currency) {
 
 				callback(null, `${updtSent.opid} updated`)
 				this.events.emit('update_sent_tx', tx.userId, updtSent)
-			})
+			}).finally(() => session.endSession())
 		} catch (err) {
 			if (err.name == 'DocumentNotFoundError') {
 				callback({

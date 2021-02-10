@@ -62,7 +62,7 @@ describe('Testing fetch of multiple transactions on the HTTP API version 1', () 
 				confirmations: amount.toString().slice(-1),
 				timestamp: new Date(),
 			}))
-			.map(tx => Transaction.create(tx))
+			.map(tx => new Transaction(tx).save())
 
 		await Promise.all(transactions)
 
