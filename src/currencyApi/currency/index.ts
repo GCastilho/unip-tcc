@@ -107,7 +107,7 @@ export default class Currency {
 			})
 		} catch (err) {
 			if (err.name == 'DocumentNotFoundError') {
-				console.log('Presuming the transaction', transaction._id, 'was cancelled. Withdraw skipped')
+				console.log('Presuming the transaction', opid, 'was cancelled. Withdraw skipped')
 			} else if (err.code != 'OperationExists' && err != 'SocketDisconnected') {
 				throw err
 			}
@@ -118,8 +118,8 @@ export default class Currency {
 
 	/** Processa requests de cancelamento de saque */
 	public async cancellWithdraw(userId: ObjectId, opid: ObjectId): Promise<'cancelled'|'requested'> {
+		const session = await startSession()
 		try {
-			const session = await startSession()
 			await session.withTransaction(async () => {
 				const tx = await Transaction.findOne({
 					_id: opid,
@@ -150,6 +150,8 @@ export default class Currency {
 			} else {
 				throw err
 			}
+		} finally {
+			await session.endSession()
 		}
 	}
 
@@ -198,7 +200,7 @@ export default class Currency {
 					continue
 			}
 			socket.on(event, (...args) => {
-			// @ts-expect-error A tipagem desses eventos é feita separadamente
+				// @ts-expect-error A tipagem desses eventos é feita separadamente
 				this._events.emit(event, ...args)
 			})
 		}

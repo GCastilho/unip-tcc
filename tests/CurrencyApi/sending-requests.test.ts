@@ -146,7 +146,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					.catch(done)
 			})
 
-			it('Shold receive a request for cancell_withdraw immediate after requested', done => {
+			it('Should receive a request for cancell_withdraw immediate after requested', done => {
 				const amount = 4
 				let _opid: ObjectId
 
