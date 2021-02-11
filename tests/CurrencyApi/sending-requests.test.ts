@@ -33,15 +33,12 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 	const url = `http://127.0.0.1:${port}`
 	for (const currency of currencyNames) {
 		describe(`Once the ${currency} module connects`, () => {
-			let client: SocketIOClient.Socket
-
-			before(() => {
-				client = io(url + '/' + currency, {
-					autoConnect: false
-				})
+			const client = io(url + '/' + currency, {
+				autoConnect: false
 			})
 
-			afterEach(() => {
+			afterEach(done => {
+				client.once('disconnect', () => done())
 				client.close()
 			})
 
@@ -49,20 +46,18 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 				CurrencyApi.createAccount(person._id, currency).catch(err => {
 					if (err != 'SocketDisconnected') throw err
 				}).then(() => {
-					client.open()
-
 					client.once('create_new_account', (callback: (err: any, account?: string) => void) => {
 						callback(null, `account-${currency}`)
 						done()
 					})
+
+					client.open()
 				}).catch(done)
 			})
 
 			it('Should receive a withdraw request', done => {
 				const amount = 3.456
 				CurrencyApi.withdraw(person._id, currency, `${currency}_account`, amount).then(opid => {
-					client.open()
-
 					// Responde o create_new_account para evitar timeout
 					client.once('create_new_account', callback => {
 						callback(null, `account-${currency}`)
@@ -92,16 +87,20 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 						}
 						callback(null, 'request received for' + currency)
 					})
+
+					client.open()
 				}).catch(done)
 			})
 		})
 
 		describe(`If the ${currency} module is already connected`, () => {
-			let client: SocketIOClient.Socket
+			const client = io(url + '/' + currency, {
+				autoConnect: false
+			})
 
 			before(done => {
-				client = io(url + '/' + currency)
-				client.once('connect', done)
+				client.once('connect', () => done())
+				client.open()
 			})
 
 			after(() => {
@@ -123,6 +122,7 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					request: WithdrawRequest,
 					callback: (err: any, response?: string) => void
 				) => {
+					callback(null, 'request received for' + currency)
 					try {
 						expect(request).to.be.an('object')
 						expect(request.opid).to.be.a('string')
@@ -139,7 +139,6 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					} catch (err) {
 						done(err)
 					}
-					callback(null, 'request received for' + currency)
 				})
 
 				CurrencyApi.withdraw(person._id, currency, `${currency}_account`, amount)
@@ -159,18 +158,13 @@ describe('Testing if CurrencyApi is making requests to the websocket', () => {
 					opid: string,
 					callback: (err: any, response?: string) => void
 				) => {
+					callback(null, `request received for ${currency}`)
 					try {
-						const tx = await Transaction.findById(_opid)
-
-						expect(tx).to.be.an('object')
-
-						expect(opid).to.be.a('string')
-							.that.equals(tx._id.toHexString())
+						expect(opid).to.equals(_opid.toHexString())
 						done()
 					} catch (err) {
 						done(err)
 					}
-					callback(null, `request received for ${currency}`)
 				})
 
 				CurrencyApi.withdraw(person._id, currency, `${currency}_account`, amount).then(opid => {
