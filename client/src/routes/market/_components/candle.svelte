@@ -11,9 +11,6 @@
 	/** o numero maximo possivel de itens da tabela que aparecem ao mesmo tempo */
 	const maxItemView = 150
 	/** o numero de itens que serao exibidos na tabela, valor maximo = maxItemView */
-	let currentMaxItemView = 150
-	/** a largura real do grafico, visivel + invisivel */
-	let virtualWidth: number
 	const margin = {top: 15, right: 55, bottom: 105, left: 50}
 	/** a largura visivel da porçao do grafico */
 	const width = 600 - margin.left - margin.right
@@ -58,22 +55,89 @@
 	/** desenha a escala Y e as linhas */
 	let gY : d3.Selection<SVGGElement, unknown, HTMLElement, any>
 	/** a parte do grafico aonde ficam as colunas */
-	let chartBody
+	let chartBodyA
+	let chartBodyB
+	let chartBodyC
+	let index = 1
+
+	let candlesB
+	let candlesC
 	
-	export let prices: PriceHistory[] = []
+	let translateQuantity = 0
+
+	export let prices: PriceHistory[] = 
+	[]
 
 	onMount(() => {
 		drawChart(prices)
 	})
-	$: updateCandles(prices)
+	//$: updateCandles(prices)
 	
-	export function _drawChart(){
-		drawChart([])
-	}
+	// export function _drawChart(){
+	// 	drawChart([])
+	// }
 	
 	export function drawChart(prices: PriceHistory[]) {
-		currentMaxItemView =  Math.min(maxItemView, prices.length || 10)
-		virtualWidth = (width / currentMaxItemView) * prices.length || 10
+	prices = [{
+		open: 10,
+		close: 5,
+		high: 12,
+		low: 2,
+		startTime: 1610755637,
+		duration: 1,
+		currencies: ['bitcoin', 'nano']
+		},
+		{
+		open: 5,
+		close: 6,
+		high: 7,
+		low: 4,
+		startTime: 1610755637,
+		duration: 1,
+		currencies: ['bitcoin', 'nano']
+		},{
+		open: 6,
+		close: 5,
+		high: 6,
+		low: 5,
+		startTime: 1610755637,
+		duration: 1,
+		currencies: ['bitcoin', 'nano']
+		},{
+		open: 5,
+		close: 6,
+		high: 18,
+		low: 1,
+		startTime: 1610755637,
+		duration: 1,
+		currencies: ['bitcoin', 'nano']
+		},{
+		open: 6,
+		close: 1,
+		high: 7,
+		low: 1,
+		startTime: 1610755637,
+		duration: 1,
+		currencies: ['bitcoin', 'nano']
+		},{
+		open: 1,
+		close: 1,
+		high: 1,
+		low: 1,
+		startTime: 1610755637,
+		duration: 1,
+		currencies: ['bitcoin', 'nano']
+		},
+		{
+		open: 6,
+		close: 1,
+		high: 7,
+		low: 1,
+		startTime: 1610755637,
+		duration: 1,
+		currencies: ['bitcoin', 'nano']
+		}
+	]
 		currencies = prices[0].currencies || []
 		svg = d3.select('#candleGraph')
 			.attr('width', width + margin.left + margin.right)
@@ -81,17 +145,22 @@
 			.append('g')
 			.attr('transform', 'translate(' +margin.left+ ',' +margin.top+ ')')
 
+		let viewPort = d3.select('#viewPort')
+			.attr('width', width)
+			.attr('height', height )
+			.append('g')
+			.attr('transform', 'translate(' +margin.left+ ',' +margin.top+ ')')
 
-		let xmax = Math.max(...prices.map(v => v.startTime))
+
 		dates = prices.map(p => p.startTime)
 
 		xScale = d3.scaleLinear()
-			.domain([ -1 , dates.length || 10])
-			.range([0, virtualWidth])
+			.domain([-1 , dates.length-1])
+			.range([0, width])
 
 		xBand = d3.scaleBand()
-			.domain(d3.range(-1, dates.length || 10).map(v => v.toString()))
-			.range([0, width]).padding(0.3)
+			.domain(d3.range(-1, dates.length-1).map(v => v.toString()))
+			.range([0, width]).padding(0.2)
 
 		xAxis = d3.axisBottom(xScale)
 			.tickFormat(d => formatDate(dates, d.valueOf()))
@@ -112,8 +181,8 @@
 		gX.selectAll('.tick text')
 			.call(wrap, xBand.bandwidth())
 
-		const ymin = d3.min(prices.map(r => r.low)) || 1
-		const ymax = d3.max(prices.map(r => r.high)) || 100
+		const ymin = d3.min(prices.map(r => r.low))
+		const ymax = d3.max(prices.map(r => r.high))
 
 		yScale = d3.scaleLinear().domain([ymin, ymax]).range([height, 0]).nice()
 
@@ -127,15 +196,47 @@
 			.call(g => g.selectAll(".tick line")
 				.clone()
 				.attr("stroke-opacity", 0.2)
-				.attr("x2", virtualWidth )
+				.attr("x2", width )
 			)
 		
-		chartBody = svg.append('g')
+		chartBodyA = viewPort.append('g')
 			.attr('class', 'chartBody')
 			.attr('clip-path', 'url(#clip)')
+
+		chartBodyB = viewPort.append('g')
+			.attr('class', 'chartBody')
+			.attr('clip-path', 'url(#clip)')
+			.attr("transform", `translate(${-width},0)`)
+		
+		chartBodyC = viewPort.append('g')
+			.attr('class', 'chartBody')
+			.attr('clip-path', 'url(#clip)')
+			.attr("transform", `translate(${width},0)`)
 		
 		// draw rectangles
-		candles = chartBody.selectAll('.candle')
+		candles = chartBodyA.selectAll('.candle')
+			.data(prices)
+			.enter()
+			.append('rect')
+			.attr('x', (d, i) => xScale(i) - xBand.bandwidth())
+			.attr('class', 'candle')
+			.attr('y', d => yScale(Math.max(d.open, d.close)))
+			.attr('width', xBand.bandwidth())
+			.attr('height', d => (d.open === d.close) ? 1 : yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)))
+			.attr('fill', d => (d.open === d.close) ? 'silver' : (d.open > d.close) ? 'red' : 'green')
+		
+		candlesB = chartBodyB.selectAll('.candle')
+			.data(prices)
+			.enter()
+			.append('rect')
+			.attr('x', (d, i) => xScale(i) - xBand.bandwidth())
+			.attr('class', 'candle')
+			.attr('y', d => yScale(Math.max(d.open, d.close)))
+			.attr('width', xBand.bandwidth())
+			.attr('height', d => (d.open === d.close) ? 1 : yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)))
+			.attr('fill', d => (d.open === d.close) ? 'silver' : (d.open > d.close) ? 'red' : 'green')
+		
+		candlesC = chartBodyC.selectAll('.candle')
 			.data(prices)
 			.enter()
 			.append('rect')
@@ -147,7 +248,7 @@
 			.attr('fill', d => (d.open === d.close) ? 'silver' : (d.open > d.close) ? 'red' : 'green')
 
 		// draw high and low
-		stems = chartBody.selectAll('g.line')
+		stems = chartBodyA.selectAll('g.line')
 			.data(prices)
 			.enter()
 			.append('line')
@@ -162,181 +263,68 @@
 			.append('clipPath')
 			.attr('id', 'clip')
 			.append('rect')
-			.attr('width', virtualWidth)
+			.attr('width', width)
 			.attr('height', height)
-		const extent: [[number, number], [number, number]] = [[0, 0], [xScale(prices.length-1), height/2]] // eu nao sei o que esse h/2 faz
 
+		zoom = d3.zoom()
+			.scaleExtent([1, 70])
+			.translateExtent([[Number.MIN_SAFE_INTEGER,Number.MIN_SAFE_INTEGER],[Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER]])
+			.on('zoom', zoomed)
+ 
+		svg.call(zoom)
+		
+		function zoomed(event: { transform: d3.ZoomTransform; }) {
+			transform = event.transform
+			transform.translate
+			zoomQuantity = transform.k
+			// let xScaleZ = transform.rescaleX(xScale)
+			// const hideTicksWithoutLabel = function() {
+			// 	d3.selectAll('.xAxis .tick text').each(function(this: any){
+			// 		if (this.innerHTML === '') {
+			// 			this.parentNode.style.display = 'none'
+			// 		}
+			// 	})
+			// }
+			console.log(transform.x)
+			console.log(translateQuantity += transform.x)
+			chartBodyA.transition().duration(0).attr("transform", `translate(${transform.x},0)`)
+			chartBodyB.transition().duration(0).attr("transform", `translate(${-width+transform.x},0)`)
+			chartBodyC.transition().duration(0).attr("transform", `translate(${width+transform.x},0)`)
+
+			// gX.call(
+			// 	d3.axisBottom(xScaleZ).tickFormat(d => {
+			// 		if (d >= 0 && d <= dates.length-1) {
+			// 			return formatDate(dates, d.valueOf())
+			// 		}
+			// 	})
+			// )
+
+			// candles.attr('x', (d, i) => xScaleZ(i) - (xBand.bandwidth()*transform.k)/2)
+			// 	.attr('width', xBand.bandwidth()*transform.k)
+			// stems.attr('x1', (d, i) => xScaleZ(i) - xBand.bandwidth()/2 + xBand.bandwidth()*0.5)
+			// stems.attr('x2', (d, i) => xScaleZ(i) - xBand.bandwidth()/2 + xBand.bandwidth()*0.5)
+
+			// hideTicksWithoutLabel()
+
+			gX.selectAll('.tick text')
+				.call(wrap, xBand.bandwidth())
+		}
+		
+		
 		//.scaleExtent delimita um limite minimo e maximo para zoom
 		//pequenas mudanças de valores trazem mudanças drasticas no limite inferior e superior do zoom
 		//possivelmente um bom valor para se mudar no futuro
-		zoom = d3.zoom()
-			.scaleExtent([1, 70])
-			.translateExtent(extent)
-			.extent(extent)
-			.on('zoom', zoomed)
-			.on('zoom.end', zoomend)
-		svg.call(zoom)
 		
 		const transitionTimeouBefore = transitionStartTimeout
 		const transitionDurationBefore = transitionDuration
 		transitionStartTimeout = 1
 		transitionDuration = 1
 
-		zoom.scaleTo(svg, dates.length/100, )
-		zoom.translateBy(svg,-width/2,0)
-
 		transitionDuration = transitionDurationBefore
 		transitionStartTimeout = transitionTimeouBefore
 
-		function zoomed(event: { transform: d3.ZoomTransform; }) {
-			transform = event.transform
-			zoomQuantity = transform.k
-			let xScaleZ = transform.rescaleX(xScale)
-			const hideTicksWithoutLabel = function() {
-				d3.selectAll('.xAxis .tick text').each(function(this: any){
-					if (this.innerHTML === '') {
-						this.parentNode.style.display = 'none'
-					}
-				})
-			}
-
-			gX.call(
-				d3.axisBottom(xScaleZ).tickFormat(d => {
-					if (d >= 0 && d <= dates.length-1) {
-						return formatDate(dates, d.valueOf())
-					}
-				})
-			)
-
-			candles.attr('x', (d, i) => xScaleZ(i) - (xBand.bandwidth()*transform.k)/2)
-				.attr('width', xBand.bandwidth()*transform.k)
-			stems.attr('x1', (d, i) => xScaleZ(i) - xBand.bandwidth()/2 + xBand.bandwidth()*0.5)
-			stems.attr('x2', (d, i) => xScaleZ(i) - xBand.bandwidth()/2 + xBand.bandwidth()*0.5)
-
-			hideTicksWithoutLabel()
-
-			gX.selectAll('.tick text')
-				.call(wrap, xBand.bandwidth())
-		}
-
-		function zoomend(event) {
-
-			const xDateScale = d3.scaleQuantize()
-				//dates = dates.length ? dates : dates.
-				.domain([0, dates.length || 10])
-				.range(dates)
-
-			let xScaleZ = transform.rescaleX(xScale)
-			clearTimeout(resizeTimer)
-
-			resizeTimer = setTimeout(function() {
-				const xmin = xDateScale(Math.floor(xScaleZ.domain()[0]))
-				xmax = xDateScale(Math.floor(xScaleZ.domain()[1]))
-				filtered = prices.filter(d => ((d.startTime >= xmin) && (d.startTime <= xmax)))
-				minP = +d3.min(filtered, d => d['low'])
-				maxP = +d3.max(filtered, d => d['high'])
-				buffer = Math.floor((maxP - minP) * 0.1)
-
-				yScale.domain([minP - buffer, maxP + buffer])
-				candles.transition()
-					.duration(transitionDuration)
-					.attr('y', (d : PriceHistory) => yScale(Math.max(d.open, d.close)))
-					.attr('height', (d : PriceHistory) =>  (d.open === d.close) 
-						? 1 
-						: yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)))
-
-				stems.transition().duration(transitionDuration)
-					.attr('y1', (d : PriceHistory) => yScale(d.high))
-					.attr('y2', (d : PriceHistory) => yScale(d.low))
-				
-				gY.transition().duration(transitionDuration)
-					.call(d3.axisLeft(yScale)
-						.tickValues(d3.scaleLinear().domain(yScale.domain()).ticks())
-					)
-					.call(g => g.selectAll(".tick line")
-						.attr("stroke-opacity", 0.2)
-						.attr("x2", virtualWidth )
-					)
-			}, transitionStartTimeout)
-		}
-		return 
-	}
-	function updateCandles (prices:PriceHistory[]) {
-		if(!svg) return
-		if(currencies[0] != prices[0].currencies[0]){
-			console.log('redraw graph')
-			svg.selectAll('line').remove()
-			svg.selectAll('.candle').remove()
-			gX.selectAll('.tick text').remove()
-			gY.selectAll('.tick text').remove()
-			drawChart(prices)
-			return
-		}
-		const translateDistance = (virtualWidth*transform.k - ((width / currentMaxItemView) * prices.length)*transform.k)
-		virtualWidth = (width / currentMaxItemView) * prices.length
-		const extent: [[number, number], [number, number]] = [[0, 0], [xScale(prices.length-1), height/2]] 
-		zoom.translateExtent(extent)
-
-		svg.call(zoom)
-		dates = prices.map(p => p.startTime)
-
-		xScale=	d3.scaleLinear()
-			.domain([ -1 , dates.length])
-			.range([0, virtualWidth])
-		xBand = d3.scaleBand()
-			.domain(d3.range(-1, dates.length).map(v => v.toString()))
-			.range([0, virtualWidth]).padding(0.3)
-		let xScaleZ = transform.rescaleX(xScale)
-	
-		//redefine dominio da escala
-		const xDateScale = d3.scaleQuantize()
-			.domain([0, dates.length])
-			.range(dates)
-	
-		const xmin = xDateScale(Math.floor(xScaleZ.domain()[0]))
-		const xmax = xDateScale(Math.floor(xScaleZ.domain()[1]))
-
-		filtered = prices.filter(d => ((d.startTime >= xmin) && (d.startTime <= xmax)))
-
-		minP = +d3.min(filtered, d => d['low'])
-		maxP = +d3.max(filtered, d => d['high'])
-		buffer = Math.floor((maxP - minP) * 0.1)
-
-		yScale.domain([minP - buffer, maxP + buffer])
-
-		chartBody.selectAll('line').remove()
-		svg.selectAll('.candle').remove()
-
-		candles = chartBody.selectAll('.candle')
-			.data(prices)
-			.enter()
-			.append('rect')
-			.attr('class', 'candle')
-			.attr('x', (d, i) => xScale(i) - (xBand.bandwidth()*zoomQuantity) )
-			.attr('y', d => yScale(Math.max(d.open, d.close)))
-			.attr('width', xBand.bandwidth()*zoomQuantity)
-			.attr('fill', d => (d.open === d.close) ? 'silver' : (d.open > d.close) ? 'red' : 'green')
-			.attr('height',  d => (d.open === d.close) ? 1 : yScale(Math.min(d.open, d.close))-yScale(Math.max(d.open, d.close)))
 		
-		stems = chartBody.selectAll('g.line')
-			.data(prices)
-			.enter()
-			.append('line')
-			.attr('class', 'stem')
-			.attr('x1', (d, i) => xScale(i) - (xBand.bandwidth()/2))
-			.attr('x2', (d, i) => xScale(i) - (xBand.bandwidth()/2))
-			.attr('y1', d => yScale(d.high))
-			.attr('y2', d => yScale(d.low))
-			.attr('stroke', d => (d.open === d.close) ? 'white' : (d.open > d.close) ? 'red' : 'green');
-
-		gX.selectAll('.tick text')
-			.call(wrap, xBand.bandwidth())
-		const tAux = transform.x
-		zoom.translateBy(svg,-virtualWidth,0)
-		//o multiplier esta ai por mo
-		if( (tAux + translateDistance*1.001 > transform.x)){
-			zoom.translateBy(svg,	-(transform.x - tAux)/transform.k,transform.y)
-		}
+		return 
 	}
 	/**
 	 * muda a escrita de uma data especifica e esconde valores invalidos
@@ -381,4 +369,13 @@
 	}
 </script>
 
-<svg id='candleGraph'></svg>
+<svg id='candleGraph'>
+	<svg id='viewPort'>
+	</svg>
+</svg>
+
+
+
+chartBody1
+chartBody2
+chartBody3
