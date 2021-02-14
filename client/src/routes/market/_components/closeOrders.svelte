@@ -17,8 +17,7 @@
 
 <style>
 	table {
-		max-height: 300px;
-		width: 800px;
+		width: 100%;
 		overflow-y: scroll;
 		border: 1px solid #F0AE98;
 	}
