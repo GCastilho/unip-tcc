@@ -12,6 +12,8 @@ const mongodb_url = process.env.MONGODB_URL || `mongodb://${ip}:${port}/${dbName
 mongoose.connect(mongodb_url, {
 	user: process.env.MONGODB_USER,
 	pass: process.env.MONGODB_PASS,
+	w: 'majority',
+	readConcern: 'majority',
 	useNewUrlParser: true,
 	useCreateIndex: true,
 	useUnifiedTopology: true,

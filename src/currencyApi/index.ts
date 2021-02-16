@@ -1,6 +1,7 @@
 import socketIO from 'socket.io'
 import { ObjectId } from 'mongodb'
 import { EventEmitter } from 'events'
+import { startSession } from 'mongoose'
 import Currency from './currency'
 import Person from '../db/models/person'
 import Transaction from '../db/models/transaction'
@@ -78,39 +79,30 @@ export async function withdraw(
 	const _fee = fee * Math.pow(10, decimals)
 
 	// Adiciona a operação na Transactions
-	const transaction = await new Transaction({
+	const transaction = new Transaction({
 		_id: opid,
 		userId,
 		type: 'send',
 		currency,
-		status: 'processing',
+		status: 'ready',
 		account,
 		amount: (_amount - _fee) / Math.pow(10, decimals),
 		fee: _currencies[currency].fee,
 		timestamp: new Date()
-	}).save()
+	})
 
-	try {
-		/** Tenta atualizar o saldo */
+	const session = await startSession()
+	await session.withTransaction(async () => {
+		/** Salva a transação usando a session */
+		await transaction.save({ session })
+
+		/** Tenta atualizar o saldo usando a session */
 		await Person.balanceOps.add(userId, currency, {
 			opid,
 			type: 'transaction',
 			amount: - Math.abs(amount) // Garante que o amount será negativo
-		})
-	} catch (err) {
-		if (err === 'NotEnoughFunds') {
-			await transaction.remove()
-		}
-		/** Da throw no erro independente de qual erro seja */
-		throw err
-	}
-
-	/**
-	 * Atualiza a transação para o status 'ready', que sinaliza para o sistema
-	 * que os check iniciais (essa função) foram bem-sucedidos
-	 */
-	transaction.status = 'ready'
-	await transaction.save()
+		}, session)
+	}).finally(() => session.endSession())
 
 	/** Chama o método da currency para executar o withdraw */
 	await _currencies[currency].withdraw(transaction)

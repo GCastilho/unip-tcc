@@ -20,9 +20,7 @@ describe('Testing the receival of update_sent_tx on the CurrencyApi', () => {
 		})
 	})
 
-	after(() => {
-		client.disconnect()
-	})
+	after(() => client.disconnect())
 
 	const txAmount = 10
 	let opid: string
