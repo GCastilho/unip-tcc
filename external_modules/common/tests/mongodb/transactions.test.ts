@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
-import Transaction, { Receive, Send } from '../../db/models/newTransactions'
+import Transaction, { Receive, Send } from '../../db/models/transaction'
 
 describe('Testing transactions collection', () => {
 	beforeEach(async () => {
@@ -92,7 +92,6 @@ describe('Testing transactions collection', () => {
 
 	it('Should fail to save a receive transaction with an existing txid to the same account', async () => {
 		const transaction = {
-			opid: new ObjectId(),
 			txid: 'random-txid',
 			account: 'random-account',
 			type: 'receive' as const,
@@ -103,14 +102,12 @@ describe('Testing transactions collection', () => {
 		}
 
 		await Transaction.create(transaction)
-		transaction.opid = new ObjectId()
 		await expect(Transaction.create(transaction)).to.eventually
 			.be.rejectedWith(/^E11000.+index: txid_1/)
 	})
 
 	it('Should save a receive transaction with an existing txid to a different account', async () => {
 		const transaction = {
-			opid: new ObjectId(),
 			txid: 'random-txid',
 			account: 'random-account',
 			type: 'receive' as const,
@@ -121,7 +118,6 @@ describe('Testing transactions collection', () => {
 		}
 
 		await Transaction.create(transaction)
-		transaction.opid = new ObjectId()
 		transaction.account = 'a-different-account'
 		await expect(Transaction.create(transaction)).to.eventually.be.fulfilled
 	})
@@ -204,7 +200,7 @@ describe('Testing transactions collection', () => {
 			})
 		})
 
-		it('Should create a send request using createOne', async () => {
+		it('Should create a send request using createRequest', async () => {
 			await Send.createRequest({
 				opid: new ObjectId(),
 				account: 'random-account',

@@ -253,7 +253,7 @@ export default abstract class Common {
 
 	async init() {
 		const ip = process.env.MONGODB_IP || '127.0.0.1'
-		const port = process.env.MONGODB_PORT || '27018'
+		const port = process.env.MONGODB_PORT || '27017'
 		const dbName = process.env.MONGODB_DB_NAME || `exchange-${this.name}`
 
 		const mongodb_url = process.env.MONGODB_URL || `mongodb://${ip}:${port}/${dbName}`
@@ -266,12 +266,11 @@ export default abstract class Common {
 			useCreateIndex: true,
 			useFindAndModify: false,
 			useUnifiedTopology: true,
-			readConcern: {
-				// N sei se o melhor é 'snapshot' ou 'majority' aqui
-				level: 'snapshot'
-			},
+			// N sei se o melhor é 'snapshot' ou 'majority' aqui
+			readConcern: 'snapshot',
 			w: 'majority',
 			j: true,
+			wtimeout: 2000,
 		}).catch(err => {
 			console.error('Database connection error:', err)
 			process.exit(1)

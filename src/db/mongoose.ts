@@ -14,6 +14,8 @@ mongoose.connect(mongodb_url, {
 	pass: process.env.MONGODB_PASS,
 	w: 'majority',
 	readConcern: 'majority',
+	j: true,
+	wtimeout: 2000,
 	useNewUrlParser: true,
 	useCreateIndex: true,
 	useUnifiedTopology: true,
