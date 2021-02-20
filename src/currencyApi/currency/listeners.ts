@@ -112,6 +112,7 @@ export default function initListeners(this: Currency) {
 			await session.withTransaction(async () => {
 				const tx = await Transaction.findOne({
 					_id: opid,
+					type: 'receive',
 					status: 'pending'
 				}, {
 					userId: 1,
@@ -132,10 +133,24 @@ export default function initListeners(this: Currency) {
 			}).finally(() => session.endSession())
 		} catch (err) {
 			if (err.name == 'DocumentNotFoundError') {
-				callback({
-					code: 'TransactionNotFound',
-					message: `No pending transaction with id '${opid}' found`
+				const tx = await Transaction.findOne({
+					_id: opid,
+					type: 'receive',
+					status: 'confirmed',
+				}, {
+					_id: 1
 				})
+				if (tx) {
+					callback({
+						code: 'TransactionConfirmed',
+						message: `The transaction ${opid} is already confirmed`
+					})
+				} else {
+					callback({
+						code: 'TransactionNotFound',
+						message: `No pending transaction with id '${opid}' found`
+					})
+				}
 			} else if (err === 'OperationNotFound') {
 				callback({
 					code: 'OperationNotFound',
@@ -171,7 +186,10 @@ export default function initListeners(this: Currency) {
 		const session = await startSession()
 		try {
 			await session.withTransaction(async () => {
-				const tx = await Transaction.findById(updtSent.opid, {}, { session }).orFail()
+				const tx = await Transaction.findOne({
+					_id: updtSent.opid,
+					type: 'send',
+				}, {}, { session }).orFail()
 
 				// Atualiza a transação no database
 				tx.txid = updtSent.txid

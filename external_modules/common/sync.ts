@@ -72,10 +72,10 @@ export default class Sync {
 	 * Atualiza uma transação recebida previamente informada ao main server
 	 * @param updtReceived A atualização da atualização recebida
 	 */
-	public async updateReceived(updtReceived: UpdateReceivedTx, session?: ClientSession) {
+	public async updateReceived(updtReceived: UpdateReceivedTx) {
 		const { txid, status, confirmations } = updtReceived
 		try {
-			const opid = await Receive.findOne({ txid }, { opid: true }, { session })
+			const opid = await Receive.findOne({ txid }, { opid: true })
 				.orFail().map(doc => doc.opid?.toHexString())
 			assert(typeof opid == 'string')
 
@@ -84,13 +84,9 @@ export default class Sync {
 				await Receive.updateOne({ txid }, { completed: true })
 			}
 		} catch (err) {
-			if (err === 'SocketDisconnected') return
-			/**
-			 * OperationNotFound significa ou que a transação não existe
-			 * no main server ou que ela foi concluída (e está inacessível
-			 * a um update)
-			 */
-			if (err.code != 'OperationNotFound') throw err
+			if (err.code == 'TransactionConfirmed') {
+				await Receive.updateOne({ txid }, { completed: true })
+			} else if (err != 'SocketDisconnected') throw err
 		}
 	}
 
