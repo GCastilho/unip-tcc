@@ -6,13 +6,11 @@ import { startSession } from 'mongoose'
 import Sync from './sync'
 import { Batch, Single } from './scheduler'
 import initListeners from './listeners'
-import Transaction, { CreateSendRequest, Receive, Send, SendRequestDoc } from './db/models/transaction'
+import Transaction, { Receive, Send } from './db/models/transaction'
 import type TypedEmitter from 'typed-emitter'
-import type { ClientSession } from 'mongoose'
 import type { Queue, BatchOptions } from './scheduler'
-import type { WithdrawRequest as WR } from '../../interfaces/transaction'
 import type { ExternalEvents } from '../../interfaces/communication/external-socket'
-import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
+import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend, CreateSendRequest } from './db/models/transaction'
 
 type Options = {
 	/** Nome da Currency que se está trabalhando (igual ao da CurrencyAPI) */
@@ -72,7 +70,7 @@ export default abstract class Common {
 	private sync: Sync
 
 	/** Iterable da queue de requests de withdraw */
-	protected withdrawQueue: Queue<WR> | Queue<Set<string>>
+	protected withdrawQueue: Queue<Set<string>>
 
 	/**
 	 * EventEmitter para eventos internos
@@ -142,24 +140,82 @@ export default abstract class Common {
 	 * que a transação não foi enviada
 	 */
 	private async processQueue() {
-		for await (const request of this.withdrawQueue) {
+		for await (const opidSet of this.withdrawQueue) {
 			const session = await startSession()
 			session.startTransaction()
 
 			try {
-				/** Resposta de um dos métodos de withdraw */
-				const response: WithdrawResponse = request instanceof Set
-					? await this.processBatch(request, session)
-					: await this.processSingle(request, session)
+				/**
+				 * Puxa os dados dos requests de saque do banco, filtrando os que foram
+				 * cancelados. Inicia uma session no find para impedir que eles sejam
+				 * cancelados no meio dessa operação
+				 */
+				const requests = await Send.find({
+					opid: {
+						$in: Array.from(opidSet)
+					},
+					status: 'requested',
+				}, {
+					opid: 1,
+					account: 1,
+					amount: 1,
+				}, {
+					session,
+				}).orFail().map(txs => txs.map(tx => ({
+					opid:    tx.opid.toHexString(),
+					account: tx.account,
+					amount:  tx.amount,
+				})))
 
-				await this.sync.updateSent(response, session)
+				let response: WithdrawResponse
+				if (requests.length == 1) {
+					const { opid, account, amount } = requests[0]
+					response = await this.withdraw({ account, amount })
+					console.log('Sent new transaction:', {
+						opid,
+						account,
+						amount,
+						...response
+					})
+					await Send.updateOne({ opid }, response, { session })
+				} else if (requests.length > 1) {
+					assert(
+						typeof this.withdrawMany == 'function',
+						'withdrawMany is not implemented, yet it was activated by Common. This is unacceptable'
+					)
+
+					const batch = requests.reduce((acc, cur) => {
+						const storedAmount = acc.get(cur.account) || 0
+						acc.set(cur.account, storedAmount + Number(cur.amount))
+						return acc
+					}, new Map<string, number>())
+
+					response = await this.withdrawMany(Object.fromEntries(batch))
+					console.log('Sent many new transactions', response, batch)
+
+					await Send.updateMany({
+						opid: {
+							$in: requests.map(req => req.opid)
+						}
+					}, response, { session })
+				} else {
+					throw Object.assign(new Error(), {
+						code: 'NotSent',
+						message: `All requested transactions (${opidSet}) were cancelled`
+					})
+				}
 
 				await session.commitTransaction()
+				await session.endSession()
+
+				await this.sync.updateSent(response)
 			} catch (err) {
 				await session.abortTransaction()
+				session.endSession()
+
 				if (err.code === 'NotSent') {
 					const message = err?.message || err
-					console.error('Withdraw: Transaction was not sent:', message)
+					console.error('Withdraw - Transaction were not sent:', message)
 					break
 				} else if (err.name != 'DocumentNotFoundError') {
 					// Como usa transaction, DocumentNotFoundError só pode ocorrer no find
@@ -174,81 +230,8 @@ export default abstract class Common {
 					 */
 					process.exit(1)
 				}
-			} finally {
-				await session.endSession()
 			}
 		}
-	}
-
-	/** Processa requests singulares recebidos pela withdrawQueue */
-	private async processSingle(request: WR, session: ClientSession) {
-		const { opid, account, amount } = request
-		// Find para checar se a tx n foi cancelada
-		await Send.findOne({ opid, status: 'requested' }, { _id: 1 }, { session }).orFail()
-
-		const response = await this.withdraw({ account, amount })
-		console.log('Sent new transaction:', {
-			opid,
-			account,
-			amount,
-			...response
-		})
-		await Send.updateOne({ opid }, response, { session })
-
-		return response
-	}
-
-	/** Processa requests em batch recebidos pela withdrawQueue */
-	private async processBatch(set: Set<string>, session: ClientSession) {
-		assert(
-			this.withdrawMany,
-			'withdrawMany is not implemented, yet it was activated by Common. This is unacceptable'
-		)
-
-		/**
-		 * Puxa os dados dos requests de saque do banco, filtrando os que foram
-		 * cancelados. Inicia uma session no find para impedir que eles sejam
-		 * cancelados no meio dessa operação
-		 */
-		const requests = await Send.find({
-			opid: {
-				$in: Array.from(set)
-			},
-			status: 'requested',
-		}, {
-			opid: 1,
-			account: 1,
-			amount: 1
-		}, {
-			session
-		}).orFail() as Pick<SendRequestDoc, 'opid'|'account'|'amount'>[]
-
-		/**
-		 * Não executa a withdrawMany para um request de apenas uma transação.
-		 * NOTA: Nesse caso, um novo find por essa tx será feito pela processSingle
-		 */
-		if (requests.length == 1) return this.processSingle({
-			opid:    requests[0].opid.toHexString(),
-			account: requests[0].account,
-			amount:  requests[0].amount,
-		}, session)
-
-		const batch = requests.reduce((acc, cur) => {
-			const storedAmount = acc.get(cur.account) || 0
-			acc.set(cur.account, storedAmount + Number(cur.amount))
-			return acc
-		}, new Map<string, number>())
-
-		const response = await this.withdrawMany(Object.fromEntries(batch))
-		console.log('Sent many new transactions', response, batch)
-
-		await Send.updateMany({
-			opid: {
-				$in: requests.map(req => req.opid)
-			}
-		}, response, { session })
-
-		return response
 	}
 
 	async init() {

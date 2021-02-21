@@ -22,7 +22,7 @@ describe('Testing Single Queue class', () => {
 
 		await expect(promise).to.eventually.be.fulfilled.and.deep.equals({
 			done: false,
-			value: request
+			value: new Set([request.opid])
 		})
 	})
 
@@ -40,7 +40,7 @@ describe('Testing Single Queue class', () => {
 			const promise = asyncIterator.next()
 			await expect(promise).to.eventually.be.fulfilled.and.deep.equals({
 				done: false,
-				value: request
+				value: new Set([request.opid])
 			})
 		}
 	})
@@ -98,7 +98,7 @@ describe('Testing Single Queue class', () => {
 			const promise = asyncIterator.next()
 			await expect(promise).to.eventually.be.fulfilled.and.deep.equals({
 				done: false,
-				value: request
+				value: new Set([request.opid])
 			})
 		}
 	})

@@ -138,10 +138,10 @@ export abstract class Queue<T> implements AsyncIterable<T> {
 }
 
 /** Classe para queue de withdraw de uma transação por ves */
-export class Single extends Queue<WithdrawRequest> {
+export class Single extends Queue<Set<string>> {
 	push(value: WithdrawRequest): void {
 		if (!this.queue) return
-		this.queue.push(value)
+		this.queue.push(new Set([value.opid]))
 	}
 }
 

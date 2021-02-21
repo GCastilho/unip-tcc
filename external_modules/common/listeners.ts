@@ -94,6 +94,7 @@ export default function initListeners(this: Common, socket: SocketIOClient.Socke
 			 * DocumentNotFoundError, deixando a tx no limbo
 			 */
 			await Send.deleteOne({ opid, status: 'requested' }).orFail()
+			console.log('Transaction', opid, 'cancelled')
 			callback(null, 'cancelled')
 		} catch (err) {
 			if (err.name == 'DocumentNotFoundError') {
