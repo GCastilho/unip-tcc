@@ -32,7 +32,7 @@ class Iterator<T> implements AsyncIterator<T, void> {
 	/**
 	 * Flag que indica se a queue foi finalizada. Uma queue fionalizada não
 	 * irá mais retornar valores
-	*/
+	 */
 	private finished: boolean
 
 	constructor() {

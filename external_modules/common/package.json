@@ -21,10 +21,12 @@
     "@types/mongoose": "^5.10.3",
     "@types/node": "^12.19.11",
     "@types/sinon": "^9.0.10",
+    "@types/socket.io": "^2.1.11",
     "@types/socket.io-client": "^1.4.34",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "mocha": "^8.2.1",
-    "sinon": "^9.2.4"
+    "sinon": "^9.2.4",
+    "socket.io": "^2.3.0"
   }
 }

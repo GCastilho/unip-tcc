@@ -102,7 +102,7 @@ export default abstract class Common {
 
 	constructor(options: Options) {
 		this.name = options.name
-		this.sync = new Sync(this.emit)
+		this.sync = new Sync(this.emit.bind(this))
 
 		/**
 		 * Habilita o sistema de transações em batch caso a withdrawMany tenha
