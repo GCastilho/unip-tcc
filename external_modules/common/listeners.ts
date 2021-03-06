@@ -100,7 +100,7 @@ export default function initListeners(this: Common, socket: SocketIOClient.Socke
 			if (err.name == 'DocumentNotFoundError') {
 				callback({
 					code: 'AlreadyExecuted',
-					message: 'The transaction cold not be cancelled because it was already sent to it\'s destination'
+					message: 'The transaction could not be cancelled because it was already sent to it\'s destination'
 				})
 			} else {
 				console.error('Error cancelling withdraw request:', err)

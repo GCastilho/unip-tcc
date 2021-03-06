@@ -150,11 +150,22 @@ export default abstract class Common {
 				 * cancelados. Inicia uma session no find para impedir que eles sejam
 				 * cancelados no meio dessa operação
 				 */
-				const requests = await Send.find({
+				await Send.updateMany({
 					opid: {
 						$in: Array.from(opidSet)
 					},
 					status: 'requested',
+					picked: undefined,
+				}, {
+					picked: true,
+				}, {
+					session
+				})
+				const requests = await Send.find({
+					opid: {
+						$in: Array.from(opidSet)
+					},
+					picked: true,
 				}, {
 					opid: 1,
 					account: 1,
@@ -197,7 +208,10 @@ export default abstract class Common {
 						opid: {
 							$in: requests.map(req => req.opid)
 						}
-					}, response, { session })
+					}, {
+						...response,
+						$unset: { picked: true },
+					}, { session })
 				} else {
 					throw Object.assign(new Error(), {
 						code: 'NotSent',

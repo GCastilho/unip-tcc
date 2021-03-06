@@ -9,11 +9,13 @@ export class WithdrawTestCommon extends Common {
 		this.events.emit('rpc_connected')
 	}
 
-	withdraw = sinon.fake.resolves({
-		txid: `random-txid-${Date.now()}`,
-		status: 'pending',
-		confirmations: 2,
-		timestamp: Date.now(),
+	withdraw = sinon.fake(() => {
+		return Promise.resolve({
+			txid: `random-txid-${Math.random()}`,
+			status: 'pending',
+			confirmations: 2,
+			timestamp: Date.now(),
+		})
 	})
 }
 

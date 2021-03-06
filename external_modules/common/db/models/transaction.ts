@@ -16,6 +16,12 @@ interface Base extends Document {
 	type: 'send'|'receive'
 	/** Amount transacionado */
 	amount: number
+	/**
+	 * Flag para quando o documento está sendo utilizado pelo withdraw; Esta
+	 * propriedade existe apenas durante o processo dewithdraw, sendo deletada
+	 * ao término
+	 */
+	picked?: boolean
 }
 
 /** Interface base do documento de uma transação já executada */
@@ -145,7 +151,11 @@ const TransactionSchema = new Schema({
 			// Faz timestamp ser required caso não seja um request de saque
 			return this.status != 'requested'
 		}
-	}
+	},
+	picked: {
+		type: Boolean,
+		required: false,
+	},
 }, {
 	discriminatorKey: 'type',
 })
