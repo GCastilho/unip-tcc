@@ -126,5 +126,34 @@ describe('Testing withdraw method for Common', () => {
 		common.withdraw = originalWithdrawSpy
 	})
 
-	it('Should NOT sent transctions that were cancelled right BEFORE they\'re picked')
+	it('Should NOT sent transctions that were cancelled right BEFORE they\'re picked', async () => {
+		const requests: WithdrawRequest[] = [{
+			opid: new ObjectId().toHexString(),
+			account: 'random-account',
+			amount: 10,
+		}, {
+			opid: new ObjectId().toHexString(),
+			account: 'random-account2',
+			amount: 10 + 1,
+		}]
+
+		const originalWithdrawSpy = common.withdraw
+
+		const [withdrawSpy, withdrawCalled, resolveWithdraw] = createSpy()
+		common.withdraw = withdrawSpy
+
+		await emit('withdraw', requests[0])
+		await withdrawCalled
+		await emit('withdraw', requests[1])
+
+		await emit('cancell_withdraw', requests[1].opid)
+		resolveWithdraw()
+
+		// Checa se foi chamado só com o primeiro request
+		await timeout(50)
+		assert.calledOnce(common.withdraw)
+		assert.calledOnce(updateSentCallback)
+
+		common.withdraw = originalWithdrawSpy
+	})
 })
