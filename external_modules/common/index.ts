@@ -188,7 +188,10 @@ export default abstract class Common {
 						amount,
 						...response
 					})
-					await Send.updateOne({ opid }, response, { session })
+					await Send.updateOne({ opid }, {
+						...response,
+						$unset: { picked: true },
+					}, { session })
 				} else if (requests.length > 1) {
 					assert(
 						typeof this.withdrawMany == 'function',
@@ -202,7 +205,7 @@ export default abstract class Common {
 					}, new Map<string, number>())
 
 					response = await this.withdrawMany(Object.fromEntries(batch))
-					console.log('Sent many new transactions', response, batch)
+					console.log('Sent many new transactions', response, requests)
 
 					await Send.updateMany({
 						opid: {

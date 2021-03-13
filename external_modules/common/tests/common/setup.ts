@@ -19,6 +19,17 @@ export class WithdrawTestCommon extends Common {
 	})
 }
 
+export class WithdrawManyTestCommon extends WithdrawTestCommon {
+	withdrawMany() {
+		return Promise.resolve({
+			txid: `random-txid-many-${Math.random()}`,
+			status: 'pending' as const,
+			confirmations: 1,
+			timestamp: Date.now(),
+		})
+	}
+}
+
 const port = process.env.MAIN_SERVER_PORT || 5808
 
 export function mockedCurrencyApi(currency: string) {
