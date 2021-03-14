@@ -51,6 +51,17 @@ export class Bitcoin extends Common {
 		}
 	}
 
+	async withdrawMany(batchRequest: Record<string, number>): Promise<WithdrawResponse> {
+		const txid = await rpc.sendMany(batchRequest)
+		const { confirmations, time } = await rpc.getTransactionInfo(txid)
+		return {
+			txid,
+			confirmations,
+			status: confirmations >= 3 ? 'confirmed' : 'pending',
+			timestamp: time * 1000 // O timestamp do bitcoin é em segundos
+		}
+	}
+
 	/**
 	 * Processa uma transação recebida da bitcoin
 	 * @todo Adicionar um handler de tx cancelada (replace-by-fee)

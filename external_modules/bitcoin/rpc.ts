@@ -174,6 +174,32 @@ export function sendToAddress(address: string, amount: number): Promise<string> 
 	}
 }
 
+/**
+ * Envia bitcoin para vários endereços em uma única transação
+ * @param amounts Um objeto em que as chaves são os endereços de envio e os
+ * valores são os amounts
+ */
+export function sendMany(amounts: Record<string, number>): Promise<string> {
+	try {
+		return call('sendMany', '', amounts)
+	} catch (err) {
+		// TODO: Melhorar o handler desses error codes
+		// (uma classe que pegue err e retorne um objeto conhecido)
+		if (err.code === 'ECONNREFUSED') {
+			err.code = 'NotSent'
+			err.message = 'Connection refused on bitcoin node'
+		} else if (err.code === -6) {
+			// Insuficient funds on wallet
+			err.code = 'NotSent'
+		} else if (err.code === -3) {
+			err.code = 'NotSent'
+			err.message = 'Invalid amount'
+		}
+
+		throw err
+	}
+}
+
 export function getTransactionInfo(txid: string): Promise<TransactionInfo> {
 	return call('getTransaction', txid)
 }
