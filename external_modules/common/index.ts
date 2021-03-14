@@ -95,13 +95,14 @@ export default abstract class Common {
 	 *
 	 * NÃO MODIFICAR MANUALMENTE
 	 */
-	protected nodeOnline = false
+	protected nodeOnline: boolean
 
 	/** Nome da currency que está sendo trabalhada */
 	public readonly name: string
 
 	constructor(options: Options) {
 		this.name = options.name
+		this.nodeOnline = false
 		this.sync = new Sync(this.emit.bind(this))
 
 		/**
@@ -173,7 +174,7 @@ export default abstract class Common {
 				}, {
 					session,
 				}).orFail().map(txs => txs.map(tx => ({
-					opid:    tx.opid.toHexString(),
+					opid:    tx.opid,
 					account: tx.account,
 					amount:  tx.amount,
 				})))
@@ -225,17 +226,19 @@ export default abstract class Common {
 				await session.commitTransaction()
 				await session.endSession()
 
-				await this.sync.updateSent(response)
+				await Promise.all(
+					requests.map(req => this.sync.updateSent({ ...req, ...response }))
+				)
 			} catch (err) {
 				await session.abortTransaction()
 				session.endSession()
 
 				if (err.code === 'NotSent') {
 					const message = err?.message || err
-					console.error('Withdraw - Transaction were not sent:', message)
+					console.error('Withdraw - Transactions were not sent:', message)
 					break
 				} else if (err.name != 'DocumentNotFoundError') {
-					// Como usa transaction, DocumentNotFoundError só pode ocorrer no find
+					// Como usa transaction, DocumentNotFoundError só pode ocorrer no updateMany
 					/**
 					 * Não há garantia que a tx não foi enviada, interrompe o processo
 					 * para impedir que esse erro se propague de alguma forma
@@ -301,17 +304,16 @@ export default abstract class Common {
 	 */
 	public async updateTx(txUpdate: UpdateTx) {
 		const { txid, ...updtTx } = txUpdate
-		const tx = await Transaction.findOneAndUpdate({
-			txid
-		}, updtTx, {
-			new: true
-		}).orFail() as ReceiveDoc|SendDoc
+		await Transaction.updateMany({ txid }, updtTx)
+		const txs = await Transaction.find({ txid }).orFail() as ReceiveDoc[]|SendDoc[]
 
-		if (tx.type == 'receive') {
-			if (tx.opid) await this.sync.updateReceived(tx)
-			else await this.sync.newTransaction(tx)
-		} else {
-			await this.sync.updateSent(tx)
+		for (const tx of txs) {
+			if (tx.type == 'receive') {
+				if (tx.opid) await this.sync.updateReceived(tx)
+				else await this.sync.newTransaction(tx)
+			} else {
+				await this.sync.updateSent(tx)
+			}
 		}
 	}
 

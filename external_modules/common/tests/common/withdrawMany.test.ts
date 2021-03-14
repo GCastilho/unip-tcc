@@ -50,7 +50,11 @@ describe('Testing withdrawMany method for Common', () => {
 		common.init().catch(done)
 	})
 
-	after(() => currencyApi.close())
+	after(() => {
+		currencyApi.close()
+		common.close()
+	})
+
 	beforeEach(() => Transaction.deleteMany({}))
 
 	afterEach(() => {
@@ -84,6 +88,11 @@ describe('Testing withdrawMany method for Common', () => {
 		assert.notCalled(common.withdraw)
 		assert.calledOnce(common.withdrawMany)
 		assert.calledTwice(updateSentCallback)
+
+		assert.calledWith(common.withdrawMany, {
+			[requests[0].account]: +requests[0].amount,
+			[requests[1].account]: +requests[1].amount
+		})
 	})
 
 	it('Should join two requests to the same account', async () => {

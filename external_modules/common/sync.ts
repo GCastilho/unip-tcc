@@ -1,8 +1,7 @@
 import assert from 'assert'
 import { ObjectId } from 'mongodb'
 import Account from './db/models/account'
-import Transaction, { Receive, Send } from './db/models/transaction'
-import type { ClientSession } from 'mongoose'
+import Transaction, { Receive } from './db/models/transaction'
 import type Common from '.'
 import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
 
@@ -10,7 +9,7 @@ import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models
 type UpdateReceivedTx = Pick<CreateReceive, 'txid'|'status'|'confirmations'>
 
 /** Type para atualização de uma transação enviada */
-type UpdateSentTx = Pick<CreateSend, 'txid'|'status'|'confirmations'|'timestamp'>
+type UpdateSentTx = Pick<CreateSend, 'opid'|'txid'|'status'|'confirmations'|'timestamp'>
 
 export default class Sync {
 	constructor(private emit: Common['emit']) {}
@@ -55,7 +54,7 @@ export default class Sync {
 			await transaction.save()
 		} catch (err) {
 			if (err === 'SocketDisconnected') {
-				console.error('Não foi possível informar o main server da nova transação pois ele estava offline')
+				console.error('Could not inform new transaction to main server: SocketDisconnected')
 			} else if (err.code === 'UserNotFound') {
 				await Account.deleteOne({ account: transaction.account })
 				await Transaction.deleteMany({ account: transaction.account })
@@ -94,29 +93,21 @@ export default class Sync {
 	 * Atualiza requests de withdraw recebidos do main server
 	 * @param updtSent A atualização da atualização enviada
 	 */
-	public async updateSent(updtSent: UpdateSentTx, session?: ClientSession) {
-		const { txid, status, timestamp, confirmations } = updtSent
-		const txs = Send.find({ txid }, { opid: true }, { session }).orFail()
-		for await (const { opid } of txs) {
-			try {
-				await this.emit('update_sent_tx', {
-					opid: opid.toHexString(),
-					txid,
-					status,
-					confirmations,
-					timestamp: new Date(timestamp).getTime(),
-				})
-				if (updtSent.status == 'confirmed') {
-					await Transaction.updateOne({ opid }, { completed: true }, { session })
-				}
-			} catch (err) {
-				if (err === 'SocketDisconnected') return
-				if (err.code === 'OperationNotFound') {
-					console.error(`Deleting non-existent withdraw transaction with opid: '${opid}'`)
-					await Transaction.deleteOne({ opid }, { session })
-				} else
-					throw err
+	public async updateSent(updtSent: UpdateSentTx) {
+		const { opid, txid, status, timestamp, confirmations } = updtSent
+		try {
+			await this.emit('update_sent_tx', {
+				opid: typeof opid == 'string' ? opid : opid.toHexString(),
+				txid,
+				status,
+				confirmations,
+				timestamp: new Date(timestamp).getTime(),
+			})
+			if (updtSent.status == 'confirmed') {
+				await Transaction.updateOne({ opid }, { completed: true })
 			}
+		} catch (err) {
+			if (err != 'SocketDisconnected') throw err
 		}
 	}
 }

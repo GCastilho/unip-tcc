@@ -34,7 +34,11 @@ describe('Testing withdraw method for Common', () => {
 		common.init().catch(done)
 	})
 
-	after(() => currencyApi.close())
+	after(() => {
+		currencyApi.close()
+		common.close()
+	})
+
 	beforeEach(() => Transaction.deleteMany({}))
 
 	afterEach(() => {

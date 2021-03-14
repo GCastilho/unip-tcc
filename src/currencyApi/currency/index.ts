@@ -91,8 +91,8 @@ export default class Currency {
 		const { id: opid, account, amount } = transaction
 		const withdrawRequest = { opid, account, amount }
 
-		const session = await startSession()
 		try {
+			const session = await startSession()
 			await session.withTransaction(async () => {
 				// Se o emit falhar o update será revertido
 				await Transaction.updateOne({
@@ -116,8 +116,8 @@ export default class Currency {
 
 	/** Processa requests de cancelamento de saque */
 	public async cancellWithdraw(userId: ObjectId, opid: ObjectId): Promise<'cancelled'|'requested'> {
-		const session = await startSession()
 		try {
+			const session = await startSession()
 			await session.withTransaction(async () => {
 				const tx = await Transaction.findOne({
 					_id: opid,
