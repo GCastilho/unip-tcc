@@ -1,5 +1,6 @@
-import sinon, { assert } from 'sinon'
+import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
+import sinon, { assert } from 'sinon'
 import Transaction, { Receive, ReceiveDoc } from '../../db/models/transaction'
 import Sync from '../../sync'
 
@@ -52,5 +53,32 @@ describe('Testing Sync\'s class updateReceived method', () => {
 		await sync.updateReceived(transaction)
 		const tx = await Receive.findById(transaction.id).orFail()
 		tx.completed.should.be.true
+	})
+
+	it('Should update a specific transaction from a batch', async () => {
+		// Modifica a tx existente para ela ser pega primeiro no fndOne
+		transaction.status = 'confirmed'
+		await transaction.save()
+
+		// Cria uma outra transação
+		const otherTx = await Receive.create({
+			opid: new ObjectId(),
+			txid: transaction.txid, // Mesma txid
+			account: `${transaction.account}-another`, // different account
+			type: 'receive',
+			status: 'pending',
+			amount: '0.12',
+			confirmations: 1,
+			timestamp: Date.now(),
+		})
+
+		expect(Transaction.find()).to.eventually.be
+			.fulfilled.with.an('object')
+			.that.have.property('length').that.equals(2)
+
+		await sync.updateReceived(otherTx)
+
+		const completedTxs = await Transaction.find({ completed: true })
+		completedTxs.length.should.equal(1)
 	})
 })

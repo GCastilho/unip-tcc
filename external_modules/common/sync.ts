@@ -6,7 +6,7 @@ import type Common from '.'
 import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend } from './db/models/transaction'
 
 /** Type para atualização de uma transação recebida */
-type UpdateReceivedTx = Pick<CreateReceive, 'txid'|'status'|'confirmations'>
+type UpdateReceivedTx = Pick<CreateReceive, 'txid'|'account'|'status'|'confirmations'>
 
 /** Type para atualização de uma transação enviada */
 type UpdateSentTx = Pick<CreateSend, 'opid'|'txid'|'status'|'confirmations'|'timestamp'>
@@ -72,9 +72,9 @@ export default class Sync {
 	 * @param updtReceived A atualização da atualização recebida
 	 */
 	public async updateReceived(updtReceived: UpdateReceivedTx) {
-		const { txid, status, confirmations } = updtReceived
+		const { txid, account, status, confirmations } = updtReceived
 		try {
-			const opid = await Receive.findOne({ txid }, { opid: true })
+			const opid = await Receive.findOne({ txid, account }, { opid: 1 })
 				.orFail().map(doc => doc.opid?.toHexString())
 			assert(typeof opid == 'string')
 

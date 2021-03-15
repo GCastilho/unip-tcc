@@ -225,7 +225,7 @@ export function getBlockCount(): Promise<number> {
 }
 
 export function uptime(): Promise<number> {
-	return call('uptime')
+	return call('upTime')
 }
 
 /**
