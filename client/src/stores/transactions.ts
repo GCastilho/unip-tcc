@@ -149,8 +149,10 @@ export default new class TransactionsStore extends ListStore<Transaction> {
 		try {
 			const { data } = await axios.delete<{ message: string }>(`${this.apiUrl}/${opid}`)
 			if (data.message == 'cancelled') {
+				console.log('Transaction', opid, 'cancelled')
 				this.update(txs => {
 					const index = txs.findIndex(v => v.opid == opid)
+					balances.updateBalances(txs[index].currency, txs[index].amount, -txs[index].amount)
 					txs.splice(index, 1)
 					return txs
 				})
