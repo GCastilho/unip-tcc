@@ -147,9 +147,15 @@ export default abstract class Common {
 
 			try {
 				/**
-				 * Puxa os dados dos requests de saque do banco, filtrando os que foram
-				 * cancelados. Inicia uma session no find para impedir que eles sejam
-				 * cancelados no meio dessa operação
+				 * Utiliza concorrência pessimista, mandando um update para as
+				 * transações que serão sacadas para impedir que elas sejam deletadas
+				 * ou modificadas de fora da session. Usar apenas o find não impediria
+				 * a transação de ser modificada de fora da session
+				 *
+				 * As transações que foram canceladas não serão pegas pelo update/find
+				 * então esse processo garante que transações canceladas não serão
+				 * sacadas além de que o uso de uma session garante que elas não serão
+				 * canceladas durante o andamento dessa operação
 				 */
 				await Send.updateMany({
 					opid: {
@@ -226,9 +232,10 @@ export default abstract class Common {
 				await session.commitTransaction()
 				await session.endSession()
 
+				// Um erro aqui não pode ir para o catch, pois ele assume erro no SAQUE
 				await Promise.all(
 					requests.map(req => this.sync.updateSent({ ...req, ...response }))
-				)
+				).catch(err => console.error('Error on updateSent', err))
 			} catch (err) {
 				await session.abortTransaction()
 				session.endSession()

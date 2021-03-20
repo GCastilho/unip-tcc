@@ -51,8 +51,11 @@ export default function initListeners(this: Currency) {
 					amount
 				}, session)
 
-				if (status === 'confirmed')
+				if (status === 'confirmed') {
 					await Person.balanceOps.complete(userId, this.name, opid, session)
+					tx.confirmations = undefined
+					await tx.save()
+				}
 
 				this.events.emit('new_transaction', userId, tx.toJSON())
 				callback(null, opid.toHexString())
@@ -60,7 +63,7 @@ export default function initListeners(this: Currency) {
 		} catch (err) {
 			if (err.code === 11000) {
 				// A transação já existe, retornar ela ao módulo externo
-				const tx = await Transaction.findOne({ txid })
+				const tx = await Transaction.findOne({ txid, account })
 				if (!tx) throw `Error finding transaction '${txid}' that SHOULD exist`
 
 				const transaction: TxReceived & { opid: string } = {
@@ -182,6 +185,8 @@ export default function initListeners(this: Currency) {
 			code: 'BadRequest',
 			message: '\'opid\' needs to be informed to update a transaction'
 		})
+
+		console.log('received update_sent_tx', updtSent)
 
 		const session = await startSession()
 		try {

@@ -88,7 +88,7 @@ export class Bitcoin extends Common {
 
 			const accounts = await Account.find({
 				account: { $in: transactions.map(d => d.account) }
-			}).map(docs => docs.map(doc => doc.account)).orFail()
+			}).map(docs => docs.map(doc => doc.account))
 
 			for (const tx of transactions.filter(tx => accounts.includes(tx.account))) {
 				/**
@@ -152,12 +152,14 @@ export class Bitcoin extends Common {
 
 		/**
 		 * Filtra transações cuja combinação txid & account exista no DB; A account
-		 * é checada não descartar transações em batch recebidas em que uma tá no
-		 * banco e a outra misteriosamente não está
+		 * é checada para não descartar transações em batch recebidas em que uma tá
+		 * no banco e a outra misteriosamente não está
 		 */
-		const txs = transactions.filter(tx =>
-			received.findIndex(s => s.txid == tx.txid && s.account == tx.address) == -1
-		)
+		const txs = transactions
+			.filter(tx => tx.category == 'receive')
+			.filter(tx =>
+				received.findIndex(s => s.txid == tx.txid && s.account == tx.address) == -1
+			)
 
 		for (const tx of txs) {
 			await this.newTransaction({
@@ -185,7 +187,7 @@ export class Bitcoin extends Common {
 
 	async initBlockchainListener() {
 		const app = express()
-		app.use(express.urlencoded())
+		app.use(express.urlencoded({ extended: true }))
 
 		/**
 		 * Novas transações são enviadas aqui
