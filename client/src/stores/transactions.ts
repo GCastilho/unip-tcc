@@ -5,7 +5,7 @@ import currencies from '../utils/currencies'
 import { addSocketListener } from '../utils/websocket'
 import type { Currencies } from '../routes/currencies'
 import type { TxJSON } from '../routes/user/transactions/index'
-import type { UpdtReceived, UpdtSent } from '../../../interfaces/transaction'
+import type { CancellSent, UpdtReceived, UpdtSent } from '../../../interfaces/transaction'
 
 // See https://github.com/Microsoft/TypeScript/issues/25760
 type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
@@ -46,8 +46,9 @@ export default new class TransactionsStore extends ListStore<Transaction> {
 					this.insertMissingTx(txUpdate.opid)
 				} else {
 					txs[index] = { ...txs[index], ...txUpdate }
-					if (txUpdate.status == 'confirmed')
+					if (txUpdate.status == 'confirmed') {
 						balances.updateBalances(currency, txs[index].amount, -txs[index].amount)
+					}
 				}
 				return txs
 			})
@@ -56,7 +57,7 @@ export default new class TransactionsStore extends ListStore<Transaction> {
 		/** Atualiza uma transação 'send' existente na store */
 		addSocketListener('update_sent_tx', async (
 			currency: keyof Currencies,
-			updtSent: UpdtSent
+			updtSent: UpdtSent|CancellSent
 		) => {
 			console.log('update_sent_tx', updtSent)
 			this.update(txs => {
@@ -68,10 +69,10 @@ export default new class TransactionsStore extends ListStore<Transaction> {
 						txs.splice(index, 1)
 						balances.updateBalances(currency, txs[index].amount, -txs[index].amount)
 					} else {
-						// @ts-expect-error TS não está entendendo que cancelled n é possível aq
 						txs[index] = { ...txs[index], ...updtSent }
-						if (updtSent.status == 'confirmed')
+						if (updtSent.status == 'confirmed') {
 							balances.updateBalances(currency, 0, -txs[index].amount)
+						}
 					}
 				}
 				return txs
@@ -152,8 +153,10 @@ export default new class TransactionsStore extends ListStore<Transaction> {
 				console.log('Transaction', opid, 'cancelled')
 				this.update(txs => {
 					const index = txs.findIndex(v => v.opid == opid)
-					balances.updateBalances(txs[index].currency, txs[index].amount, -txs[index].amount)
-					txs.splice(index, 1)
+					if (index != -1) {
+						balances.updateBalances(txs[index].currency, txs[index].amount, -txs[index].amount)
+						txs.splice(index, 1)
+					}
 					return txs
 				})
 			} else {
