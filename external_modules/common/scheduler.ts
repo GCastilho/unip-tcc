@@ -174,6 +174,15 @@ export class Batch extends Queue<Set<string>> {
 		this.timeout = null
 	}
 
+	public stop() {
+		/**
+		 * Limpa os opids para evitar dar trigger no assert do push de tx
+		 * existente quando a queue reiniciar
+		 */
+		this.opids = new Set()
+		super.stop()
+	}
+
 	/** Envia as transações para a queue para serem executadas */
 	private execWithdraw() {
 		if (!this.queue) return

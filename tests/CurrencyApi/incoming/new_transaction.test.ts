@@ -158,6 +158,35 @@ describe('Testing the receival of new_transaction on the CurrencyApi', () => {
 		expect(err.transaction.account).to.equals(transaction.account)
 	})
 
+	it('Should return the correct transaction if it already exists and it\'s in a batch', async () => {
+		const txData = {
+			txid: 'same-random-txid',
+			status: 'pending',
+			amount: 49.379547,
+			timestamp: 123456789
+		} as const
+
+		const transactions: TxReceived[] = [1, 2, 3].map(n => ({
+			account: `bitcoin-account-${n}`,
+			...txData,
+		}))
+
+		// Adiciona as accounts na person
+		person.currencies.bitcoin.accounts.push(...transactions.map(tx => tx.account))
+		await person.save({ validateBeforeSave: false })
+
+		// Emite as duas transações
+		await Promise.all(transactions.map(tx => client.emit('new_transaction', tx)))
+
+		// Re-emite as transações e checa se a tx correta é retornada no erro
+		for (const tx of transactions) {
+			const err = await client.emit('new_transaction', tx).catch(err => err)
+			expect(err).to.be.an('object').that.have.property('transaction').that.is.an('object')
+			expect(err.transaction).to.have.property('txid').that.equals(tx.txid)
+			expect(err.transaction).to.have.property('account').that.equals(tx.account)
+		}
+	})
+
 	describe('If sending invalid data', () => {
 		const transaction: TxReceived = {
 			txid: 'random-txid',

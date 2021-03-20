@@ -87,4 +87,23 @@ describe('Testing Batch Queue class', () => {
 
 		expect(() => queue.push(request)).to.throw(AssertionError)
 	})
+
+	it('Should be able to start the queue after it was stopped', async () => {
+		const request: WithdrawRequest = {
+			opid: new ObjectId().toHexString(),
+			account: 'random-account',
+			amount: 1,
+		}
+
+		const queue = new Batch({})
+		queue[Symbol.asyncIterator]() // Inicializa o iterator
+
+		queue.push(request)
+
+		queue.stop()
+		queue[Symbol.asyncIterator]() // Inicializa o iterator de novo
+
+		// Dá push na tx para garantir que a memória do opid set foi limpa
+		queue.push(request)
+	})
 })
