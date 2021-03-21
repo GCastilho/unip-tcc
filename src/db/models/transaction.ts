@@ -37,7 +37,7 @@ export interface TransactionDoc extends Document {
 	/** Amount da transação */
 	amount: number
 	/** Taxa cobrada para a execução da operação */
-	fee: number
+	fee?: number
 	/** Tipo dessa transação */
 	type: 'receive'|'send'
 	/**
@@ -99,7 +99,6 @@ const TransactionSchema = new Schema({
 	fee: {
 		type: Number,
 		min: 0,
-		default: 0
 	},
 	timestamp: {
 		type: Date,
