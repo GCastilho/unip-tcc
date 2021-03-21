@@ -84,7 +84,7 @@ export default class Sync {
 			}
 		} catch (err) {
 			if (err.code == 'TransactionConfirmed') {
-				await Receive.updateOne({ txid }, { completed: true })
+				await Receive.updateOne({ txid, account }, { completed: true })
 			} else if (err != 'SocketDisconnected') throw err
 		}
 	}

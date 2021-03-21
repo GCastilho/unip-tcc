@@ -1,4 +1,3 @@
-import { expect } from 'chai'
 import { ObjectId } from 'mongodb'
 import sinon, { assert } from 'sinon'
 import Transaction, { Receive, ReceiveDoc } from '../../db/models/transaction'
@@ -12,7 +11,7 @@ describe('Testing Sync\'s class updateReceived method', () => {
 	beforeEach(async () => {
 		await Transaction.deleteMany({})
 
-		transaction = await Receive.create({
+		transaction = await new Receive({
 			opid: new ObjectId(),
 			txid: 'random-txid',
 			account: 'random-account',
@@ -21,7 +20,7 @@ describe('Testing Sync\'s class updateReceived method', () => {
 			amount: '0.1',
 			confirmations: 1,
 			timestamp: Date.now(),
-		})
+		}).save()
 
 		emit.resetHistory()
 	})
@@ -55,30 +54,62 @@ describe('Testing Sync\'s class updateReceived method', () => {
 		tx.completed.should.be.true
 	})
 
-	it('Should update a specific transaction from a batch', async () => {
-		// Modifica a tx existente para ela ser pega primeiro no fndOne
-		transaction.status = 'confirmed'
-		await transaction.save()
+	it('Sould update the correct transaction in a batch if received an TransactionConfirmed error', async () => {
+		const emit = sinon.fake.rejects(Object.assign(new Error(), { code: 'TransactionConfirmed' }))
+		const sync = new Sync(emit)
 
-		// Cria uma outra transação
-		const otherTx = await Receive.create({
-			opid: new ObjectId(),
-			txid: transaction.txid, // Mesma txid
-			account: `${transaction.account}-another`, // different account
-			type: 'receive',
-			status: 'pending',
-			amount: '0.12',
-			confirmations: 1,
-			timestamp: Date.now(),
+		const txs = [1, 2, 3].map(n => {
+			const tx = new Receive(transaction)
+			tx.isNew = true
+			tx._id = new ObjectId()
+			tx.opid = new ObjectId()
+			tx.account = `${transaction.account}-${n}`
+			return tx
 		})
 
-		expect(Transaction.find()).to.eventually.be
-			.fulfilled.with.an('object')
-			.that.have.property('length').that.equals(2)
+		await Promise.all(txs.map(tx => tx.save()))
 
-		await sync.updateReceived(otherTx)
+		await transaction.remove()
 
-		const completedTxs = await Transaction.find({ completed: true })
-		completedTxs.length.should.equal(1)
+		for (const tx of txs) {
+			await sync.updateReceived(tx)
+			const updated = await Receive.findById(tx.id).orFail()
+			updated.completed.should.be.true
+
+			for (const notUpdated of txs.filter(t => t != tx)) {
+				const txn = await Receive.findById(notUpdated.id).orFail()
+				txn.completed.should.be.false
+			}
+			await Receive.updateMany({}, { completed: false })
+		}
+	})
+
+	it('Should update a specific transaction from a batch', async () => {
+		const emit = sinon.fake.rejects(Object.assign(new Error(), { code: 'TransactionConfirmed' }))
+		const sync = new Sync(emit)
+
+		const txs = [1, 2, 3].map(n => {
+			const tx = new Receive(transaction)
+			tx.isNew = true
+			tx._id = new ObjectId()
+			tx.opid = new ObjectId()
+			tx.account = `${transaction.account}-${n}`
+			return tx
+		})
+
+		await Promise.all(txs.map(tx => tx.save()))
+
+		await transaction.remove()
+
+		for (const tx of txs) {
+			await sync.updateReceived(tx)
+			const updated = await Receive.findById(tx.id).orFail()
+			updated.completed.should.be.true
+			for (const notUpdated of txs.filter(t => t != tx)) {
+				const txn = await Receive.findById(notUpdated.id).orFail()
+				txn.completed.should.be.false
+			}
+			await Receive.updateMany({}, { completed: false })
+		}
 	})
 })
