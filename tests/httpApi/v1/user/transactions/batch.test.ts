@@ -115,7 +115,8 @@ describe('Testing fetch of multiple transactions on the HTTP API version 1', () 
 		transactions.forEach(tx_stored => {
 			const tx_received = body.find(e => e.opid == tx_stored.id)
 			expect(tx_received).to.be.an('object', `Transaction with opid ${tx_stored._id} not sent`)
-			expect(tx_received).to.deep.equals(tx_stored.toJSON())
+			// O retorno do toJSON sempre tem fee, mas ele pode n ser enviado na rede. Garante q a prop existe
+			expect({ ...tx_received, fee: tx_received.fee }).to.deep.equals(tx_stored.toJSON())
 		})
 	})
 
@@ -136,7 +137,8 @@ describe('Testing fetch of multiple transactions on the HTTP API version 1', () 
 		transactions.forEach(tx_stored => {
 			const tx_received = body.find(e => e.opid == tx_stored._id.toHexString())
 			expect(tx_received).to.be.an('object', `Transaction with opid ${tx_stored._id} not sent`)
-			expect(tx_received).to.deep.equals(tx_stored.toJSON())
+			// O retorno do toJSON sempre tem fee, mas ele pode n ser enviado na rede. Garante q a prop existe
+			expect({ ...tx_received, fee: tx_received.fee }).to.deep.equals(tx_stored.toJSON())
 		})
 	})
 })
