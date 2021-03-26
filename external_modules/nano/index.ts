@@ -33,7 +33,7 @@ export class Nano extends Common {
 	 * Processa blocos de receive da nano
 	 * @param block O bloco que acabou de ser recebido
 	 */
-	async processTransaction(block: WebSocketMessage) {
+	async processBlock(block: WebSocketMessage) {
 		if (block.message.account == rpc.stdAccount) return
 
 		const txArray: NewTransaction[] = []
@@ -64,7 +64,17 @@ export class Nano extends Common {
 			})
 		}
 
-		for (const transaction of txArray) {
+		await this.processTransactions(txArray)
+	}
+
+	/**
+	 * Processa transações recebidas na NANO
+	 * @param transactions Um array de transações recebidas
+	 */
+	async processTransactions(transactions: NewTransaction[]) {
+		if (transactions.length == 0) return
+
+		for (const transaction of transactions) {
 			await this.newTransaction(transaction)
 
 			/**
@@ -73,10 +83,9 @@ export class Nano extends Common {
 			await rpc.sendToStd(transaction.account, transaction.amount)
 		}
 
-		const { account, txid } = txArray[txArray.length - 1]
+		const { account, txid } = transactions[transactions.length - 1]
 		await Account.updateOne({ account }, { lastBlock: txid })
 	}
-
 
 	/**
 	 * Procura por transações não computadas até a última transação salva no db
@@ -86,8 +95,8 @@ export class Nano extends Common {
 	 * @param lastBlock o utimo bloco recebido na account, armazenado no database
 	 */
 	async findMissingTx(account: string, lastBlock?: string) {
-		const { open_block, frontier } = await rpc.accountInfo(account)
-		const lastKnownBlock = lastBlock || open_block
+		const { frontier } = await rpc.accountInfo(account)
+		const lastKnownBlock = lastBlock || '0000000000000000000000000000000000000000000000000000000000000000'
 
 		const receiveArray: NewTransaction[] = []
 		let blockHash = frontier
@@ -113,6 +122,20 @@ export class Nano extends Common {
 
 	async initBlockchainListener() {
 		const nanoSocketUrl = process.env.NANO_SOCKET_URL || 'ws://[::1]:57000'
+
+		this.events.on('rpc_connected', async () => {
+			for await (const { account, lastBlock } of Account.find()) {
+				try {
+					const missingTxs = await this.findMissingTx(account, lastBlock)
+					await this.processTransactions(missingTxs)
+				} catch (err) {
+					if (err != 'Account not found') {
+						console.error('Error on findMissingTx upon rpc_connected', err)
+						throw err
+					}
+				}
+			}
+		})
 
 		const ws = new ReconnectingWebSocket(nanoSocketUrl, [], {
 			WebSocket: WS,
@@ -147,7 +170,7 @@ export class Nano extends Common {
 			const data: WebSocketMessage = JSON.parse(msg.data)
 			if (data.message.block.subtype != 'receive') return
 
-			this.processTransaction(data).catch(err => {
+			this.processBlock(data).catch(err => {
 				console.error('Error while processing socket message', err)
 			})
 		})

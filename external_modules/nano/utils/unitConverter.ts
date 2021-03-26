@@ -25,12 +25,12 @@ export function fromRawToNano(amount: string): string {
  */
 export function fromNanoToRaw(amount: string): string {
 	if (!amount) amount = '0.0'
-	if (!amount.includes('.') || amount.includes('-'))
+	if (amount.includes('-'))
 		throw new Error('IllegalInput')
 
 	// Separa o inteiro dos decimais
 	// eslint-disable-next-line
-	let [inteiro, casas] = amount.split('.')
+	let [inteiro, casas = '0'] = amount.split('.')
 
 	// Preenche as casas restantes com zeros e remove zeros além da casa 30
 	casas = casas.padEnd(30, '0').slice(0, 30)

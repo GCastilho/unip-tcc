@@ -80,6 +80,8 @@ export const stdAccount = process.env.SEND_ACCOUNT as string
 if (!wallet) throw 'WALLET needs to be informed as environment variable'
 if (!stdAccount) throw 'STANDARD_ACCOUNT needs to be informed as environment variable'
 
+console.log('Loading RPC for WALLET', wallet, 'and STANDARD_ACCOUNT', stdAccount)
+
 async function call<T = any>(command: any): Promise<T> {
 	try {
 		const res = await axios.post(nanoUrl, command)
