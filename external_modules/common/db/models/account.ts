@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose'
 
 export interface Account extends Document {
 	account: string
-	lastBlock: string
+	lastBlock?: string
 }
 
 const Account: Schema = new Schema({

@@ -1,135 +1,327 @@
+import assert from 'assert'
+import mongoose from 'mongoose'
 import io from 'socket.io-client'
 import { EventEmitter } from 'events'
-import * as methods from './methods'
-import * as mongoose from './db/mongoose'
-import { PSent } from './db/models/pendingTx'
-import type { TxReceived, UpdtSent, UpdtReceived } from '../../interfaces/transaction'
+import { startSession } from 'mongoose'
+import Sync from './sync'
+import { Batch, Single } from './scheduler'
+import initListeners from './listeners'
+import Transaction, { Receive, Send } from './db/models/transaction'
+import type TypedEmitter from 'typed-emitter'
+import type { Queue, BatchOptions } from './scheduler'
+import type { ExternalEvents } from '../../interfaces/communication/external-socket'
+import type { ReceiveDoc, SendDoc, CreateReceive, CreateSend, CreateSendRequest } from './db/models/transaction'
 
-/**
- * EventEmmiter genérico
- */
-class Events extends EventEmitter {}
+type Options = {
+	/** Nome da Currency que se está trabalhando (igual ao da CurrencyAPI) */
+	name: string
+	/** Opções para configuração de transações em batch */
+	batchOptions?: BatchOptions
+}
+
+/** Type do objeto de atualização de uma transação pendente */
+type UpdateTx = Pick<ReceiveDoc|SendDoc, 'txid'|'status'|'confirmations'>
+
+/** Type de um request do método de withdraw */
+export type WithdrawRequest = Pick<CreateSendRequest, 'account'|'amount'>
+
+/** Type da resposta do método de withdraw */
+export type WithdrawResponse = Pick<CreateSend, 'txid'|'status'|'confirmations'|'timestamp'>
+
+/** Type do argumento do método de newTransaction */
+export type NewTransaction = Omit<CreateReceive, 'type'>
+
+/** URL do servidor principal */
+const mainServerIp = process.env.MAIN_SERVER_IP || 'localhost'
+
+/** Porta da CurrencyAPI no servidor principal */
+const mainServerPort = parseInt(process.env.MAIN_SERVER_PORT || '8085')
 
 export default abstract class Common {
-	abstract name: string
-	abstract mainServerIp: string
-	abstract mainServerPort: number
-
 	/**
 	 * Pede uma nova account para o node dessa currency e a retorna
 	 */
 	abstract getNewAccount(): Promise<string>
 
 	/**
-	 * Executa o request de saque de uma currency em sua blockchain
-	 *
-	 * @param pSended O documento dessa operação pendente na collection
-	 * @param callback Caso transações foram agendadas para ser executadas em
-	 * batch, o callback deve ser chamado com elas para informar que elas foram
-	 * executadas
-	 *
-	 * @returns UpdtSended object se a transação foi executada imediatamente
-	 * @returns true se a transação foi agendada para ser executada em batch
-	 */
-	abstract withdraw(pSended: PSent, callback?: (transactions: UpdtSent[]) => void): Promise<UpdtSent|true>
-
-	/**
 	 * Inicia o listener de requests da blockchain
 	 */
-	abstract initBlockchainListener(): void|Promise<void>
+	abstract initBlockchainListener(): void
 
 	/**
-	 * Processa novas transações recebidas e as envia ao servidor principal
+	 * Executa o request de saque de uma currency em sua blockchain. Esse método
+	 * é presumido não ser indepotente
 	 *
-	 * @param txid O txid da transação recém recebida
+	 * @param request O objeto com os dados do request de saque
+	 * @returns WithdrawResponse Com os dados da transação enviada
 	 */
-	abstract processTransaction(txid: TxReceived['txid']): Promise<void>
+	abstract withdraw(request: WithdrawRequest): Promise<WithdrawResponse>
+
+	/**
+	 * Executa um request de saque em batch, enviando uma única transação para
+	 * várias accounts
+	 *
+	 * @param batchRequest Um objeto em que as chaves são as accounts de destino
+	 * e os valores são os amounts que devem ser enviados para essas accounts
+	 */
+	withdrawMany?(batchRequest: Record<string, number>): Promise<WithdrawResponse>
+
+	/** Classe com métodos para sincronia de eventos com o main server */
+	private sync: Sync
+
+	/** Iterable da queue de requests de withdraw */
+	protected withdrawQueue: Queue<Set<string>>
 
 	/**
 	 * EventEmitter para eventos internos
 	 */
-	protected _events = new Events()
-
-	constructor() {
-		this.connectionHandler = methods.connection
-		this.informMain = methods.informMain.bind(this)()
-
-		// Monitora os eventos do rpc para manter o nodeOnline atualizado
-		this._events.on('rpc_connected', () => {
-			if (this.nodeOnline) return
-			this.nodeOnline = true
-			this._events.emit('node_connected')
-		})
-		this._events.on('rpc_disconnected', () => {
-			if (!this.nodeOnline) return
-			this.nodeOnline = false
-			this._events.emit('node_disconnected')
-		})
-	}
-
-	async init() {
-		await mongoose.init(`exchange-${this.name}`)
-		this.connectToMainServer()
-		this.initBlockchainListener()
-	}
-
-	/**
-	 * Handler da conexão com o servidor principal
-	 */
-	private connectionHandler: (socket: SocketIOClient.Socket) => void
-
-	/**
-	 * Conecta com o servidor principal
-	 */
-	private connectToMainServer = () => {
-		/**
-		 * Socket de conexão com o servidor principal
-		 */
-		const socket = io(`http://${this.mainServerIp}:${this.mainServerPort}/${this.name}`)
-		this.connectionHandler(socket)
-	}
+	protected events: TypedEmitter<{
+		/** Conectado com o node da moeda */
+		rpc_connected: () => void
+		/** Desconectado do node da moeda */
+		rpc_disconnected: () => void
+		/** Conectado com o main server */
+		connected: () => void
+		/** Desconectado do main server */
+		disconnected: () => void
+		to_main_server: (...args: any[]) => void
+	}> = new EventEmitter()
 
 	/**
 	 * Indica se o node da currency está online ou não
 	 *
-	 * Os eventos 'node_connected' e 'node_disconnected' devem ser disparados
-	 * no event emitter interno para manter essa váriável atualizada e outras
-	 * partes do sistema que dependem desses eventos, funcionando
+	 * Os listeners do 'rpc_connected' e 'rpc_disconnected' mantém essa variável
+	 * atualizada
 	 *
 	 * NÃO MODIFICAR MANUALMENTE
 	 */
-	protected nodeOnline = false
+	protected nodeOnline: boolean
+
+	/** Nome da currency que está sendo trabalhada */
+	public readonly name: string
+
+	constructor(options: Options) {
+		this.name = options.name
+		this.nodeOnline = false
+		this.sync = new Sync(this.emit.bind(this))
+
+		/**
+		 * Habilita o sistema de transações em batch caso a withdrawMany tenha
+		 * sido implementada pelo sistema da currency
+		 */
+		this.withdrawQueue = typeof this.withdrawMany == 'function'
+			? new Batch(options.batchOptions || {})
+			: new Single()
+
+		// Monitora os eventos do rpc para manter o nodeOnline atualizado
+		this.events.on('rpc_connected', () => this.nodeOnline = true)
+		this.events.on('rpc_disconnected', () => this.nodeOnline = false)
+
+		// Inicializa e finaliza o withdrawQueue
+		this.events.on('rpc_connected', () => this.processQueue())
+		this.events.on('rpc_disconnected', () => this.withdrawQueue.stop())
+
+		// Sincroniza transações com o main server
+		this.events.on('connected', () => this.sync.uncompleted())
+	}
+
+	/** Conecta com o servidor principal */
+	private connectToMainServer() {
+		/** Socket de conexão com o servidor principal */
+		const socket = io(`http://${mainServerIp}:${mainServerPort}/${this.name}`)
+		initListeners.call(this, socket)
+	}
 
 	/**
-	 * Vasculha a collection 'pendingTx' em busca de transações não enviadas
-	 * e chama a função de withdraw para cara um delas
+	 * Processa a withdrawQueue, infinitamente e de forma assíncrona, até o
+	 * método stop ser invocado (clean exit) ou um erro não reconhecido ser
+	 * recebido de um dos métodos utilizados
+	 *
+	 * Um Error com code 'NotSent' é esperado para situações onde há certeza
+	 * que a transação não foi enviada
 	 */
-	protected withdraw_pending = methods.withdraw_pending.bind(this)()
+	private async processQueue() {
+		for await (const opidSet of this.withdrawQueue) {
+			const session = await startSession()
+			session.startTransaction()
+
+			try {
+				/**
+				 * Utiliza concorrência pessimista, mandando um update para as
+				 * transações que serão sacadas para impedir que elas sejam deletadas
+				 * ou modificadas de fora da session. Usar apenas o find não impediria
+				 * a transação de ser modificada de fora da session
+				 *
+				 * As transações que foram canceladas não serão pegas pelo update/find
+				 * então esse processo garante que transações canceladas não serão
+				 * sacadas além de que o uso de uma session garante que elas não serão
+				 * canceladas durante o andamento dessa operação
+				 */
+				await Send.updateMany({
+					opid: {
+						$in: Array.from(opidSet)
+					},
+					status: 'requested',
+					picked: undefined,
+				}, {
+					picked: true,
+				}, {
+					session
+				})
+				const requests = await Send.find({
+					opid: {
+						$in: Array.from(opidSet)
+					},
+					picked: true,
+				}, {
+					opid: 1,
+					account: 1,
+					amount: 1,
+				}, {
+					session,
+				}).orFail().map(txs => txs.map(tx => ({
+					opid:    tx.opid,
+					account: tx.account,
+					amount:  tx.amount,
+				})))
+
+				let response: WithdrawResponse
+				if (requests.length == 1) {
+					const { opid, account, amount } = requests[0]
+					response = await this.withdraw({ account, amount })
+					console.log('Sent new transaction:', {
+						opid,
+						account,
+						amount,
+						...response
+					})
+					await Send.updateOne({ opid }, {
+						...response,
+						$unset: { picked: true },
+					}, { session })
+				} else if (requests.length > 1) {
+					assert(
+						typeof this.withdrawMany == 'function',
+						'withdrawMany is not implemented, yet it was activated by Common. This is unacceptable'
+					)
+
+					const batch = requests.reduce((acc, cur) => {
+						const storedAmount = acc.get(cur.account) || 0
+						acc.set(cur.account, storedAmount + Number(cur.amount))
+						return acc
+					}, new Map<string, number>())
+
+					response = await this.withdrawMany(Object.fromEntries(batch))
+					console.log('Sent many new transactions', response, requests)
+
+					await Send.updateMany({
+						opid: {
+							$in: requests.map(req => req.opid)
+						}
+					}, {
+						...response,
+						$unset: { picked: true },
+					}, { session })
+				} else {
+					throw Object.assign(new Error(), {
+						code: 'NotSent',
+						message: `All requested transactions (${opidSet}) were cancelled`
+					})
+				}
+
+				await session.commitTransaction()
+				await session.endSession()
+
+				// Um erro aqui não pode ir para o catch, pois ele assume erro no SAQUE
+				await Promise.all(
+					requests.map(req => this.sync.updateSent({ ...req, ...response }))
+				).catch(err => console.error('Error on updateSent', err))
+			} catch (err) {
+				await session.abortTransaction()
+				session.endSession()
+
+				if (err.code === 'NotSent') {
+					const message = err?.message || err
+					console.error('Withdraw - Transactions were not sent:', message)
+					break
+				} else if (err.name != 'DocumentNotFoundError') {
+					// Como usa transaction, DocumentNotFoundError só pode ocorrer no updateMany
+					/**
+					 * Não há garantia que a tx não foi enviada, interrompe o processo
+					 * para impedir que esse erro se propague de alguma forma
+					 */
+					console.error('Unknown error while processing withdraw queue:', err)
+					/**
+					 * @todo Um error code específico para erro de withdraw. Pode agilizar
+					 * a análise do log
+					 */
+					process.exit(1)
+				}
+			}
+		}
+	}
+
+	async init() {
+		const ip = process.env.MONGODB_IP || '127.0.0.1'
+		const port = process.env.MONGODB_PORT || '27017'
+		const dbName = process.env.MONGODB_DB_NAME || `exchange-${this.name}`
+
+		const mongodb_url = process.env.MONGODB_URL || `mongodb://${ip}:${port}/${dbName}`
+
+		process.stdout.write('Connecting to mongodb... ')
+		await mongoose.connect(mongodb_url, {
+			user: process.env.MONGODB_USER,
+			pass: process.env.MONGODB_PASS,
+			useNewUrlParser: true,
+			useCreateIndex: true,
+			useFindAndModify: false,
+			useUnifiedTopology: true,
+			// N sei se o melhor é 'snapshot' ou 'majority' aqui
+			readConcern: 'snapshot',
+			w: 'majority',
+			j: true,
+			wtimeout: 2000,
+		}).catch(err => {
+			console.error('Database connection error:', err)
+			process.exit(1)
+		})
+		console.log('Connected')
+
+		this.connectToMainServer()
+		await this.initBlockchainListener()
+	}
 
 	/**
-	 * Contém métodos para atualizar o main server a respeito de transações
+	 * Processa uma transação recebida, salvando-a no DB e informando o main
+	 * @param transaction Os dados da transação recebida
 	 */
-	informMain: {
-		/**
-		 * Envia uma transação ao servidor principal e atualiza o opid dela no
-		 * database
-		 *
-		 * @param transaction A transação que será enviada ao servidor
-		 *
-		 * @returns opid se o envio foi bem-sucedido e a transação está pendente
-		 * @returns void se a transação não foi enviada ou se estava confirmada
-		 */
-		newTransaction (transaction: TxReceived): Promise<string|void>
-		/**
-		 * Atualiza uma transação recebida previamente informada ao main server
-		 * @param txUpdate A atualização da atualização recebida
-		 */
-		updateReceivedTx (txUpdate: UpdtReceived): Promise<void>
-		/**
-		 * Atualiza um request de withdraw recebido do main server
-		 * @param transaction A atualização da transação enviada
-		 */
-		updateWithdraw (transaction: UpdtSent): Promise<void>
+	public async newTransaction(transaction: NewTransaction): Promise<void> {
+		const doc = await Receive.create<ReceiveDoc>({
+			...transaction,
+			type: 'receive',
+		})
+		console.log('Received new transaction', transaction)
+		await this.sync.newTransaction(doc)
+	}
+
+	/**
+	 * Atualiza uma transação já existente. Não é necessário que a transação
+	 * tenha sido informada ao main para esse método ser chamado
+	 * @param txUpdate Os dados de atualização da transação
+	 */
+	public async updateTx(txUpdate: UpdateTx) {
+		const { txid, ...updtTx } = txUpdate
+		await Transaction.updateMany({ txid }, updtTx)
+		const txs = await Transaction.find({ txid }).orFail() as ReceiveDoc[]|SendDoc[]
+
+		for (const tx of txs) {
+			if (tx.type == 'receive') {
+				if (tx.opid) await this.sync.updateReceived(tx)
+				else await this.sync.newTransaction(tx)
+			} else {
+				await this.sync.updateSent(tx)
+			}
+		}
 	}
 
 	/**
@@ -140,10 +332,13 @@ export default abstract class Common {
 	 * @param event O evento que será enviado ao socket
 	 * @param args Os argumentos desse evento
 	 */
-	protected module(event: string, ...args: any): Promise<any> {
+	protected emit<Event extends keyof ExternalEvents>(
+		event: Event,
+		...args: Parameters<ExternalEvents[Event]>
+	): Promise<ReturnType<ExternalEvents[Event]>> {
 		return new Promise((resolve, reject) => {
-			console.log(`transmitting socket event '${event}':`, ...args)
-			this._events.emit('module', event, ...args, ((error, response) => {
+			console.log(`Transmitting socket event '${event}':`, ...args)
+			this.events.emit('to_main_server', event, args, ((error, response) => {
 				if (error) {
 					console.error('Received socket error:', error)
 					reject(error)

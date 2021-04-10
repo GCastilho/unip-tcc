@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb'
 import mongoose, { Schema, Document } from '../mongoose'
 import { currencies, truncateAmount } from '../../libs/currencies'
 import type { PersonDoc } from './person'
+import type { TxInfo } from '../../../interfaces/transaction'
 import type { SuportedCurrencies } from '../../libs/currencies'
 
 /** A interface dessa collection */
@@ -11,24 +12,22 @@ export interface TransactionDoc extends Document {
 	/**
 	 * Status da transação
 	 *
-	 * pending: A transação já foi processada e aceita no saldo do usuário e
-	 * está pendente para ser confirmada na rede
-	 *
 	 * ready: O processamento inicial foi concluído e a tranação está pronta para
 	 * ser enviada ao módulo externo
 	 *
-	 * picked: A transação foi selecionada pelo método de withdraw para ser
-	 * enviada ao módulo externo
+	 * external: A transação foi enviada ao módulo externo
 	 *
-	 * external: A transação foi envada ao módulo externo
+	 * pending: A transação já foi processada e aceita no saldo do usuário e
+	 * está pendente para ser confirmada na rede
 	 *
 	 * confirmed: A transação foi confirmada na rede e teve o saldo do usuário
 	 * atualizado no database
 	 *
-	 * processing: A transação ainda não foi processada no saldo do usuário,
-	 * podendo ser negada quando isso ocorrer (e deletada do db)
+	 * cancelled: A transação está no módulo externo, que não está acessível, e
+	 * foi requisitado seu cancelamento. O cancelamento não pode ocorrer até
+	 * a resposta do módulo externo
 	 */
-	status: 'processing'|'ready'|'picked'|'external'|'cancelled'|'pending'|'confirmed'
+	status: 'ready'|'external'|'pending'|'confirmed'|'cancelled'
 	/** De qual currency essa transação se refere */
 	currency: SuportedCurrencies
 	/** Identificador da transação na rede da moeda */
@@ -38,7 +37,7 @@ export interface TransactionDoc extends Document {
 	/** Amount da transação */
 	amount: number
 	/** Taxa cobrada para a execução da operação */
-	fee: number
+	fee?: number
 	/** Tipo dessa transação */
 	type: 'receive'|'send'
 	/**
@@ -48,18 +47,7 @@ export interface TransactionDoc extends Document {
 	confirmations?: number
 	/** O timestamp da transação na rede da moeda */
 	timestamp: Date
-	toJSON(): TxJSON
-}
-
-/** Interface do objeto retornado pelo método toJSON */
-export interface TxJSON extends Omit<
-	TransactionDoc,
-	keyof Document|'userId'|'status'|'fee'|'timestamp'
-> {
-	opid: string
-	status: 'processing'|'pending'|'confirmed'
-	fee?: number
-	timestamp: number
+	toJSON(): TxInfo
 }
 
 /** Schema da collection de transações dos usuários */
@@ -71,6 +59,10 @@ const TransactionSchema = new Schema({
 	},
 	txid: {
 		type: String,
+		required: function(this: TransactionDoc) {
+			// Faz txid ser required caso a tx já esteja na rede (pending/confirmed)
+			return this.status == 'pending' || this.status == 'confirmed'
+		},
 	},
 	type: {
 		type: String,
@@ -84,7 +76,7 @@ const TransactionSchema = new Schema({
 	},
 	status: {
 		type: String,
-		enum: ['processing', 'ready', 'picked', 'external', 'cancelled', 'pending', 'confirmed'],
+		enum: ['ready', 'external', 'pending', 'confirmed', 'cancelled'],
 		required: true
 	},
 	confirmations: {
@@ -107,7 +99,6 @@ const TransactionSchema = new Schema({
 	fee: {
 		type: Number,
 		min: 0,
-		default: 0
 	},
 	timestamp: {
 		type: Date,
@@ -115,8 +106,8 @@ const TransactionSchema = new Schema({
 	}
 }, {
 	toJSON: {
-		transform: function(doc: TransactionDoc): TxJSON {
-			let status: TxJSON['status']
+		transform: function(doc: TransactionDoc): TxInfo {
+			let status: TxInfo['status']
 			switch (doc.status) {
 				case('pending'):
 				case('confirmed'):
@@ -142,16 +133,34 @@ const TransactionSchema = new Schema({
 	}
 })
 
-/*
- * Adicionado txid e type como indice composto caso o txid não seja nulo
+/**
+ * Faz transações de recebimento terem txid unique e permite que transações
+ * para mais de uma account do sistema (um batch) sejam reconhecidas como
+ * transações diferentes
  */
 TransactionSchema.index({
 	txid: 1,
-	type: 1
+	type: 1,
+	account: 1,
 }, {
 	unique: true,
 	partialFilterExpression: {
-		txid: { $exists: true }
+		txid: { $exists: true },
+		type: 'receive',
+	}
+})
+
+/**
+ * Cria um index para transações de saque que permita várias transações com o
+ * mesmo txid (necessário para fazer batch)
+ */
+TransactionSchema.index({
+	txid: 1,
+	type: 1,
+}, {
+	partialFilterExpression: {
+		txid: { $exists: true },
+		type: 'send',
 	}
 })
 

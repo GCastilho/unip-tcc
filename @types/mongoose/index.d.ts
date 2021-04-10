@@ -13,4 +13,13 @@ declare module 'mongoose' {
 		/** This documents _id. */
 		_id: ObjectId
 	}
+
+	// eslint-disable-next-line @typescript-eslint/ban-types
+	interface Model<T extends Document, QueryHelpers = {}> {
+		create<T>(doc: CreateQuery<T>, options?: SaveOptions): Promise<T>
+		create<T>(doc: CreateQuery<T>, callback?: (err: any, res: T[]) => void): Promise<T>
+		create<T>(docs: CreateQuery<T>[], callback?: (err: any, res: T[]) => void): Promise<T[]>
+		create<T>(docs: CreateQuery<T>[], options?: SaveOptions, callback?: (err: any, res: T[]) => void): Promise<T[]>
+		create<T>(...docs: CreateQuery<T>[]): Promise<T>
+	}
 }

@@ -5,3 +5,5 @@ import type { TxInfo } from '../../../../../interfaces/transaction'
 export type TxJSON = TxInfo
 
 export const get = apiRequest('get', '/v1/user/transactions')
+
+export const post = apiRequest('post', '/v1/user/transactions')

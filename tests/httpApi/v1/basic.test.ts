@@ -7,7 +7,7 @@ import { currencies } from '../../../src/libs/currencies'
 const app = express()
 app.use(api)
 
-describe('Performing basic testson the version 1 of HTTP API', () => {
+describe('Performing basic tests on the version 1 of HTTP API', () => {
 	it('Should return information about the API', async () => {
 		const { body } = await request(app).get('/v1').send()
 			.expect('Content-Type', /json/)

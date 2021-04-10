@@ -9,6 +9,5 @@ services:
     dns:
       - 10.100.11.30
     network_mode: "bridge"
-    # environment:
-    #   INTERNAL_API_URL: http://10.100.11.80
-    #   PUBLIC_API_URL: http://ttodev.ddns.net:22085/
+    environment:
+      MAIN_SERVER_IP: ${MAIN_SERVER_IP}

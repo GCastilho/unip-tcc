@@ -123,9 +123,9 @@ describe('Testing the receival of update_received_tx on the CurrencyApi', () => 
 	})
 
 	describe('If sending invalid data', () => {
-		it('Should return UserNotFound if a user for existing transaction was not found', async () => {
+		it('Should return OperationNotFound if a user for existing transaction was not found', async () => {
 			// Configura o novo usuário
-			const newPerson = await Person.createOne('receive-UserNotFound@email.com', 'UserP@ass')
+			const newPerson = await Person.createOne('receive-OperationNotFound@email.com', 'UserP@ass')
 			await Person.findByIdAndUpdate(newPerson.id, {
 				$push: {
 					['currencies.bitcoin.accounts']: 'bitcoin-account-newUser'
@@ -133,7 +133,7 @@ describe('Testing the receival of update_received_tx on the CurrencyApi', () => 
 			})
 
 			const opid = await client.emit('new_transaction', {
-				txid: 'UserNotFound-txid',
+				txid: 'OperationNotFound-txid',
 				status: 'pending',
 				amount: 10,
 				account: 'bitcoin-account-newUser',
@@ -153,7 +153,7 @@ describe('Testing the receival of update_received_tx on the CurrencyApi', () => 
 			await expect(updateEvent).to.eventually.be.rejected.with.an('object')
 			const err = await updateEvent.catch(err => err)
 			expect(err).to.be.an('object')
-			expect(err.code).to.equals('UserNotFound')
+			expect(err.code).to.equals('OperationNotFound')
 			expect(err.message).to.be.a('string')
 		})
 
@@ -187,7 +187,7 @@ describe('Testing the receival of update_received_tx on the CurrencyApi', () => 
 			const err = await updateEvent.catch(err => err)
 			expect(err).to.be.a('object')
 			expect(err.code).to.be.a('string')
-				.that.equals('OperationNotFound')
+				.that.equals('TransactionNotFound')
 			expect(err.message).to.be.a('string')
 
 			const doc = await Transaction.findById(opid)

@@ -36,7 +36,10 @@ export class Socket {
 	}
 
 	public disconnect() {
-		this.socket.disconnect()
+		return new Promise(res => {
+			this.socket.once('disconnect', () => res())
+			this.socket.disconnect()
+		})
 	}
 
 	public emit<Event extends keyof ExternalEvents>(

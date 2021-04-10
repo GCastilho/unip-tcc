@@ -124,7 +124,8 @@ describe('Testing fetch of specific transaction on the HTTP API version 1', () =
 				.expect(200)
 
 			expect(body).to.be.an('object')
-			expect(body).to.deep.equals(tx.toJSON())
+			// Garante que a prop fee exista mesmo que no DB ela seja undefined
+			expect({ ...body, fee: body.fee }).to.deep.equals(tx.toJSON())
 		}
 	})
 })

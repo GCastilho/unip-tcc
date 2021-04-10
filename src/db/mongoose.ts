@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 
 const ip = process.env.MONGODB_IP || '127.0.0.1'
-const port = process.env.MONGODB_PORT || '27018'
+const port = process.env.MONGODB_PORT || '27017'
 const dbName = process.env.MONGODB_DB_NAME || 'exchange'
 
 const mongodb_url = process.env.MONGODB_URL || `mongodb://${ip}:${port}/${dbName}`
@@ -12,6 +12,10 @@ const mongodb_url = process.env.MONGODB_URL || `mongodb://${ip}:${port}/${dbName
 mongoose.connect(mongodb_url, {
 	user: process.env.MONGODB_USER,
 	pass: process.env.MONGODB_PASS,
+	w: 'majority',
+	readConcern: 'majority',
+	j: true,
+	wtimeout: 2000,
 	useNewUrlParser: true,
 	useCreateIndex: true,
 	useUnifiedTopology: true,
